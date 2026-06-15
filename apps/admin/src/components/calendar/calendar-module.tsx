@@ -13,8 +13,8 @@ import { Badge, Button, Card, CardContent, FadeIn, Input, Label } from "@hospede
 import { ModuleToast } from "../admin/module-toast";
 import { bloquearPeriodoCalendarioAction } from "../../lib/calendar/actions";
 import {
-  LABEL_STATUS_BLOQUEIO,
-  STATUS_BLOQUEIO_CALENDARIO,
+  LABEL_MOTIVO_BLOQUEIO,
+  MOTIVOS_BLOQUEIO_CALENDARIO,
   type DadosModuloCalendario,
   type SearchParamsCalendario
 } from "../../lib/calendar/types";
@@ -93,13 +93,21 @@ export function CalendarModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <form className="grid gap-4 lg:grid-cols-[0.6fr_1fr_1fr_auto]">
+          <form className="grid gap-4 lg:grid-cols-[0.7fr_0.8fr_0.9fr_1fr_1fr_auto]">
+            <CampoVisao defaultValue={filtros.visao} />
             <CampoTexto
               defaultValue={filtros.mes}
               label="Mes"
               name="mes"
               required
               type="month"
+            />
+            <CampoTexto
+              defaultValue={filtros.semana}
+              label="Semana"
+              name="semana"
+              required
+              type="date"
             />
             <CampoPropriedade
               defaultValue={filtros.propriedadeId ?? ""}
@@ -126,6 +134,8 @@ export function CalendarModule({
 
             <form action={bloquearPeriodoCalendarioAction} className="mt-5 grid gap-4">
               <input name="mes" type="hidden" value={filtros.mes} />
+              <input name="semana" type="hidden" value={filtros.semana} />
+              <input name="visao" type="hidden" value={filtros.visao} />
               <input name="filtroPropriedadeId" type="hidden" value={filtros.propriedadeId ?? ""} />
               <input name="filtroUnidadeId" type="hidden" value={filtros.unidadeId ?? ""} />
 
@@ -144,7 +154,7 @@ export function CalendarModule({
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 <CampoTexto
                   disabled={bloqueado}
                   label="Inicio"
@@ -153,16 +163,15 @@ export function CalendarModule({
                   type="date"
                 />
                 <CampoTexto disabled={bloqueado} label="Fim" name="fim" required type="date" />
-                <CampoStatus disabled={bloqueado} />
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">
+                <CampoMotivoBloqueio disabled={bloqueado} />
                 <CampoTexto
                   disabled={bloqueado}
-                  label="Motivo"
-                  name="motivo"
-                  placeholder="Manutencao, uso proprio..."
-                  required
+                  label="Detalhe do motivo"
+                  name="motivoDetalhe"
+                  placeholder="Ex.: troca de ar-condicionado"
                 />
                 <CampoArea disabled={bloqueado} label="Observacoes" name="observacoes" />
               </div>
@@ -186,7 +195,7 @@ export function CalendarModule({
         <Card className="admin-glass-card">
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold">{formatarMes(filtros.mes)}</h2>
+              <h2 className="text-lg font-semibold">{formatarPeriodo(filtros)}</h2>
               <Badge variant="outline">{reservas.length + blocos.length} evento(s)</Badge>
             </div>
 
@@ -344,19 +353,44 @@ function CampoUnidade({
   );
 }
 
-function CampoStatus({ disabled }: { disabled: boolean }) {
+function CampoVisao({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="status">Status</Label>
-      <select className={campoClasse} disabled={disabled} id="status" name="status">
-        {STATUS_BLOQUEIO_CALENDARIO.map((status) => (
-          <option key={status} value={status}>
-            {LABEL_STATUS_BLOQUEIO[status]}
+      <Label htmlFor="visao">Visao</Label>
+      <select className={campoClasse} defaultValue={defaultValue} id="visao" name="visao">
+        <option value="mensal">Mensal</option>
+        <option value="semanal">Semanal</option>
+      </select>
+    </div>
+  );
+}
+
+function CampoMotivoBloqueio({ disabled }: { disabled: boolean }) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="motivoTipo">Motivo</Label>
+      <select
+        className={campoClasse}
+        disabled={disabled}
+        id="motivoTipo"
+        name="motivoTipo"
+      >
+        {MOTIVOS_BLOQUEIO_CALENDARIO.map((motivo) => (
+          <option key={motivo} value={motivo}>
+            {LABEL_MOTIVO_BLOQUEIO[motivo]}
           </option>
         ))}
       </select>
     </div>
   );
+}
+
+function formatarPeriodo(filtros: DadosModuloCalendario["filtros"]) {
+  if (filtros.visao === "semanal") {
+    return `Semana de ${formatarData(filtros.semana)}`;
+  }
+
+  return formatarMes(filtros.mes);
 }
 
 function formatarMes(mes: string) {
@@ -367,4 +401,10 @@ function formatarMes(mes: string) {
     year: "numeric",
     timeZone: "UTC"
   }).format(data);
+}
+
+function formatarData(valor: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
+    new Date(`${valor}T00:00:00Z`)
+  );
 }

@@ -5,7 +5,9 @@ import { CalendarModule } from "../../components/calendar/calendar-module";
 import { exigirAutenticacao } from "../../lib/auth/context";
 import {
   carregarDadosModuloCalendario,
+  normalizarSemanaCalendario,
   normalizarMesCalendario,
+  normalizarVisaoCalendario,
   podeLerCalendario
 } from "../../lib/calendar/data";
 
@@ -50,12 +52,17 @@ export default async function CalendarioPage({ searchParams }: PageProps) {
 }
 
 function montarFiltros(params: Record<string, string | string[] | undefined>) {
+  const mes = normalizarMesCalendario(lerParametro(params, "mes"));
   const filtros: {
     mes: string;
+    semana: string;
+    visao: "mensal" | "semanal";
     propriedadeId?: string;
     unidadeId?: string;
   } = {
-    mes: normalizarMesCalendario(lerParametro(params, "mes"))
+    mes,
+    semana: normalizarSemanaCalendario(lerParametro(params, "semana"), mes),
+    visao: normalizarVisaoCalendario(lerParametro(params, "visao"))
   };
   const propriedadeId = lerParametro(params, "propriedadeId");
   const unidadeId = lerParametro(params, "unidadeId");

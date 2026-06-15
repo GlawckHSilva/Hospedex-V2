@@ -14,7 +14,11 @@ import {
   type ClienteSupabaseServer,
   type EscopoCalendario
 } from "./permissions";
-import { STATUS_BLOQUEIO_CALENDARIO } from "./types";
+import {
+  LABEL_MOTIVO_BLOQUEIO,
+  MOTIVOS_BLOQUEIO_CALENDARIO,
+  type MotivoBloqueioCalendario
+} from "./types";
 
 /**
  * Server actions do calendario.
@@ -31,6 +35,7 @@ type EntradaBloqueio = {
   inicio: string;
   fim: string;
   status: CalendarAvailabilityStatus;
+  motivoCodigo: MotivoBloqueioCalendario;
   motivo: string;
   observacoes: string | null;
 };
@@ -55,7 +60,9 @@ export async function bloquearPeriodoCalendarioAction(formData: FormData) {
       reason: entrada.motivo,
       notes: entrada.observacoes,
       metadata: {
-        preparadoParaIcs: true
+        motivoCodigo: entrada.motivoCodigo,
+        preparadoParaIcs: true,
+        preparadoParaTarifario: true
       },
       created_by: escopo.userId
     });
@@ -111,7 +118,10 @@ async function obterEntradaBloqueio(
   const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
   const inicio = dataObrigatoria(formData, "inicio", "data inicial");
   const fim = dataObrigatoria(formData, "fim", "data final");
-  const status = validarStatusBloqueio(textoObrigatorio(formData, "status", "status"));
+  const motivoCodigo = validarMotivoBloqueio(
+    textoObrigatorio(formData, "motivoTipo", "motivo")
+  );
+  const motivoDetalhe = textoOpcional(formData, "motivoDetalhe");
 
   await carregarPropriedadeDoCalendario(supabase, escopo, propriedadeId);
   await carregarUnidadeDoCalendario(supabase, escopo, unidadeId, propriedadeId);
@@ -126,18 +136,31 @@ async function obterEntradaBloqueio(
     unidadeId,
     inicio,
     fim,
-    status,
-    motivo: textoObrigatorio(formData, "motivo", "motivo"),
+    status: motivoCodigo === "unavailable" ? "unavailable" : "blocked",
+    motivoCodigo,
+    motivo: montarMotivoBloqueio(motivoCodigo, motivoDetalhe),
     observacoes: textoOpcional(formData, "observacoes")
   };
 }
 
-function validarStatusBloqueio(valor: string): CalendarAvailabilityStatus {
-  if (STATUS_BLOQUEIO_CALENDARIO.includes(valor as CalendarAvailabilityStatus)) {
-    return valor as CalendarAvailabilityStatus;
+function validarMotivoBloqueio(valor: string): MotivoBloqueioCalendario {
+  if (MOTIVOS_BLOQUEIO_CALENDARIO.includes(valor as MotivoBloqueioCalendario)) {
+    return valor as MotivoBloqueioCalendario;
   }
 
-  throw new ErroRegraCalendario("Status de disponibilidade invalido.");
+  throw new ErroRegraCalendario("Motivo de bloqueio invalido.");
+}
+
+function montarMotivoBloqueio(
+  motivoCodigo: MotivoBloqueioCalendario,
+  detalhe: string | null
+) {
+  const label = LABEL_MOTIVO_BLOQUEIO[motivoCodigo];
+
+  // Guardamos um texto humano e um codigo em metadata para permitir filtros
+  // futuros sem quebrar os bloqueios ja criados.
+  if (!detalhe) return label;
+  return `${label}: ${detalhe}`;
 }
 
 function dataObrigatoria(formData: FormData, chave: string, label: string): string {
@@ -162,10 +185,14 @@ function textoOpcional(formData: FormData, chave: string): string | null {
 function montarRetornoCalendario(formData: FormData) {
   const params = new URLSearchParams();
   const mes = textoOpcional(formData, "mes");
+  const semana = textoOpcional(formData, "semana");
+  const visao = textoOpcional(formData, "visao");
   const propriedadeId = textoOpcional(formData, "filtroPropriedadeId");
   const unidadeId = textoOpcional(formData, "filtroUnidadeId");
 
   if (mes) params.set("mes", mes);
+  if (semana) params.set("semana", semana);
+  if (visao) params.set("visao", visao);
   if (propriedadeId) params.set("propriedadeId", propriedadeId);
   if (unidadeId) params.set("unidadeId", unidadeId);
 

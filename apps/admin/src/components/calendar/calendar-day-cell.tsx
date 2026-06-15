@@ -4,7 +4,9 @@ import { Badge, Button, cn } from "@hospedex/ui";
 
 import { liberarPeriodoCalendarioAction } from "../../lib/calendar/actions";
 import {
+  CLASSE_STATUS_RESERVA_CALENDARIO,
   LABEL_STATUS_BLOQUEIO,
+  LABEL_STATUS_RESERVA_CALENDARIO,
   statusBloqueiaDisponibilidade,
   type DiaCalendario
 } from "../../lib/calendar/types";
@@ -53,13 +55,19 @@ export function CalendarDayCell({
       <div className="space-y-1.5">
         {dia.reservas.map((reserva) => (
           <div
-            className="rounded-md border border-success/25 bg-success/10 px-2 py-1"
+            className={cn(
+              "rounded-md border px-2 py-1",
+              CLASSE_STATUS_RESERVA_CALENDARIO[reserva.status]
+            )}
             key={reserva.id}
           >
             <div className="flex items-center gap-1.5">
-              <CalendarCheck2 className="h-3.5 w-3.5 text-success" />
+              <CalendarCheck2 className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate text-xs font-semibold">{reserva.code}</span>
             </div>
+            <span className="text-[10px] font-medium uppercase tracking-normal opacity-75">
+              {LABEL_STATUS_RESERVA_CALENDARIO[reserva.status]}
+            </span>
             <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
               {reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}
             </p>

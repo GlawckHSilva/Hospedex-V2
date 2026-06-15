@@ -45,7 +45,7 @@ export async function carregarDadosModuloCalendario(
     return criarDadosVazios(filtros);
   }
 
-  const periodo = obterPeriodoCalendario(filtros.mes);
+  const periodo = obterPeriodoCalendario(filtros);
   const supabase = await criarClienteSupabaseServer();
   const [propriedadesResultado, unidadesResultado, blocosResultado, reservasResultado] =
     await Promise.all([
@@ -134,7 +134,6 @@ async function criarConsultaReservas(
     .select("*")
     .eq("tenant_id", tenantId)
     .eq("owner_id", ownerId)
-    .neq("status", "cancelled")
     .lt("check_in", periodo.fimExclusivo)
     .gt("check_out", periodo.inicio)
     .order("check_in", { ascending: true });
@@ -210,7 +209,33 @@ export function normalizarMesCalendario(valor: string | undefined) {
   return new Date().toISOString().slice(0, 7);
 }
 
-function obterPeriodoCalendario(mes: string) {
+export function normalizarVisaoCalendario(valor: string | undefined) {
+  return valor === "semanal" ? "semanal" : "mensal";
+}
+
+export function normalizarSemanaCalendario(valor: string | undefined, mes: string) {
+  if (valor && /^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+  return `${mes}-01`;
+}
+
+function obterPeriodoCalendario(filtros: FiltrosCalendario) {
+  if (filtros.visao === "semanal") {
+    const referencia = parseDate(filtros.semana);
+    const diaSemana = referencia.getUTCDay();
+    const offsetSegunda = diaSemana === 0 ? 6 : diaSemana - 1;
+    const inicioSemana = addDays(referencia, -offsetSegunda);
+    const fimSemana = addDays(inicioSemana, 7);
+
+    return {
+      mes: filtros.mes,
+      inicio: formatDate(inicioSemana),
+      fimExclusivo: formatDate(fimSemana),
+      inicioGrade: formatDate(inicioSemana),
+      fimGrade: formatDate(fimSemana)
+    };
+  }
+
+  const mes = filtros.mes;
   const inicioMes = parseDate(`${mes}-01`);
   const fimMes = new Date(Date.UTC(inicioMes.getUTCFullYear(), inicioMes.getUTCMonth() + 1, 1));
   const diaSemana = inicioMes.getUTCDay();
