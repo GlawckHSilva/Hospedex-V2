@@ -1,0 +1,31 @@
+@import "../../../../packages/ui/src/styles/globals.css";
+
+@source "../**/*.{ts,tsx}";
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
+/* Base visual premium do Admin V2: leve glassmorphism sem depender de assets externos. */
+.admin-shell-bg {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--background) 86%, var(--primary) 14%),
+      var(--background) 45%,
+      color-mix(in oklch, var(--background) 88%, var(--accent) 12%)
+    );
+}
+
+.admin-glass-panel,
+.admin-glass-card {
+  border: 1px solid color-mix(in oklch, var(--border) 72%, white 28%);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklch, var(--card) 82%, transparent);
+  box-shadow: 0 18px 45px color-mix(in oklch, var(--foreground) 10%, transparent);
+  backdrop-filter: blur(18px);
+}
+
+.dark .admin-glass-panel,
+.dark .admin-glass-card {
+  border-color: color-mix(in oklch, var(--border) 70%, white 8%);
+  background: color-mix(in oklch, var(--card) 76%, transparent);
+  box-shadow: 0 18px 45px color-mix(in oklch, black 34%, transparent);
+}

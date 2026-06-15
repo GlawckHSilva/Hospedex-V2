@@ -1,0 +1,51 @@
+[project]
+name = "hospedex-api-python"
+version = "0.1.0"
+description = "API FastAPI da V2 do Hospedex."
+requires-python = ">=3.12"
+dependencies = [
+  "asyncpg>=0.31.0",
+  "fastapi>=0.136.3",
+  "PyJWT>=2.10.1",
+  "pydantic-settings>=2.14.1",
+  "sqlalchemy[asyncio]>=2.0.45",
+  "uvicorn[standard]>=0.49.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=2.1.0",
+  "pytest>=9.0.0",
+  "ruff>=0.15.17"
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+  "api*",
+  "core*",
+  "db*",
+  "dependencies*",
+  "middlewares*",
+  "models*",
+  "schemas*",
+  "services*",
+  "utils*"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
