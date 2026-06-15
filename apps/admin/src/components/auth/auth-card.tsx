@@ -1,13 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from "@hospedex/ui";
+import { GlassCard, GradientBackground } from "@hospedex/ui";
 
 export type AuthCardProps = {
   title: string;
@@ -29,18 +23,19 @@ export function AuthCard({
   footerText
 }: AuthCardProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-10">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
+    <GradientBackground className="premium-grid-bg flex min-h-screen items-center justify-center px-4 py-10">
+      <GlassCard className="w-full max-w-md p-6">
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase text-primary">Hospedex Admin</p>
+          <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
+          <p className="text-sm text-muted-foreground">{description}</p>
           {message ? (
             <p className="rounded-md border bg-secondary px-3 py-2 text-sm text-muted-foreground">
               {message}
             </p>
           ) : null}
-        </CardHeader>
-        <CardContent className="space-y-5">
+        </div>
+        <div className="mt-5 space-y-5">
           {children}
           <p className="text-center text-sm text-muted-foreground">
             {footerText}{" "}
@@ -48,8 +43,8 @@ export function AuthCard({
               {footerLabel}
             </Link>
           </p>
-        </CardContent>
-      </Card>
-    </main>
+        </div>
+      </GlassCard>
+    </GradientBackground>
   );
 }

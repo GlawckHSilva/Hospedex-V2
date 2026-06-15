@@ -1,4 +1,11 @@
-import { Badge, Card, CardContent, FadeIn, Skeleton } from "@hospedex/ui";
+import {
+  FadeIn,
+  GlassCard,
+  GlassPanel,
+  GlassTable,
+  PremiumSkeleton,
+  StatusBadge
+} from "@hospedex/ui";
 
 import type { ItemMenuAdminResolvido } from "../../config/navigation";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
@@ -17,12 +24,12 @@ export type AdminPlaceholderPageProps = {
 export function AdminPlaceholderPage({ contexto, item }: AdminPlaceholderPageProps) {
   return (
     <FadeIn className="space-y-5">
-      <section className="admin-glass-panel p-5">
+      <GlassPanel className="p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <Badge variant={item.bloqueadoPorFeatureFlag ? "warning" : "info"}>
+            <StatusBadge tone={item.bloqueadoPorFeatureFlag ? "warning" : "info"}>
               {item.bloqueadoPorFeatureFlag ? "Feature flag desligada" : "Estrutura pronta"}
-            </Badge>
+            </StatusBadge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">{item.titulo}</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{item.descricao}</p>
           </div>
@@ -30,11 +37,12 @@ export function AdminPlaceholderPage({ contexto, item }: AdminPlaceholderPagePro
             {contexto.tenant?.name ?? "Plataforma"}
           </div>
         </div>
-      </section>
+      </GlassPanel>
+
+      {contexto.role === "super_admin" ? <ResumoSuperAdmin /> : null}
 
       <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card className="admin-glass-card">
-          <CardContent className="space-y-4 p-5">
+        <GlassCard className="space-y-4 p-5">
             <div>
               <p className="font-semibold">Área em preparação</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -42,16 +50,14 @@ export function AdminPlaceholderPage({ contexto, item }: AdminPlaceholderPagePro
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
-              <Skeleton className="h-24" />
+              <PremiumSkeleton className="h-24" />
+              <PremiumSkeleton className="h-24" />
+              <PremiumSkeleton className="h-24" />
+              <PremiumSkeleton className="h-24" />
             </div>
-          </CardContent>
-        </Card>
+        </GlassCard>
 
-        <Card className="admin-glass-card">
-          <CardContent className="space-y-3 p-5">
+        <GlassCard className="space-y-3 p-5">
             <p className="font-semibold">Contexto aplicado</p>
             <LinhaContexto label="Role" valor={contexto.role} />
             <LinhaContexto label="Permissões" valor={String(contexto.permissions.length)} />
@@ -63,10 +69,54 @@ export function AdminPlaceholderPage({ contexto, item }: AdminPlaceholderPagePro
               label="Status"
               valor={item.bloqueadoPorFeatureFlag ? "bloqueado por flag" : "visível"}
             />
-          </CardContent>
-        </Card>
+        </GlassCard>
       </section>
     </FadeIn>
+  );
+}
+
+function ResumoSuperAdmin() {
+  const metricas = [
+    { label: "Tenants", valor: "global" },
+    { label: "Licencas", valor: "monitorado" },
+    { label: "Auditoria", valor: "ativo" }
+  ];
+
+  return (
+    <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        {metricas.map((metrica) => (
+          <GlassCard className="p-4" key={metrica.label}>
+            <p className="text-xs uppercase text-muted-foreground">{metrica.label}</p>
+            <p className="mt-2 text-2xl font-semibold">{metrica.valor}</p>
+            <div className="mt-4 h-1.5 rounded-full bg-secondary">
+              <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-cyan-500 to-violet-400" />
+            </div>
+          </GlassCard>
+        ))}
+      </div>
+
+      <GlassTable className="overflow-hidden p-4">
+        <div className="flex items-center justify-between gap-3 border-b pb-3">
+          <div>
+            <p className="font-semibold">Visao analitica</p>
+            <p className="text-sm text-muted-foreground">
+              Estrutura visual preparada para dados globais.
+            </p>
+          </div>
+          <StatusBadge tone="neutral">Preview</StatusBadge>
+        </div>
+        <div className="divide-y">
+          {["Cliente", "Modulo", "Status"].map((linha) => (
+            <div className="grid grid-cols-[1fr_1fr_120px] gap-3 py-3 text-sm" key={linha}>
+              <span className="font-medium">{linha}</span>
+              <PremiumSkeleton className="h-5" />
+              <PremiumSkeleton className="h-5" />
+            </div>
+          ))}
+        </div>
+      </GlassTable>
+    </section>
   );
 }
 

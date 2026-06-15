@@ -14,6 +14,9 @@ export type {
 export type {
   AuditLogRow,
   AmenityRow,
+  CalendarAvailabilityBlockRow,
+  CalendarAvailabilitySource,
+  CalendarAvailabilityStatus,
   FeatureFlagRow,
   FinancialAccountRow,
   JsonValue,

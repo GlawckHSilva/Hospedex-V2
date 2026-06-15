@@ -12,6 +12,27 @@ export { Input } from "./components/ui/input";
 export { Label } from "./components/ui/label";
 export { Skeleton } from "./components/ui/skeleton";
 
+export {
+  GlassCard,
+  GlassNavbar,
+  GlassPanel,
+  GlassSidebar,
+  GlassTable,
+  GradientBackground
+} from "./components/premium/glass-surfaces";
+export {
+  GlassButton,
+  GlassInput,
+  GlassModal
+} from "./components/premium/glass-controls";
+export {
+  PremiumEmptyState,
+  PremiumSkeleton,
+  StatusBadge,
+  type StatusBadgeProps,
+  type StatusTone
+} from "./components/premium/feedback";
+
 export { AppProviders, type AppProvidersProps } from "./components/providers/app-providers";
 export { ThemeProvider, type ThemeProviderProps } from "./components/providers/theme-provider";
 export { ThemeToggle } from "./components/theme-toggle";

@@ -80,7 +80,7 @@ export function AdminShell({ acaoSair, children, contexto }: AdminShellProps) {
   const nomeTenant = perfil === "super_admin" ? "Plataforma" : contexto.tenant?.name ?? "Sem tenant";
 
   return (
-    <div className="admin-shell-bg min-h-screen text-foreground">
+    <div className="admin-shell-bg premium-grid-bg min-h-screen text-foreground">
       <TopbarAdmin
         acaoSair={acaoSair}
         nomeTenant={nomeTenant}
@@ -132,7 +132,7 @@ function TopbarAdmin({
   tituloPerfil
 }: TopbarAdminProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/35 bg-background/78 backdrop-blur-xl dark:border-white/10">
+    <header className="glass-navbar sticky top-0 z-40 bg-background/72">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
@@ -147,7 +147,7 @@ function TopbarAdmin({
           </Button>
 
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 dark:text-cyan-200">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 shadow-sm shadow-cyan-500/10 dark:text-cyan-200">
               <ShieldCheck className="h-4 w-4" />
             </div>
             <div className="min-w-0">
@@ -182,7 +182,7 @@ type SidebarAdminProps = {
 function SidebarAdmin({ itens, pathname, tituloPerfil }: SidebarAdminProps) {
   return (
     <aside className="hidden lg:block">
-      <div className="admin-glass-panel sticky top-21 h-[calc(100vh-6.5rem)] overflow-hidden p-3">
+      <div className="glass-sidebar sticky top-21 h-[calc(100vh-6.5rem)] overflow-hidden p-3">
         <div className="mb-4 px-2">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
             {tituloPerfil}
@@ -213,7 +213,7 @@ function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobile
     >
       <motion.aside
         animate={{ x: 0 }}
-        className="h-full w-[min(22rem,88vw)] border-r bg-background p-4 shadow-xl"
+        className="glass-sidebar h-full w-[min(22rem,88vw)] rounded-none border-y-0 border-l-0 p-4 shadow-xl"
         exit={{ x: "-100%" }}
         initial={{ x: "-100%" }}
         transition={{ duration: 0.25, ease: "easeOut" }}
@@ -259,7 +259,7 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
     </>
   );
   const classes = cn(
-    "flex h-10 items-center gap-2 rounded-lg px-3 text-sm transition-colors",
+    "flex h-10 items-center gap-2 rounded-lg px-3 text-sm transition duration-200 hover:translate-x-0.5",
     ativo
       ? "bg-cyan-500/14 text-cyan-800 ring-1 ring-cyan-400/30 dark:text-cyan-100"
       : "text-muted-foreground hover:bg-cyan-500/10 hover:text-foreground",

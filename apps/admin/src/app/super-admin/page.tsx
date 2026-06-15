@@ -1,28 +1,17 @@
 import { AdminLayoutBase } from "../../components/admin/admin-layout-base";
-import { AdminPlaceholderPage } from "../../components/admin/admin-placeholder-page";
-import { obterItemMenuPorHref } from "../../config/navigation";
+import { SuperAdminDashboard } from "../../components/super-admin/super-admin-dashboard";
 import { exigirSuperAdmin } from "../../lib/auth/context";
+import { carregarDashboardSuperAdmin } from "../../lib/super-admin/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function SuperAdminPage() {
   const contexto = await exigirSuperAdmin();
-  const item = obterItemMenuPorHref(contexto, "/super-admin");
+  const dados = await carregarDashboardSuperAdmin(contexto);
 
   return (
     <AdminLayoutBase contexto={contexto}>
-      <AdminPlaceholderPage
-        contexto={contexto}
-        item={
-          item ?? {
-            bloqueadoPorFeatureFlag: false,
-            descricao: "Visão estrutural da plataforma.",
-            href: "/super-admin",
-            icone: "dashboard",
-            titulo: "Dashboard global"
-          }
-        }
-      />
+      <SuperAdminDashboard {...dados} />
     </AdminLayoutBase>
   );
 }

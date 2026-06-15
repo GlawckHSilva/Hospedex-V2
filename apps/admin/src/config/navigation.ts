@@ -45,7 +45,7 @@ const MENU_PROPRIETARIO = [
   {
     titulo: "Propriedades",
     href: "/propriedades",
-    descricao: "Estrutura para imóveis e publicação.",
+    descricao: "Estrutura para imoveis e publicacao.",
     icone: "propriedades",
     permissoes: ["properties.read"]
   },
@@ -60,17 +60,16 @@ const MENU_PROPRIETARIO = [
   {
     titulo: "Reservas",
     href: "/reservas",
-    descricao: "Gestão manual de reservas e status.",
+    descricao: "Gestao manual de reservas e status.",
     icone: "reservas",
     featureFlag: "manual_approval",
     permissoes: ["reservations.read"]
   },
   {
-    titulo: "Calendário",
+    titulo: "Calendario",
     href: "/calendario",
-    descricao: "Visão futura de disponibilidade.",
+    descricao: "Disponibilidade, bloqueios e reservas.",
     icone: "calendario",
-    featureFlag: "ics_sync",
     permissoes: ["reservations.read"]
   },
   {
@@ -82,9 +81,9 @@ const MENU_PROPRIETARIO = [
     permissoes: ["finance.read"]
   },
   {
-    titulo: "Hóspedes",
+    titulo: "Hospedes",
     href: "/hospedes",
-    descricao: "Estrutura para contatos e histórico.",
+    descricao: "Estrutura para contatos e historico.",
     icone: "hospedes",
     featureFlag: "crm",
     permissoes: ["reservations.read"]
@@ -98,15 +97,15 @@ const MENU_PROPRIETARIO = [
     permissoes: ["properties.manage"]
   },
   {
-    titulo: "Inventário",
+    titulo: "Inventario",
     href: "/inventario",
-    descricao: "Base para itens e manutenção.",
+    descricao: "Base para itens e manutencao.",
     icone: "inventario",
     featureFlag: "inventory",
     permissoes: ["properties.manage"]
   },
   {
-    titulo: "Relatórios",
+    titulo: "Relatorios",
     href: "/relatorios",
     descricao: "Estrutura visual para indicadores.",
     icone: "relatorios",
@@ -114,9 +113,9 @@ const MENU_PROPRIETARIO = [
     permissoes: ["finance.read", "reservations.read"]
   },
   {
-    titulo: "Configurações",
+    titulo: "Configuracoes",
     href: "/configuracoes",
-    descricao: "Tenant, membros, permissões e preferências.",
+    descricao: "Tenant, membros, permissoes e preferencias.",
     icone: "configuracoes",
     permissoes: ["tenants.manage", "members.manage", "roles.manage"]
   }
@@ -126,29 +125,29 @@ const MENU_SUPER_ADMIN = [
   {
     titulo: "Dashboard global",
     href: "/super-admin",
-    descricao: "Visão estrutural da plataforma.",
+    descricao: "Visao estrutural da plataforma.",
     icone: "dashboard"
   },
   {
-    titulo: "Proprietários",
+    titulo: "Proprietarios",
     href: "/super-admin/proprietarios",
-    descricao: "Base para gestão dos clientes.",
+    descricao: "Base para gestao dos clientes.",
     icone: "proprietarios"
   },
   {
-    titulo: "Hóspedes",
+    titulo: "Hospedes",
     href: "/super-admin/hospedes",
-    descricao: "Visão global futura de hóspedes.",
+    descricao: "Visao global futura de hospedes.",
     icone: "hospedes"
   },
   {
     titulo: "Planos",
     href: "/super-admin/planos",
-    descricao: "Estrutura para catálogo comercial.",
+    descricao: "Estrutura para catalogo comercial.",
     icone: "planos"
   },
   {
-    titulo: "Licenças",
+    titulo: "Licencas",
     href: "/super-admin/licencas",
     descricao: "Base para validade e limites.",
     icone: "licencas"
@@ -160,21 +159,15 @@ const MENU_SUPER_ADMIN = [
     icone: "featureFlags"
   },
   {
-    titulo: "Financeiro global",
-    href: "/super-admin/financeiro-global",
-    descricao: "Placeholder para visão financeira da plataforma.",
-    icone: "financeiro"
-  },
-  {
     titulo: "Auditoria",
     href: "/super-admin/auditoria",
     descricao: "Base para rastreabilidade administrativa.",
     icone: "auditoria"
   },
   {
-    titulo: "Configurações",
+    titulo: "Configuracoes",
     href: "/super-admin/configuracoes",
-    descricao: "Preferências globais da plataforma.",
+    descricao: "Preferencias globais da plataforma.",
     icone: "configuracoes"
   }
 ] as const satisfies readonly ItemMenuAdmin[];
@@ -182,8 +175,8 @@ const MENU_SUPER_ADMIN = [
 /**
  * Define o perfil visual a partir do contexto autenticado.
  *
- * A separação é proposital: o banco usa roles de autorização, enquanto o menu
- * precisa expressar a experiência do Admin para proprietário, equipe e plataforma.
+ * A separacao e proposital: o banco usa roles de autorizacao, enquanto o menu
+ * precisa expressar a experiencia do Admin para proprietario, equipe e plataforma.
  */
 export function obterPerfilMenuAdmin(role: UserRole): PerfilMenuAdmin {
   if (role === "super_admin") return "super_admin";
@@ -193,8 +186,8 @@ export function obterPerfilMenuAdmin(role: UserRole): PerfilMenuAdmin {
 
 export function obterTituloPerfilAdmin(perfil: PerfilMenuAdmin): string {
   if (perfil === "super_admin") return "Super Admin";
-  if (perfil === "funcionario") return "Funcionário";
-  return "Proprietário";
+  if (perfil === "funcionario") return "Funcionario";
+  return "Proprietario";
 }
 
 export function obterMenuAdmin(
@@ -228,6 +221,6 @@ function funcionarioPodeVerItem(
   if (item.href === "/") return true;
   if (!item.permissoes?.length) return false;
 
-  // Funcionários só enxergam módulos ligados às permissões carregadas do tenant.
+  // Funcionarios so enxergam modulos ligados as permissoes carregadas do tenant.
   return item.permissoes.some((permissao) => contexto.permissions.includes(permissao));
 }

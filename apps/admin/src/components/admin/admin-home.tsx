@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge, Card, CardContent, FadeIn } from "@hospedex/ui";
+import { FadeIn, GlassCard, GlassPanel, StatusBadge } from "@hospedex/ui";
 
 import {
   obterPerfilMenuAdmin,
@@ -42,10 +42,10 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
 
   return (
     <FadeIn className="space-y-5">
-      <section className="admin-glass-panel overflow-hidden p-5">
+      <GlassPanel className="overflow-hidden p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <Badge variant="info">{tituloPerfil}</Badge>
+            <StatusBadge tone="info">{tituloPerfil}</StatusBadge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal sm:text-3xl">
               Dashboard do proprietário
             </h1>
@@ -57,14 +57,13 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
             Operação em tempo real do tenant autenticado.
           </div>
         </div>
-      </section>
+      </GlassPanel>
 
       {dashboard.estadoVazio ? <EstadoVazio /> : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {dashboard.cards.map((card, index) => (
-          <Card className="admin-glass-card overflow-hidden" key={card.titulo}>
-            <CardContent className="p-5">
+          <GlassCard className="overflow-hidden p-5" key={card.titulo}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm text-muted-foreground">{card.titulo}</p>
@@ -75,8 +74,8 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
                 </div>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">{card.descricao}</p>
-            </CardContent>
-          </Card>
+              <MiniGrafico indice={index} />
+          </GlassCard>
         ))}
       </section>
 
@@ -92,30 +91,26 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
 function EstadoErro({ mensagem }: { mensagem: string }) {
   return (
     <FadeIn>
-      <Card className="admin-glass-card">
-        <CardContent className="flex items-start gap-3 p-5">
+      <GlassCard className="flex items-start gap-3 p-5">
           <ShieldAlert className="mt-1 h-5 w-5 text-destructive" />
           <div>
             <h1 className="text-lg font-semibold">Dashboard indisponível</h1>
             <p className="mt-1 text-sm text-muted-foreground">{mensagem}</p>
           </div>
-        </CardContent>
-      </Card>
+      </GlassCard>
     </FadeIn>
   );
 }
 
 function EstadoVazio() {
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="p-5">
-        <Badge variant="warning">Sem dados operacionais</Badge>
+    <GlassCard className="p-5">
+        <StatusBadge tone="warning">Sem dados operacionais</StatusBadge>
         <h2 className="mt-3 text-lg font-semibold">Cadastre propriedades para ativar o dashboard</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           As métricas passam a ganhar valor quando existirem propriedades, unidades e reservas no tenant.
         </p>
-      </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -123,18 +118,41 @@ function AlertaOperacional({ alerta }: { alerta: AlertaDashboard }) {
   const Icone = alerta.tipo === "warning" ? AlertTriangle : CheckCircle2;
 
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="p-5">
+    <GlassCard className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <Badge variant={alerta.tipo}>{alerta.valor}</Badge>
+            <StatusBadge tone={alerta.tipo === "warning" ? "warning" : "success"}>
+              {alerta.valor}
+            </StatusBadge>
             <h2 className="mt-3 font-semibold">{alerta.titulo}</h2>
           </div>
           <Icone className="h-5 w-5 text-primary" />
         </div>
         <p className="mt-3 text-sm text-muted-foreground">{alerta.descricao}</p>
-      </CardContent>
-    </Card>
+    </GlassCard>
+  );
+}
+
+function MiniGrafico({ indice }: { indice: number }) {
+  const alturas = [
+    [42, 62, 48, 72, 58, 84],
+    [34, 46, 72, 64, 78, 88],
+    [58, 44, 66, 52, 74, 68],
+    [38, 52, 48, 70, 76, 64],
+    [46, 64, 82, 74, 88, 92],
+    [52, 68, 58, 76, 72, 86]
+  ][indice % 6] ?? [44, 62, 54, 70, 66, 82];
+
+  return (
+    <div className="mt-5 flex h-16 items-end gap-1.5 rounded-lg border bg-background/45 px-3 py-2">
+      {alturas.map((altura, index) => (
+        <span
+          className="flex-1 rounded-t-sm bg-gradient-to-t from-cyan-500/35 to-cyan-300/80"
+          key={`${altura}-${index}`}
+          style={{ height: `${altura}%` }}
+        />
+      ))}
+    </div>
   );
 }
 

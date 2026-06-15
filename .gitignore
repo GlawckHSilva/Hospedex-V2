@@ -16,3 +16,5 @@ database/supabase/.temp
 *.pyo
 *.log
 *.tsbuildinfo
+
+.vercel

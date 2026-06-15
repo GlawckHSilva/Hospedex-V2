@@ -17,8 +17,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hospedex",
-  description: "Marketplace de hospedagens independentes."
+  title: {
+    default: "Hospedex | Marketplace de hospedagens",
+    template: "%s | Hospedex"
+  },
+  description:
+    "Marketplace público da V2 para casas, pousadas e pequenos hotéis independentes."
 };
 
 export const viewport: Viewport = {

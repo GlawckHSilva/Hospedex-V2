@@ -59,6 +59,9 @@
   --success: oklch(0.62 0.15 152);
   --warning: oklch(0.72 0.15 78);
   --info: oklch(0.62 0.14 224);
+  --premium-violet: oklch(0.62 0.16 292);
+  --premium-cyan: oklch(0.75 0.14 204);
+  --premium-deep: oklch(0.2 0.05 246);
 }
 
 .dark {
@@ -84,6 +87,9 @@
   --success: oklch(0.7 0.14 152);
   --warning: oklch(0.78 0.14 78);
   --info: oklch(0.7 0.13 224);
+  --premium-violet: oklch(0.72 0.15 292);
+  --premium-cyan: oklch(0.78 0.14 204);
+  --premium-deep: oklch(0.16 0.045 246);
 }
 
 * {
@@ -103,4 +109,149 @@ body {
 
 ::selection {
   background: color-mix(in oklch, var(--primary) 24%, transparent);
+}
+
+.gradient-background {
+  min-height: 100%;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--background) 88%, var(--premium-deep) 12%),
+      var(--background) 42%,
+      color-mix(in oklch, var(--background) 88%, var(--premium-cyan) 12%) 68%,
+      color-mix(in oklch, var(--background) 90%, var(--premium-violet) 10%)
+    );
+}
+
+.premium-grid-bg {
+  background-image:
+    linear-gradient(color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.glass-card,
+.glass-panel,
+.glass-sidebar,
+.glass-navbar,
+.glass-modal,
+.glass-table {
+  border: 1px solid color-mix(in oklch, var(--border) 72%, white 28%);
+  background: color-mix(in oklch, var(--card) 78%, transparent);
+  box-shadow:
+    0 18px 55px color-mix(in oklch, var(--foreground) 10%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 34%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.glass-card,
+.glass-panel,
+.glass-modal,
+.glass-table {
+  border-radius: var(--radius-lg);
+}
+
+.glass-card {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.glass-card:hover {
+  border-color: color-mix(in oklch, var(--primary) 42%, var(--border));
+  box-shadow:
+    0 24px 70px color-mix(in oklch, var(--primary) 14%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 36%, transparent);
+}
+
+.glass-navbar {
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+}
+
+.glass-sidebar {
+  border-radius: var(--radius-lg);
+}
+
+.glass-button,
+.glass-input {
+  border-color: color-mix(in oklch, var(--border) 70%, white 20%);
+  background: color-mix(in oklch, var(--background) 76%, transparent);
+  box-shadow:
+    0 12px 30px color-mix(in oklch, var(--foreground) 8%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 26%, transparent);
+  backdrop-filter: blur(16px);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.glass-input:focus-visible {
+  border-color: color-mix(in oklch, var(--primary) 54%, var(--border));
+}
+
+.status-badge {
+  box-shadow: inset 0 1px 0 color-mix(in oklch, white 22%, transparent);
+}
+
+.premium-skeleton {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--muted) 78%, transparent),
+      color-mix(in oklch, var(--primary) 14%, var(--muted)),
+      color-mix(in oklch, var(--muted) 78%, transparent)
+    );
+  background-size: 220% 100%;
+  animation: premium-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.premium-empty-state {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  gap: 0.75rem;
+  border: 1px dashed color-mix(in oklch, var(--border) 74%, var(--primary) 26%);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+  padding: 2rem;
+  text-align: center;
+  backdrop-filter: blur(18px);
+}
+
+.premium-empty-state__icon {
+  display: grid;
+  height: 3rem;
+  width: 3rem;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--primary) 14%, transparent);
+  color: var(--primary);
+}
+
+.dark .glass-card,
+.dark .glass-panel,
+.dark .glass-sidebar,
+.dark .glass-navbar,
+.dark .glass-modal,
+.dark .glass-table {
+  border-color: color-mix(in oklch, var(--border) 72%, white 8%);
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+  box-shadow:
+    0 22px 70px color-mix(in oklch, black 32%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 8%, transparent);
+}
+
+@keyframes premium-skeleton-shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
 }

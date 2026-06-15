@@ -176,6 +176,7 @@ export type UnitRow = {
   beds: number;
   bathrooms: number;
   base_price: number;
+  allow_overbooking: boolean;
   created_at: Timestamp;
   updated_at: Timestamp;
 };
@@ -302,6 +303,39 @@ export type ReservationNoteRow = {
   content: string;
   created_by: UUID | null;
   created_at: Timestamp;
+};
+
+export type CalendarAvailabilitySource =
+  | "manual"
+  | "reservation"
+  | "period"
+  | "ics_import";
+
+export type CalendarAvailabilityStatus =
+  | "available"
+  | "blocked"
+  | "unavailable"
+  | "reserved"
+  | "released";
+
+export type CalendarAvailabilityBlockRow = {
+  id: UUID;
+  tenant_id: UUID;
+  property_id: UUID;
+  unit_id: UUID;
+  owner_id: UUID;
+  reservation_id: UUID | null;
+  source: CalendarAvailabilitySource;
+  status: CalendarAvailabilityStatus;
+  starts_on: string;
+  ends_on: string;
+  reason: string | null;
+  notes: string | null;
+  external_uid: string | null;
+  metadata: JsonValue;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 };
 
 export type FinancialAccountRow = {
