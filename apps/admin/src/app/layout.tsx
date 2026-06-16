@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { AppProviders } from "@hospedex/ui";
 
 import { ProvedorAutenticacao } from "../components/auth/auth-provider";
-import { carregarContextoAutenticacao } from "../lib/auth/context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,8 +30,6 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
-  const contextoInicial = await carregarContextoAutenticacao();
-
   return (
     <html
       className={`${geistSans.variable} ${geistMono.variable}`}
@@ -41,7 +38,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     >
       <body className="min-h-screen antialiased">
         <AppProviders>
-          <ProvedorAutenticacao contextoInicial={contextoInicial}>
+          <ProvedorAutenticacao contextoInicial={null}>
             {children}
           </ProvedorAutenticacao>
         </AppProviders>

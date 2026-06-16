@@ -395,13 +395,16 @@ async function carregarConfiguracoes(): Promise<SuperAdminModuloDados> {
 
 async function carregarAuditoriaRecente(): Promise<SuperAdminRegistro[]> {
   const supabase = await criarClienteSupabaseServer();
-  const { data } = await supabase
-    .from("audit_logs")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(LIMITE_REGISTROS)
-    .returns<AuditLogRow[]>();
-  const logs = data ?? [];
+  const logs = await lerDadosSuperAdmin<AuditLogRow[]>(
+    supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(LIMITE_REGISTROS)
+      .returns<AuditLogRow[]>(),
+    "auditoria recente do Super Admin",
+    []
+  );
   const tenants = await carregarTenantsPorId(logs.flatMap((log) => (log.tenant_id ? [log.tenant_id] : [])));
   const atores = await carregarProfilesPorId(logs.flatMap((log) => (log.actor_id ? [log.actor_id] : [])));
 
@@ -484,8 +487,12 @@ async function carregarProfilesPorId(ids: string[]) {
   if (!unicos.length) return new Map<string, ProfileRow>();
 
   const supabase = await criarClienteSupabaseServer();
-  const { data } = await supabase.from("profiles").select("*").in("id", unicos).returns<ProfileRow[]>();
-  return new Map((data ?? []).map((profile) => [profile.id, profile]));
+  const data = await lerDadosSuperAdmin<ProfileRow[]>(
+    supabase.from("profiles").select("*").in("id", unicos).returns<ProfileRow[]>(),
+    "profiles relacionados ao Super Admin",
+    []
+  );
+  return new Map(data.map((profile) => [profile.id, profile]));
 }
 
 async function carregarTenantsPorId(ids: string[]) {
@@ -493,8 +500,12 @@ async function carregarTenantsPorId(ids: string[]) {
   if (!unicos.length) return new Map<string, TenantRow>();
 
   const supabase = await criarClienteSupabaseServer();
-  const { data } = await supabase.from("tenants").select("*").in("id", unicos).returns<TenantRow[]>();
-  return new Map((data ?? []).map((tenant) => [tenant.id, tenant]));
+  const data = await lerDadosSuperAdmin<TenantRow[]>(
+    supabase.from("tenants").select("*").in("id", unicos).returns<TenantRow[]>(),
+    "tenants relacionados ao Super Admin",
+    []
+  );
+  return new Map(data.map((tenant) => [tenant.id, tenant]));
 }
 
 async function carregarLicencasPorTenant(ids: string[]) {
@@ -502,8 +513,12 @@ async function carregarLicencasPorTenant(ids: string[]) {
   if (!unicos.length) return new Map<string, LicenseRow>();
 
   const supabase = await criarClienteSupabaseServer();
-  const { data } = await supabase.from("licenses").select("*").in("tenant_id", unicos).returns<LicenseRow[]>();
-  return new Map((data ?? []).map((licenca) => [licenca.tenant_id, licenca]));
+  const data = await lerDadosSuperAdmin<LicenseRow[]>(
+    supabase.from("licenses").select("*").in("tenant_id", unicos).returns<LicenseRow[]>(),
+    "licencas relacionadas ao Super Admin",
+    []
+  );
+  return new Map(data.map((licenca) => [licenca.tenant_id, licenca]));
 }
 
 function toneTenant(status: TenantRow["status"]): SuperAdminTone {

@@ -2,18 +2,16 @@
 
 import { createHash, randomBytes } from "node:crypto";
 
-import type { PermissionCode, ProfileRow, RoleRow, StaffInviteRow, TenantMemberRow } from "@hospedex/types";
+import type { PermissionCode, RoleRow, StaffInviteRow, TenantMemberRow } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { criarClienteSupabaseAdmin } from "../supabase/admin";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { exigirGestaoFuncionarios } from "./access";
 import { PERMISSOES_MODULO } from "./catalog";
 
 const CAMINHO_FUNCIONARIOS = "/funcionarios";
 
-type SupabaseAdmin = ReturnType<typeof criarClienteSupabaseAdmin>;
 type SupabaseServer = Awaited<ReturnType<typeof criarClienteSupabaseServer>>;
 
 export async function criarFuncionarioAction(formData: FormData) {
@@ -21,15 +19,13 @@ export async function criarFuncionarioAction(formData: FormData) {
   const tenantId = contexto.tenant?.id;
   if (!tenantId) redirect("/sem-acesso?motivo=tenant-ausente");
 
-  const admin = criarClienteSupabaseAdmin();
+  const supabase = await criarClienteSupabaseServer();
   const entrada = obterEntradaFuncionario(formData);
 
   try {
-    const role = await carregarCargo(admin, tenantId, entrada.roleId);
-    const profile = await criarOuObterProfileFuncionario(admin, entrada);
-    await vincularFuncionario(admin, tenantId, profile.id, role.id, contexto.userId, "invited");
-    await salvarConvite(admin, tenantId, profile.id, role.id, contexto.userId, entrada);
-    await registrarAuditoria(admin, contexto.userId, tenantId, profile.id, "staff.invited");
+    const role = await carregarCargo(supabase, tenantId, entrada.roleId);
+    await salvarConvite(supabase, tenantId, null, role.id, contexto.userId, entrada);
+    await registrarAuditoria(supabase, contexto.userId, tenantId, null, "staff.invited");
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao criar funcionario.");
@@ -43,26 +39,26 @@ export async function atualizarFuncionarioAction(formData: FormData) {
   const tenantId = contexto.tenant?.id;
   if (!tenantId) redirect("/sem-acesso?motivo=tenant-ausente");
 
-  const admin = criarClienteSupabaseAdmin();
+  const supabase = await criarClienteSupabaseServer();
   const memberId = textoOpcional(formData, "memberId");
   const conviteId = textoOpcional(formData, "conviteId");
   const entrada = obterEntradaFuncionario(formData);
 
   try {
-    const role = await carregarCargo(admin, tenantId, entrada.roleId);
+    const role = await carregarCargo(supabase, tenantId, entrada.roleId);
 
     if (memberId) {
-      const member = await carregarMember(admin, tenantId, memberId);
-      await admin
+      const member = await carregarMember(supabase, tenantId, memberId);
+      await supabase
         .from("profiles")
         .update({ full_name: entrada.nome, phone: entrada.telefone })
         .eq("id", member.user_id);
-      await admin.from("tenant_members").update({ role_id: role.id }).eq("id", member.id);
-      await registrarAuditoria(admin, contexto.userId, tenantId, member.user_id, "staff.updated");
+      await supabase.from("tenant_members").update({ role_id: role.id }).eq("id", member.id);
+      await registrarAuditoria(supabase, contexto.userId, tenantId, member.user_id, "staff.updated");
     }
 
     if (conviteId) {
-      await atualizarConvite(admin, tenantId, conviteId, entrada, role.id);
+      await atualizarConvite(supabase, tenantId, conviteId, entrada, role.id);
     }
 
     revalidarModulo();
@@ -78,15 +74,15 @@ export async function alterarStatusFuncionarioAction(formData: FormData) {
   const tenantId = contexto.tenant?.id;
   if (!tenantId) redirect("/sem-acesso?motivo=tenant-ausente");
 
-  const admin = criarClienteSupabaseAdmin();
+  const supabase = await criarClienteSupabaseServer();
   const memberId = textoObrigatorio(formData, "memberId", "funcionario");
   const acao = textoObrigatorio(formData, "acao", "acao");
   const status = acao === "ativar" ? "active" : "disabled";
 
   try {
-    const member = await carregarMember(admin, tenantId, memberId);
-    await admin.from("tenant_members").update({ status }).eq("id", member.id);
-    await registrarAuditoria(admin, contexto.userId, tenantId, member.user_id, `staff.${acao}`);
+    const member = await carregarMember(supabase, tenantId, memberId);
+    await supabase.from("tenant_members").update({ status }).eq("id", member.id);
+    await registrarAuditoria(supabase, contexto.userId, tenantId, member.user_id, `staff.${acao}`);
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao alterar status do funcionario.");
@@ -100,7 +96,7 @@ export async function excluirFuncionarioAction(formData: FormData) {
   const tenantId = contexto.tenant?.id;
   if (!tenantId) redirect("/sem-acesso?motivo=tenant-ausente");
 
-  const admin = criarClienteSupabaseAdmin();
+  const supabase = await criarClienteSupabaseServer();
   const memberId = textoOpcional(formData, "memberId");
   const conviteId = textoOpcional(formData, "conviteId");
   const confirmado = formData.get("confirmar") === "on";
@@ -110,13 +106,13 @@ export async function excluirFuncionarioAction(formData: FormData) {
 
   try {
     if (memberId) {
-      const member = await carregarMember(admin, tenantId, memberId);
-      await admin.from("tenant_members").delete().eq("id", member.id);
-      await registrarAuditoria(admin, contexto.userId, tenantId, member.user_id, "staff.deleted");
+      const member = await carregarMember(supabase, tenantId, memberId);
+      await supabase.from("tenant_members").delete().eq("id", member.id);
+      await registrarAuditoria(supabase, contexto.userId, tenantId, member.user_id, "staff.deleted");
     }
 
     if (conviteId) {
-      await cancelarConvite(admin, tenantId, conviteId);
+      await cancelarConvite(supabase, tenantId, conviteId);
     }
 
     revalidarModulo();
@@ -132,12 +128,12 @@ export async function reenviarConviteAction(formData: FormData) {
   const tenantId = contexto.tenant?.id;
   if (!tenantId) redirect("/sem-acesso?motivo=tenant-ausente");
 
-  const admin = criarClienteSupabaseAdmin();
+  const supabase = await criarClienteSupabaseServer();
   const conviteId = textoObrigatorio(formData, "conviteId", "convite");
 
   try {
-    const convite = await carregarConvite(admin, tenantId, conviteId);
-    await admin
+    const convite = await carregarConvite(supabase, tenantId, conviteId);
+    await supabase
       .from("staff_invites")
       .update({
         expires_at: expirarEmSeteDias(),
@@ -147,7 +143,7 @@ export async function reenviarConviteAction(formData: FormData) {
         token_hash: gerarTokenHash()
       })
       .eq("id", convite.id);
-    await registrarAuditoria(admin, contexto.userId, tenantId, convite.invited_user_id, "staff.invite.resent");
+    await registrarAuditoria(supabase, contexto.userId, tenantId, convite.invited_user_id, "staff.invite.resent");
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao reenviar convite.");
@@ -205,51 +201,8 @@ export async function atualizarCargoPermissoesAction(formData: FormData) {
   redirect(`${CAMINHO_FUNCIONARIOS}?sucesso=permissoes-atualizadas`);
 }
 
-async function criarOuObterProfileFuncionario(
-  admin: SupabaseAdmin,
-  entrada: EntradaFuncionario
-): Promise<ProfileRow> {
-  const { data: existente, error: erroBusca } = await admin
-    .from("profiles")
-    .select("*")
-    .eq("email", entrada.email)
-    .maybeSingle<ProfileRow>();
-
-  if (erroBusca) throw new Error(erroBusca.message);
-  if (existente) return existente;
-
-  const { data: authData, error: erroAuth } = await admin.auth.admin.createUser({
-    email: entrada.email,
-    email_confirm: false,
-    password: gerarSenhaTemporaria(),
-    user_metadata: {
-      full_name: entrada.nome,
-      phone: entrada.telefone
-    }
-  });
-
-  if (erroAuth || !authData.user) {
-    throw new Error(erroAuth?.message ?? "Usuario Auth nao criado.");
-  }
-
-  const { data, error } = await admin
-    .from("profiles")
-    .upsert({
-      email: entrada.email,
-      full_name: entrada.nome,
-      id: authData.user.id,
-      phone: entrada.telefone,
-      platform_role: "user"
-    })
-    .select("*")
-    .single<ProfileRow>();
-
-  if (error || !data) throw new Error(error?.message ?? "Profile do funcionario nao criado.");
-  return data;
-}
-
-async function carregarCargo(admin: SupabaseAdmin, tenantId: string, roleId: string): Promise<RoleRow> {
-  const { data, error } = await admin
+async function carregarCargo(supabase: SupabaseServer, tenantId: string, roleId: string): Promise<RoleRow> {
+  const { data, error } = await supabase
     .from("roles")
     .select("*")
     .eq("id", roleId)
@@ -261,11 +214,11 @@ async function carregarCargo(admin: SupabaseAdmin, tenantId: string, roleId: str
 }
 
 async function carregarMember(
-  admin: SupabaseAdmin,
+  supabase: SupabaseServer,
   tenantId: string,
   memberId: string
 ): Promise<TenantMemberRow> {
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("tenant_members")
     .select("*")
     .eq("id", memberId)
@@ -278,11 +231,11 @@ async function carregarMember(
 }
 
 async function carregarConvite(
-  admin: SupabaseAdmin,
+  supabase: SupabaseServer,
   tenantId: string,
   conviteId: string
 ): Promise<StaffInviteRow> {
-  const { data, error } = await admin
+  const { data, error } = await supabase
     .from("staff_invites")
     .select("*")
     .eq("id", conviteId)
@@ -293,38 +246,15 @@ async function carregarConvite(
   return data;
 }
 
-async function vincularFuncionario(
-  admin: SupabaseAdmin,
-  tenantId: string,
-  userId: string,
-  roleId: string,
-  invitedBy: string,
-  status: TenantMemberRow["status"]
-) {
-  const { error } = await admin.from("tenant_members").upsert(
-    {
-      invited_by: invitedBy,
-      member_role: "staff",
-      role_id: roleId,
-      status,
-      tenant_id: tenantId,
-      user_id: userId
-    },
-    { onConflict: "tenant_id,user_id" }
-  );
-
-  if (error) throw new Error(error.message);
-}
-
 async function salvarConvite(
-  admin: SupabaseAdmin,
+  supabase: SupabaseServer,
   tenantId: string,
-  userId: string,
+  userId: string | null,
   roleId: string,
   invitedBy: string,
   entrada: EntradaFuncionario
 ) {
-  const { data: existente } = await admin
+  const { data: existente } = await supabase
     .from("staff_invites")
     .select("id, sent_count")
     .eq("tenant_id", tenantId)
@@ -346,25 +276,25 @@ async function salvarConvite(
   };
 
   const query = existente
-    ? admin
+    ? supabase
         .from("staff_invites")
         .update({ ...payload, sent_count: existente.sent_count + 1 })
         .eq("id", existente.id)
-    : admin.from("staff_invites").insert(payload);
+    : supabase.from("staff_invites").insert(payload);
 
   const { error } = await query;
   if (error) throw new Error(error.message);
 }
 
 async function atualizarConvite(
-  admin: SupabaseAdmin,
+  supabase: SupabaseServer,
   tenantId: string,
   conviteId: string,
   entrada: EntradaFuncionario,
   roleId: string
 ) {
-  const convite = await carregarConvite(admin, tenantId, conviteId);
-  const { error } = await admin
+  const convite = await carregarConvite(supabase, tenantId, conviteId);
+  const { error } = await supabase
     .from("staff_invites")
     .update({
       email: entrada.email,
@@ -377,9 +307,9 @@ async function atualizarConvite(
   if (error) throw new Error(error.message);
 }
 
-async function cancelarConvite(admin: SupabaseAdmin, tenantId: string, conviteId: string) {
-  const convite = await carregarConvite(admin, tenantId, conviteId);
-  const { error } = await admin
+async function cancelarConvite(supabase: SupabaseServer, tenantId: string, conviteId: string) {
+  const convite = await carregarConvite(supabase, tenantId, conviteId);
+  const { error } = await supabase
     .from("staff_invites")
     .update({
       revoked_at: new Date().toISOString(),
@@ -421,13 +351,13 @@ async function salvarPermissoesCargo(
 }
 
 async function registrarAuditoria(
-  admin: SupabaseAdmin,
+  supabase: SupabaseServer,
   actorId: string,
   tenantId: string,
   entityId: string | null,
   action: string
 ) {
-  const { error } = await admin.from("audit_logs").insert({
+  const { error } = await supabase.from("audit_logs").insert({
     action,
     actor_id: actorId,
     entity_id: entityId,
@@ -486,10 +416,6 @@ function gerarCodigo(valor: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 48);
-}
-
-function gerarSenhaTemporaria() {
-  return randomBytes(24).toString("base64url");
 }
 
 function gerarTokenHash() {
