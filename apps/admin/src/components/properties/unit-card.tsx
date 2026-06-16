@@ -1,12 +1,22 @@
-import { Bath, BedDouble, PauseCircle, PlayCircle, Users, WalletCards } from "lucide-react";
+import {
+  Bath,
+  BedDouble,
+  PauseCircle,
+  PlayCircle,
+  Users,
+  WalletCards,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
-import { alternarStatusUnidadeAction } from "../../lib/properties/actions";
+import {
+  alternarStatusUnidadeAction,
+  excluirUnidadeAction,
+} from "../../lib/properties/actions";
 import type {
   PropriedadeComRelacionamentos,
-  UnidadeComCategoria
+  UnidadeComCategoria,
 } from "../../lib/properties/types";
 import { MediaGallery } from "./media-gallery";
 import { UnitForm } from "./unit-form";
@@ -24,7 +34,12 @@ export type UnitCardProps = {
   retorno: "/propriedades" | "/unidades";
 };
 
-export function UnitCard({ unidade, propriedades, podeGerenciar, retorno }: UnitCardProps) {
+export function UnitCard({
+  unidade,
+  propriedades,
+  podeGerenciar,
+  retorno,
+}: UnitCardProps) {
   const estaAtiva = unidade.status === "active";
 
   return (
@@ -46,7 +61,12 @@ export function UnitCard({ unidade, propriedades, podeGerenciar, retorno }: Unit
           <form action={alternarStatusUnidadeAction}>
             <input name="retorno" type="hidden" value={retorno} />
             <input name="unidadeId" type="hidden" value={unidade.id} />
-            <Button disabled={!podeGerenciar} size="sm" type="submit" variant="outline">
+            <Button
+              disabled={!podeGerenciar}
+              size="sm"
+              type="submit"
+              variant="outline"
+            >
               {estaAtiva ? <PauseCircle /> : <PlayCircle />}
               {estaAtiva ? "Pausar" : "Ativar"}
             </Button>
@@ -54,9 +74,21 @@ export function UnitCard({ unidade, propriedades, podeGerenciar, retorno }: Unit
         </div>
 
         <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <MetricaUnidade icon={<Users />} label="Capacidade" valor={String(unidade.capacity)} />
-          <MetricaUnidade icon={<BedDouble />} label="Quartos/camas" valor={`${unidade.bedrooms}/${unidade.beds}`} />
-          <MetricaUnidade icon={<Bath />} label="Banheiros" valor={String(unidade.bathrooms)} />
+          <MetricaUnidade
+            icon={<Users />}
+            label="Capacidade"
+            valor={String(unidade.capacity)}
+          />
+          <MetricaUnidade
+            icon={<BedDouble />}
+            label="Quartos/camas"
+            valor={`${unidade.bedrooms}/${unidade.beds}`}
+          />
+          <MetricaUnidade
+            icon={<Bath />}
+            label="Banheiros"
+            valor={String(unidade.bathrooms)}
+          />
           <MetricaUnidade
             icon={<WalletCards />}
             label="Valor base"
@@ -65,7 +97,9 @@ export function UnitCard({ unidade, propriedades, podeGerenciar, retorno }: Unit
         </div>
 
         <details className="rounded-lg border bg-background/45 p-3">
-          <summary className="cursor-pointer text-sm font-semibold">Editar unidade</summary>
+          <summary className="cursor-pointer text-sm font-semibold">
+            Editar unidade
+          </summary>
           <div className="mt-4">
             <UnitForm
               modo="editar"
@@ -85,6 +119,36 @@ export function UnitCard({ unidade, propriedades, podeGerenciar, retorno }: Unit
           tipo="unidade"
           unidadeId={unidade.id}
         />
+
+        <details className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-destructive">
+            Excluir unidade
+          </summary>
+          <form action={excluirUnidadeAction} className="mt-4 grid gap-3">
+            <input name="retorno" type="hidden" value={retorno} />
+            <input name="unidadeId" type="hidden" value={unidade.id} />
+            <label className="flex items-start gap-2 text-sm text-muted-foreground">
+              <input
+                className="mt-1"
+                disabled={!podeGerenciar}
+                name="confirmarExclusao"
+                required
+                type="checkbox"
+                value="confirmado"
+              />
+              Confirmo que desejo remover esta unidade da propriedade.
+            </label>
+            <div>
+              <Button
+                disabled={!podeGerenciar}
+                type="submit"
+                variant="destructive"
+              >
+                Excluir unidade
+              </Button>
+            </div>
+          </form>
+        </details>
       </CardContent>
     </Card>
   );
@@ -93,7 +157,7 @@ export function UnitCard({ unidade, propriedades, podeGerenciar, retorno }: Unit
 function MetricaUnidade({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon: ReactNode;
   label: string;
@@ -101,14 +165,18 @@ function MetricaUnidade({
 }) {
   return (
     <div className="rounded-lg border bg-background/45 p-3">
-      <div className="mb-2 text-muted-foreground [&_svg]:h-4 [&_svg]:w-4">{icon}</div>
+      <div className="mb-2 text-muted-foreground [&_svg]:h-4 [&_svg]:w-4">
+        {icon}
+      </div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="font-semibold">{valor}</p>
     </div>
   );
 }
 
-function obterLabelStatusUnidade(status: UnidadeComCategoria["status"]): string {
+function obterLabelStatusUnidade(
+  status: UnidadeComCategoria["status"],
+): string {
   if (status === "active") return "Ativa";
   if (status === "maintenance") return "Manutenção";
   return "Pausada";
@@ -123,6 +191,6 @@ function obterVariantStatusUnidade(status: UnidadeComCategoria["status"]) {
 function formatarMoeda(valor: number): string {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
-    style: "currency"
+    style: "currency",
   }).format(Number(valor));
 }

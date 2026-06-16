@@ -6,19 +6,24 @@ import type {
   PropertyType,
   UnitCategoryRow,
   UnitRow,
-  UnitStatus
+  UnitStatus,
 } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { carregarLimitesPlano } from "./data";
-import { enviarImagemParaStorage, obterArquivoImagem } from "./media-storage";
+import {
+  enviarImagemParaStorage,
+  obterArquivoImagem,
+  obterArquivosImagem,
+  removerImagemDoStorage,
+} from "./media-storage";
 import {
   carregarEscopoGerenciamento,
   ErroRegraNegocio,
   type ClienteSupabaseServer,
-  type EscopoGerenciamento
+  type EscopoGerenciamento,
 } from "./permissions";
 import type { EnderecoPropriedade } from "./types";
 
@@ -32,7 +37,11 @@ import type { EnderecoPropriedade } from "./types";
 const CAMINHO_PROPRIEDADES = "/propriedades";
 const CAMINHO_UNIDADES = "/unidades";
 const STATUS_PROPRIEDADE: PropertyStatus[] = ["draft", "published", "paused"];
-const TIPOS_PROPRIEDADE: PropertyType[] = ["seasonal_home", "inn", "small_hotel"];
+const TIPOS_PROPRIEDADE: PropertyType[] = [
+  "seasonal_home",
+  "inn",
+  "small_hotel",
+];
 const STATUS_UNIDADE: UnitStatus[] = ["active", "inactive", "maintenance"];
 const CATEGORIAS_UNIDADE = ["Standard", "Luxo", "Master"];
 
@@ -49,6 +58,7 @@ type EntradaUnidade = {
   propriedadeId: string;
   nome: string;
   categoria: string;
+  imagensArquivos: File[];
   capacidade: number;
   quartos: number;
   camas: number;
@@ -79,19 +89,25 @@ export async function criarPropriedadeAction(formData: FormData) {
         headline: entrada.nome,
         description: entrada.descricao,
         address: entrada.endereco,
-        timezone: "America/Sao_Paulo"
+        timezone: "America/Sao_Paulo",
       })
       .select("*")
       .single<PropertyRow>();
 
     if (error || !propriedade) {
-      throw new Error(error?.message ?? "Propriedade não retornada após criação.");
+      throw new Error(
+        error?.message ?? "Propriedade não retornada após criação.",
+      );
     }
 
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
   } catch (erro) {
-    redirecionarComErro(CAMINHO_PROPRIEDADES, erro, "Erro ao criar propriedade.");
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao criar propriedade.",
+    );
   }
 
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=propriedade-criada`);
@@ -101,7 +117,11 @@ export async function atualizarPropriedadeAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
 
   try {
-    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
     const entrada = obterEntradaPropriedade(formData);
     const supabase = await criarClienteSupabaseServer();
 
@@ -113,7 +133,7 @@ export async function atualizarPropriedadeAction(formData: FormData) {
         status: entrada.status,
         headline: entrada.nome,
         description: entrada.descricao,
-        address: entrada.endereco
+        address: entrada.endereco,
       })
       .eq("id", propriedadeId)
       .eq("tenant_id", escopo.tenantId)
@@ -122,13 +142,19 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       .maybeSingle<PropertyRow>();
 
     if (error || !propriedade) {
-      throw new ErroRegraNegocio("Propriedade não encontrada para este tenant.");
+      throw new ErroRegraNegocio(
+        "Propriedade não encontrada para este tenant.",
+      );
     }
 
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
   } catch (erro) {
-    redirecionarComErro(CAMINHO_PROPRIEDADES, erro, "Erro ao atualizar propriedade.");
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao atualizar propriedade.",
+    );
   }
 
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=propriedade-atualizada`);
@@ -138,12 +164,16 @@ export async function alternarStatusPropriedadeAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
 
   try {
-    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
     const supabase = await criarClienteSupabaseServer();
     const propriedade = await carregarPropriedadeDoTenant(
       supabase,
       escopo,
-      propriedadeId
+      propriedadeId,
     );
     const statusDestino: PropertyStatus =
       propriedade.status === "paused" ? "published" : "paused";
@@ -165,6 +195,48 @@ export async function alternarStatusPropriedadeAction(formData: FormData) {
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=status-propriedade`);
 }
 
+export async function excluirPropriedadeAction(formData: FormData) {
+  const escopo = await carregarEscopoGerenciamento();
+
+  try {
+    exigirConfirmacaoExclusao(formData);
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
+    const supabase = await criarClienteSupabaseServer();
+    const propriedade = await carregarPropriedadeDoTenant(
+      supabase,
+      escopo,
+      propriedadeId,
+    );
+
+    // A exclusão de propriedade é lógica para preservar histórico operacional,
+    // reservas futuras e auditoria multi-tenant sem expor a propriedade nas listas.
+    const { error } = await supabase
+      .from("properties")
+      .update({
+        deleted_at: new Date().toISOString(),
+        status: "archived",
+      })
+      .eq("id", propriedade.id)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId);
+
+    if (error) throw new Error(error.message);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao excluir propriedade.",
+    );
+  }
+
+  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=propriedade-excluida`);
+}
+
 export async function criarUnidadeAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
   const caminhoRetorno = obterCaminhoRetorno(formData);
@@ -179,25 +251,35 @@ export async function criarUnidadeAction(formData: FormData) {
       supabase,
       escopo.tenantId,
       entrada.propriedadeId,
-      escopo.contexto.featureFlags.multi_unit
+      escopo.contexto.featureFlags.multi_unit,
     );
 
-    const categoria = await criarOuObterCategoria(supabase, escopo.tenantId, entrada);
-    const { error } = await supabase.from("units").insert({
-      tenant_id: escopo.tenantId,
-      property_id: entrada.propriedadeId,
-      unit_category_id: categoria?.id ?? null,
-      code: gerarIdentificadorUrl(entrada.nome),
-      name: entrada.nome,
-      status: entrada.status,
-      capacity: entrada.capacidade,
-      bedrooms: entrada.quartos,
-      beds: entrada.camas,
-      bathrooms: entrada.banheiros,
-      base_price: entrada.valorBase
-    });
+    const categoria = await criarOuObterCategoria(
+      supabase,
+      escopo.tenantId,
+      entrada,
+    );
+    const { data: unidade, error } = await supabase
+      .from("units")
+      .insert({
+        tenant_id: escopo.tenantId,
+        property_id: entrada.propriedadeId,
+        unit_category_id: categoria?.id ?? null,
+        code: gerarIdentificadorUrl(entrada.nome),
+        name: entrada.nome,
+        status: entrada.status,
+        capacity: entrada.capacidade,
+        bedrooms: entrada.quartos,
+        beds: entrada.camas,
+        bathrooms: entrada.banheiros,
+        base_price: entrada.valorBase,
+      })
+      .select("*")
+      .single<UnitRow>();
 
-    if (error) throw new Error(error.message);
+    if (error || !unidade)
+      throw new Error(error?.message ?? "Unidade não retornada.");
+    await salvarImagensUnidade(supabase, escopo.tenantId, unidade, entrada);
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(caminhoRetorno, erro, "Erro ao criar unidade.");
@@ -214,7 +296,11 @@ export async function atualizarUnidadeAction(formData: FormData) {
     const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
     const entrada = obterEntradaUnidade(formData);
     const supabase = await criarClienteSupabaseServer();
-    const unidadeAtual = await carregarUnidadeDoTenant(supabase, escopo.tenantId, unidadeId);
+    const unidadeAtual = await carregarUnidadeDoTenant(
+      supabase,
+      escopo.tenantId,
+      unidadeId,
+    );
 
     await carregarPropriedadeDoTenant(supabase, escopo, entrada.propriedadeId);
     await garantirRegraMultiUnidade(
@@ -222,29 +308,41 @@ export async function atualizarUnidadeAction(formData: FormData) {
       escopo.tenantId,
       entrada.propriedadeId,
       escopo.contexto.featureFlags.multi_unit,
-      unidadeId
+      unidadeId,
     );
 
-    const categoria = await criarOuObterCategoria(supabase, escopo.tenantId, entrada);
+    const categoria = await criarOuObterCategoria(
+      supabase,
+      escopo.tenantId,
+      entrada,
+    );
     const mudouPropriedade = unidadeAtual.property_id !== entrada.propriedadeId;
     const { error } = await supabase
       .from("units")
       .update({
         property_id: entrada.propriedadeId,
         unit_category_id: categoria?.id ?? null,
-        code: mudouPropriedade ? gerarIdentificadorUrl(entrada.nome) : unidadeAtual.code,
+        code: mudouPropriedade
+          ? gerarIdentificadorUrl(entrada.nome)
+          : unidadeAtual.code,
         name: entrada.nome,
         status: entrada.status,
         capacity: entrada.capacidade,
         bedrooms: entrada.quartos,
         beds: entrada.camas,
         bathrooms: entrada.banheiros,
-        base_price: entrada.valorBase
+        base_price: entrada.valorBase,
       })
       .eq("id", unidadeId)
       .eq("tenant_id", escopo.tenantId);
 
     if (error) throw new Error(error.message);
+    await salvarImagensUnidade(
+      supabase,
+      escopo.tenantId,
+      { id: unidadeId, property_id: entrada.propriedadeId },
+      entrada,
+    );
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(caminhoRetorno, erro, "Erro ao atualizar unidade.");
@@ -260,8 +358,13 @@ export async function alternarStatusUnidadeAction(formData: FormData) {
   try {
     const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
     const supabase = await criarClienteSupabaseServer();
-    const unidade = await carregarUnidadeDoTenant(supabase, escopo.tenantId, unidadeId);
-    const statusDestino: UnitStatus = unidade.status === "active" ? "inactive" : "active";
+    const unidade = await carregarUnidadeDoTenant(
+      supabase,
+      escopo.tenantId,
+      unidadeId,
+    );
+    const statusDestino: UnitStatus =
+      unidade.status === "active" ? "inactive" : "active";
 
     // A pausa operacional deixa a unidade fora do uso futuro sem apagar histórico ou categoria.
     const { error } = await supabase
@@ -279,6 +382,39 @@ export async function alternarStatusUnidadeAction(formData: FormData) {
   redirect(`${caminhoRetorno}?sucesso=status-unidade`);
 }
 
+export async function excluirUnidadeAction(formData: FormData) {
+  const escopo = await carregarEscopoGerenciamento();
+  const caminhoRetorno = obterCaminhoRetorno(formData);
+
+  try {
+    exigirConfirmacaoExclusao(formData);
+    const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
+    const supabase = await criarClienteSupabaseServer();
+    const unidade = await carregarUnidadeDoTenant(
+      supabase,
+      escopo.tenantId,
+      unidadeId,
+    );
+    await carregarPropriedadeDoTenant(supabase, escopo, unidade.property_id);
+    await removerImagensDaUnidade(supabase, escopo.tenantId, unidade.id);
+
+    // A unidade é excluída somente após validar tenant e propriedade. O schema atual
+    // mantém FKs preparadas para preservar reservas com unit_id nulo quando necessário.
+    const { error } = await supabase
+      .from("units")
+      .delete()
+      .eq("id", unidade.id)
+      .eq("tenant_id", escopo.tenantId);
+
+    if (error) throw new Error(error.message);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(caminhoRetorno, erro, "Erro ao excluir unidade.");
+  }
+
+  redirect(`${caminhoRetorno}?sucesso=unidade-excluida`);
+}
+
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   return {
     nome: textoObrigatorio(formData, "nome", "nome"),
@@ -287,10 +423,12 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     endereco: {
       linha1: textoObrigatorio(formData, "endereco", "endereço"),
       cidade: textoObrigatorio(formData, "cidade", "cidade"),
-      estado: textoObrigatorio(formData, "estado", "estado")
+      estado: textoObrigatorio(formData, "estado", "estado"),
     },
-    status: validarStatusPropriedade(textoObrigatorio(formData, "status", "status")),
-    imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo")
+    status: validarStatusPropriedade(
+      textoObrigatorio(formData, "status", "status"),
+    ),
+    imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
   };
 }
 
@@ -298,19 +436,22 @@ function obterEntradaUnidade(formData: FormData): EntradaUnidade {
   return {
     propriedadeId: textoObrigatorio(formData, "propriedadeId", "propriedade"),
     nome: textoObrigatorio(formData, "nome", "nome"),
-    categoria: validarCategoriaUnidade(textoObrigatorio(formData, "categoria", "categoria")),
+    categoria: obterCategoriaUnidade(formData),
+    imagensArquivos: obterArquivosImagem(formData, "imagensUnidadeArquivos"),
     capacidade: numeroInteiro(formData, "capacidade", "capacidade", 1),
     quartos: numeroInteiro(formData, "quartos", "quartos", 0),
     camas: numeroInteiro(formData, "camas", "camas", 1),
     banheiros: numeroInteiro(formData, "banheiros", "banheiros", 0),
     valorBase: numeroMoeda(formData, "valorBase", "valor base"),
-    status: validarStatusUnidade(textoObrigatorio(formData, "status", "status"))
+    status: validarStatusUnidade(
+      textoObrigatorio(formData, "status", "status"),
+    ),
   };
 }
 
 async function garantirLimitePropriedades(
   supabase: ClienteSupabaseServer,
-  tenantId: string
+  tenantId: string,
 ) {
   const limites = await carregarLimitesPlano(tenantId);
   const { count, error } = await supabase
@@ -324,12 +465,15 @@ async function garantirLimitePropriedades(
 
   if ((count ?? 0) >= limites.maxPropriedades) {
     throw new ErroRegraNegocio(
-      `Limite do plano atingido: ${limites.maxPropriedades} propriedade(s).`
+      `Limite do plano atingido: ${limites.maxPropriedades} propriedade(s).`,
     );
   }
 }
 
-async function garantirLimiteUnidades(supabase: ClienteSupabaseServer, tenantId: string) {
+async function garantirLimiteUnidades(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+) {
   const limites = await carregarLimitesPlano(tenantId);
   const { count, error } = await supabase
     .from("units")
@@ -340,7 +484,7 @@ async function garantirLimiteUnidades(supabase: ClienteSupabaseServer, tenantId:
 
   if ((count ?? 0) >= limites.maxUnidades) {
     throw new ErroRegraNegocio(
-      `Limite do plano atingido: ${limites.maxUnidades} unidade(s).`
+      `Limite do plano atingido: ${limites.maxUnidades} unidade(s).`,
     );
   }
 }
@@ -350,7 +494,7 @@ async function garantirRegraMultiUnidade(
   tenantId: string,
   propriedadeId: string,
   multiUnidadeAtivo: boolean | undefined,
-  unidadeIdIgnorada?: string
+  unidadeIdIgnorada?: string,
 ) {
   if (multiUnidadeAtivo) return;
 
@@ -370,7 +514,7 @@ async function garantirRegraMultiUnidade(
   // Sem a feature flag multi_unit, uma propriedade representa uma casa ou unidade única.
   if ((count ?? 0) > 0) {
     throw new ErroRegraNegocio(
-      "A feature flag de multiunidades está desligada para este tenant."
+      "A feature flag de multiunidades está desligada para este tenant.",
     );
   }
 }
@@ -378,7 +522,7 @@ async function garantirRegraMultiUnidade(
 async function carregarPropriedadeDoTenant(
   supabase: ClienteSupabaseServer,
   escopo: EscopoGerenciamento,
-  propriedadeId: string
+  propriedadeId: string,
 ) {
   const { data, error } = await supabase
     .from("properties")
@@ -399,7 +543,7 @@ async function carregarPropriedadeDoTenant(
 async function carregarUnidadeDoTenant(
   supabase: ClienteSupabaseServer,
   tenantId: string,
-  unidadeId: string
+  unidadeId: string,
 ) {
   const { data, error } = await supabase
     .from("units")
@@ -418,7 +562,7 @@ async function carregarUnidadeDoTenant(
 async function criarOuObterCategoria(
   supabase: ClienteSupabaseServer,
   tenantId: string,
-  entrada: EntradaUnidade
+  entrada: EntradaUnidade,
 ) {
   const { data: categoriaExistente, error: erroBusca } = await supabase
     .from("unit_categories")
@@ -440,20 +584,108 @@ async function criarOuObterCategoria(
       name: entrada.categoria,
       max_guests: entrada.capacidade,
       bedrooms: entrada.quartos,
-      bathrooms: entrada.banheiros
+      bathrooms: entrada.banheiros,
     })
     .select("*")
     .single<UnitCategoryRow>();
 
-  if (error || !categoria) throw new Error(error?.message ?? "Categoria não criada.");
+  if (error || !categoria)
+    throw new Error(error?.message ?? "Categoria não criada.");
   return categoria;
+}
+
+async function salvarImagensUnidade(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  unidade: Pick<UnitRow, "id" | "property_id">,
+  entrada: EntradaUnidade,
+) {
+  if (!entrada.imagensArquivos.length) return;
+
+  const proximaOrdem = await obterProximaOrdemMidia(
+    supabase,
+    tenantId,
+    unidade.property_id,
+    unidade.id,
+  );
+
+  await Promise.all(
+    entrada.imagensArquivos.map(async (arquivo, indice) => {
+      const midia = await enviarImagemParaStorage(
+        supabase,
+        {
+          escopo: "unidade",
+          propertyId: unidade.property_id,
+          tenantId,
+          unitId: unidade.id,
+        },
+        arquivo,
+      );
+
+      const { error } = await supabase.from("media_assets").insert({
+        alt: arquivo.name,
+        is_cover: proximaOrdem === 0 && indice === 0,
+        media_type: "image",
+        property_id: unidade.property_id,
+        sort_order: proximaOrdem + indice,
+        status: "active",
+        storage_bucket: midia.bucket,
+        storage_path: midia.path,
+        tenant_id: tenantId,
+        unit_id: unidade.id,
+        url: midia.url,
+      });
+
+      if (error) throw new Error(error.message);
+    }),
+  );
+}
+
+async function removerImagensDaUnidade(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  unidadeId: string,
+) {
+  const { data: imagens, error } = await supabase
+    .from("media_assets")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("unit_id", unidadeId)
+    .eq("status", "active");
+
+  if (error) throw new Error(error.message);
+
+  await Promise.all(
+    (imagens ?? []).map((imagem) => removerImagemDoStorage(supabase, imagem)),
+  );
+}
+
+async function obterProximaOrdemMidia(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedadeId: string,
+  unidadeId: string,
+) {
+  const { data, error } = await supabase
+    .from("media_assets")
+    .select("sort_order")
+    .eq("tenant_id", tenantId)
+    .eq("property_id", propriedadeId)
+    .eq("unit_id", unidadeId)
+    .eq("status", "active")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ sort_order: number }>();
+
+  if (error) throw new Error(error.message);
+  return (data?.sort_order ?? -1) + 1;
 }
 
 async function salvarImagemCapa(
   supabase: ClienteSupabaseServer,
   tenantId: string,
   propriedadeId: string,
-  entrada: EntradaPropriedade
+  entrada: EntradaPropriedade,
 ) {
   if (!entrada.imagemCapaArquivo) return;
 
@@ -462,9 +694,9 @@ async function salvarImagemCapa(
     {
       escopo: "capa",
       propertyId: propriedadeId,
-      tenantId
+      tenantId,
     },
-    entrada.imagemCapaArquivo
+    entrada.imagemCapaArquivo,
   );
 
   // Apenas uma imagem principal fica marcada por propriedade para evitar ambiguidade no marketplace futuro.
@@ -489,12 +721,16 @@ async function salvarImagemCapa(
     alt: `Imagem de capa de ${entrada.nome}`,
     sort_order: 0,
     is_cover: true,
-    status: "active"
+    status: "active",
   });
   if (error) throw new Error(error.message);
 }
 
-function textoObrigatorio(formData: FormData, chave: string, label: string): string {
+function textoObrigatorio(
+  formData: FormData,
+  chave: string,
+  label: string,
+): string {
   const valor = formData.get(chave)?.toString().trim();
   if (!valor) throw new ErroRegraNegocio(`Informe ${label}.`);
   return valor;
@@ -509,7 +745,7 @@ function numeroInteiro(
   formData: FormData,
   chave: string,
   label: string,
-  minimo: number
+  minimo: number,
 ): number {
   const valor = Number.parseInt(textoObrigatorio(formData, chave, label), 10);
   if (Number.isNaN(valor) || valor < minimo) {
@@ -519,7 +755,9 @@ function numeroInteiro(
 }
 
 function numeroMoeda(formData: FormData, chave: string, label: string): number {
-  const valor = Number.parseFloat(textoObrigatorio(formData, chave, label).replace(",", "."));
+  const valor = Number.parseFloat(
+    textoObrigatorio(formData, chave, label).replace(",", "."),
+  );
   if (Number.isNaN(valor) || valor < 0) {
     throw new ErroRegraNegocio(`Informe ${label} válido.`);
   }
@@ -527,7 +765,8 @@ function numeroMoeda(formData: FormData, chave: string, label: string): number {
 }
 
 function validarTipoPropriedade(valor: string): PropertyType {
-  if (TIPOS_PROPRIEDADE.includes(valor as PropertyType)) return valor as PropertyType;
+  if (TIPOS_PROPRIEDADE.includes(valor as PropertyType))
+    return valor as PropertyType;
   throw new ErroRegraNegocio("Tipo de propriedade inválido.");
 }
 
@@ -548,6 +787,31 @@ function validarCategoriaUnidade(valor: string): string {
   throw new ErroRegraNegocio("Categoria da unidade inválida.");
 }
 
+function obterCategoriaUnidade(formData: FormData): string {
+  const categoria = textoObrigatorio(formData, "categoria", "categoria");
+  if (categoria !== "Personalizada") return validarCategoriaUnidade(categoria);
+
+  const personalizada = textoObrigatorio(
+    formData,
+    "categoriaPersonalizada",
+    "categoria personalizada",
+  );
+
+  if (personalizada.length > 80) {
+    throw new ErroRegraNegocio(
+      "Categoria personalizada deve ter no máximo 80 caracteres.",
+    );
+  }
+
+  return personalizada;
+}
+
+function exigirConfirmacaoExclusao(formData: FormData) {
+  if (formData.get("confirmarExclusao") !== "confirmado") {
+    throw new ErroRegraNegocio("Confirme a exclusão antes de continuar.");
+  }
+}
+
 function gerarIdentificadorUrl(valor: string): string {
   const base = valor
     .normalize("NFD")
@@ -560,7 +824,11 @@ function gerarIdentificadorUrl(valor: string): string {
   return `${base || "item"}-${Date.now().toString(36)}`;
 }
 
-function redirecionarComErro(caminho: string, erro: unknown, mensagemLog: string): never {
+function redirecionarComErro(
+  caminho: string,
+  erro: unknown,
+  mensagemLog: string,
+): never {
   const mensagem =
     erro instanceof ErroRegraNegocio
       ? erro.message
@@ -580,5 +848,7 @@ function revalidarModulo() {
 
 function obterCaminhoRetorno(formData: FormData): string {
   const retorno = formData.get("retorno")?.toString();
-  return retorno === CAMINHO_PROPRIEDADES ? CAMINHO_PROPRIEDADES : CAMINHO_UNIDADES;
+  return retorno === CAMINHO_PROPRIEDADES
+    ? CAMINHO_PROPRIEDADES
+    : CAMINHO_UNIDADES;
 }

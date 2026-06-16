@@ -2,7 +2,10 @@ import { Building2, MapPin, PauseCircle, PlayCircle, Plus } from "lucide-react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
-import { alternarStatusPropriedadeAction } from "../../lib/properties/actions";
+import {
+  alternarStatusPropriedadeAction,
+  excluirPropriedadeAction,
+} from "../../lib/properties/actions";
 import type { PropriedadeComRelacionamentos } from "../../lib/properties/types";
 import { AmenitiesForm } from "./amenities-form";
 import { MediaGallery } from "./media-gallery";
@@ -30,7 +33,7 @@ export function PropertyCard({
   propriedades,
   comodidadesDisponiveis,
   podeGerenciar,
-  multiUnidadesAtivo
+  multiUnidadesAtivo,
 }: PropertyCardProps) {
   const estaPausada = propriedade.status === "paused";
 
@@ -53,7 +56,9 @@ export function PropertyCard({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-xl font-semibold">{propriedade.name}</h2>
-              <Badge variant={obterVariantStatusPropriedade(propriedade.status)}>
+              <Badge
+                variant={obterVariantStatusPropriedade(propriedade.status)}
+              >
                 {obterLabelStatusPropriedade(propriedade.status)}
               </Badge>
             </div>
@@ -64,7 +69,12 @@ export function PropertyCard({
 
           <form action={alternarStatusPropriedadeAction}>
             <input name="propriedadeId" type="hidden" value={propriedade.id} />
-            <Button disabled={!podeGerenciar} size="sm" type="submit" variant="outline">
+            <Button
+              disabled={!podeGerenciar}
+              size="sm"
+              type="submit"
+              variant="outline"
+            >
               {estaPausada ? <PlayCircle /> : <PauseCircle />}
               {estaPausada ? "Ativar" : "Pausar"}
             </Button>
@@ -75,7 +85,8 @@ export function PropertyCard({
           <p className="flex items-start gap-2 text-muted-foreground">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              {propriedade.enderecoFormatado.linha1}, {propriedade.enderecoFormatado.cidade} -{" "}
+              {propriedade.enderecoFormatado.linha1},{" "}
+              {propriedade.enderecoFormatado.cidade} -{" "}
               {propriedade.enderecoFormatado.estado}
             </span>
           </p>
@@ -85,7 +96,9 @@ export function PropertyCard({
         </div>
 
         {propriedade.description ? (
-          <p className="text-sm text-muted-foreground">{propriedade.description}</p>
+          <p className="text-sm text-muted-foreground">
+            {propriedade.description}
+          </p>
         ) : null}
 
         <div className="flex flex-wrap gap-2">
@@ -98,7 +111,9 @@ export function PropertyCard({
 
         <div className="grid gap-3 lg:grid-cols-3">
           <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Editar propriedade</summary>
+            <summary className="cursor-pointer text-sm font-semibold">
+              Editar propriedade
+            </summary>
             <div className="mt-4">
               <PropertyForm
                 modo="editar"
@@ -109,7 +124,9 @@ export function PropertyCard({
           </details>
 
           <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Comodidades</summary>
+            <summary className="cursor-pointer text-sm font-semibold">
+              Comodidades
+            </summary>
             <div className="mt-4">
               <AmenitiesForm
                 comodidades={comodidadesDisponiveis}
@@ -145,6 +162,36 @@ export function PropertyCard({
           tipo="propriedade"
         />
 
+        <details className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-destructive">
+            Excluir propriedade
+          </summary>
+          <form action={excluirPropriedadeAction} className="mt-4 grid gap-3">
+            <input name="propriedadeId" type="hidden" value={propriedade.id} />
+            <label className="flex items-start gap-2 text-sm text-muted-foreground">
+              <input
+                className="mt-1"
+                disabled={!podeGerenciar}
+                name="confirmarExclusao"
+                required
+                type="checkbox"
+                value="confirmado"
+              />
+              Confirmo que desejo remover esta propriedade da operação do
+              tenant.
+            </label>
+            <div>
+              <Button
+                disabled={!podeGerenciar}
+                type="submit"
+                variant="destructive"
+              >
+                Excluir propriedade
+              </Button>
+            </div>
+          </form>
+        </details>
+
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-semibold">Unidades</h3>
@@ -176,20 +223,26 @@ export function PropertyCard({
   );
 }
 
-function obterLabelStatusPropriedade(status: PropriedadeComRelacionamentos["status"]): string {
+function obterLabelStatusPropriedade(
+  status: PropriedadeComRelacionamentos["status"],
+): string {
   if (status === "published") return "Ativa";
   if (status === "paused") return "Pausada";
   if (status === "archived") return "Arquivada";
   return "Rascunho";
 }
 
-function obterVariantStatusPropriedade(status: PropriedadeComRelacionamentos["status"]) {
+function obterVariantStatusPropriedade(
+  status: PropriedadeComRelacionamentos["status"],
+) {
   if (status === "published") return "success";
   if (status === "paused") return "warning";
   return "secondary";
 }
 
-function obterLabelTipo(tipo: PropriedadeComRelacionamentos["property_type"]): string {
+function obterLabelTipo(
+  tipo: PropriedadeComRelacionamentos["property_type"],
+): string {
   if (tipo === "inn") return "Pousada";
   if (tipo === "small_hotel") return "Pequeno hotel";
   return "Casa de temporada";

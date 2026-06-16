@@ -4,11 +4,11 @@ import type { ComponentProps } from "react";
 
 import {
   atualizarUnidadeAction,
-  criarUnidadeAction
+  criarUnidadeAction,
 } from "../../lib/properties/actions";
 import type {
   PropriedadeComRelacionamentos,
-  UnidadeComCategoria
+  UnidadeComCategoria,
 } from "../../lib/properties/types";
 
 /**
@@ -30,10 +30,10 @@ export type UnitFormProps = {
 const STATUS: Array<{ valor: UnitStatus; label: string }> = [
   { valor: "active", label: "Ativa" },
   { valor: "inactive", label: "Pausada" },
-  { valor: "maintenance", label: "Manutenção" }
+  { valor: "maintenance", label: "Manutenção" },
 ];
 
-const CATEGORIAS = ["Standard", "Luxo", "Master"];
+const CATEGORIAS = ["Standard", "Luxo", "Master", "Personalizada"];
 
 const campoClasse =
   "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
@@ -44,17 +44,25 @@ export function UnitForm({
   propriedades,
   retorno,
   propriedadeInicialId,
-  unidade
+  unidade,
 }: UnitFormProps) {
-  const action = modo === "editar" ? atualizarUnidadeAction : criarUnidadeAction;
+  const action =
+    modo === "editar" ? atualizarUnidadeAction : criarUnidadeAction;
   const propriedadeSelecionada =
     unidade?.property_id ?? propriedadeInicialId ?? propriedades[0]?.id ?? "";
   const bloqueado = !podeGerenciar || propriedades.length === 0;
+  const categoriaAtual = unidade?.categoria?.name;
+  const categoriaPadrao = normalizarCategoria(categoriaAtual);
+  const categoriaPersonalizada = categoriaEhPadrao(categoriaAtual)
+    ? ""
+    : (categoriaAtual ?? "");
 
   return (
     <form action={action} className="grid gap-4">
       <input name="retorno" type="hidden" value={retorno} />
-      {unidade ? <input name="unidadeId" type="hidden" value={unidade.id} /> : null}
+      {unidade ? (
+        <input name="unidadeId" type="hidden" value={unidade.id} />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoTexto
@@ -64,20 +72,35 @@ export function UnitForm({
           name="nome"
           required
         />
-        <CampoTexto
-          defaultValue={normalizarCategoria(unidade?.categoria?.name)}
+        <CampoSelect
+          defaultValue={categoriaPadrao}
           disabled={bloqueado}
           label="Categoria"
-          list="categorias-unidade"
           name="categoria"
-          placeholder="Ex.: Suíte standard"
-          required
+          options={CATEGORIAS.map((categoria) => ({
+            label: categoria,
+            valor: categoria,
+          }))}
         />
-        <datalist id="categorias-unidade">
-          {CATEGORIAS.map((categoria) => (
-            <option key={categoria} value={categoria} />
-          ))}
-        </datalist>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <CampoTexto
+          defaultValue={categoriaPersonalizada}
+          disabled={bloqueado}
+          label="Categoria personalizada"
+          maxLength={80}
+          name="categoriaPersonalizada"
+          placeholder="Use quando selecionar Personalizada"
+        />
+        <CampoTexto
+          accept="image/*"
+          disabled={bloqueado}
+          label="Imagens da unidade"
+          multiple
+          name="imagensUnidadeArquivos"
+          type="file"
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -86,7 +109,10 @@ export function UnitForm({
           disabled={bloqueado}
           propriedades={propriedades}
         />
-        <CampoStatus defaultValue={unidade?.status ?? "active"} disabled={bloqueado} />
+        <CampoStatus
+          defaultValue={unidade?.status ?? "active"}
+          disabled={bloqueado}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -166,10 +192,43 @@ function CampoTexto({
   );
 }
 
+function CampoSelect({
+  defaultValue,
+  disabled,
+  label,
+  name,
+  options,
+}: {
+  defaultValue: string;
+  disabled: boolean;
+  label: string;
+  name: string;
+  options: Array<{ valor: string; label: string }>;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={name}>{label}</Label>
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        id={name}
+        name={name}
+      >
+        {options.map((option) => (
+          <option key={option.valor} value={option.valor}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 function CampoPropriedade({
   defaultValue,
   disabled,
-  propriedades
+  propriedades,
 }: {
   defaultValue: string;
   disabled: boolean;
@@ -195,7 +254,13 @@ function CampoPropriedade({
   );
 }
 
-function CampoStatus({ defaultValue, disabled }: { defaultValue: UnitStatus; disabled: boolean }) {
+function CampoStatus({
+  defaultValue,
+  disabled,
+}: {
+  defaultValue: UnitStatus;
+  disabled: boolean;
+}) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="status">Status</Label>
@@ -217,5 +282,13 @@ function CampoStatus({ defaultValue, disabled }: { defaultValue: UnitStatus; dis
 }
 
 function normalizarCategoria(categoria?: string | null): string {
-  return categoria && CATEGORIAS.includes(categoria) ? categoria : "Standard";
+  return categoriaEhPadrao(categoria) ? categoria : "Personalizada";
+}
+
+function categoriaEhPadrao(categoria?: string | null): categoria is string {
+  return Boolean(
+    categoria &&
+    CATEGORIAS.includes(categoria) &&
+    categoria !== "Personalizada",
+  );
 }
