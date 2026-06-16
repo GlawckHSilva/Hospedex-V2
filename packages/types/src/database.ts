@@ -13,6 +13,7 @@ export type TenantStatus = "trial" | "active" | "past_due" | "suspended" | "canc
 export type PlatformRole = "user" | "super_admin";
 export type TenantMemberRole = "owner" | "staff";
 export type TenantMemberStatus = "invited" | "active" | "disabled";
+export type StaffInviteStatus = "pending" | "accepted" | "cancelled" | "expired";
 export type PropertyStatus = "draft" | "published" | "paused" | "archived";
 export type PropertyType = "seasonal_home" | "inn" | "small_hotel";
 export type UnitStatus = "active" | "inactive" | "maintenance";
@@ -76,6 +77,7 @@ export type PermissionRow = {
 
 export type PermissionCode =
   | "tenants.manage"
+  | "dashboard.read"
   | "members.manage"
   | "roles.manage"
   | "features.manage"
@@ -83,8 +85,16 @@ export type PermissionCode =
   | "properties.manage"
   | "reservations.read"
   | "reservations.manage"
+  | "calendar.read"
+  | "calendar.manage"
   | "finance.read"
   | "finance.manage"
+  | "cleaning.read"
+  | "cleaning.manage"
+  | "inventory.read"
+  | "inventory.manage"
+  | "reports.read"
+  | "settings.manage"
   | "audit.read";
 
 export type RoleRow = {
@@ -94,6 +104,32 @@ export type RoleRow = {
   name: string;
   description: string | null;
   is_system: boolean;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type RolePermissionRow = {
+  role_id: UUID;
+  permission_id: UUID;
+  created_at: Timestamp;
+};
+
+export type StaffInviteRow = {
+  id: UUID;
+  tenant_id: UUID;
+  email: string;
+  full_name: string;
+  phone: string | null;
+  role_id: UUID | null;
+  invited_user_id: UUID | null;
+  invited_by: UUID | null;
+  status: StaffInviteStatus;
+  token_hash: string;
+  expires_at: Timestamp;
+  last_sent_at: Timestamp;
+  sent_count: number;
+  accepted_at: Timestamp | null;
+  revoked_at: Timestamp | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 };

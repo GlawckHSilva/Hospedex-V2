@@ -1,0 +1,374 @@
+import { Filter, MailPlus, Plus, Search, ShieldCheck, UserCog, Users } from "lucide-react";
+
+import {
+  Badge,
+  Button,
+  FadeIn,
+  GlassCard,
+  GlassPanel,
+  GlassTable,
+  Input,
+  Label,
+  PremiumEmptyState,
+  StatusBadge
+} from "@hospedex/ui";
+
+import { ModuleToast } from "../admin/module-toast";
+import {
+  alterarStatusFuncionarioAction,
+  atualizarCargoPermissoesAction,
+  criarCargoAction,
+  excluirFuncionarioAction,
+  reenviarConviteAction
+} from "../../lib/staff/actions";
+import { PERMISSOES_MODULO } from "../../lib/staff/catalog";
+import type {
+  CargoComPermissoes,
+  DadosModuloFuncionarios,
+  FuncionarioRegistro
+} from "../../lib/staff/types";
+import { FuncionarioForm } from "./funcionario-form";
+
+export type FuncionariosModuleProps = DadosModuloFuncionarios & {
+  erro?: string;
+  sucesso?: string;
+};
+
+const MENSAGENS_SUCESSO: Record<string, string> = {
+  "cargo-criado": "Cargo criado com sucesso.",
+  "convite-reenviado": "Convite reenviado com sucesso.",
+  "funcionario-atualizado": "Funcionario atualizado com sucesso.",
+  "funcionario-criado": "Funcionario convidado com sucesso.",
+  "funcionario-excluido": "Funcionario excluido com sucesso.",
+  "permissoes-atualizadas": "Permissoes do cargo atualizadas.",
+  "status-atualizado": "Status do funcionario atualizado."
+};
+
+/**
+ * Modulo de funcionarios do tenant.
+ *
+ * A UI trabalha apenas com dados do tenant atual. Server actions validam a
+ * permissao antes de gravar e nunca expõem service role ao navegador.
+ */
+export function FuncionariosModule({
+  cargos,
+  erro,
+  filtros,
+  funcionarios,
+  sucesso
+}: FuncionariosModuleProps) {
+  return (
+    <FadeIn className="space-y-5">
+      <ModuleToast erro={erro} mensagensSucesso={MENSAGENS_SUCESSO} sucesso={sucesso} />
+
+      <GlassPanel className="p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <Badge variant="info">Equipe e acesso</Badge>
+            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Funcionarios</h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Convide funcionarios, defina cargos e controle os modulos visiveis para cada perfil.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Resumo label="Funcionarios" valor={String(funcionarios.length)} tone="info" />
+            <Resumo
+              label="Ativos"
+              valor={String(funcionarios.filter((item) => item.status === "active").length)}
+              tone="success"
+            />
+            <Resumo label="Cargos" valor={String(cargos.length)} tone="warning" />
+          </div>
+        </div>
+      </GlassPanel>
+
+      <GlassCard className="p-5">
+        <form className="grid gap-4 md:grid-cols-[1fr_auto]">
+          <div className="grid gap-2">
+            <Label htmlFor="busca">Pesquisa</Label>
+            <Input
+              defaultValue={filtros.busca}
+              id="busca"
+              name="busca"
+              placeholder="Nome, email ou cargo"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" type="submit" variant="outline">
+              <Search />
+              Pesquisar
+            </Button>
+          </div>
+        </form>
+      </GlassCard>
+
+      <GlassCard className="p-5">
+        <details open={funcionarios.length === 0}>
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+            <Plus className="h-4 w-4" />
+            Criar funcionario
+          </summary>
+          <div className="mt-5">
+            <FuncionarioForm cargos={cargos} modo="criar" />
+          </div>
+        </details>
+      </GlassCard>
+
+      {funcionarios.length ? (
+        <section className="grid gap-5">
+          {funcionarios.map((funcionario) => (
+            <FuncionarioCard cargos={cargos} funcionario={funcionario} key={funcionario.id} />
+          ))}
+        </section>
+      ) : (
+        <PremiumEmptyState
+          description="Nenhum funcionario encontrado para os filtros atuais."
+          icon={<Filter className="h-5 w-5" />}
+          title="Sem funcionarios"
+        />
+      )}
+
+      <CargosPanel cargos={cargos} />
+    </FadeIn>
+  );
+}
+
+function FuncionarioCard({
+  cargos,
+  funcionario
+}: {
+  cargos: CargoComPermissoes[];
+  funcionario: FuncionarioRegistro;
+}) {
+  const podeAlterarStatus = Boolean(funcionario.member);
+  const acaoStatus = funcionario.status === "active" ? "desativar" : "ativar";
+
+  return (
+    <GlassCard className="space-y-5 p-5">
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge tone={toneStatus(funcionario.status)}>
+              {labelStatus(funcionario.status)}
+            </StatusBadge>
+            <StatusBadge tone={funcionario.member ? "info" : "warning"}>
+              {funcionario.member ? "vinculado" : "convite"}
+            </StatusBadge>
+          </div>
+          <h2 className="mt-3 truncate text-xl font-semibold">{funcionario.nome}</h2>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            {funcionario.email} - {funcionario.cargo?.role.name ?? "sem cargo"}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {funcionario.convite ? (
+            <form action={reenviarConviteAction}>
+              <input name="conviteId" type="hidden" value={funcionario.convite.id} />
+              <Button type="submit" variant="outline">
+                <MailPlus />
+                Reenviar convite
+              </Button>
+            </form>
+          ) : null}
+
+          {podeAlterarStatus ? (
+            <form action={alterarStatusFuncionarioAction}>
+              <input name="memberId" type="hidden" value={funcionario.member?.id} />
+              <input name="acao" type="hidden" value={acaoStatus} />
+              <Button type="submit" variant={acaoStatus === "ativar" ? "default" : "outline"}>
+                {acaoStatus === "ativar" ? "Ativar" : "Desativar"}
+              </Button>
+            </form>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <Info icon={<Users />} label="Email" valor={funcionario.email} />
+        <Info label="Telefone" valor={funcionario.telefone ?? "sem telefone"} />
+        <Info
+          icon={<ShieldCheck />}
+          label="Permissoes do cargo"
+          valor={String(funcionario.cargo?.permissoes.length ?? 0)}
+        />
+      </div>
+
+      <details>
+        <summary className="cursor-pointer text-sm font-semibold">Editar funcionario</summary>
+        <div className="mt-5">
+          <FuncionarioForm cargos={cargos} funcionario={funcionario} modo="editar" />
+        </div>
+      </details>
+
+      <details>
+        <summary className="cursor-pointer text-sm font-semibold text-destructive">Excluir</summary>
+        <form action={excluirFuncionarioAction} className="mt-4 flex flex-col gap-3 rounded-lg border bg-background/45 p-4 sm:flex-row sm:items-center sm:justify-between">
+          {funcionario.member ? <input name="memberId" type="hidden" value={funcionario.member.id} /> : null}
+          {funcionario.convite ? <input name="conviteId" type="hidden" value={funcionario.convite.id} /> : null}
+          <label className="flex items-center gap-2 text-sm">
+            <input name="confirmar" type="checkbox" />
+            Confirmo a exclusao do vinculo/convite.
+          </label>
+          <Button type="submit" variant="destructive">
+            Excluir funcionario
+          </Button>
+        </form>
+      </details>
+    </GlassCard>
+  );
+}
+
+function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
+  return (
+    <GlassTable className="space-y-5 p-5">
+      <div className="flex items-center justify-between gap-3 border-b pb-4">
+        <div>
+          <p className="font-semibold">Cargos e permissoes</p>
+          <p className="text-sm text-muted-foreground">
+            Controle quais modulos cada cargo pode acessar.
+          </p>
+        </div>
+        <UserCog className="h-5 w-5 text-cyan-500" />
+      </div>
+
+      <details>
+        <summary className="cursor-pointer text-sm font-semibold">Criar cargo personalizado</summary>
+        <form action={criarCargoAction} className="mt-4 grid gap-4 rounded-lg border bg-background/45 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-2">
+              <Label htmlFor="nomeCargo">Nome do cargo</Label>
+              <Input id="nomeCargo" name="nomeCargo" required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="descricaoCargo">Descricao</Label>
+              <Input id="descricaoCargo" name="descricaoCargo" />
+            </div>
+          </div>
+          <PermissoesChecklist permissoesAtivas={[]} />
+          <div className="flex justify-end">
+            <Button type="submit">Criar cargo</Button>
+          </div>
+        </form>
+      </details>
+
+      {cargos.length ? (
+        <div className="grid gap-4">
+          {cargos.map((cargo) => (
+            <GlassCard className="p-4" key={cargo.role.id}>
+              <form action={atualizarCargoPermissoesAction} className="grid gap-4">
+                <input name="roleId" type="hidden" value={cargo.role.id} />
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{cargo.role.name}</p>
+                      <StatusBadge tone={cargo.role.is_system ? "info" : "neutral"}>
+                        {cargo.role.is_system ? "inicial" : "personalizado"}
+                      </StatusBadge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {cargo.role.description ?? "Sem descricao."}
+                    </p>
+                  </div>
+                  <Button type="submit" variant="outline">
+                    Salvar permissoes
+                  </Button>
+                </div>
+                <PermissoesChecklist permissoesAtivas={cargo.permissoes} />
+              </form>
+            </GlassCard>
+          ))}
+        </div>
+      ) : (
+        <PremiumEmptyState
+          description="Os cargos iniciais ainda nao foram criados para este tenant."
+          icon={<UserCog className="h-5 w-5" />}
+          title="Sem cargos"
+        />
+      )}
+    </GlassTable>
+  );
+}
+
+function PermissoesChecklist({ permissoesAtivas }: { permissoesAtivas: string[] }) {
+  const ativas = new Set(permissoesAtivas);
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {PERMISSOES_MODULO.map((permissao) => (
+        <label
+          className="flex items-start gap-3 rounded-lg border bg-background/55 p-3 text-sm"
+          key={permissao.code}
+        >
+          <input
+            className="mt-1"
+            defaultChecked={ativas.has(permissao.code)}
+            name="permissoes"
+            type="checkbox"
+            value={permissao.code}
+          />
+          <span>
+            <span className="block font-medium">{permissao.label}</span>
+            <span className="block text-xs text-muted-foreground">{permissao.modulo}</span>
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function Resumo({
+  label,
+  tone,
+  valor
+}: {
+  label: string;
+  tone: "success" | "warning" | "danger" | "info" | "neutral";
+  valor: string;
+}) {
+  return (
+    <div className="min-w-32 rounded-lg border bg-background/55 p-3 text-sm">
+      <StatusBadge tone={tone}>{label}</StatusBadge>
+      <p className="mt-3 text-2xl font-semibold">{valor}</p>
+    </div>
+  );
+}
+
+function Info({
+  icon,
+  label,
+  valor
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  valor: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border bg-background/55 p-3 text-sm">
+      {icon ? <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div> : null}
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="truncate font-semibold">{valor}</p>
+    </div>
+  );
+}
+
+function toneStatus(status: FuncionarioRegistro["status"]) {
+  if (status === "active" || status === "accepted") return "success";
+  if (status === "invited" || status === "pending") return "warning";
+  if (status === "disabled" || status === "cancelled" || status === "expired") return "danger";
+  return "neutral";
+}
+
+function labelStatus(status: FuncionarioRegistro["status"]) {
+  const labels: Record<FuncionarioRegistro["status"], string> = {
+    accepted: "Aceito",
+    active: "Ativo",
+    cancelled: "Cancelado",
+    disabled: "Desativado",
+    expired: "Expirado",
+    invited: "Convidado",
+    pending: "Pendente"
+  };
+
+  return labels[status];
+}

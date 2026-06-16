@@ -11,6 +11,7 @@ export type IconeMenuAdmin =
   | "dashboard"
   | "featureFlags"
   | "financeiro"
+  | "funcionarios"
   | "hospedes"
   | "inventario"
   | "licencas"
@@ -40,7 +41,8 @@ const MENU_PROPRIETARIO = [
     titulo: "Dashboard",
     href: "/",
     descricao: "Resumo operacional do tenant.",
-    icone: "dashboard"
+    icone: "dashboard",
+    permissoes: ["dashboard.read"]
   },
   {
     titulo: "Propriedades",
@@ -70,7 +72,7 @@ const MENU_PROPRIETARIO = [
     href: "/calendario",
     descricao: "Disponibilidade, bloqueios e reservas.",
     icone: "calendario",
-    permissoes: ["reservations.read"]
+    permissoes: ["calendar.read", "reservations.read"]
   },
   {
     titulo: "Financeiro",
@@ -93,7 +95,7 @@ const MENU_PROPRIETARIO = [
     descricao: "Preparado para tarefas operacionais.",
     icone: "limpeza",
     featureFlag: "cleaning",
-    permissoes: ["properties.manage"]
+    permissoes: ["cleaning.read", "cleaning.manage"]
   },
   {
     titulo: "Inventario",
@@ -101,7 +103,7 @@ const MENU_PROPRIETARIO = [
     descricao: "Base para itens e manutencao.",
     icone: "inventario",
     featureFlag: "inventory",
-    permissoes: ["properties.manage"]
+    permissoes: ["inventory.read", "inventory.manage"]
   },
   {
     titulo: "Relatorios",
@@ -109,14 +111,22 @@ const MENU_PROPRIETARIO = [
     descricao: "Estrutura visual para indicadores.",
     icone: "relatorios",
     featureFlag: "reports",
-    permissoes: ["finance.read", "reservations.read"]
+    permissoes: ["reports.read", "finance.read", "reservations.read"]
+  },
+  {
+    titulo: "Funcionarios",
+    href: "/funcionarios",
+    descricao: "Equipe, convites, cargos e permissoes.",
+    icone: "funcionarios",
+    featureFlag: "staff",
+    permissoes: ["members.manage", "roles.manage"]
   },
   {
     titulo: "Configuracoes",
     href: "/configuracoes",
     descricao: "Tenant, membros, permissoes e preferencias.",
     icone: "configuracoes",
-    permissoes: ["tenants.manage", "members.manage", "roles.manage"]
+    permissoes: ["settings.manage", "tenants.manage", "members.manage", "roles.manage"]
   }
 ] as const satisfies readonly ItemMenuAdmin[];
 
@@ -217,7 +227,6 @@ function funcionarioPodeVerItem(
   item: ItemMenuAdmin,
   contexto: ContextoAutenticacao
 ): boolean {
-  if (item.href === "/") return true;
   if (!item.permissoes?.length) return false;
 
   // Funcionarios so enxergam modulos ligados as permissoes carregadas do tenant.

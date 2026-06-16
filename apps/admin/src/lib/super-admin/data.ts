@@ -6,11 +6,13 @@ import type {
   ProfileRow,
   ReservationGuestRow,
   TenantFeatureRow,
-  TenantRow
+  TenantRow,
+  TransactionRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
 import { criarClienteSupabaseServer } from "../supabase/server";
+import { contarSuperAdmin, lerDadosSuperAdmin } from "./query";
 
 export type SuperAdminTone = "success" | "warning" | "danger" | "info" | "neutral";
 
@@ -58,31 +60,36 @@ const LIMITE_REGISTROS = 8;
 export async function carregarDashboardSuperAdmin(contexto: ContextoAutenticacao) {
   const supabase = await criarClienteSupabaseServer();
   const [
-    tenants,
-    proprietarios,
+    proprietariosAtivos,
+    proprietariosBloqueados,
     hospedes,
-    planos,
-    licencas,
-    flags,
-    auditoria,
-    propriedades,
-    reservas
+    reservas,
+    receitaTotal,
+    planosAtivos
   ] = await Promise.all([
-    contar(supabase.from("tenants").select("id", { count: "exact", head: true }).is("deleted_at", null)),
     contar(
       supabase
-        .from("profiles")
+        .from("tenants")
         .select("id", { count: "exact", head: true })
-        .eq("platform_role", "user")
+        .eq("status", "active")
+        .is("deleted_at", null)
+    ),
+    contar(
+      supabase
+        .from("tenants")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["suspended", "cancelled"])
         .is("deleted_at", null)
     ),
     contar(supabase.from("reservation_guests").select("id", { count: "exact", head: true })),
-    contar(supabase.from("plans").select("id", { count: "exact", head: true })),
-    contar(supabase.from("licenses").select("id", { count: "exact", head: true })),
-    contar(supabase.from("feature_flags").select("id", { count: "exact", head: true })),
-    contar(supabase.from("audit_logs").select("id", { count: "exact", head: true })),
-    contar(supabase.from("properties").select("id", { count: "exact", head: true }).is("deleted_at", null)),
-    contar(supabase.from("reservations").select("id", { count: "exact", head: true }))
+    contar(supabase.from("reservations").select("id", { count: "exact", head: true })),
+    carregarReceitaTotal(),
+    contar(
+      supabase
+        .from("plans")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "active")
+    )
   ]);
 
   return {
@@ -92,15 +99,12 @@ export async function carregarDashboardSuperAdmin(contexto: ContextoAutenticacao
       role: contexto.role
     },
     metricas: [
-      metrica("Tenants", tenants, "Clientes ativos, trial ou suspensos", "info"),
-      metrica("Proprietarios", proprietarios, "Profiles globais de clientes", "success"),
-      metrica("Hospedes", hospedes, "Contatos vindos de reservas", "neutral"),
-      metrica("Planos", planos, "Catalogo comercial", "info"),
-      metrica("Licencas", licencas, "Licencas emitidas", "warning"),
-      metrica("Feature flags", flags, "Recursos controlados", "neutral"),
-      metrica("Auditoria", auditoria, "Eventos registrados", "success"),
-      metrica("Imoveis", propriedades, "Propriedades globais", "info"),
-      metrica("Reservas", reservas, "Reservas da plataforma", "warning")
+      metrica("Proprietarios ativos", proprietariosAtivos, "Tenants liberados para operar", "success"),
+      metrica("Proprietarios bloqueados", proprietariosBloqueados, "Suspensos ou cancelados", "danger"),
+      metrica("Hospedes cadastrados", hospedes, "Contatos vindos de reservas", "info"),
+      metrica("Reservas totais", reservas, "Reservas da plataforma", "warning"),
+      metricaTexto("Receita total", formatarMoeda(receitaTotal), "Transacoes pagas de receita", "success"),
+      metrica("Planos ativos", planosAtivos, "Catalogo comercial ativo", "neutral")
     ],
     recentes: await carregarAuditoriaRecente()
   };
@@ -123,6 +127,22 @@ export async function carregarModuloSuperAdmin(modulo: SuperAdminModulo) {
     case "configuracoes":
       return carregarConfiguracoes();
   }
+}
+
+async function carregarReceitaTotal() {
+  const supabase = await criarClienteSupabaseServer();
+  const transacoes = await lerDadosSuperAdmin<TransactionRow[]>(
+    supabase
+      .from("transactions")
+      .select("amount")
+      .eq("transaction_type", "income")
+      .eq("status", "paid")
+      .returns<TransactionRow[]>(),
+    "receita total",
+    []
+  );
+
+  return transacoes.reduce((total, transacao) => total + Number(transacao.amount ?? 0), 0);
 }
 
 async function carregarProprietarios(): Promise<SuperAdminModuloDados> {
@@ -434,6 +454,15 @@ function metricaValor(
   return { detalhe, label, tone, valor: Intl.NumberFormat("pt-BR").format(valor) };
 }
 
+function metricaTexto(
+  label: string,
+  valor: string,
+  detalhe: string,
+  tone: SuperAdminTone
+): SuperAdminMetrica {
+  return { detalhe, label, tone, valor };
+}
+
 function registro(
   id: string,
   titulo: string,
@@ -446,7 +475,8 @@ function registro(
 }
 
 async function contar(query: PromiseLike<ResultadoContagem>): Promise<ResultadoContagem> {
-  return query;
+  const count = await contarSuperAdmin(query, "indicador global");
+  return { count, error: null };
 }
 
 async function carregarProfilesPorId(ids: string[]) {

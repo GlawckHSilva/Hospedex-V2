@@ -1,0 +1,59 @@
+export type FeatureFlagControladaConfig = {
+  descricao: string;
+  key: string;
+  label: string;
+  module: string;
+  ownerConfigurable: boolean;
+};
+
+export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
+  {
+    descricao: "Modulo financeiro operacional.",
+    key: "payments",
+    label: "Financeiro",
+    module: "finance",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Controle de inventario por propriedade.",
+    key: "inventory",
+    label: "Inventario",
+    module: "inventory",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Operacao de limpeza e tarefas.",
+    key: "cleaning",
+    label: "Limpeza",
+    module: "cleaning",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Relatorios gerenciais do proprietario.",
+    key: "reports",
+    label: "Relatorios",
+    module: "reports",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Usuarios internos e permissoes de equipe.",
+    key: "staff",
+    label: "Funcionarios",
+    module: "staff",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Calendario e disponibilidade por unidade.",
+    key: "calendar",
+    label: "Calendario",
+    module: "calendar",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Preparacao para API publica futura.",
+    key: "api_future",
+    label: "API futura",
+    module: "api",
+    ownerConfigurable: false
+  }
+];

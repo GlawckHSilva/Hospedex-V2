@@ -8,7 +8,7 @@ import { normalizarVariavelAmbiente, obterAmbienteSupabase } from "./env";
  * Cliente administrativo do Supabase usado apenas em server actions sensiveis.
  *
  * A service role ignora RLS, por isso nunca deve ser importada por componentes
- * client-side. Toda chamada precisa validar a role super_admin antes de gravar.
+ * client-side. Toda chamada precisa validar uma role administrativa antes de gravar.
  */
 export function criarClienteSupabaseAdmin() {
   const { url } = obterAmbienteSupabase();

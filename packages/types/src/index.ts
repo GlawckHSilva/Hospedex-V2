@@ -38,6 +38,9 @@ export type {
   ReservationRow,
   ReservationStatusHistoryRow,
   RoleRow,
+  RolePermissionRow,
+  StaffInviteRow,
+  StaffInviteStatus,
   SubscriptionRow,
   TenantFeatureRow,
   TenantMemberRole,
@@ -79,6 +82,7 @@ export type FeatureFlagKey =
   | "extra_services"
   | "reviews"
   | "regional_guide"
+  | "calendar"
   | "advanced_rates"
   | "multi_unit"
   | "ics_sync"
@@ -89,6 +93,7 @@ export type FeatureFlagKey =
   | "automations"
   | "ai_assistant"
   | "ai_pricing"
+  | "api_future"
   | "reports";
 
 export type TenantScope = {

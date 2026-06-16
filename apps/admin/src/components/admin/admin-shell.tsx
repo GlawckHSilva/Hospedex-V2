@@ -46,6 +46,7 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   dashboard: LayoutDashboard,
   featureFlags: Flag,
   financeiro: CreditCard,
+  funcionarios: Users,
   hospedes: Users,
   inventario: PackageCheck,
   licencas: KeyRound,
