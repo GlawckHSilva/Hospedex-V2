@@ -19,6 +19,9 @@ import type {
 export type FiltrosReservas = {
   busca?: string;
   propriedadeId?: string;
+  unidadeId?: string;
+  dataInicio?: string;
+  dataFim?: string;
   status?: ReservationStatus | "todos";
 };
 

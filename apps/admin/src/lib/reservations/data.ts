@@ -141,6 +141,20 @@ async function criarConsultaReservas(tenantId: string, filtros: FiltrosReservas)
     consulta = consulta.eq("property_id", filtros.propriedadeId);
   }
 
+  if (filtros.unidadeId) {
+    consulta = consulta.eq("unit_id", filtros.unidadeId);
+  }
+
+  // O periodo usa sobreposicao de datas, porque uma reserva pode comecar antes
+  // do filtro e ainda ocupar a unidade dentro da janela pesquisada.
+  if (filtros.dataInicio) {
+    consulta = consulta.gt("check_out", filtros.dataInicio);
+  }
+
+  if (filtros.dataFim) {
+    consulta = consulta.lt("check_in", filtros.dataFim);
+  }
+
   return consulta.returns<ReservationRow[]>();
 }
 

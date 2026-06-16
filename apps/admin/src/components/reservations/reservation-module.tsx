@@ -78,7 +78,7 @@ export function ReservationModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <form className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr_auto]">
+          <form className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr_0.8fr_0.7fr_0.7fr_auto]">
             <CampoTexto
               defaultValue={filtros.busca ?? ""}
               label="Busca"
@@ -90,6 +90,9 @@ export function ReservationModule({
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
             />
+            <CampoUnidadeFiltro defaultValue={filtros.unidadeId ?? ""} unidades={unidades} />
+            <CampoData defaultValue={filtros.dataInicio ?? ""} label="Entrada" name="dataInicio" />
+            <CampoData defaultValue={filtros.dataFim ?? ""} label="Saida" name="dataFim" />
             <div className="flex items-end">
               <Button className="w-full" type="submit" variant="outline">
                 <Search />
@@ -223,6 +226,50 @@ function CampoPropriedade({
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function CampoUnidadeFiltro({
+  defaultValue,
+  unidades
+}: {
+  defaultValue: string;
+  unidades: Array<{ id: string; name: string }>;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="unidadeId">Unidade</Label>
+      <select
+        className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        defaultValue={defaultValue}
+        id="unidadeId"
+        name="unidadeId"
+      >
+        <option value="">Todas</option>
+        {unidades.map((unidade) => (
+          <option key={unidade.id} value={unidade.id}>
+            {unidade.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CampoData({
+  defaultValue,
+  label,
+  name
+}: {
+  defaultValue: string;
+  label: string;
+  name: string;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={name}>{label}</Label>
+      <Input defaultValue={defaultValue} id={name} name={name} type="date" />
     </div>
   );
 }

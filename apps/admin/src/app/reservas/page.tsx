@@ -54,15 +54,24 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
   const filtros: {
     busca?: string;
     propriedadeId?: string;
+    unidadeId?: string;
+    dataInicio?: string;
+    dataFim?: string;
     status: ReservationStatus | "todos";
   } = {
     status: lerStatus(params)
   };
   const busca = lerParametro(params, "busca");
   const propriedadeId = lerParametro(params, "propriedadeId");
+  const unidadeId = lerParametro(params, "unidadeId");
+  const dataInicio = lerData(params, "dataInicio");
+  const dataFim = lerData(params, "dataFim");
 
   if (busca) filtros.busca = busca;
   if (propriedadeId) filtros.propriedadeId = propriedadeId;
+  if (unidadeId) filtros.unidadeId = unidadeId;
+  if (dataInicio) filtros.dataInicio = dataInicio;
+  if (dataFim) filtros.dataFim = dataFim;
 
   return filtros;
 }
@@ -83,4 +92,12 @@ function lerStatus(
   return STATUS_RESERVA.includes(valor as ReservationStatus)
     ? (valor as ReservationStatus)
     : "todos";
+}
+
+function lerData(
+  params: Record<string, string | string[] | undefined>,
+  chave: string
+): string | undefined {
+  const valor = lerParametro(params, chave);
+  return valor && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : undefined;
 }

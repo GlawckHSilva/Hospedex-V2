@@ -2,6 +2,7 @@
 
 import type {
   ReservationGuestRow,
+  ReservationRow,
   ReservationStatus,
   ReservationStatusHistoryRow
 } from "@hospedex/types";
@@ -42,6 +43,7 @@ const TRANSICOES_RESERVA: Record<ReservationStatus, ReservationStatus[]> = {
 type EntradaReserva = {
   propriedadeId: string;
   unidadeId: string | null;
+  permitirOverbooking: boolean;
   hospedeNome: string;
   hospedeEmail: string | null;
   hospedeTelefone: string | null;
@@ -62,6 +64,8 @@ export async function criarReservaManualAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
     const entrada = await obterEntradaReserva(supabase, escopo, formData);
     const statusInicial: ReservationStatus = "pending";
+
+    await validarDisponibilidadeUnidade(supabase, escopo, entrada);
 
     const { data: reserva, error } = await supabase
       .from("reservations")
@@ -116,6 +120,8 @@ export async function atualizarReservaAction(formData: FormData) {
       throw new ErroRegraReserva("Reserva encerrada não pode ser editada.");
     }
 
+    await validarDisponibilidadeUnidade(supabase, escopo, entrada, reservaId);
+
     const { error } = await supabase
       .from("reservations")
       .update({
@@ -136,6 +142,7 @@ export async function atualizarReservaAction(formData: FormData) {
     if (error) throw new Error(error.message);
 
     await salvarHospedePrincipal(supabase, escopo, reservaId, entrada);
+    await registrarEventosAtualizacao(supabase, escopo, reservaAtual, entrada);
     revalidarReservas();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao atualizar reserva.");
@@ -247,10 +254,12 @@ async function obterEntradaReserva(
   const unidadeId = textoOpcional(formData, "unidadeId");
   const checkIn = dataObrigatoria(formData, "checkIn", "check-in");
   const checkOut = dataObrigatoria(formData, "checkOut", "check-out");
+  let permitirOverbooking = false;
 
   await carregarPropriedadeDaReserva(supabase, escopo, propriedadeId);
   if (unidadeId) {
-    await carregarUnidadeDaReserva(supabase, escopo, unidadeId, propriedadeId);
+    const unidade = await carregarUnidadeDaReserva(supabase, escopo, unidadeId, propriedadeId);
+    permitirOverbooking = unidade.allow_overbooking;
   }
 
   if (new Date(`${checkOut}T00:00:00`) <= new Date(`${checkIn}T00:00:00`)) {
@@ -260,6 +269,7 @@ async function obterEntradaReserva(
   return {
     propriedadeId,
     unidadeId,
+    permitirOverbooking,
     hospedeNome: textoObrigatorio(formData, "hospedeNome", "nome do hóspede"),
     hospedeEmail: textoOpcional(formData, "hospedeEmail"),
     hospedeTelefone: textoOpcional(formData, "hospedeTelefone"),
@@ -272,6 +282,83 @@ async function obterEntradaReserva(
     observacoesHospede: textoOpcional(formData, "observacoesHospede"),
     observacoesInternas: textoOpcional(formData, "observacoesInternas")
   };
+}
+
+async function validarDisponibilidadeUnidade(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  entrada: EntradaReserva,
+  reservaIgnoradaId?: string
+) {
+  if (!entrada.unidadeId || entrada.permitirOverbooking) return;
+
+  // A V2 bloqueia sobreposicao na mesma unidade por padrao. O campo
+  // allow_overbooking fica preparado para uma liberacao futura controlada.
+  let consulta = supabase
+    .from("reservations")
+    .select("id, code")
+    .eq("tenant_id", escopo.tenantId)
+    .eq("unit_id", entrada.unidadeId)
+    .neq("status", "cancelled")
+    .lt("check_in", entrada.checkOut)
+    .gt("check_out", entrada.checkIn)
+    .limit(1);
+
+  if (reservaIgnoradaId) {
+    consulta = consulta.neq("id", reservaIgnoradaId);
+  }
+
+  const { data, error } = await consulta.returns<Array<{ id: string; code: string }>>();
+
+  if (error) throw new Error(error.message);
+
+  const conflito = data?.[0];
+  if (conflito) {
+    throw new ErroRegraReserva(
+      `A unidade ja possui reserva no periodo selecionado (${conflito.code}).`
+    );
+  }
+}
+
+async function registrarEventosAtualizacao(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reservaAtual: ReservationRow,
+  entrada: EntradaReserva
+) {
+  const eventos: string[] = [];
+
+  if (reservaAtual.check_in !== entrada.checkIn || reservaAtual.check_out !== entrada.checkOut) {
+    eventos.push(
+      `Datas alteradas de ${reservaAtual.check_in} - ${reservaAtual.check_out} para ${entrada.checkIn} - ${entrada.checkOut}.`
+    );
+  }
+
+  if (Number(reservaAtual.total_amount) !== entrada.valorBase) {
+    eventos.push(
+      `Valor alterado de ${formatarMoeda(Number(reservaAtual.total_amount))} para ${formatarMoeda(entrada.valorBase)}.`
+    );
+  }
+
+  if (reservaAtual.unit_id !== entrada.unidadeId) {
+    eventos.push("Unidade da reserva alterada.");
+  }
+
+  if (eventos.length === 0) return;
+
+  // Eventos de sistema deixam a timeline auditavel sem misturar regras de
+  // pagamento, check-in ou atendimento que ainda serao implementadas.
+  const { error } = await supabase.from("reservation_notes").insert(
+    eventos.map((content) => ({
+      tenant_id: escopo.tenantId,
+      reservation_id: reservaAtual.id,
+      note_type: "system" as const,
+      content,
+      created_by: escopo.userId
+    }))
+  );
+
+  if (error) throw new Error(error.message);
 }
 
 async function salvarHospedePrincipal(
@@ -491,6 +578,13 @@ function numeroMoeda(formData: FormData, chave: string, label: string): number {
     throw new ErroRegraReserva(`Informe ${label} válido.`);
   }
   return valor;
+}
+
+function formatarMoeda(valor: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency"
+  }).format(valor);
 }
 
 function gerarCodigoReserva(): string {
