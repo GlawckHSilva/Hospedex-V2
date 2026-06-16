@@ -189,6 +189,8 @@ function montarDiasCalendario(
       numero: cursor.getUTCDate(),
       foraDoMes: data.slice(0, 7) !== mes,
       blocos: blocos.filter((bloco) => dataEstaNoIntervalo(data, bloco.starts_on, bloco.ends_on)),
+      checkIns: reservas.filter((reserva) => reserva.check_in === data),
+      checkOuts: reservas.filter((reserva) => reserva.check_out === data),
       reservas: reservas.filter((reserva) =>
         dataEstaNoIntervalo(data, reserva.check_in, reserva.check_out)
       )

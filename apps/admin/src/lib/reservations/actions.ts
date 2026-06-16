@@ -290,9 +290,12 @@ async function validarDisponibilidadeUnidade(
   entrada: EntradaReserva,
   reservaIgnoradaId?: string
 ) {
-  if (!entrada.unidadeId || entrada.permitirOverbooking) return;
+  if (!entrada.unidadeId) return;
 
-  // A V2 bloqueia sobreposicao na mesma unidade por padrao. O campo
+  await validarBloqueioManualCalendario(supabase, escopo, entrada);
+  if (entrada.permitirOverbooking) return;
+
+  // A V2 bloqueia sobreposicao de reservas na mesma unidade por padrao. O campo
   // allow_overbooking fica preparado para uma liberacao futura controlada.
   let consulta = supabase
     .from("reservations")
@@ -316,6 +319,35 @@ async function validarDisponibilidadeUnidade(
   if (conflito) {
     throw new ErroRegraReserva(
       `A unidade ja possui reserva no periodo selecionado (${conflito.code}).`
+    );
+  }
+}
+
+async function validarBloqueioManualCalendario(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  entrada: EntradaReserva
+) {
+  if (!entrada.unidadeId) return;
+
+  const { data, error } = await supabase
+    .from("calendar_availability_blocks")
+    .select("id, reason")
+    .eq("tenant_id", escopo.tenantId)
+    .eq("unit_id", entrada.unidadeId)
+    .neq("source", "reservation")
+    .in("status", ["blocked", "unavailable"])
+    .lt("starts_on", entrada.checkOut)
+    .gt("ends_on", entrada.checkIn)
+    .limit(1)
+    .returns<Array<{ id: string; reason: string | null }>>();
+
+  if (error) throw new Error(error.message);
+
+  const bloqueio = data?.[0];
+  if (bloqueio) {
+    throw new ErroRegraReserva(
+      `A unidade esta bloqueada no periodo selecionado${bloqueio.reason ? `: ${bloqueio.reason}` : "."}`
     );
   }
 }

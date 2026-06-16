@@ -37,6 +37,8 @@ export type DiaCalendario = {
   foraDoMes: boolean;
   blocos: BlocoCalendario[];
   reservas: ReservaCalendario[];
+  checkIns: ReservaCalendario[];
+  checkOuts: ReservaCalendario[];
 };
 
 export type DadosModuloCalendario = {
@@ -69,12 +71,14 @@ export type MotivoBloqueioCalendario =
   | "maintenance"
   | "owner_use"
   | "unavailable"
+  | "cleaning"
   | "other";
 
 export const MOTIVOS_BLOQUEIO_CALENDARIO: MotivoBloqueioCalendario[] = [
   "maintenance",
   "owner_use",
   "unavailable",
+  "cleaning",
   "other"
 ];
 
@@ -82,6 +86,7 @@ export const LABEL_MOTIVO_BLOQUEIO: Record<MotivoBloqueioCalendario, string> = {
   maintenance: "Manutencao",
   owner_use: "Uso proprio",
   unavailable: "Indisponivel",
+  cleaning: "Limpeza",
   other: "Outro"
 };
 
@@ -112,7 +117,7 @@ export const CLASSE_STATUS_RESERVA_CALENDARIO: Record<ReservationStatus, string>
   awaiting_payment: "border-sky-400/35 bg-sky-400/12 text-sky-950 dark:text-sky-100",
   confirmed: "border-emerald-400/35 bg-emerald-400/12 text-emerald-950 dark:text-emerald-100",
   checked_in: "border-cyan-400/35 bg-cyan-400/12 text-cyan-950 dark:text-cyan-100",
-  checked_out: "border-blue-400/35 bg-blue-400/12 text-blue-950 dark:text-blue-100",
+  checked_out: "border-violet-400/35 bg-violet-400/12 text-violet-950 dark:text-violet-100",
   completed: "border-slate-400/35 bg-slate-400/12 text-slate-950 dark:text-slate-100",
   cancelled: "border-rose-400/35 bg-rose-400/12 text-rose-950 dark:text-rose-100"
 };

@@ -1,4 +1,5 @@
-import { CalendarCheck2, LockKeyhole, Unlock } from "lucide-react";
+import { CalendarCheck2, LogIn, LogOut, LockKeyhole, Unlock } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { Badge, Button, cn } from "@hospedex/ui";
 
@@ -42,51 +43,76 @@ export function CalendarDayCell({
       className={cn(
         "min-h-36 rounded-lg border bg-background/55 p-2 text-sm transition-colors",
         dia.foraDoMes && "bg-background/25 text-muted-foreground",
-        bloqueiosAtivos.length > 0 && "border-cyan-500/35 bg-cyan-500/10"
+        bloqueiosAtivos.length > 0 && "border-zinc-500/35 bg-zinc-500/10"
       )}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="font-semibold">{dia.numero}</span>
         {bloqueiosAtivos.length > 0 ? (
-          <LockKeyhole className="h-3.5 w-3.5 text-cyan-700 dark:text-cyan-200" />
+          <LockKeyhole className="h-3.5 w-3.5 text-zinc-700 dark:text-zinc-200" />
         ) : null}
       </div>
 
       <div className="space-y-1.5">
+        {dia.checkIns.map((reserva) => (
+          <MarcadorOperacional
+            icone={<LogIn className="h-3.5 w-3.5 shrink-0" />}
+            key={`checkin-${reserva.id}`}
+            texto={`Check-in ${reserva.code}`}
+            tipo="entrada"
+          />
+        ))}
+
+        {dia.checkOuts.map((reserva) => (
+          <MarcadorOperacional
+            icone={<LogOut className="h-3.5 w-3.5 shrink-0" />}
+            key={`checkout-${reserva.id}`}
+            texto={`Check-out ${reserva.code}`}
+            tipo="saida"
+          />
+        ))}
+
         {dia.reservas.map((reserva) => (
-          <div
+          <details
             className={cn(
               "rounded-md border px-2 py-1",
               CLASSE_STATUS_RESERVA_CALENDARIO[reserva.status]
             )}
             key={reserva.id}
           >
-            <div className="flex items-center gap-1.5">
-              <CalendarCheck2 className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate text-xs font-semibold">{reserva.code}</span>
+            <summary className="cursor-pointer list-none">
+              <div className="flex items-center gap-1.5">
+                <CalendarCheck2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate text-xs font-semibold">{reserva.code}</span>
+              </div>
+              <span className="text-[10px] font-medium uppercase tracking-normal opacity-75">
+                {LABEL_STATUS_RESERVA_CALENDARIO[reserva.status]}
+              </span>
+              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                {reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}
+              </p>
+            </summary>
+            <div className="mt-2 space-y-1 border-t pt-2 text-[11px] text-muted-foreground">
+              <p>{formatarPeriodo(reserva.check_in, reserva.check_out)}</p>
+              <p>{formatarMoeda(Number(reserva.total_amount))}</p>
             </div>
-            <span className="text-[10px] font-medium uppercase tracking-normal opacity-75">
-              {LABEL_STATUS_RESERVA_CALENDARIO[reserva.status]}
-            </span>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-              {reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}
-            </p>
-          </div>
+          </details>
         ))}
 
         {bloqueiosAtivos.map((bloco) => (
-          <div
-            className="rounded-md border border-cyan-500/25 bg-cyan-500/10 px-2 py-1"
+          <details
+            className="rounded-md border border-zinc-500/30 bg-zinc-500/10 px-2 py-1"
             key={bloco.id}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <Badge className="mb-1" variant={bloco.status === "reserved" ? "success" : "info"}>
-                  {LABEL_STATUS_BLOQUEIO[bloco.status]}
-                </Badge>
-                <p className="truncate text-xs font-medium">{bloco.reason ?? "Periodo bloqueado"}</p>
-              </div>
-
+            <summary className="cursor-pointer list-none">
+              <Badge className="mb-1" variant={bloco.status === "reserved" ? "success" : "outline"}>
+                {LABEL_STATUS_BLOQUEIO[bloco.status]}
+              </Badge>
+              <p className="truncate text-xs font-medium">{bloco.reason ?? "Periodo bloqueado"}</p>
+            </summary>
+            <div className="mt-2 space-y-2 border-t pt-2 text-[11px] text-muted-foreground">
+              <p>{formatarPeriodo(bloco.starts_on, bloco.ends_on)}</p>
+              <p>{bloco.notes ?? "Bloqueio manual do calendario."}</p>
               {podeGerenciar && bloco.source !== "reservation" ? (
                 <form action={liberarPeriodoCalendarioAction}>
                   <input name="bloqueioId" type="hidden" value={bloco.id} />
@@ -105,7 +131,7 @@ export function CalendarDayCell({
                 </form>
               ) : null}
             </div>
-          </div>
+          </details>
         ))}
 
         {liberados.length > 0 ? (
@@ -114,10 +140,51 @@ export function CalendarDayCell({
           </p>
         ) : null}
 
-        {dia.reservas.length === 0 && bloqueiosAtivos.length === 0 ? (
+        {dia.reservas.length === 0 && bloqueiosAtivos.length === 0 && dia.checkOuts.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">Disponivel</p>
         ) : null}
       </div>
     </div>
   );
+}
+
+function MarcadorOperacional({
+  icone,
+  texto,
+  tipo
+}: {
+  icone: ReactNode;
+  texto: string;
+  tipo: "entrada" | "saida";
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold",
+        tipo === "entrada"
+          ? "border-cyan-400/35 bg-cyan-400/12 text-cyan-950 dark:text-cyan-100"
+          : "border-violet-400/35 bg-violet-400/12 text-violet-950 dark:text-violet-100"
+      )}
+    >
+      {icone}
+      <span className="truncate">{texto}</span>
+    </div>
+  );
+}
+
+function formatarPeriodo(inicio: string, fim: string) {
+  return `${formatarData(inicio)} - ${formatarData(fim)}`;
+}
+
+function formatarData(valor: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
+    new Date(`${valor}T00:00:00Z`)
+  );
+}
+
+function formatarMoeda(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency"
+  }).format(valor);
 }
