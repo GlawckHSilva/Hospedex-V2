@@ -133,6 +133,28 @@ export type PlanRow = {
   updated_at: Timestamp;
 };
 
+export type PlanFeatureRow = {
+  plan_id: UUID;
+  feature_flag_id: UUID;
+  enabled: boolean;
+  limits: JsonValue;
+  created_at: Timestamp;
+};
+
+export type SubscriptionRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  plan_id: UUID;
+  status: "trialing" | "active" | "past_due" | "paused" | "cancelled";
+  starts_at: Timestamp;
+  current_period_start: Timestamp | null;
+  current_period_end: Timestamp | null;
+  cancelled_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
 export type LicenseRow = {
   id: UUID;
   tenant_id: UUID;

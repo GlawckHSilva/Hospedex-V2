@@ -2,6 +2,7 @@ import type {
   PermissionCode,
   ProfileRow,
   TenantMemberRow,
+  TenantStatus,
   TenantRow,
   UserRole
 } from "@hospedex/types";
@@ -10,6 +11,8 @@ import { redirect } from "next/navigation";
 import { supabaseEstaConfigurado } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type { ContextoAutenticacao } from "./types";
+
+const STATUS_TENANT_OPERACIONAL: TenantStatus[] = ["trial", "active", "past_due"];
 
 /**
  * Carrega o contexto administrativo no servidor.
@@ -60,21 +63,29 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
   const { data: tenantProprio } = !vinculoAtivo
     ? await supabase.from("tenants").select("*").eq("owner_id", userId).maybeSingle<TenantRow>()
     : { data: null };
-  const tenantId = vinculoAtivo?.tenant_id ?? tenantProprio?.id;
+  const tenantProprioOperacional = tenantEstaOperacional(tenantProprio) ? tenantProprio : null;
+  const tenantId = vinculoAtivo?.tenant_id ?? tenantProprioOperacional?.id;
 
   const { data: tenant } =
-    tenantId && !tenantProprio
+    tenantId && !tenantProprioOperacional
       ? await supabase.from("tenants").select("*").eq("id", tenantId).maybeSingle<TenantRow>()
-      : { data: tenantProprio };
+      : { data: tenantProprioOperacional };
 
-  const role = resolverRole(profile, vinculoAtivo, tenantProprio);
+  // Tenant suspenso ou cancelado nao gera contexto operacional.
+  // Isso permite bloquear o proprietario sem apagar usuario, historico ou licenca.
+  const tenantOperacional = tenantEstaOperacional(tenant) ? tenant : null;
+  const roleResolvida = resolverRole(profile, vinculoAtivo, tenantProprioOperacional);
+  const role =
+    roleResolvida === "super_admin" || tenantOperacional ? roleResolvida : "guest";
   const permissions = await carregarPermissoes(vinculoAtivo?.role_id ?? null, role);
-  const featureFlags = tenantId ? await carregarFeatureFlags(tenantId) : {};
+  const featureFlags = tenantOperacional?.id
+    ? await carregarFeatureFlags(tenantOperacional.id)
+    : {};
 
   return {
     userId,
     profile,
-    tenant,
+    tenant: tenantOperacional,
     role,
     memberships,
     permissions,
@@ -107,11 +118,15 @@ function resolverRole(
   return "guest";
 }
 
+function tenantEstaOperacional(tenant: TenantRow | null): tenant is TenantRow {
+  return Boolean(tenant && STATUS_TENANT_OPERACIONAL.includes(tenant.status));
+}
+
 async function carregarPermissoes(
   roleId: string | null,
   role: UserRole
 ): Promise<PermissionCode[]> {
-  if (role === "super_admin" || !roleId) return [];
+  if (role === "super_admin" || role === "guest" || !roleId) return [];
 
   const supabase = await criarClienteSupabaseServer();
   const { data } = await supabase

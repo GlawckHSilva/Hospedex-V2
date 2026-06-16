@@ -1,0 +1,632 @@
+"use server";
+
+import type {
+  LicenseRow,
+  PlanRow,
+  SubscriptionRow,
+  TenantRow,
+  TenantStatus
+} from "@hospedex/types";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { exigirSuperAdmin } from "../../auth/context";
+import { criarClienteSupabaseAdmin } from "../../supabase/admin";
+
+/**
+ * Server actions do Super Admin > Proprietarios.
+ *
+ * O fluxo usa service role apenas no servidor porque precisa criar Auth user,
+ * tenant, vinculos, licenca e flags em uma operacao administrativa unica.
+ */
+
+const CAMINHO_PROPRIETARIOS = "/super-admin/proprietarios";
+const STATUS_TENANT: TenantStatus[] = [
+  "trial",
+  "active",
+  "past_due",
+  "suspended",
+  "cancelled"
+];
+const STATUS_OPERACIONAIS: TenantStatus[] = ["trial", "active", "past_due"];
+
+type EntradaProprietario = {
+  email: string;
+  expiraEm: string | null;
+  featureFlagIds: string[];
+  limitePropriedades: number;
+  limiteUnidades: number;
+  nome: string;
+  planoId: string;
+  senha: string | null;
+  status: TenantStatus;
+  telefone: string | null;
+  tenantNome: string;
+};
+
+export async function criarProprietarioAction(formData: FormData) {
+  const contexto = await exigirSuperAdmin();
+  const supabase = criarClienteSupabaseAdmin();
+  const entrada = obterEntradaProprietario(formData, true);
+  let authUserId: string | null = null;
+  let tenantId: string | null = null;
+
+  try {
+    const plano = await carregarPlanoObrigatorio(supabase, entrada.planoId);
+    const flags = await validarFeatureFlags(supabase, entrada.featureFlagIds);
+    const senha = entrada.senha;
+    if (!senha) {
+      throw new ErroRegraProprietario("Informe uma senha com pelo menos 8 caracteres.");
+    }
+
+    const { data: authData, error: erroAuth } = await supabase.auth.admin.createUser({
+      email: entrada.email,
+      email_confirm: true,
+      password: senha,
+      user_metadata: {
+        full_name: entrada.nome,
+        phone: entrada.telefone
+      }
+    });
+
+    if (erroAuth || !authData.user) {
+      throw new ErroRegraProprietario(
+        erroAuth?.message ?? "Usuario Auth nao retornado pelo Supabase."
+      );
+    }
+
+    authUserId = authData.user.id;
+
+    await criarProfileProprietario(supabase, authUserId, entrada);
+    const tenant = await criarTenantProprietario(supabase, authUserId, entrada);
+    tenantId = tenant.id;
+    const roleId = await criarOuObterRoleOwner(supabase, tenant.id);
+
+    await vincularOwnerAoTenant(supabase, tenant.id, authUserId, roleId, contexto.userId, entrada.status);
+    const assinatura = await salvarAssinatura(supabase, tenant, plano, entrada);
+    await salvarLicenca(supabase, tenant, assinatura, entrada);
+    await aplicarFeatureFlags(supabase, tenant.id, flags, contexto.userId);
+    await registrarAuditoria(supabase, contexto.userId, tenant.id, "super_admin.owner.created");
+    revalidarModulo();
+  } catch (erro) {
+    await desfazerCriacaoIncompleta(supabase, tenantId, authUserId);
+    redirecionarComErro(erro, "Erro ao criar proprietario.");
+  }
+
+  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=proprietario-criado`);
+}
+
+export async function atualizarProprietarioAction(formData: FormData) {
+  const contexto = await exigirSuperAdmin();
+  const supabase = criarClienteSupabaseAdmin();
+  const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
+  const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
+  const entrada = obterEntradaProprietario(formData, false);
+
+  try {
+    const [tenant, plano, flags] = await Promise.all([
+      carregarTenantDoOwner(supabase, tenantId, ownerId),
+      carregarPlanoObrigatorio(supabase, entrada.planoId),
+      validarFeatureFlags(supabase, entrada.featureFlagIds)
+    ]);
+
+    await garantirProfilePodeSerOwner(supabase, ownerId);
+    await atualizarProfileBasico(supabase, ownerId, entrada);
+    await atualizarTenantBasico(supabase, tenant.id, entrada);
+
+    const roleId = await criarOuObterRoleOwner(supabase, tenant.id);
+    await vincularOwnerAoTenant(supabase, tenant.id, ownerId, roleId, contexto.userId, entrada.status);
+    const assinatura = await salvarAssinatura(supabase, { ...tenant, status: entrada.status }, plano, entrada);
+    await salvarLicenca(supabase, { ...tenant, status: entrada.status }, assinatura, entrada);
+    await aplicarFeatureFlags(supabase, tenant.id, flags, contexto.userId);
+    await registrarAuditoria(supabase, contexto.userId, tenant.id, "super_admin.owner.updated");
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao atualizar proprietario.");
+  }
+
+  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=proprietario-atualizado`);
+}
+
+export async function alterarStatusProprietarioAction(formData: FormData) {
+  const contexto = await exigirSuperAdmin();
+  const supabase = criarClienteSupabaseAdmin();
+  const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
+  const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
+  const acao = textoObrigatorio(formData, "acao", "acao");
+  const statusDestino: TenantStatus = acao === "ativar" ? "active" : "suspended";
+
+  try {
+    const tenant = await carregarTenantDoOwner(supabase, tenantId, ownerId);
+    const roleId = await criarOuObterRoleOwner(supabase, tenant.id);
+
+    await atualizarTenantBasico(supabase, tenant.id, {
+      status: statusDestino,
+      tenantNome: tenant.name
+    });
+    await vincularOwnerAoTenant(supabase, tenant.id, ownerId, roleId, contexto.userId, statusDestino);
+    await atualizarLicencaPorStatus(supabase, tenant.id, statusDestino);
+    await registrarAuditoria(supabase, contexto.userId, tenant.id, `super_admin.owner.${acao}`);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao alterar status do proprietario.");
+  }
+
+  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=status-proprietario`);
+}
+
+async function criarProfileProprietario(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  userId: string,
+  entrada: EntradaProprietario
+) {
+  const { error } = await supabase.from("profiles").upsert({
+    id: userId,
+    email: entrada.email,
+    full_name: entrada.nome,
+    phone: entrada.telefone,
+    platform_role: "user"
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+async function criarTenantProprietario(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  ownerId: string,
+  entrada: EntradaProprietario
+): Promise<TenantRow> {
+  const { data, error } = await supabase
+    .from("tenants")
+    .insert({
+      owner_id: ownerId,
+      name: entrada.tenantNome,
+      slug: gerarSlug(entrada.tenantNome),
+      status: entrada.status
+    })
+    .select("*")
+    .single<TenantRow>();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Tenant nao retornado apos criacao.");
+  }
+
+  return data;
+}
+
+async function atualizarProfileBasico(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  ownerId: string,
+  entrada: EntradaProprietario
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: entrada.nome,
+      phone: entrada.telefone
+    })
+    .eq("id", ownerId);
+
+  if (error) throw new Error(error.message);
+}
+
+async function atualizarTenantBasico(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string,
+  entrada: Pick<EntradaProprietario, "status" | "tenantNome">
+) {
+  const { error } = await supabase
+    .from("tenants")
+    .update({
+      name: entrada.tenantNome,
+      status: entrada.status
+    })
+    .eq("id", tenantId);
+
+  if (error) throw new Error(error.message);
+}
+
+async function criarOuObterRoleOwner(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string
+) {
+  const { data: existente, error: erroBusca } = await supabase
+    .from("roles")
+    .select("id")
+    .eq("tenant_id", tenantId)
+    .eq("code", "owner")
+    .maybeSingle<{ id: string }>();
+
+  if (erroBusca) throw new Error(erroBusca.message);
+  if (existente?.id) return existente.id;
+
+  const { data, error } = await supabase
+    .from("roles")
+    .insert({
+      tenant_id: tenantId,
+      code: "owner",
+      name: "Proprietario",
+      description: "Dono do tenant com acesso administrativo.",
+      is_system: true
+    })
+    .select("id")
+    .single<{ id: string }>();
+
+  if (error || !data) throw new Error(error?.message ?? "Role owner nao criada.");
+  return data.id;
+}
+
+async function vincularOwnerAoTenant(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string,
+  ownerId: string,
+  roleId: string,
+  superAdminId: string,
+  statusTenant: TenantStatus
+) {
+  // O owner fica ativo somente em tenant operacional. Suspenso/cancelado perde
+  // contexto no login, preservando historico sem apagar o usuario Auth.
+  const statusMembro = STATUS_OPERACIONAIS.includes(statusTenant) ? "active" : "disabled";
+  const { error } = await supabase.from("tenant_members").upsert(
+    {
+      invited_by: superAdminId,
+      member_role: "owner",
+      role_id: roleId,
+      status: statusMembro,
+      tenant_id: tenantId,
+      user_id: ownerId
+    },
+    { onConflict: "tenant_id,user_id" }
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+async function salvarAssinatura(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenant: TenantRow,
+  plano: PlanRow,
+  entrada: EntradaProprietario
+): Promise<SubscriptionRow> {
+  const assinaturaExistente = await carregarAssinaturaAtual(supabase, tenant.id);
+  const payload = {
+    current_period_end: entrada.expiraEm ? `${entrada.expiraEm}T23:59:59.000Z` : null,
+    current_period_start: new Date().toISOString(),
+    owner_id: tenant.owner_id,
+    plan_id: plano.id,
+    status: statusAssinatura(tenant.status),
+    tenant_id: tenant.id
+  };
+
+  const query = assinaturaExistente
+    ? supabase.from("subscriptions").update(payload).eq("id", assinaturaExistente.id)
+    : supabase.from("subscriptions").insert(payload);
+
+  const { data, error } = await query.select("*").single<SubscriptionRow>();
+  if (error || !data) throw new Error(error?.message ?? "Assinatura nao salva.");
+  return data;
+}
+
+async function salvarLicenca(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenant: TenantRow,
+  assinatura: SubscriptionRow,
+  entrada: EntradaProprietario
+) {
+  const licencaExistente = await carregarLicencaAtual(supabase, tenant.id);
+  const payload = {
+    expires_at: entrada.expiraEm,
+    limits: {
+      max_properties: entrada.limitePropriedades,
+      max_units: entrada.limiteUnidades
+    },
+    owner_id: tenant.owner_id,
+    status: statusLicenca(tenant.status),
+    subscription_id: assinatura.id,
+    tenant_id: tenant.id
+  };
+
+  const query = licencaExistente
+    ? supabase.from("licenses").update(payload).eq("id", licencaExistente.id)
+    : supabase.from("licenses").insert({
+        ...payload,
+        license_key: gerarChaveLicenca()
+      });
+
+  const { error } = await query;
+  if (error) throw new Error(error.message);
+}
+
+async function aplicarFeatureFlags(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string,
+  featureFlagIds: string[],
+  superAdminId: string
+) {
+  const { data: flags, error } = await supabase
+    .from("feature_flags")
+    .select("id")
+    .returns<Array<{ id: string }>>();
+
+  if (error) throw new Error(error.message);
+
+  const selecionadas = new Set(featureFlagIds);
+  const linhas = (flags ?? []).map((flag) => ({
+    configured_by: superAdminId,
+    enabled: selecionadas.has(flag.id),
+    feature_flag_id: flag.id,
+    tenant_id: tenantId
+  }));
+
+  // Gravamos true e false para deixar claro qual pacote inicial foi aplicado
+  // pelo Super Admin, sem depender de defaults globais que podem mudar depois.
+  const { error: erroUpsert } = await supabase
+    .from("tenant_features")
+    .upsert(linhas, { onConflict: "tenant_id,feature_flag_id" });
+
+  if (erroUpsert) throw new Error(erroUpsert.message);
+}
+
+async function validarFeatureFlags(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  ids: string[]
+) {
+  const { data, error } = await supabase
+    .from("feature_flags")
+    .select("id")
+    .in("id", ids.length ? ids : ["00000000-0000-0000-0000-000000000000"])
+    .returns<Array<{ id: string }>>();
+
+  if (error) throw new Error(error.message);
+  if ((data ?? []).length !== ids.length) {
+    throw new ErroRegraProprietario("Feature flag invalida para este tenant.");
+  }
+
+  return ids;
+}
+
+async function carregarPlanoObrigatorio(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  planoId: string
+): Promise<PlanRow> {
+  const { data, error } = await supabase
+    .from("plans")
+    .select("*")
+    .eq("id", planoId)
+    .neq("status", "archived")
+    .maybeSingle<PlanRow>();
+
+  if (error || !data) throw new ErroRegraProprietario("Plano selecionado nao encontrado.");
+  return data;
+}
+
+async function carregarTenantDoOwner(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string,
+  ownerId: string
+): Promise<TenantRow> {
+  const { data, error } = await supabase
+    .from("tenants")
+    .select("*")
+    .eq("id", tenantId)
+    .eq("owner_id", ownerId)
+    .is("deleted_at", null)
+    .maybeSingle<TenantRow>();
+
+  if (error || !data) {
+    throw new ErroRegraProprietario("Tenant do proprietario nao encontrado.");
+  }
+
+  return data;
+}
+
+async function garantirProfilePodeSerOwner(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  ownerId: string
+) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("platform_role")
+    .eq("id", ownerId)
+    .maybeSingle<{ platform_role: string }>();
+
+  if (error || !data) throw new ErroRegraProprietario("Profile do proprietario nao encontrado.");
+  if (data.platform_role === "super_admin") {
+    throw new ErroRegraProprietario("Super Admin nao pode ser vinculado como proprietario.");
+  }
+}
+
+async function carregarAssinaturaAtual(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string
+) {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<SubscriptionRow>();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function carregarLicencaAtual(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string
+) {
+  const { data, error } = await supabase
+    .from("licenses")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<LicenseRow>();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function atualizarLicencaPorStatus(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string,
+  statusTenant: TenantStatus
+) {
+  const licenca = await carregarLicencaAtual(supabase, tenantId);
+  if (!licenca) return;
+
+  const { error } = await supabase
+    .from("licenses")
+    .update({ status: statusLicenca(statusTenant) })
+    .eq("id", licenca.id);
+
+  if (error) throw new Error(error.message);
+}
+
+async function registrarAuditoria(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  actorId: string,
+  tenantId: string,
+  action: string
+) {
+  const { error } = await supabase.from("audit_logs").insert({
+    action,
+    actor_id: actorId,
+    entity_id: tenantId,
+    entity_table: "tenants",
+    metadata: {},
+    tenant_id: tenantId
+  });
+
+  if (error) console.error("Erro ao registrar auditoria de proprietario.", error.message);
+}
+
+async function desfazerCriacaoIncompleta(
+  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  tenantId: string | null,
+  authUserId: string | null
+) {
+  if (tenantId) {
+    await supabase.from("tenants").delete().eq("id", tenantId);
+  }
+
+  if (authUserId) {
+    await supabase.auth.admin.deleteUser(authUserId);
+  }
+}
+
+function obterEntradaProprietario(formData: FormData, exigirSenha: boolean): EntradaProprietario {
+  const planoId = textoObrigatorio(formData, "planoId", "plano");
+  const senha = textoOpcional(formData, "senha");
+
+  if (exigirSenha && (!senha || senha.length < 8)) {
+    throw new ErroRegraProprietario("Informe uma senha com pelo menos 8 caracteres.");
+  }
+
+  return {
+    email: emailObrigatorio(formData, "email"),
+    expiraEm: dataOpcional(formData, "expiraEm"),
+    featureFlagIds: formData.getAll("featureFlags").map((valor) => valor.toString()),
+    limitePropriedades: numeroInteiro(formData, "limitePropriedades", "limite de propriedades", 1),
+    limiteUnidades: numeroInteiro(formData, "limiteUnidades", "limite de unidades", 1),
+    nome: textoObrigatorio(formData, "nome", "nome"),
+    planoId,
+    senha,
+    status: validarStatusTenant(textoObrigatorio(formData, "status", "status")),
+    telefone: textoOpcional(formData, "telefone"),
+    tenantNome: textoObrigatorio(formData, "tenantNome", "nome do tenant")
+  };
+}
+
+function statusAssinatura(status: TenantStatus): SubscriptionRow["status"] {
+  if (status === "trial") return "trialing";
+  if (status === "active") return "active";
+  if (status === "past_due") return "past_due";
+  if (status === "suspended") return "paused";
+  return "cancelled";
+}
+
+function statusLicenca(status: TenantStatus): LicenseRow["status"] {
+  if (status === "trial") return "trial";
+  if (status === "active" || status === "past_due") return "active";
+  if (status === "suspended") return "suspended";
+  return "cancelled";
+}
+
+function validarStatusTenant(valor: string): TenantStatus {
+  if (STATUS_TENANT.includes(valor as TenantStatus)) return valor as TenantStatus;
+  throw new ErroRegraProprietario("Status do proprietario invalido.");
+}
+
+function textoObrigatorio(formData: FormData, chave: string, label: string): string {
+  const valor = formData.get(chave)?.toString().trim();
+  if (!valor) throw new ErroRegraProprietario(`Informe ${label}.`);
+  return valor;
+}
+
+function textoOpcional(formData: FormData, chave: string): string | null {
+  const valor = formData.get(chave)?.toString().trim();
+  return valor ? valor : null;
+}
+
+function emailObrigatorio(formData: FormData, chave: string): string {
+  const valor = textoObrigatorio(formData, chave, "email").toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)) {
+    throw new ErroRegraProprietario("Informe um email valido.");
+  }
+  return valor;
+}
+
+function numeroInteiro(formData: FormData, chave: string, label: string, minimo: number) {
+  const valor = Number.parseInt(textoObrigatorio(formData, chave, label), 10);
+  if (Number.isNaN(valor) || valor < minimo) {
+    throw new ErroRegraProprietario(`Informe ${label} valido.`);
+  }
+  return valor;
+}
+
+function dataOpcional(formData: FormData, chave: string) {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+    throw new ErroRegraProprietario("Informe data de expiracao valida.");
+  }
+  return valor;
+}
+
+function gerarSlug(valor: string) {
+  const base = valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 42);
+
+  return `${base || "tenant"}-${Date.now().toString(36)}`;
+}
+
+function gerarChaveLicenca() {
+  return `HSPX-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+}
+
+function redirecionarComErro(erro: unknown, mensagemLog: string): never {
+  const mensagem =
+    erro instanceof ErroRegraProprietario
+      ? erro.message
+      : "Nao foi possivel concluir a operacao do proprietario.";
+
+  if (!(erro instanceof ErroRegraProprietario)) {
+    console.error(mensagemLog, erro);
+  }
+
+  redirect(`${CAMINHO_PROPRIETARIOS}?erro=${encodeURIComponent(mensagem)}`);
+}
+
+function revalidarModulo() {
+  revalidatePath(CAMINHO_PROPRIETARIOS);
+  revalidatePath("/super-admin");
+}
+
+class ErroRegraProprietario extends Error {}
