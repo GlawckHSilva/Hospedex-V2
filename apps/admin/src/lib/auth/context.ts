@@ -148,6 +148,8 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
       featureFlags,
     };
   } catch (erro) {
+    if (erroEhDinamicoDoNext(erro)) throw erro;
+
     console.error("Falha ao carregar contexto autenticado.", erro);
     return null;
   }
@@ -252,4 +254,19 @@ function comTempoLimite<T>(
   });
 
   return Promise.race([consulta, timeout]);
+}
+
+function erroEhDinamicoDoNext(erro: unknown): boolean {
+  // O Next usa esta excecao internamente para promover rotas com cookies para SSR.
+  // Nao podemos capturar isso como erro de auth, senao o build registra falso alerta.
+  const digest =
+    typeof erro === "object" && erro && "digest" in erro
+      ? String((erro as { digest?: unknown }).digest)
+      : "";
+  const mensagem = erro instanceof Error ? erro.message : "";
+
+  return (
+    digest.includes("DYNAMIC_SERVER_USAGE") ||
+    mensagem.includes("Dynamic server usage")
+  );
 }
