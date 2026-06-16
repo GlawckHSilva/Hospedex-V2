@@ -2,7 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
-import { obterAmbienteSupabase } from "./env";
+import { normalizarVariavelAmbiente, obterAmbienteSupabase } from "./env";
 
 /**
  * Cliente administrativo do Supabase usado apenas em server actions sensiveis.
@@ -24,8 +24,8 @@ export function criarClienteSupabaseAdmin() {
 
 function obterChaveServiceRole() {
   const key =
-    process.env.HOSPEDEX_SUPABASE_SERVICE_ROLE_KEY ??
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
+    normalizarVariavelAmbiente(process.env.HOSPEDEX_SUPABASE_SERVICE_ROLE_KEY) ??
+    normalizarVariavelAmbiente(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
   if (!key) {
     throw new Error("Service role do Supabase nao configurada no servidor.");

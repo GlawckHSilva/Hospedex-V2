@@ -6,18 +6,23 @@
  */
 export function supabaseEstaConfigurado() {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    normalizarVariavelAmbiente(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
+      normalizarVariavelAmbiente(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)
   );
 }
 
 export function obterAmbienteSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const url = normalizarVariavelAmbiente(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const key = normalizarVariavelAmbiente(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY);
 
   if (!url || !key) {
     throw new Error("Variáveis públicas do Supabase não configuradas.");
   }
 
   return { key, url };
+}
+
+export function normalizarVariavelAmbiente(valor: string | undefined) {
+  // Remove BOM/caracteres invisiveis que podem entrar por CLI e quebrar cookies.
+  return valor?.replace(/\uFEFF/g, "").trim();
 }
