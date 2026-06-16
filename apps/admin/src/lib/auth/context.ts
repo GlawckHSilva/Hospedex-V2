@@ -42,7 +42,7 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
     );
     const userId = dadosUsuario.user?.id;
     if (erroUsuario || !userId) {
-      if (erroUsuario)
+      if (erroUsuario && !erroEhSessaoAusente(erroUsuario.message))
         console.error(
           "Falha ao carregar sessao autenticada.",
           erroUsuario.message,
@@ -269,4 +269,9 @@ function erroEhDinamicoDoNext(erro: unknown): boolean {
     digest.includes("DYNAMIC_SERVER_USAGE") ||
     mensagem.includes("Dynamic server usage")
   );
+}
+
+function erroEhSessaoAusente(mensagem: string): boolean {
+  // Visitantes anonimos acessam /login sem cookie; isso nao e falha operacional.
+  return mensagem.includes("Auth session missing");
 }
