@@ -3,7 +3,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { carregarContextoAutenticacao, obterCaminhoInicialPorRole } from "./context";
+import {
+  carregarContextoAutenticacao,
+  obterCaminhoInicialPorRole,
+} from "./context";
 import { supabaseEstaConfigurado } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
 
@@ -26,15 +29,27 @@ export async function entrarAction(formData: FormData) {
   const password = obterCampo(formData, "password");
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) redirect(comMensagem("/login", "Não foi possível entrar."));
+  if (error) {
+    console.error("Falha ao autenticar usuario no Supabase.", error.message);
+    redirect(comMensagem("/login", "Email ou senha invalidos."));
+  }
 
   const contexto = await carregarContextoAutenticacao();
-  redirect(obterCaminhoInicialPorRole(contexto?.role ?? "guest"));
+  if (!contexto) {
+    redirect(comMensagem("/login", "Falha ao carregar sessao apos login."));
+  }
+  if (contexto.role === "guest") {
+    redirect("/sem-acesso?motivo=role-nao-vinculada");
+  }
+
+  redirect(obterCaminhoInicialPorRole(contexto.role));
 }
 
 export async function cadastrarAction(formData: FormData) {
   if (!supabaseEstaConfigurado()) {
-    redirect(comMensagem("/cadastro", "Configure o Supabase para criar contas."));
+    redirect(
+      comMensagem("/cadastro", "Configure o Supabase para criar contas."),
+    );
   }
 
   const supabase = await criarClienteSupabaseServer();
@@ -48,17 +63,28 @@ export async function cadastrarAction(formData: FormData) {
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${origin}/auth/callback?next=/login`
-    }
+      emailRedirectTo: `${origin}/auth/callback?next=/login`,
+    },
   });
 
-  if (error) redirect(comMensagem("/cadastro", "Não foi possível criar a conta."));
-  redirect(comMensagem("/login", "Cadastro criado. Verifique seu email se necessário."));
+  if (error)
+    redirect(comMensagem("/cadastro", "Não foi possível criar a conta."));
+  redirect(
+    comMensagem(
+      "/login",
+      "Cadastro criado. Verifique seu email se necessário.",
+    ),
+  );
 }
 
 export async function recuperarSenhaAction(formData: FormData) {
   if (!supabaseEstaConfigurado()) {
-    redirect(comMensagem("/recuperar-senha", "Configure o Supabase para recuperar senha."));
+    redirect(
+      comMensagem(
+        "/recuperar-senha",
+        "Configure o Supabase para recuperar senha.",
+      ),
+    );
   }
 
   const supabase = await criarClienteSupabaseServer();
@@ -66,10 +92,13 @@ export async function recuperarSenhaAction(formData: FormData) {
   const email = obterCampo(formData, "email");
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=/nova-senha`
+    redirectTo: `${origin}/auth/callback?next=/nova-senha`,
   });
 
-  if (error) redirect(comMensagem("/recuperar-senha", "Não foi possível enviar o email."));
+  if (error)
+    redirect(
+      comMensagem("/recuperar-senha", "Não foi possível enviar o email."),
+    );
   redirect(comMensagem("/login", "Enviamos as instruções para seu email."));
 }
 
@@ -85,14 +114,17 @@ export async function sairAction() {
 
 export async function atualizarSenhaAction(formData: FormData) {
   if (!supabaseEstaConfigurado()) {
-    redirect(comMensagem("/nova-senha", "Configure o Supabase para alterar senha."));
+    redirect(
+      comMensagem("/nova-senha", "Configure o Supabase para alterar senha."),
+    );
   }
 
   const supabase = await criarClienteSupabaseServer();
   const password = obterCampo(formData, "password");
 
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) redirect(comMensagem("/nova-senha", "Não foi possível alterar a senha."));
+  if (error)
+    redirect(comMensagem("/nova-senha", "Não foi possível alterar a senha."));
 
   redirect(comMensagem("/login", "Senha atualizada. Entre novamente."));
 }
