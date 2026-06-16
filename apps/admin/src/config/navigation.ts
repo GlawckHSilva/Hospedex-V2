@@ -75,9 +75,8 @@ const MENU_PROPRIETARIO = [
   {
     titulo: "Financeiro",
     href: "/financeiro",
-    descricao: "Base para receitas, despesas e repasses.",
+    descricao: "Receitas, despesas e lançamentos manuais.",
     icone: "financeiro",
-    featureFlag: "payments",
     permissoes: ["finance.read"]
   },
   {

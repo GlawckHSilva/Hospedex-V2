@@ -26,6 +26,7 @@ export type ReservationStatus =
   | "cancelled";
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
+export type ExpenseCategoryKind = "income" | "expense";
 
 export type ProfileRow = {
   id: UUID;
@@ -346,6 +347,16 @@ export type FinancialAccountRow = {
   name: string;
   account_type: "cash" | "bank" | "gateway" | "other";
   currency: string;
+  status: "active" | "inactive";
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type ExpenseCategoryRow = {
+  id: UUID;
+  tenant_id: UUID;
+  name: string;
+  kind: ExpenseCategoryKind;
   status: "active" | "inactive";
   created_at: Timestamp;
   updated_at: Timestamp;
