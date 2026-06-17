@@ -389,6 +389,31 @@ export type CrmGuestRating =
   | "neutral"
   | "attention"
   | "blocked";
+export type InventoryItemCategory =
+  | "kitchen"
+  | "bedrooms"
+  | "bathrooms"
+  | "outdoor_area"
+  | "electronics"
+  | "furniture"
+  | "bed_linen"
+  | "cleaning"
+  | "other";
+export type InventoryConservationState =
+  | "new"
+  | "good"
+  | "used"
+  | "damaged"
+  | "missing";
+export type MaintenanceTaskType =
+  | "preventive"
+  | "corrective"
+  | "inspection"
+  | "replacement"
+  | "technical_cleaning"
+  | "other";
+export type MaintenanceTaskPriority = "low" | "medium" | "high" | "urgent";
+export type MaintenanceTaskStatus = "pending" | "completed" | "cancelled";
 
 export type CalendarAvailabilityBlockRow = {
   id: UUID;
@@ -449,6 +474,48 @@ export type CrmGuestRow = {
   created_at: Timestamp;
   updated_at: Timestamp;
   deleted_at: Timestamp | null;
+};
+
+export type InventoryItemRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  property_id: UUID;
+  unit_id: UUID | null;
+  category: InventoryItemCategory;
+  name: string;
+  quantity: number;
+  estimated_value: number;
+  conservation_state: InventoryConservationState;
+  image_url: string | null;
+  notes: string | null;
+  metadata: JsonValue;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  deleted_at: Timestamp | null;
+};
+
+export type MaintenanceTaskRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  property_id: UUID;
+  unit_id: UUID | null;
+  inventory_item_id: UUID | null;
+  assigned_to: UUID | null;
+  maintenance_type: MaintenanceTaskType;
+  priority: MaintenanceTaskPriority;
+  status: MaintenanceTaskStatus;
+  title: string;
+  notes: string | null;
+  scheduled_for: string | null;
+  completed_at: Timestamp | null;
+  completed_by: UUID | null;
+  metadata: JsonValue;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 };
 
 export type FinancialAccountRow = {
