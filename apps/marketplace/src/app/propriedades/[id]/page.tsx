@@ -17,11 +17,15 @@ import { FadeIn, GlassCard, GlassPanel, StatusBadge } from "@hospedex/ui";
 
 import { PublicShell } from "../../../components/layout/public-shell";
 import { PropertyGallery } from "../../../components/properties/property-gallery";
-import { PropertyReservationCard } from "../../../components/properties/property-reservation-card";
+import {
+  PropertyReservationCard,
+  type ReservaFeedback
+} from "../../../components/properties/property-reservation-card";
 import { ShareButton } from "../../../components/properties/share-button";
 import { carregarPropriedadePublica } from "../../../lib/marketplace/data";
 
 type Params = Promise<{ id: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const blocosFuturos = [
   {
@@ -46,8 +50,15 @@ const blocosFuturos = [
   }
 ] as const;
 
-export default async function PropriedadePage({ params }: { params: Params }) {
+export default async function PropriedadePage({
+  params,
+  searchParams
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { id } = await params;
+  const feedback = normalizarFeedback(await searchParams);
   const resultado = await carregarPropriedadePublica(id);
 
   if (!resultado.propriedade && !resultado.erro) {
@@ -238,12 +249,28 @@ export default async function PropriedadePage({ params }: { params: Params }) {
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <PropertyReservationCard property={propriedade} />
+            <PropertyReservationCard feedback={feedback} property={propriedade} />
           </aside>
         </div>
       </section>
     </PublicShell>
   );
+}
+
+function normalizarFeedback(params: Record<string, string | string[] | undefined>): ReservaFeedback {
+  const status = obterParametro(params.reserva);
+  const statusNormalizado: ReservaFeedback["status"] =
+    status === "sucesso" || status === "erro" ? status : null;
+
+  return {
+    codigo: obterParametro(params.codigo),
+    mensagem: obterParametro(params.mensagem),
+    status: statusNormalizado
+  };
+}
+
+function obterParametro(valor: string | string[] | undefined) {
+  return Array.isArray(valor) ? valor[0] : valor;
 }
 
 function Secao({
