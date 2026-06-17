@@ -23,6 +23,7 @@ type PageProps = {
 
 const MENSAGENS: Record<string, string> = {
   "perfil-nao-encontrado": "Perfil nao encontrado para este usuario.",
+  "feature-flag-desabilitada": "Este recurso avancado esta desabilitado para este tenant.",
   "permissao-insuficiente": "Permissao insuficiente para acessar esta area.",
   "role-nao-vinculada":
     "Role nao vinculada ou tenant operacional nao encontrado.",

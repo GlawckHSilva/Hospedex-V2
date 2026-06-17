@@ -45,9 +45,9 @@ const MENU_PROPRIETARIO = [
     permissoes: ["dashboard.read"]
   },
   {
-    titulo: "Propriedades",
+    titulo: "Casas",
     href: "/propriedades",
-    descricao: "Estrutura para imoveis e publicacao.",
+    descricao: "Casas e propriedades do tenant.",
     icone: "propriedades",
     permissoes: ["properties.read"]
   },
@@ -207,6 +207,7 @@ export function obterMenuAdmin(
     perfil === "super_admin" ? MENU_SUPER_ADMIN : MENU_PROPRIETARIO;
 
   return itensBase
+    .filter((item) => item.href !== "/unidades" || contexto.featureFlags.multi_unit)
     .filter((item) => perfil !== "funcionario" || funcionarioPodeVerItem(item, contexto))
     .map((item) => ({
       ...item,

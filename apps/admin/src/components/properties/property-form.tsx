@@ -25,6 +25,7 @@ import {
 
 export type PropertyFormProps = {
   modo: "criar" | "editar";
+  multiUnidadesAtivo: boolean;
   podeGerenciar: boolean;
   propriedade?: PropriedadeComRelacionamentos;
 };
@@ -46,9 +47,15 @@ const campoClasse =
 const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
-export function PropertyForm({ modo, podeGerenciar, propriedade }: PropertyFormProps) {
+export function PropertyForm({
+  modo,
+  multiUnidadesAtivo,
+  podeGerenciar,
+  propriedade
+}: PropertyFormProps) {
   const action = modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const endereco = propriedade?.enderecoFormatado;
+  const unidadeCasa = propriedade?.unidades[0];
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const bloqueado = !podeGerenciar || Boolean(erroImagem);
 
@@ -148,6 +155,57 @@ export function PropertyForm({ modo, podeGerenciar, propriedade }: PropertyFormP
           type="file"
         />
       </div>
+
+      {!multiUnidadesAtivo ? (
+        <div className="grid gap-4 md:grid-cols-3">
+          <CampoTexto
+            defaultValue={String(unidadeCasa?.capacity ?? 1)}
+            disabled={!podeGerenciar}
+            label="Capacidade da casa"
+            min={1}
+            name="capacidadeCasa"
+            required
+            type="number"
+          />
+          <CampoTexto
+            defaultValue={String(unidadeCasa?.bedrooms ?? 0)}
+            disabled={!podeGerenciar}
+            label="Quartos"
+            min={0}
+            name="quartosCasa"
+            required
+            type="number"
+          />
+          <CampoTexto
+            defaultValue={String(unidadeCasa?.beds ?? 1)}
+            disabled={!podeGerenciar}
+            label="Camas"
+            min={1}
+            name="camasCasa"
+            required
+            type="number"
+          />
+          <CampoTexto
+            defaultValue={String(unidadeCasa?.bathrooms ?? 0)}
+            disabled={!podeGerenciar}
+            label="Banheiros"
+            min={0}
+            name="banheirosCasa"
+            required
+            type="number"
+          />
+          <CampoTexto
+            defaultValue={String(unidadeCasa?.base_price ?? 0)}
+            disabled={!podeGerenciar}
+            label="Valor base"
+            min={0}
+            name="valorBaseCasa"
+            required
+            step="0.01"
+            type="number"
+          />
+        </div>
+      ) : null}
       {erroImagem ? (
         <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {erroImagem}

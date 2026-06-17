@@ -46,12 +46,17 @@ const STATUS_UNIDADE: UnitStatus[] = ["active", "inactive", "maintenance"];
 const CATEGORIAS_UNIDADE = ["Standard", "Luxo", "Master"];
 
 type EntradaPropriedade = {
+  banheiros: number;
+  camas: number;
+  capacidade: number;
   nome: string;
   descricao: string | null;
   tipo: PropertyType;
   endereco: EnderecoPropriedade;
   status: PropertyStatus;
   imagemCapaArquivo: File | null;
+  quartos: number;
+  valorBase: number;
 };
 
 type EntradaUnidade = {
@@ -75,6 +80,9 @@ export async function criarPropriedadeAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
 
     await garantirLimitePropriedades(supabase, escopo.tenantId);
+    if (!escopo.contexto.featureFlags.multi_unit) {
+      await garantirLimiteUnidades(supabase, escopo.tenantId);
+    }
 
     const { data: propriedade, error } = await supabase
       .from("properties")
@@ -98,6 +106,10 @@ export async function criarPropriedadeAction(formData: FormData) {
       throw new Error(
         error?.message ?? "Propriedade não retornada após criação.",
       );
+    }
+
+    if (!escopo.contexto.featureFlags.multi_unit) {
+      await salvarUnidadePadraoCasa(supabase, escopo.tenantId, propriedade, entrada);
     }
 
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
@@ -145,6 +157,10 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       throw new ErroRegraNegocio(
         "Propriedade não encontrada para este tenant.",
       );
+    }
+
+    if (!escopo.contexto.featureFlags.multi_unit) {
+      await salvarUnidadePadraoCasa(supabase, escopo.tenantId, propriedade, entrada);
     }
 
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
@@ -417,6 +433,9 @@ export async function excluirUnidadeAction(formData: FormData) {
 
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   return {
+    banheiros: numeroInteiroOpcional(formData, "banheirosCasa", 0, 0),
+    camas: numeroInteiroOpcional(formData, "camasCasa", 1, 1),
+    capacidade: numeroInteiroOpcional(formData, "capacidadeCasa", 1, 1),
     nome: textoObrigatorio(formData, "nome", "nome"),
     descricao: textoOpcional(formData, "descricao"),
     tipo: validarTipoPropriedade(textoObrigatorio(formData, "tipo", "tipo")),
@@ -429,6 +448,8 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       textoObrigatorio(formData, "status", "status"),
     ),
     imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
+    quartos: numeroInteiroOpcional(formData, "quartosCasa", 0, 0),
+    valorBase: numeroMoedaOpcional(formData, "valorBaseCasa", 0),
   };
 }
 
@@ -447,6 +468,58 @@ function obterEntradaUnidade(formData: FormData): EntradaUnidade {
       textoObrigatorio(formData, "status", "status"),
     ),
   };
+}
+
+async function salvarUnidadePadraoCasa(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedade: Pick<PropertyRow, "id">,
+  entrada: EntradaPropriedade,
+) {
+  const dadosUnidade = {
+    base_price: entrada.valorBase,
+    bathrooms: entrada.banheiros,
+    bedrooms: entrada.quartos,
+    beds: entrada.camas,
+    capacity: entrada.capacidade,
+    name: "Casa inteira",
+    status: "active" as UnitStatus,
+  };
+  const { data: unidadeExistente, error: erroBusca } = await supabase
+    .from("units")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("property_id", propriedade.id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle<UnitRow>();
+
+  if (erroBusca) throw new Error(erroBusca.message);
+
+  if (unidadeExistente) {
+    const { error } = await supabase
+      .from("units")
+      .update(dadosUnidade)
+      .eq("id", unidadeExistente.id)
+      .eq("tenant_id", tenantId);
+
+    if (error) throw new Error(error.message);
+    return;
+  }
+
+  /*
+    Enquanto multiunidades estiver desligado, cada casa precisa de uma unidade
+    interna para reservas, calendario e disponibilidade continuarem vinculados.
+  */
+  const { error } = await supabase.from("units").insert({
+    ...dadosUnidade,
+    code: "casa-inteira",
+    property_id: propriedade.id,
+    tenant_id: tenantId,
+    unit_category_id: null,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 async function garantirLimitePropriedades(
@@ -741,6 +814,23 @@ function textoOpcional(formData: FormData, chave: string): string | null {
   return valor ? valor : null;
 }
 
+function numeroInteiroOpcional(
+  formData: FormData,
+  chave: string,
+  padrao: number,
+  minimo: number,
+): number {
+  const valorBruto = formData.get(chave)?.toString().trim();
+  if (!valorBruto) return padrao;
+
+  const valor = Number.parseInt(valorBruto, 10);
+  if (Number.isNaN(valor) || valor < minimo) {
+    throw new ErroRegraNegocio("Informe os dados da casa corretamente.");
+  }
+
+  return valor;
+}
+
 function numeroInteiro(
   formData: FormData,
   chave: string,
@@ -751,6 +841,22 @@ function numeroInteiro(
   if (Number.isNaN(valor) || valor < minimo) {
     throw new ErroRegraNegocio(`Informe ${label} válido.`);
   }
+  return valor;
+}
+
+function numeroMoedaOpcional(
+  formData: FormData,
+  chave: string,
+  padrao: number,
+): number {
+  const valorBruto = formData.get(chave)?.toString().trim();
+  if (!valorBruto) return padrao;
+
+  const valor = Number.parseFloat(valorBruto.replace(",", "."));
+  if (Number.isNaN(valor) || valor < 0) {
+    throw new ErroRegraNegocio("Informe o valor base da casa corretamente.");
+  }
+
   return valor;
 }
 

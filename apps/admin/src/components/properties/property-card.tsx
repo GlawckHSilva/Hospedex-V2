@@ -112,11 +112,12 @@ export function PropertyCard({
         <div className="grid gap-3 lg:grid-cols-3">
           <details className="rounded-lg border bg-background/45 p-3">
             <summary className="cursor-pointer text-sm font-semibold">
-              Editar propriedade
+              Editar casa
             </summary>
             <div className="mt-4">
               <PropertyForm
                 modo="editar"
+                multiUnidadesAtivo={multiUnidadesAtivo}
                 podeGerenciar={podeGerenciar}
                 propriedade={propriedade}
               />
@@ -137,21 +138,23 @@ export function PropertyCard({
             </div>
           </details>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Nova unidade
-            </summary>
-            <div className="mt-4">
-              <UnitForm
-                modo="criar"
-                podeGerenciar={podeGerenciar}
-                propriedadeInicialId={propriedade.id}
-                propriedades={propriedades}
-                retorno="/propriedades"
-              />
-            </div>
-          </details>
+          {multiUnidadesAtivo ? (
+            <details className="rounded-lg border bg-background/45 p-3">
+              <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
+                <Plus className="h-4 w-4" />
+                Nova unidade
+              </summary>
+              <div className="mt-4">
+                <UnitForm
+                  modo="criar"
+                  podeGerenciar={podeGerenciar}
+                  propriedadeInicialId={propriedade.id}
+                  propriedades={propriedades}
+                  retorno="/propriedades"
+                />
+              </div>
+            </details>
+          ) : null}
         </div>
 
         <MediaGallery
@@ -164,7 +167,7 @@ export function PropertyCard({
 
         <details className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
           <summary className="cursor-pointer text-sm font-semibold text-destructive">
-            Excluir propriedade
+            Excluir casa
           </summary>
           <form action={excluirPropriedadeAction} className="mt-4 grid gap-3">
             <input name="propriedadeId" type="hidden" value={propriedade.id} />
@@ -186,38 +189,40 @@ export function PropertyCard({
                 type="submit"
                 variant="destructive"
               >
-                Excluir propriedade
+                Excluir casa
               </Button>
             </div>
           </form>
         </details>
 
-        <section className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <h3 className="font-semibold">Unidades</h3>
-            <span className="text-sm text-muted-foreground">
-              {propriedade.unidades.length} cadastrada(s)
-            </span>
-          </div>
+        {multiUnidadesAtivo ? (
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-semibold">Unidades</h3>
+              <span className="text-sm text-muted-foreground">
+                {propriedade.unidades.length} cadastrada(s)
+              </span>
+            </div>
 
-          {propriedade.unidades.length > 0 ? (
-            <div className="grid gap-3">
-              {propriedade.unidades.map((unidade) => (
-                <UnitCard
-                  key={unidade.id}
-                  podeGerenciar={podeGerenciar}
-                  propriedades={propriedades}
-                  retorno="/propriedades"
-                  unidade={unidade}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
-              Nenhuma unidade cadastrada para esta propriedade.
-            </div>
-          )}
-        </section>
+            {propriedade.unidades.length > 0 ? (
+              <div className="grid gap-3">
+                {propriedade.unidades.map((unidade) => (
+                  <UnitCard
+                    key={unidade.id}
+                    podeGerenciar={podeGerenciar}
+                    propriedades={propriedades}
+                    retorno="/propriedades"
+                    unidade={unidade}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
+                Nenhuma unidade cadastrada para esta casa.
+              </div>
+            )}
+          </section>
+        ) : null}
       </CardContent>
     </Card>
   );

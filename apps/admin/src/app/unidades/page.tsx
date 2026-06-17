@@ -25,11 +25,19 @@ export default async function UnidadesPage({ searchParams }: PageProps) {
   const contexto = await exigirAutenticacao();
 
   if (!contexto.tenant) {
-    redirect(contexto.role === "super_admin" ? "/super-admin" : "/sem-acesso");
+    redirect(
+      contexto.role === "super_admin"
+        ? "/super-admin"
+        : "/sem-acesso?motivo=tenant-nao-encontrado"
+    );
   }
 
   if (!podeLerPropriedades(contexto)) {
-    redirect("/sem-acesso");
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
+  }
+
+  if (!contexto.featureFlags.multi_unit) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
   }
 
   const params = await searchParams;

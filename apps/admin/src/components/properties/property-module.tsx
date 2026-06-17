@@ -27,10 +27,10 @@ export type PropertyModuleProps = DadosModuloPropriedades &
   };
 
 const MENSAGENS_SUCESSO_PROPRIEDADES: Record<string, string> = {
-  "propriedade-criada": "Propriedade criada com sucesso.",
-  "propriedade-atualizada": "Propriedade atualizada com sucesso.",
+  "propriedade-criada": "Casa criada com sucesso.",
+  "propriedade-atualizada": "Casa atualizada com sucesso.",
   "propriedade-excluida": "Propriedade excluída com sucesso.",
-  "status-propriedade": "Status da propriedade atualizado.",
+  "status-propriedade": "Status da casa atualizado.",
   "unidade-criada": "Unidade criada com sucesso.",
   "unidade-atualizada": "Unidade atualizada com sucesso.",
   "unidade-excluida": "Unidade excluída com sucesso.",
@@ -53,7 +53,7 @@ export function PropertyModule({
   tenantNome,
 }: PropertyModuleProps) {
   const unidades = propriedades.flatMap((propriedade) => propriedade.unidades);
-  const titulo = modo === "propriedades" ? "Propriedades" : "Unidades";
+  const titulo = modo === "propriedades" ? "Casas" : "Unidades";
 
   return (
     <FadeIn className="space-y-5">
@@ -80,14 +80,16 @@ export function PropertyModule({
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <ResumoModulo
               icon={<Building2 />}
-              label="Propriedades"
+              label="Casas"
               valor={`${limitesPlano.propriedadesUsadas}/${limitesPlano.maxPropriedades}`}
             />
-            <ResumoModulo
-              icon={<Home />}
-              label="Unidades"
-              valor={`${limitesPlano.unidadesUsadas}/${limitesPlano.maxUnidades}`}
-            />
+            {multiUnidadesAtivo ? (
+              <ResumoModulo
+                icon={<Home />}
+                label="Unidades"
+                valor={`${limitesPlano.unidadesUsadas}/${limitesPlano.maxUnidades}`}
+              />
+            ) : null}
             <ResumoModulo
               icon={<ShieldCheck />}
               label="Plano"
@@ -139,10 +141,14 @@ function VisaoPropriedades({
           <details open={propriedades.length === 0}>
             <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
               <Plus className="h-4 w-4" />
-              Nova propriedade
+              Nova casa
             </summary>
             <div className="mt-5">
-              <PropertyForm modo="criar" podeGerenciar={podeGerenciar} />
+              <PropertyForm
+                modo="criar"
+                multiUnidadesAtivo={multiUnidadesAtivo}
+                podeGerenciar={podeGerenciar}
+              />
             </div>
           </details>
         </CardContent>
@@ -164,7 +170,7 @@ function VisaoPropriedades({
       ) : (
         <Card className="admin-glass-card">
           <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhuma propriedade cadastrada.
+            Nenhuma casa cadastrada.
           </CardContent>
         </Card>
       )}
