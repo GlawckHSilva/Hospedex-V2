@@ -1,5 +1,10 @@
 import type { MediaAssetRow } from "@hospedex/types";
 
+import {
+  TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES,
+  TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB,
+  tipoImagemPropriedadePermitido
+} from "./media-limits";
 import type { ClienteSupabaseServer } from "./permissions";
 
 /**
@@ -10,9 +15,6 @@ import type { ClienteSupabaseServer } from "./permissions";
  */
 
 export const BUCKET_MIDIA_PROPRIEDADES = "hospedex-property-media";
-
-const TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024;
-const TIPOS_PERMITIDOS = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 export type DestinoMidia = {
   tenantId: string;
@@ -73,12 +75,12 @@ export async function removerImagemDoStorage(
 }
 
 function validarImagem(arquivo: File) {
-  if (!TIPOS_PERMITIDOS.includes(arquivo.type)) {
+  if (!tipoImagemPropriedadePermitido(arquivo.type)) {
     throw new Error("Formato de imagem inválido. Use JPG, PNG, WebP ou GIF.");
   }
 
-  if (arquivo.size > TAMANHO_MAXIMO_IMAGEM) {
-    throw new Error("Imagem acima do limite de 5MB.");
+  if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
+    throw new Error(`Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
   }
 }
 

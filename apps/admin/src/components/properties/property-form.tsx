@@ -1,12 +1,20 @@
+"use client";
+
 import type { PropertyStatus, PropertyType } from "@hospedex/types";
 import { Button, Input, Label } from "@hospedex/ui";
 import type { ComponentProps } from "react";
+import { useState } from "react";
 
 import {
   atualizarPropriedadeAction,
   criarPropriedadeAction
 } from "../../lib/properties/actions";
 import type { PropriedadeComRelacionamentos } from "../../lib/properties/types";
+import {
+  TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES,
+  TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB,
+  tipoImagemPropriedadePermitido
+} from "../../lib/properties/media-limits";
 
 /**
  * Formulário de propriedade.
@@ -41,6 +49,27 @@ const areaClasse =
 export function PropertyForm({ modo, podeGerenciar, propriedade }: PropertyFormProps) {
   const action = modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const endereco = propriedade?.enderecoFormatado;
+  const [erroImagem, setErroImagem] = useState<string | null>(null);
+  const bloqueado = !podeGerenciar || Boolean(erroImagem);
+
+  function validarImagemSelecionada(arquivo?: File) {
+    if (!arquivo) {
+      setErroImagem(null);
+      return;
+    }
+
+    if (!tipoImagemPropriedadePermitido(arquivo.type)) {
+      setErroImagem("Use uma imagem JPG, PNG, WebP ou GIF.");
+      return;
+    }
+
+    if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
+      setErroImagem(`A imagem deve ter no maximo ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+      return;
+    }
+
+    setErroImagem(null);
+  }
 
   return (
     <form action={action} className="grid gap-4">
@@ -115,12 +144,18 @@ export function PropertyForm({ modo, podeGerenciar, propriedade }: PropertyFormP
           disabled={!podeGerenciar}
           label="Imagem de capa"
           name="imagemCapaArquivo"
+          onChange={(evento) => validarImagemSelecionada(evento.currentTarget.files?.[0])}
           type="file"
         />
       </div>
+      {erroImagem ? (
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {erroImagem}
+        </p>
+      ) : null}
 
       <div className="flex justify-end">
-        <Button disabled={!podeGerenciar} type="submit">
+        <Button disabled={bloqueado} type="submit">
           {modo === "editar" ? "Salvar propriedade" : "Criar propriedade"}
         </Button>
       </div>

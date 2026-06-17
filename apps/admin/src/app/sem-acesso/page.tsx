@@ -33,7 +33,7 @@ export default async function NoAccessPage({ searchParams }: PageProps) {
   const { motivo } = await searchParams;
   const contexto = await carregarContextoAutenticacao();
   if (!contexto) redirect("/login?message=Falha ao carregar sessao.");
-  if (contexto.role !== "guest")
+  if (!motivo && contexto.role !== "guest")
     redirect(obterCaminhoInicialPorRole(contexto.role));
   const mensagem =
     motivo && MENSAGENS[motivo]

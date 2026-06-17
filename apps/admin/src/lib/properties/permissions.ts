@@ -26,8 +26,16 @@ export type EscopoGerenciamento = {
 export async function carregarEscopoGerenciamento(): Promise<EscopoGerenciamento> {
   const contexto = await exigirAutenticacao();
 
-  if (!contexto.tenant || !podeGerenciarPropriedades(contexto)) {
-    redirect("/sem-acesso");
+  if (!contexto.tenant) {
+    redirect(
+      contexto.role === "super_admin"
+        ? "/super-admin"
+        : "/sem-acesso?motivo=tenant-nao-encontrado"
+    );
+  }
+
+  if (!podeGerenciarPropriedades(contexto)) {
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   return {
