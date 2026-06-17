@@ -119,6 +119,8 @@ export type PropriedadePublica = {
   minPrice: number | null;
   maxGuests: number;
   rules: string[];
+  checkIn: string;
+  checkOut: string;
 };
 
 export type ResultadoPropriedadesPublicas = {
@@ -348,10 +350,10 @@ function recomporPropriedadeComUnidades(
   };
 }
 
-export async function carregarPropriedadePublica(id: string) {
+export async function carregarPropriedadePublica(slugOuId: string) {
   const supabase = criarClienteMarketplace();
 
-  if (!supabase || !id) {
+  if (!supabase || !slugOuId) {
     return {
       propriedade: null,
       erro: null,
@@ -360,13 +362,18 @@ export async function carregarPropriedadePublica(id: string) {
   }
 
   try {
-    const resultado = await supabase
+    const identificador = slugOuId.trim();
+    let consulta = supabase
       .from("properties")
       .select(CAMPOS_PROPRIEDADE)
-      .eq("id", id)
       .eq("status", "published")
-      .is("deleted_at", null)
-      .maybeSingle<PropriedadeRowPublica>();
+      .is("deleted_at", null);
+
+    consulta = valorEhUuid(identificador)
+      ? consulta.eq("id", identificador)
+      : consulta.eq("slug", identificador);
+
+    const resultado = await consulta.maybeSingle<PropriedadeRowPublica>();
 
     registrarErroLeitura("propriedade pública", resultado.error);
 
@@ -560,7 +567,9 @@ function montarPropriedadePublica(
       "Check-in e check-out confirmados pelo proprietário.",
       "Documento dos hóspedes pode ser solicitado antes da entrada.",
       "Regras específicas da unidade são confirmadas na solicitação de reserva."
-    ]
+    ],
+    checkIn: "A partir das 14h",
+    checkOut: "Até 11h"
   };
 }
 
@@ -705,6 +714,12 @@ function rotuloTipoPropriedade(tipo: PropertyType) {
 
 function limitarQuantidade(valor: number) {
   return Math.min(Math.max(valor, 1), 60);
+}
+
+function valorEhUuid(valor: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    valor
+  );
 }
 
 function registrarErroLeitura(contexto: string, erro: { message: string } | null) {

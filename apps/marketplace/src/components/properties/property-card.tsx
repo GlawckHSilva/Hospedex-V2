@@ -13,7 +13,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
   return (
     <Link
       className="group block transition duration-300 hover:-translate-y-1"
-      href={`/propriedades/${property.id}`}
+      href={`/propriedades/${property.slug}`}
     >
       <GlassCard className="overflow-hidden">
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">

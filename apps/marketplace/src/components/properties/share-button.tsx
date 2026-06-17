@@ -1,12 +1,24 @@
 "use client";
 
-import { Check, Share2 } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@hospedex/ui";
 
 export function ShareButton() {
   const [copiado, setCopiado] = useState(false);
+
+  async function compartilhar() {
+    if (navigator.share) {
+      await navigator.share({
+        title: document.title,
+        url: window.location.href
+      });
+      return;
+    }
+
+    await copiarLink();
+  }
 
   async function copiarLink() {
     await navigator.clipboard.writeText(window.location.href);
@@ -15,9 +27,15 @@ export function ShareButton() {
   }
 
   return (
-    <Button onClick={copiarLink} variant="outline">
-      {copiado ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-      {copiado ? "Copiado" : "Compartilhar"}
-    </Button>
+    <div className="flex flex-wrap gap-3">
+      <Button onClick={compartilhar} variant="outline">
+        <Share2 className="h-4 w-4" />
+        Compartilhar
+      </Button>
+      <Button onClick={copiarLink} variant="outline">
+        {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        {copiado ? "Link copiado" : "Copiar link"}
+      </Button>
+    </div>
   );
 }
