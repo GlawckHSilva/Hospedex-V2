@@ -36,6 +36,8 @@ export type {
   MaintenanceTaskRow,
   MaintenanceTaskStatus,
   MaintenanceTaskType,
+  ManagementNotificationStateRow,
+  ManagementNotificationType,
   PermissionCode,
   PermissionRow,
   PlanFeatureRow,

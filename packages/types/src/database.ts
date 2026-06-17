@@ -28,6 +28,15 @@ export type ReservationStatus =
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type ExpenseCategoryKind = "income" | "expense";
+export type ManagementNotificationType =
+  | "new_reservation"
+  | "reservation_cancelled"
+  | "checkin_today"
+  | "checkout_today"
+  | "cleaning_pending"
+  | "payment_awaiting_confirmation"
+  | "payment_confirmed"
+  | "license_expiring";
 
 export type ProfileRow = {
   id: UUID;
@@ -514,6 +523,17 @@ export type MaintenanceTaskRow = {
   completed_by: UUID | null;
   metadata: JsonValue;
   created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type ManagementNotificationStateRow = {
+  id: UUID;
+  tenant_id: UUID;
+  user_id: UUID;
+  notification_key: string;
+  read_at: Timestamp | null;
+  deleted_at: Timestamp | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 };

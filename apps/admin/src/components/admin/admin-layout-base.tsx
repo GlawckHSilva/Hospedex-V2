@@ -4,6 +4,7 @@ import { Button } from "@hospedex/ui";
 
 import { sairAction } from "../../lib/auth/actions";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
+import { carregarResumoNotificacoesGerenciamento } from "../../lib/notifications/data";
 import { AdminShell } from "./admin-shell";
 
 export type AdminLayoutBaseProps = {
@@ -17,7 +18,9 @@ export type AdminLayoutBaseProps = {
  * Recebe o contexto já carregado no servidor para que o menu respeite tenant,
  * role, permissões e feature flags sem recalcular autorização no cliente.
  */
-export function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
+export async function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
+  const notificacoes = await carregarResumoNotificacoesGerenciamento(contexto);
+
   return (
     <AdminShell
       acaoSair={
@@ -28,6 +31,7 @@ export function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
         </form>
       }
       contexto={contexto}
+      notificacoes={notificacoes}
     >
       {children}
     </AdminShell>

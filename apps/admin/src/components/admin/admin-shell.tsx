@@ -38,6 +38,8 @@ import {
   type ItemMenuAdminResolvido
 } from "../../config/navigation";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
+import type { ResumoNotificacoesGerenciamento } from "../../lib/notifications/types";
+import { NotificationBell } from "../notifications/notification-bell";
 
 const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   auditoria: ClipboardCheck,
@@ -64,6 +66,7 @@ export type AdminShellProps = {
   acaoSair: ReactNode;
   children: ReactNode;
   contexto: ContextoAutenticacao;
+  notificacoes: ResumoNotificacoesGerenciamento;
 };
 
 /**
@@ -72,7 +75,7 @@ export type AdminShellProps = {
  * A navegação é calculada a partir do contexto multi-tenant recebido do servidor,
  * garantindo que funcionário, proprietário e super admin vejam estruturas distintas.
  */
-export function AdminShell({ acaoSair, children, contexto }: AdminShellProps) {
+export function AdminShell({ acaoSair, children, contexto, notificacoes }: AdminShellProps) {
   const pathname = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
   const itensMenu = obterMenuAdmin(contexto);
@@ -87,6 +90,7 @@ export function AdminShell({ acaoSair, children, contexto }: AdminShellProps) {
         acaoSair={acaoSair}
         nomeTenant={nomeTenant}
         nomeUsuario={nomeUsuario}
+        notificacoes={notificacoes}
         onAbrirMenu={() => setMenuAberto(true)}
         tituloPerfil={tituloPerfil}
       />
@@ -122,6 +126,7 @@ type TopbarAdminProps = {
   acaoSair: ReactNode;
   nomeTenant: string;
   nomeUsuario: string;
+  notificacoes: ResumoNotificacoesGerenciamento;
   onAbrirMenu: () => void;
   tituloPerfil: string;
 };
@@ -130,6 +135,7 @@ function TopbarAdmin({
   acaoSair,
   nomeTenant,
   nomeUsuario,
+  notificacoes,
   onAbrirMenu,
   tituloPerfil
 }: TopbarAdminProps) {
@@ -168,6 +174,7 @@ function TopbarAdmin({
             <p className="text-xs text-muted-foreground">Contexto ativo</p>
           </div>
           <ThemeToggle />
+          {tituloPerfil !== "Super Admin" ? <NotificationBell resumo={notificacoes} /> : null}
           {acaoSair}
         </div>
       </div>
