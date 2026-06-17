@@ -43,6 +43,20 @@ export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
     ownerConfigurable: true
   },
   {
+    descricao: "Notificacoes internas do gerenciamento.",
+    key: "notifications",
+    label: "Notificacoes",
+    module: "notifications",
+    ownerConfigurable: true
+  },
+  {
+    descricao: "Central de confirmacoes operacionais.",
+    key: "confirmations",
+    label: "Confirmacoes",
+    module: "confirmations",
+    ownerConfigurable: true
+  },
+  {
     descricao: "Calendario e disponibilidade por unidade.",
     key: "calendar",
     label: "Calendario",

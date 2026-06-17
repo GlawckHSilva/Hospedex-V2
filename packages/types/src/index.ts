@@ -58,10 +58,12 @@ export type {
   StaffInviteStatus,
   SubscriptionRow,
   TenantFeatureRow,
+  TenantCleaningPolicy,
   TenantMemberRole,
   TenantMemberRow,
   TenantMemberStatus,
   TenantRow,
+  TenantSettingRow,
   Timestamp,
   TransactionStatus,
   TransactionType,
@@ -81,6 +83,8 @@ export type ModuleKey =
   | "cleaning"
   | "staff"
   | "reports"
+  | "notifications"
+  | "confirmations"
   | "automations"
   | "calendar"
   | "multi_unit"
@@ -109,6 +113,8 @@ export type FeatureFlagKey =
   | "ai_assistant"
   | "ai_pricing"
   | "api_future"
+  | "notifications"
+  | "confirmations"
   | "reports";
 
 export type TenantScope = {

@@ -28,6 +28,7 @@ export type ReservationStatus =
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type ExpenseCategoryKind = "income" | "expense";
+export type TenantCleaningPolicy = "after_checkout" | "daily" | "on_request" | "none";
 export type ManagementNotificationType =
   | "new_reservation"
   | "reservation_cancelled"
@@ -160,6 +161,30 @@ export type TenantFeatureRow = {
   feature_flag_id: UUID;
   enabled: boolean;
   configured_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type TenantSettingRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  logo_url: string | null;
+  primary_color: string;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  city: string | null;
+  state: string | null;
+  short_description: string | null;
+  default_check_in_time: string;
+  default_check_out_time: string;
+  cleaning_policy: TenantCleaningPolicy;
+  allow_manual_reservations: boolean;
+  require_payment_confirmation: boolean;
+  require_checkin_confirmation: boolean;
+  require_checkout_confirmation: boolean;
+  metadata: JsonValue;
   created_at: Timestamp;
   updated_at: Timestamp;
 };
