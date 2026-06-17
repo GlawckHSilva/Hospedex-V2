@@ -382,6 +382,13 @@ export type CleaningTaskStatus =
   | "completed"
   | "cancelled";
 export type CleaningTaskSource = "manual" | "checkout";
+export type CrmGuestStatus = "active" | "blocked" | "deleted";
+export type CrmGuestRating =
+  | "excellent"
+  | "good"
+  | "neutral"
+  | "attention"
+  | "blocked";
 
 export type CalendarAvailabilityBlockRow = {
   id: UUID;
@@ -421,6 +428,27 @@ export type CleaningTaskRow = {
   created_by: UUID | null;
   created_at: Timestamp;
   updated_at: Timestamp;
+};
+
+export type CrmGuestRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  document_number: string | null;
+  city: string | null;
+  state: string | null;
+  birth_date: string | null;
+  status: CrmGuestStatus;
+  internal_rating: CrmGuestRating;
+  private_notes: string | null;
+  metadata: JsonValue;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  deleted_at: Timestamp | null;
 };
 
 export type FinancialAccountRow = {

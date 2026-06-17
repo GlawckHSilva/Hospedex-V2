@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
+import { sincronizarHospedeCrm } from "../guests/actions";
 import {
   carregarEscopoReservas,
   carregarPropriedadeDaReserva,
@@ -428,6 +429,7 @@ async function salvarHospedePrincipal(
     : await supabase.from("reservation_guests").insert(dadosHospede);
 
   if (resultado.error) throw new Error(resultado.error.message);
+  await sincronizarHospedeCrm(supabase, escopo, dadosHospede);
 }
 
 async function salvarServicoExtraInicial(
