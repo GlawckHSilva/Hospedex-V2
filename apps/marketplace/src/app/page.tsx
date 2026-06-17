@@ -1,4 +1,13 @@
-import { ArrowRight, BadgeCheck, Building2, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Building2,
+  Hotel,
+  House,
+  MapPin,
+  ShieldCheck,
+  Sparkles
+} from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -37,6 +46,27 @@ const motivosReserva = [
     title: "Curadoria visual",
     description: "Fotos, unidades e comodidades reunidas em uma experiência premium.",
     icon: Sparkles
+  }
+] as const;
+
+const categoriasMarketplace = [
+  {
+    title: "Casas de temporada",
+    description: "Espaços completos para famílias, grupos e estadias com mais autonomia.",
+    href: "/propriedades?tipo=seasonal_home",
+    icon: House
+  },
+  {
+    title: "Pousadas",
+    description: "Hospedagens independentes com atendimento próximo e operação organizada.",
+    href: "/propriedades?tipo=inn",
+    icon: Building2
+  },
+  {
+    title: "Hotéis compactos",
+    description: "Pequenos hotéis preparados para receber reservas com gestão profissional.",
+    href: "/propriedades?tipo=small_hotel",
+    icon: Hotel
   }
 ] as const;
 
@@ -183,6 +213,44 @@ export default async function MarketplaceHomePage() {
               title="Vitrine em preparação"
             />
           )}
+        </div>
+      </section>
+
+      <section className="bg-background" id="categorias">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:py-20">
+          <div className="max-w-2xl">
+            <p className="text-sm font-semibold uppercase tracking-normal text-primary">
+              Categorias
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
+              Escolha o tipo de hospedagem
+            </h2>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+            {categoriasMarketplace.map((categoria) => {
+              const Icone = categoria.icon;
+
+              return (
+                <Link
+                  className="glass-card group p-6 transition duration-300 hover:-translate-y-1"
+                  href={categoria.href}
+                  key={categoria.title}
+                >
+                  <span className="grid h-11 w-11 place-items-center rounded-md bg-primary/10 text-primary">
+                    <Icone className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-5 text-lg font-semibold">{categoria.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {categoria.description}
+                  </p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                    Ver opções
+                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 

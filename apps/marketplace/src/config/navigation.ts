@@ -10,6 +10,10 @@ export const marketplaceNavigation = [
     href: "/#destinos"
   },
   {
+    label: "Categorias",
+    href: "/#categorias"
+  },
+  {
     label: "Hospedagens",
     href: "/propriedades"
   },

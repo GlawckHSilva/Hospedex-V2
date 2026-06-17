@@ -1,11 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   AmenityRow,
+  CalendarAvailabilityBlockRow,
   JsonValue,
   MediaAssetRow,
   PropertyAmenityRow,
   PropertyRow,
   PropertyType,
+  ReservationRow,
   UnitCategoryRow,
   UnitRow
 } from "@hospedex/types";
@@ -127,9 +129,14 @@ export type ResultadoPropriedadesPublicas = {
 
 export type FiltrosPropriedadesPublicas = {
   cidade?: string | undefined;
+  dataFim?: string | undefined;
+  dataInicio?: string | undefined;
+  estado?: string | undefined;
   tipo?: PropertyType | undefined;
   hospedes?: number | undefined;
   limite?: number;
+  precoMaximo?: number | undefined;
+  precoMinimo?: number | undefined;
 };
 
 export type DestinoEmDestaque = {
@@ -149,11 +156,30 @@ const CAMPOS_CATEGORIA =
   "id,property_id,name,description,max_guests,bedrooms,bathrooms";
 const CAMPOS_COMODIDADE = "id,code,name,category";
 const CAMPOS_VINCULO_COMODIDADE = "property_id,amenity_id";
+const CAMPOS_RESERVA_OCUPACAO = "property_id,unit_id,status,check_in,check_out";
+const CAMPOS_BLOQUEIO_OCUPACAO = "property_id,unit_id,status,starts_on,ends_on";
 const TIPOS_PROPRIEDADE = new Set<PropertyType>([
   "seasonal_home",
   "inn",
   "small_hotel"
 ]);
+const STATUS_RESERVA_OCUPA_UNIDADE = [
+  "pending",
+  "awaiting_payment",
+  "confirmed",
+  "checked_in"
+];
+const STATUS_BLOQUEIA_UNIDADE = ["blocked", "unavailable", "reserved"];
+
+type ReservaOcupacaoPublica = Pick<
+  ReservationRow,
+  "property_id" | "unit_id" | "status" | "check_in" | "check_out"
+>;
+
+type BloqueioOcupacaoPublica = Pick<
+  CalendarAvailabilityBlockRow,
+  "property_id" | "unit_id" | "status" | "starts_on" | "ends_on"
+>;
 
 let clienteMarketplace: SupabaseClient | null = null;
 
@@ -184,7 +210,7 @@ export async function carregarPropriedadesPublicas(
 
   try {
     const limite = limitarQuantidade(filtros.limite ?? 24);
-    const limiteConsulta = filtros.hospedes ? Math.max(limite * 3, 36) : limite;
+    const limiteConsulta = possuiFiltroDeUnidade(filtros) ? Math.max(limite * 4, 48) : limite;
     let consulta = supabase
       .from("properties")
       .select(CAMPOS_PROPRIEDADE)
@@ -202,6 +228,11 @@ export async function carregarPropriedadesPublicas(
       consulta = consulta.filter("address->>cidade", "ilike", `%${cidade}%`);
     }
 
+    const estado = filtros.estado?.trim();
+    if (estado) {
+      consulta = consulta.filter("address->>estado", "ilike", `%${estado}%`);
+    }
+
     const propriedadesResultado = await consulta.returns<PropriedadeRowPublica[]>();
     registrarErroLeitura("propriedades públicas", propriedadesResultado.error);
 
@@ -209,9 +240,11 @@ export async function carregarPropriedadesPublicas(
       supabase,
       propriedadesResultado.data ?? []
     );
-    const propriedadesFiltradas = filtros.hospedes
-      ? propriedades.filter((propriedade) => propriedade.maxGuests >= filtros.hospedes!)
-      : propriedades;
+    const propriedadesFiltradas = await aplicarFiltrosDeUnidade(
+      supabase,
+      propriedades,
+      filtros
+    );
 
     return {
       propriedades: propriedadesFiltradas.slice(0, limite),
@@ -225,6 +258,94 @@ export async function carregarPropriedadesPublicas(
       supabaseConfigurado: true
     };
   }
+}
+
+async function aplicarFiltrosDeUnidade(
+  supabase: SupabaseClient,
+  propriedades: PropriedadePublica[],
+  filtros: FiltrosPropriedadesPublicas
+) {
+  if (!possuiFiltroDeUnidade(filtros)) return propriedades;
+
+  const unidadesIndisponiveis = await carregarUnidadesIndisponiveis(
+    supabase,
+    propriedades,
+    filtros
+  );
+
+  return propriedades
+    .map((propriedade) => {
+      const unidades = propriedade.units.filter((unidade) =>
+        unidadeAtendeFiltros(unidade, filtros, unidadesIndisponiveis)
+      );
+
+      return recomporPropriedadeComUnidades(propriedade, unidades);
+    })
+    .filter((propriedade) => propriedade.units.length > 0);
+}
+
+async function carregarUnidadesIndisponiveis(
+  supabase: SupabaseClient,
+  propriedades: PropriedadePublica[],
+  filtros: FiltrosPropriedadesPublicas
+) {
+  if (!periodoValido(filtros.dataInicio, filtros.dataFim)) return new Set<string>();
+
+  const idsPropriedades = propriedades.map((propriedade) => propriedade.id);
+  if (!idsPropriedades.length) return new Set<string>();
+
+  const [reservasResultado, bloqueiosResultado] = await Promise.all([
+    supabase
+      .from("reservations")
+      .select(CAMPOS_RESERVA_OCUPACAO)
+      .in("property_id", idsPropriedades)
+      .in("status", STATUS_RESERVA_OCUPA_UNIDADE)
+      .lt("check_in", filtros.dataFim!)
+      .gt("check_out", filtros.dataInicio!)
+      .returns<ReservaOcupacaoPublica[]>(),
+    supabase
+      .from("calendar_availability_blocks")
+      .select(CAMPOS_BLOQUEIO_OCUPACAO)
+      .in("property_id", idsPropriedades)
+      .in("status", STATUS_BLOQUEIA_UNIDADE)
+      .lt("starts_on", filtros.dataFim!)
+      .gt("ends_on", filtros.dataInicio!)
+      .returns<BloqueioOcupacaoPublica[]>()
+  ]);
+
+  registrarErroLeitura("reservas publicas de disponibilidade", reservasResultado.error);
+  registrarErroLeitura("bloqueios publicos de disponibilidade", bloqueiosResultado.error);
+
+  return new Set(
+    [
+      ...(reservasResultado.data ?? []).map((reserva) => reserva.unit_id),
+      ...(bloqueiosResultado.data ?? []).map((bloqueio) => bloqueio.unit_id)
+    ].filter((unitId): unitId is string => Boolean(unitId))
+  );
+}
+
+function unidadeAtendeFiltros(
+  unidade: UnidadePublica,
+  filtros: FiltrosPropriedadesPublicas,
+  unidadesIndisponiveis: Set<string>
+) {
+  if (filtros.hospedes && unidade.capacity < filtros.hospedes) return false;
+  if (filtros.precoMinimo && unidade.basePrice < filtros.precoMinimo) return false;
+  if (filtros.precoMaximo && unidade.basePrice > filtros.precoMaximo) return false;
+  if (unidadesIndisponiveis.has(unidade.id)) return false;
+  return true;
+}
+
+function recomporPropriedadeComUnidades(
+  propriedade: PropriedadePublica,
+  unidades: UnidadePublica[]
+): PropriedadePublica {
+  return {
+    ...propriedade,
+    maxGuests: obterMaiorCapacidade(unidades),
+    minPrice: obterMenorPreco(unidades),
+    units: unidades
+  };
 }
 
 export async function carregarPropriedadePublica(id: string) {
@@ -547,6 +668,29 @@ function obterMenorPreco(unidades: readonly UnidadePublica[]) {
     .filter((preco) => Number.isFinite(preco) && preco > 0);
 
   return precos.length ? Math.min(...precos) : null;
+}
+
+function obterMaiorCapacidade(unidades: readonly UnidadePublica[]) {
+  return Math.max(...unidades.map((unidade) => unidade.capacity), 0);
+}
+
+function possuiFiltroDeUnidade(filtros: FiltrosPropriedadesPublicas) {
+  return Boolean(
+    filtros.hospedes ||
+      filtros.precoMinimo ||
+      filtros.precoMaximo ||
+      periodoValido(filtros.dataInicio, filtros.dataFim)
+  );
+}
+
+function periodoValido(dataInicio?: string, dataFim?: string) {
+  return Boolean(
+    dataInicio &&
+      dataFim &&
+      /^\d{4}-\d{2}-\d{2}$/.test(dataInicio) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(dataFim) &&
+      dataFim > dataInicio
+  );
 }
 
 function rotuloTipoPropriedade(tipo: PropertyType) {

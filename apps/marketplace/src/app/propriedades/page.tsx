@@ -20,8 +20,13 @@ export default async function PropriedadesPage({
   const filtros = normalizarFiltros(await searchParams);
   const resultado = await carregarPropriedadesPublicas({
     cidade: filtros.cidade,
+    dataFim: filtros.dataFim,
+    dataInicio: filtros.dataInicio,
+    estado: filtros.estado,
     hospedes: filtros.hospedes,
     limite: 24,
+    precoMaximo: filtros.precoMaximo,
+    precoMinimo: filtros.precoMinimo,
     tipo: filtros.tipo
   });
 
@@ -41,7 +46,13 @@ export default async function PropriedadesPage({
           <PropertySearchForm
             cidade={filtros.cidade}
             compact
+            dataFim={filtros.dataFim}
+            dataInicio={filtros.dataInicio}
+            estado={filtros.estado}
             hospedes={filtros.hospedes}
+            mostrarPreco
+            precoMaximo={filtros.precoMaximo}
+            precoMinimo={filtros.precoMinimo}
             tipo={filtros.tipo}
           />
         </div>
@@ -102,8 +113,13 @@ export default async function PropriedadesPage({
 
 function normalizarFiltros(params: Record<string, string | string[] | undefined>) {
   const cidade = obterParametro(params.cidade)?.trim() || undefined;
+  const estado = obterParametro(params.estado)?.trim().toUpperCase() || undefined;
+  const dataInicio = normalizarData(obterParametro(params.dataInicio));
+  const dataFim = normalizarData(obterParametro(params.dataFim));
   const tipo = normalizarTipoPropriedade(obterParametro(params.tipo));
   const hospedesValor = Number(obterParametro(params.hospedes));
+  const precoMinimo = normalizarNumero(obterParametro(params.precoMinimo));
+  const precoMaximo = normalizarNumero(obterParametro(params.precoMaximo));
   const hospedes =
     Number.isFinite(hospedesValor) && hospedesValor > 0
       ? Math.round(hospedesValor)
@@ -111,11 +127,25 @@ function normalizarFiltros(params: Record<string, string | string[] | undefined>
 
   return {
     cidade,
-    tipo,
-    hospedes
+    dataFim,
+    dataInicio,
+    estado,
+    hospedes,
+    precoMaximo,
+    precoMinimo,
+    tipo
   };
 }
 
 function obterParametro(valor: string | string[] | undefined) {
   return Array.isArray(valor) ? valor[0] : valor;
+}
+
+function normalizarData(valor: string | undefined) {
+  return valor && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : undefined;
+}
+
+function normalizarNumero(valor: string | undefined) {
+  const numero = Number(valor);
+  return Number.isFinite(numero) && numero >= 0 ? numero : undefined;
 }
