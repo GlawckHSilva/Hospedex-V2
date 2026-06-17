@@ -376,6 +376,12 @@ export type CalendarAvailabilityStatus =
   | "unavailable"
   | "reserved"
   | "released";
+export type CleaningTaskStatus =
+  | "awaiting_cleaning"
+  | "in_cleaning"
+  | "completed"
+  | "cancelled";
+export type CleaningTaskSource = "manual" | "checkout";
 
 export type CalendarAvailabilityBlockRow = {
   id: UUID;
@@ -392,6 +398,26 @@ export type CalendarAvailabilityBlockRow = {
   notes: string | null;
   external_uid: string | null;
   metadata: JsonValue;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type CleaningTaskRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  property_id: UUID;
+  unit_id: UUID | null;
+  reservation_id: UUID | null;
+  assigned_to: UUID | null;
+  source: CleaningTaskSource;
+  status: CleaningTaskStatus;
+  title: string;
+  notes: string | null;
+  scheduled_for: string | null;
+  completed_at: Timestamp | null;
+  completed_by: UUID | null;
   created_by: UUID | null;
   created_at: Timestamp;
   updated_at: Timestamp;
