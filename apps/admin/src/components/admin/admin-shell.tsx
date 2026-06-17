@@ -42,6 +42,7 @@ import type { ContextoAutenticacao } from "../../lib/auth/types";
 const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   auditoria: ClipboardCheck,
   calendario: CalendarDays,
+  confirmacoes: ClipboardCheck,
   configuracoes: Settings,
   dashboard: LayoutDashboard,
   featureFlags: Flag,

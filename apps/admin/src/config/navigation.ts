@@ -7,6 +7,7 @@ export type PerfilMenuAdmin = "proprietario" | "funcionario" | "super_admin";
 export type IconeMenuAdmin =
   | "auditoria"
   | "calendario"
+  | "confirmacoes"
   | "configuracoes"
   | "dashboard"
   | "featureFlags"
@@ -50,6 +51,13 @@ const MENU_PROPRIETARIO = [
     descricao: "Casas e propriedades do tenant.",
     icone: "propriedades",
     permissoes: ["properties.read"]
+  },
+  {
+    titulo: "Confirmacoes",
+    href: "/confirmacoes",
+    descricao: "Check-ins, check-outs e pendencias do dia.",
+    icone: "confirmacoes",
+    permissoes: ["reservations.read", "cleaning.read"]
   },
   {
     titulo: "Unidades",
