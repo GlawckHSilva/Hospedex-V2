@@ -5,6 +5,7 @@ import type {
   PlanRow,
   PropertyAmenityRow,
   PropertyRow,
+  PropertySettingRow,
   UnitCategoryRow,
   UnitRow
 } from "@hospedex/types";
@@ -65,6 +66,7 @@ export async function carregarDadosModuloPropriedades(
     propriedadesResultado,
     unidadesResultado,
     categoriasResultado,
+    configuracoesResultado,
     imagensResultado,
     comodidadesResultado,
     vinculosComodidadesResultado,
@@ -88,6 +90,11 @@ export async function carregarDadosModuloPropriedades(
       .select("*")
       .eq("tenant_id", tenantId)
       .returns<UnitCategoryRow[]>(),
+    supabase
+      .from("property_settings")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .returns<PropertySettingRow[]>(),
     supabase
       .from("media_assets")
       .select("*")
@@ -113,6 +120,7 @@ export async function carregarDadosModuloPropriedades(
   registrarErroLeitura("propriedades", propriedadesResultado.error);
   registrarErroLeitura("unidades", unidadesResultado.error);
   registrarErroLeitura("categorias de unidade", categoriasResultado.error);
+  registrarErroLeitura("regras das casas", configuracoesResultado.error);
   registrarErroLeitura("imagens", imagensResultado.error);
   registrarErroLeitura("comodidades", comodidadesResultado.error);
   registrarErroLeitura("vínculos de comodidades", vinculosComodidadesResultado.error);
@@ -121,6 +129,7 @@ export async function carregarDadosModuloPropriedades(
     propriedadesResultado.data ?? [],
     unidadesResultado.data ?? [],
     categoriasResultado.data ?? [],
+    configuracoesResultado.data ?? [],
     imagensResultado.data ?? [],
     comodidadesResultado.data ?? [],
     vinculosComodidadesResultado.data ?? []
@@ -192,6 +201,7 @@ function montarPropriedades(
   propriedades: PropertyRow[],
   unidades: UnitRow[],
   categorias: UnitCategoryRow[],
+  configuracoes: PropertySettingRow[],
   imagens: MediaAssetRow[],
   comodidades: AmenityRow[],
   vinculosComodidades: PropertyAmenityRow[]
@@ -204,8 +214,51 @@ function montarPropriedades(
       (imagem) => imagem.property_id === propriedade.id && !imagem.unit_id
     ),
     comodidades: montarComodidades(propriedade.id, comodidades, vinculosComodidades),
+    regras:
+      configuracoes.find((configuracao) => configuracao.property_id === propriedade.id) ??
+      criarRegrasPadrao(propriedade, unidades),
     unidades: montarUnidades(propriedade.id, unidades, categorias, imagens)
   }));
+}
+
+function criarRegrasPadrao(
+  propriedade: PropertyRow,
+  unidades: UnitRow[]
+): PropertySettingRow {
+  const capacidade = Math.max(
+    ...unidades
+      .filter((unidade) => unidade.property_id === propriedade.id)
+      .map((unidade) => unidade.capacity),
+    1
+  );
+
+  return {
+    additional_rules: null,
+    allow_events: false,
+    allow_pets: false,
+    allow_smoking: false,
+    booking_mode: "manual_approval",
+    cancellation_late_refund_percentage: 50,
+    cancellation_late_until_days: 1,
+    cancellation_no_refund_within_days: 0,
+    cancellation_notes: null,
+    cancellation_refund_until_days: 7,
+    cancellation_refund_until_percentage: 100,
+    check_in_time: null,
+    check_out_time: null,
+    created_at: propriedade.created_at,
+    id: `padrao-${propriedade.id}`,
+    max_advance_days: null,
+    max_guests: capacidade,
+    max_nights: null,
+    min_advance_days: 0,
+    min_nights: 1,
+    min_responsible_age: 18,
+    property_id: propriedade.id,
+    settings: {},
+    tenant_id: propriedade.tenant_id,
+    updated_at: propriedade.updated_at
+  };
 }
 
 function montarUnidades(

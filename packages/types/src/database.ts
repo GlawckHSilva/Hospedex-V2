@@ -262,6 +262,34 @@ export type PropertyRow = {
   deleted_at: Timestamp | null;
 };
 
+export type PropertySettingRow = {
+  id: UUID;
+  tenant_id: UUID;
+  property_id: UUID;
+  booking_mode: "manual_approval" | "instant_booking";
+  check_in_time: string | null;
+  check_out_time: string | null;
+  min_nights: number;
+  max_nights: number | null;
+  settings: JsonValue;
+  allow_pets: boolean;
+  allow_smoking: boolean;
+  allow_events: boolean;
+  max_guests: number;
+  min_responsible_age: number;
+  additional_rules: string | null;
+  cancellation_refund_until_days: number;
+  cancellation_refund_until_percentage: number;
+  cancellation_late_until_days: number;
+  cancellation_late_refund_percentage: number;
+  cancellation_no_refund_within_days: number;
+  cancellation_notes: string | null;
+  min_advance_days: number;
+  max_advance_days: number | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
 export type UnitRow = {
   id: UUID;
   tenant_id: UUID;

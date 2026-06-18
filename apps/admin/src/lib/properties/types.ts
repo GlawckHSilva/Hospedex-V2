@@ -2,6 +2,7 @@ import type {
   AmenityRow,
   MediaAssetRow,
   PropertyRow,
+  PropertySettingRow,
   UnitCategoryRow,
   UnitRow
 } from "@hospedex/types";
@@ -29,6 +30,7 @@ export type PropriedadeComRelacionamentos = PropertyRow & {
   imagemCapa: MediaAssetRow | null;
   imagens: MediaAssetRow[];
   comodidades: AmenityRow[];
+  regras: PropertySettingRow;
   unidades: UnidadeComCategoria[];
 };
 

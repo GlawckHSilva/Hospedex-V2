@@ -39,6 +39,9 @@ const MENSAGENS_SUCESSO_PROPRIEDADES: Record<string, string> = {
   "imagem-principal": "Imagem principal atualizada.",
   "imagem-excluida": "Imagem excluída com sucesso.",
   "comodidades-atualizadas": "Comodidades atualizadas com sucesso.",
+  "politica-cancelamento-atualizada": "Politica de cancelamento atualizada.",
+  "regras-casa-atualizadas": "Regras da casa atualizadas.",
+  "regras-reserva-atualizadas": "Regras de reserva atualizadas.",
 };
 
 export function PropertyModule({

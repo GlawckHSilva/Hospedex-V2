@@ -21,6 +21,7 @@ import {
 } from "./media-storage";
 import {
   carregarEscopoGerenciamento,
+  carregarPropriedadeGerenciavel,
   ErroRegraNegocio,
   type ClienteSupabaseServer,
   type EscopoGerenciamento,
@@ -251,6 +252,158 @@ export async function excluirPropriedadeAction(formData: FormData) {
   }
 
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=propriedade-excluida`);
+}
+
+export async function atualizarRegrasCasaAction(formData: FormData) {
+  const escopo = await carregarEscopoGerenciamento();
+
+  try {
+    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const supabase = await criarClienteSupabaseServer();
+    await carregarPropriedadeGerenciavel(supabase, escopo, propriedadeId);
+
+    const { error } = await supabase.from("property_settings").upsert(
+      {
+        tenant_id: escopo.tenantId,
+        property_id: propriedadeId,
+        check_in_time: validarHoraOpcional(formData, "checkInTime"),
+        check_out_time: validarHoraOpcional(formData, "checkOutTime"),
+        allow_pets: checkboxAtivo(formData, "allowPets"),
+        allow_smoking: checkboxAtivo(formData, "allowSmoking"),
+        allow_events: checkboxAtivo(formData, "allowEvents"),
+        max_guests: numeroInteiro(formData, "maxGuests", "capacidade maxima", 1),
+        min_responsible_age: numeroInteiro(
+          formData,
+          "minResponsibleAge",
+          "idade minima",
+          0
+        ),
+        additional_rules: textoOpcional(formData, "additionalRules")
+      },
+      { onConflict: "property_id" }
+    );
+
+    if (error) throw new Error(error.message);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(CAMINHO_PROPRIEDADES, erro, "Erro ao atualizar regras da casa.");
+  }
+
+  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=regras-casa-atualizadas`);
+}
+
+export async function atualizarPoliticaCancelamentoAction(formData: FormData) {
+  const escopo = await carregarEscopoGerenciamento();
+
+  try {
+    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const supabase = await criarClienteSupabaseServer();
+    await carregarPropriedadeGerenciavel(supabase, escopo, propriedadeId);
+
+    const { error } = await supabase.from("property_settings").upsert(
+      {
+        tenant_id: escopo.tenantId,
+        property_id: propriedadeId,
+        cancellation_refund_until_days: numeroInteiro(
+          formData,
+          "refundUntilDays",
+          "dias para reembolso",
+          0
+        ),
+        cancellation_refund_until_percentage: numeroPercentual(
+          formData,
+          "refundUntilPercentage",
+          "percentual de reembolso"
+        ),
+        cancellation_late_until_days: numeroInteiro(
+          formData,
+          "lateUntilDays",
+          "dias para reembolso tardio",
+          0
+        ),
+        cancellation_late_refund_percentage: numeroPercentual(
+          formData,
+          "lateRefundPercentage",
+          "percentual tardio"
+        ),
+        cancellation_no_refund_within_days: numeroInteiro(
+          formData,
+          "noRefundWithinDays",
+          "periodo sem reembolso",
+          0
+        ),
+        cancellation_notes: textoOpcional(formData, "cancellationNotes")
+      },
+      { onConflict: "property_id" }
+    );
+
+    if (error) throw new Error(error.message);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao atualizar politica de cancelamento."
+    );
+  }
+
+  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=politica-cancelamento-atualizada`);
+}
+
+export async function atualizarRegrasReservaAction(formData: FormData) {
+  const escopo = await carregarEscopoGerenciamento();
+
+  try {
+    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const minNights = numeroInteiro(formData, "minNights", "minimo de diarias", 1);
+    const maxNights = numeroInteiroOuNulo(formData, "maxNights", "maximo de diarias", 1);
+    const minAdvanceDays = numeroInteiro(
+      formData,
+      "minAdvanceDays",
+      "antecedencia minima",
+      0
+    );
+    const maxAdvanceDays = numeroInteiroOuNulo(
+      formData,
+      "maxAdvanceDays",
+      "antecedencia maxima",
+      0
+    );
+
+    if (maxNights !== null && maxNights < minNights) {
+      throw new ErroRegraNegocio("Maximo de diarias deve ser maior ou igual ao minimo.");
+    }
+    if (maxAdvanceDays !== null && maxAdvanceDays < minAdvanceDays) {
+      throw new ErroRegraNegocio("Antecedencia maxima deve ser maior ou igual a minima.");
+    }
+
+    const supabase = await criarClienteSupabaseServer();
+    await carregarPropriedadeGerenciavel(supabase, escopo, propriedadeId);
+
+    const { error } = await supabase.from("property_settings").upsert(
+      {
+        tenant_id: escopo.tenantId,
+        property_id: propriedadeId,
+        min_nights: minNights,
+        max_nights: maxNights,
+        min_advance_days: minAdvanceDays,
+        max_advance_days: maxAdvanceDays,
+        booking_mode: validarModoReserva(textoObrigatorio(formData, "bookingMode", "modo de reserva"))
+      },
+      { onConflict: "property_id" }
+    );
+
+    if (error) throw new Error(error.message);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao atualizar regras de reserva."
+    );
+  }
+
+  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=regras-reserva-atualizadas`);
 }
 
 export async function criarUnidadeAction(formData: FormData) {
@@ -844,6 +997,43 @@ function numeroInteiro(
   return valor;
 }
 
+function numeroInteiroOuNulo(
+  formData: FormData,
+  chave: string,
+  label: string,
+  minimo: number,
+): number | null {
+  const valorBruto = formData.get(chave)?.toString().trim();
+  if (!valorBruto) return null;
+
+  const valor = Number.parseInt(valorBruto, 10);
+  if (Number.isNaN(valor) || valor < minimo) {
+    throw new ErroRegraNegocio(`Informe ${label} vÃ¡lido.`);
+  }
+  return valor;
+}
+
+function numeroPercentual(formData: FormData, chave: string, label: string): number {
+  const valor = Number.parseFloat(
+    textoObrigatorio(formData, chave, label).replace(",", "."),
+  );
+  if (Number.isNaN(valor) || valor < 0 || valor > 100) {
+    throw new ErroRegraNegocio(`Informe ${label} entre 0 e 100.`);
+  }
+  return valor;
+}
+
+function validarHoraOpcional(formData: FormData, chave: string): string | null {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+  if (/^\d{2}:\d{2}$/.test(valor)) return valor;
+  throw new ErroRegraNegocio("Informe horarios validos.");
+}
+
+function checkboxAtivo(formData: FormData, chave: string): boolean {
+  return formData.get(chave) === "on";
+}
+
 function numeroMoedaOpcional(
   formData: FormData,
   chave: string,
@@ -886,6 +1076,11 @@ function validarStatusPropriedade(valor: string): PropertyStatus {
 function validarStatusUnidade(valor: string): UnitStatus {
   if (STATUS_UNIDADE.includes(valor as UnitStatus)) return valor as UnitStatus;
   throw new ErroRegraNegocio("Status da unidade inválido.");
+}
+
+function validarModoReserva(valor: string): "manual_approval" | "instant_booking" {
+  if (valor === "manual_approval" || valor === "instant_booking") return valor;
+  throw new ErroRegraNegocio("Modo de reserva inválido.");
 }
 
 function validarCategoriaUnidade(valor: string): string {

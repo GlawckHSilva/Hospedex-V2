@@ -10,6 +10,7 @@ import type { PropriedadeComRelacionamentos } from "../../lib/properties/types";
 import { AmenitiesForm } from "./amenities-form";
 import { MediaGallery } from "./media-gallery";
 import { PropertyForm } from "./property-form";
+import { PropertyRulesPanel } from "./property-rules-panel";
 import { UnitCard } from "./unit-card";
 import { UnitForm } from "./unit-form";
 
@@ -156,6 +157,8 @@ export function PropertyCard({
             </details>
           ) : null}
         </div>
+
+        <PropertyRulesPanel podeGerenciar={podeGerenciar} propriedade={propriedade} />
 
         <MediaGallery
           imagens={propriedade.imagens}

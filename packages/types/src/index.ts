@@ -51,6 +51,7 @@ export type {
   MediaAssetRow,
   PropertyAmenityRow,
   PropertyRow,
+  PropertySettingRow,
   ReservationExtraServiceRow,
   ReservationGuestRow,
   ReservationNoteRow,
