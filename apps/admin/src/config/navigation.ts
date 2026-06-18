@@ -22,6 +22,7 @@ export type IconeMenuAdmin =
   | "propriedades"
   | "relatorios"
   | "reservas"
+  | "servicosExtras"
   | "unidades";
 
 export type ItemMenuAdmin = {
@@ -74,6 +75,14 @@ const MENU_PROPRIETARIO = [
     icone: "reservas",
     featureFlag: "manual_approval",
     permissoes: ["reservations.read"]
+  },
+  {
+    titulo: "Servicos extras",
+    href: "/servicos-extras",
+    descricao: "Catalogo de adicionais para reservas futuras.",
+    icone: "servicosExtras",
+    featureFlag: "extra_services",
+    permissoes: ["reservations.read", "reservations.manage"]
   },
   {
     titulo: "Calendario",

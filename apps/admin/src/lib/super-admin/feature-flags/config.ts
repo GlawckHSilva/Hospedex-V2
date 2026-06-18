@@ -64,6 +64,13 @@ export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
     ownerConfigurable: true
   },
   {
+    descricao: "Catalogo de servicos extras do gerenciamento.",
+    key: "extra_services",
+    label: "Servicos extras",
+    module: "reservations",
+    ownerConfigurable: true
+  },
+  {
     descricao: "Preparacao para API publica futura.",
     key: "api_future",
     label: "API futura",

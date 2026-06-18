@@ -28,6 +28,12 @@ export type ReservationStatus =
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type ExpenseCategoryKind = "income" | "expense";
+export type ExtraServiceChargeType =
+  | "fixed"
+  | "per_night"
+  | "per_guest"
+  | "per_reservation";
+export type ExtraServiceStatus = "active" | "inactive";
 export type TenantCleaningPolicy = "after_checkout" | "daily" | "on_request" | "none";
 export type ManagementNotificationType =
   | "new_reservation"
@@ -386,6 +392,32 @@ export type ReservationExtraServiceRow = {
   created_by: UUID | null;
   created_at: Timestamp;
   updated_at: Timestamp;
+};
+
+export type ExtraServiceRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  name: string;
+  description: string | null;
+  amount: number;
+  charge_type: ExtraServiceChargeType;
+  status: ExtraServiceStatus;
+  is_required: boolean;
+  applies_to_all_properties: boolean;
+  internal_notes: string | null;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  deleted_at: Timestamp | null;
+};
+
+export type ExtraServicePropertyRow = {
+  id: UUID;
+  tenant_id: UUID;
+  extra_service_id: UUID;
+  property_id: UUID;
+  created_at: Timestamp;
 };
 
 export type ReservationNoteRow = {

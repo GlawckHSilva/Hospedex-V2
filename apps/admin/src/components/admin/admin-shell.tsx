@@ -59,6 +59,7 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   propriedades: Home,
   relatorios: FileBarChart,
   reservas: BedDouble,
+  servicosExtras: ReceiptText,
   unidades: BarChart3
 };
 

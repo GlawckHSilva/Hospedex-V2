@@ -44,6 +44,7 @@ export type ChaveModuloGerenciamento =
   | "inventory"
   | "reports"
   | "staff"
+  | "extra_services"
   | "notifications"
   | "confirmations";
 
@@ -76,6 +77,11 @@ export const MODULOS_GERENCIAMENTO_CONFIGURAVEIS: Array<{
     descricao: "Equipe interna, convites e permissoes.",
     key: "staff",
     label: "Funcionarios"
+  },
+  {
+    descricao: "Catalogo de adicionais para reservas futuras.",
+    key: "extra_services",
+    label: "Servicos extras"
   },
   {
     descricao: "Avisos internos do painel de gerenciamento.",
