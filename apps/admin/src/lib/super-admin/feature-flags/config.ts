@@ -71,6 +71,13 @@ export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
     ownerConfigurable: true
   },
   {
+    descricao: "Guia da regiao administrado pelo proprietario.",
+    key: "regional_guide",
+    label: "Guia da regiao",
+    module: "marketplace",
+    ownerConfigurable: true
+  },
+  {
     descricao: "Preparacao para API publica futura.",
     key: "api_future",
     label: "API futura",

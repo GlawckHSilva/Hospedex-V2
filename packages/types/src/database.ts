@@ -34,6 +34,20 @@ export type ExtraServiceChargeType =
   | "per_guest"
   | "per_reservation";
 export type ExtraServiceStatus = "active" | "inactive";
+export type RegionalGuideCategory =
+  | "restaurants"
+  | "snack_bars"
+  | "coffee_shops"
+  | "markets"
+  | "pharmacies"
+  | "hospitals"
+  | "tours"
+  | "beaches"
+  | "waterfalls"
+  | "tourist_spots"
+  | "nightlife"
+  | "others";
+export type RegionalGuideStatus = "active" | "inactive";
 export type TenantCleaningPolicy = "after_checkout" | "daily" | "on_request" | "none";
 export type ManagementNotificationType =
   | "new_reservation"
@@ -446,6 +460,27 @@ export type ExtraServicePropertyRow = {
   extra_service_id: UUID;
   property_id: UUID;
   created_at: Timestamp;
+};
+
+export type RegionalGuideLocationRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  category: RegionalGuideCategory;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  website_url: string | null;
+  opening_hours: string | null;
+  cover_image_url: string | null;
+  display_order: number;
+  status: RegionalGuideStatus;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+  deleted_at: Timestamp | null;
 };
 
 export type ReservationNoteRow = {

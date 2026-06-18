@@ -13,6 +13,7 @@ export type IconeMenuAdmin =
   | "featureFlags"
   | "financeiro"
   | "funcionarios"
+  | "guiaRegiao"
   | "hospedes"
   | "inventario"
   | "licencas"
@@ -105,6 +106,14 @@ const MENU_PROPRIETARIO = [
     icone: "hospedes",
     featureFlag: "crm",
     permissoes: ["reservations.read"]
+  },
+  {
+    titulo: "Guia da regiao",
+    href: "/guia-regiao",
+    descricao: "Recomendacoes locais do tenant.",
+    icone: "guiaRegiao",
+    featureFlag: "regional_guide",
+    permissoes: ["properties.read", "properties.manage", "settings.manage"]
   },
   {
     titulo: "Limpeza",

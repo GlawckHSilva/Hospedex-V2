@@ -45,6 +45,7 @@ export type ChaveModuloGerenciamento =
   | "reports"
   | "staff"
   | "extra_services"
+  | "regional_guide"
   | "notifications"
   | "confirmations";
 
@@ -82,6 +83,11 @@ export const MODULOS_GERENCIAMENTO_CONFIGURAVEIS: Array<{
     descricao: "Catalogo de adicionais para reservas futuras.",
     key: "extra_services",
     label: "Servicos extras"
+  },
+  {
+    descricao: "Recomendacoes locais preparadas para exibicao publica futura.",
+    key: "regional_guide",
+    label: "Guia da regiao"
   },
   {
     descricao: "Avisos internos do painel de gerenciamento.",
