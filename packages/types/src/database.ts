@@ -25,6 +25,7 @@ export type ReservationStatus =
   | "checked_out"
   | "completed"
   | "cancelled";
+export type ReviewStatus = "pending" | "approved" | "hidden";
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
 export type ExpenseCategoryKind = "income" | "expense";
@@ -115,6 +116,8 @@ export type PermissionCode =
   | "properties.manage"
   | "reservations.read"
   | "reservations.manage"
+  | "reviews.read"
+  | "reviews.manage"
   | "calendar.read"
   | "calendar.manage"
   | "finance.read"
@@ -491,6 +494,29 @@ export type ReservationNoteRow = {
   content: string;
   created_by: UUID | null;
   created_at: Timestamp;
+};
+
+export type PropertyReviewRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  property_id: UUID;
+  reservation_id: UUID | null;
+  guest_name: string;
+  guest_email: string | null;
+  rating: number;
+  comment: string;
+  reviewed_at: Timestamp;
+  status: ReviewStatus;
+  owner_response: string | null;
+  owner_responded_at: Timestamp | null;
+  response_author_id: UUID | null;
+  hidden_at: Timestamp | null;
+  hidden_by: UUID | null;
+  metadata: JsonValue;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 };
 
 export type CalendarAvailabilitySource =

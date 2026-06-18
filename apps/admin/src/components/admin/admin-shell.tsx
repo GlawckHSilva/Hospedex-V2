@@ -24,6 +24,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Star,
   Users,
   X,
   type LucideIcon
@@ -44,6 +45,7 @@ import { NotificationBell } from "../notifications/notification-bell";
 
 const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   auditoria: ClipboardCheck,
+  avaliacoes: Star,
   calendario: CalendarDays,
   confirmacoes: ClipboardCheck,
   configuracoes: Settings,
