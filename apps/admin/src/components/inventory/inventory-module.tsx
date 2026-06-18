@@ -1,10 +1,14 @@
-import { Boxes, Search, ShieldAlert, Wrench } from "lucide-react";
+import { Boxes, Plus, Search, ShieldAlert, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { ModuleToast } from "../admin/module-toast";
-import type { DadosModuloInventario, SearchParamsInventario } from "../../lib/inventory/types";
+import type {
+  DadosModuloInventario,
+  SearchParamsInventario,
+} from "../../lib/inventory/types";
 import { InventoryItemCard } from "./inventory-item-card";
 import { InventoryItemForm } from "./inventory-item-form";
 import { MaintenanceTaskCard } from "./maintenance-task-card";
@@ -17,7 +21,8 @@ import { MaintenanceTaskForm } from "./maintenance-task-form";
  * relatorios avancados, mantendo a estrutura preparada para evolucao.
  */
 
-export type InventoryModuleProps = DadosModuloInventario & SearchParamsInventario;
+export type InventoryModuleProps = DadosModuloInventario &
+  SearchParamsInventario;
 
 const MENSAGENS_SUCESSO_INVENTARIO: Record<string, string> = {
   "item-atualizado": "Item atualizado com sucesso.",
@@ -25,7 +30,7 @@ const MENSAGENS_SUCESSO_INVENTARIO: Record<string, string> = {
   "item-excluido": "Item excluido com sucesso.",
   "manutencao-atualizada": "Manutencao atualizada com sucesso.",
   "manutencao-criada": "Manutencao criada com sucesso.",
-  "status-manutencao": "Status da manutencao atualizado."
+  "status-manutencao": "Status da manutencao atualizado.",
 };
 
 const campoClasse =
@@ -42,7 +47,7 @@ export function InventoryModule({
   sucesso,
   tarefas,
   tenantNome,
-  unidades
+  unidades,
 }: InventoryModuleProps) {
   return (
     <FadeIn className="space-y-5">
@@ -62,15 +67,32 @@ export function InventoryModule({
               Inventario e manutencao
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} · garantias, fotos antes/depois, custos e notificacoes preparados.
+              {tenantNome} · garantias, fotos antes/depois, custos e
+              notificacoes preparados.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Resumo icon={<Boxes />} label="Itens" valor={String(resumo.itens)} />
-            <Resumo icon={<ShieldAlert />} label="Danificados" valor={String(resumo.danificados)} />
-            <Resumo icon={<ShieldAlert />} label="Faltando" valor={String(resumo.faltando)} />
-            <Resumo icon={<Wrench />} label="Manutencoes" valor={String(resumo.manutencoesPendentes)} />
+            <Resumo
+              icon={<Boxes />}
+              label="Itens"
+              valor={String(resumo.itens)}
+            />
+            <Resumo
+              icon={<ShieldAlert />}
+              label="Danificados"
+              valor={String(resumo.danificados)}
+            />
+            <Resumo
+              icon={<ShieldAlert />}
+              label="Faltando"
+              valor={String(resumo.faltando)}
+            />
+            <Resumo
+              icon={<Wrench />}
+              label="Manutencoes"
+              valor={String(resumo.manutencoesPendentes)}
+            />
           </div>
         </div>
       </section>
@@ -78,8 +100,14 @@ export function InventoryModule({
       <Card className="admin-glass-card">
         <CardContent className="p-5">
           <form className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
-            <CampoPropriedade defaultValue={filtros.propriedadeId ?? ""} propriedades={propriedades} />
-            <CampoUnidade defaultValue={filtros.unidadeId ?? ""} unidades={unidades} />
+            <CampoPropriedade
+              defaultValue={filtros.propriedadeId ?? ""}
+              propriedades={propriedades}
+            />
+            <CampoUnidade
+              defaultValue={filtros.unidadeId ?? ""}
+              unidades={unidades}
+            />
             <div className="flex items-end">
               <Button className="w-full" type="submit" variant="outline">
                 <Search />
@@ -92,38 +120,58 @@ export function InventoryModule({
 
       <div className="grid gap-5 lg:grid-cols-2">
         <Card className="admin-glass-card">
-          <CardContent className="p-5">
-            <details open={itens.length === 0}>
-              <summary className="cursor-pointer text-sm font-semibold">Novo item</summary>
-              <div className="mt-5">
-                <InventoryItemForm
-                  modo="criar"
-                  podeGerenciar={podeGerenciar}
-                  propriedades={propriedades}
-                  unidades={unidades}
-                />
-              </div>
-            </details>
+          <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Item de inventário</h2>
+              <p className="text-sm text-muted-foreground">
+                Cadastre itens em modal.
+              </p>
+            </div>
+            <EntityModal
+              description="Informe localização, categoria, quantidade e estado do item."
+              disabled={!podeGerenciar}
+              eyebrow="Cadastro"
+              title="Novo item"
+              triggerIcon={<Plus className="h-4 w-4" />}
+              triggerLabel="Novo item"
+              triggerVariant="default"
+            >
+              <InventoryItemForm
+                modo="criar"
+                podeGerenciar={podeGerenciar}
+                propriedades={propriedades}
+                unidades={unidades}
+              />
+            </EntityModal>
           </CardContent>
         </Card>
 
         <Card className="admin-glass-card">
-          <CardContent className="p-5">
-            <details open={tarefas.length === 0}>
-              <summary className="cursor-pointer text-sm font-semibold">
-                Nova manutencao
-              </summary>
-              <div className="mt-5">
-                <MaintenanceTaskForm
-                  itens={itens}
-                  modo="criar"
-                  podeGerenciar={podeGerenciar}
-                  propriedades={propriedades}
-                  responsaveis={responsaveis}
-                  unidades={unidades}
-                />
-              </div>
-            </details>
+          <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Manutenção</h2>
+              <p className="text-sm text-muted-foreground">
+                Abra uma tarefa em modal.
+              </p>
+            </div>
+            <EntityModal
+              description="Defina item, prioridade, responsável e data prevista."
+              disabled={!podeGerenciar}
+              eyebrow="Cadastro"
+              title="Nova manutenção"
+              triggerIcon={<Plus className="h-4 w-4" />}
+              triggerLabel="Nova manutenção"
+              triggerVariant="default"
+            >
+              <MaintenanceTaskForm
+                itens={itens}
+                modo="criar"
+                podeGerenciar={podeGerenciar}
+                propriedades={propriedades}
+                responsaveis={responsaveis}
+                unidades={unidades}
+              />
+            </EntityModal>
           </CardContent>
         </Card>
       </div>
@@ -170,7 +218,7 @@ export function InventoryModule({
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon: ReactNode;
   label: string;
@@ -188,14 +236,16 @@ function Resumo({
 function EstadoVazio({ mensagem }: { mensagem: string }) {
   return (
     <Card className="admin-glass-card">
-      <CardContent className="p-5 text-sm text-muted-foreground">{mensagem}</CardContent>
+      <CardContent className="p-5 text-sm text-muted-foreground">
+        {mensagem}
+      </CardContent>
     </Card>
   );
 }
 
 function CampoPropriedade({
   defaultValue,
-  propriedades
+  propriedades,
 }: {
   defaultValue: string;
   propriedades: Array<{ id: string; name: string }>;
@@ -203,7 +253,12 @@ function CampoPropriedade({
   return (
     <div className="grid gap-2">
       <Label htmlFor="propriedadeId">Propriedade</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="propriedadeId" name="propriedadeId">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="propriedadeId"
+        name="propriedadeId"
+      >
         <option value="">Todas</option>
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>
@@ -217,7 +272,7 @@ function CampoPropriedade({
 
 function CampoUnidade({
   defaultValue,
-  unidades
+  unidades,
 }: {
   defaultValue: string;
   unidades: Array<{ id: string; name: string }>;
@@ -225,7 +280,12 @@ function CampoUnidade({
   return (
     <div className="grid gap-2">
       <Label htmlFor="unidadeId">Unidade</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="unidadeId" name="unidadeId">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="unidadeId"
+        name="unidadeId"
+      >
         <option value="">Todas</option>
         {unidades.map((unidade) => (
           <option key={unidade.id} value={unidade.id}>

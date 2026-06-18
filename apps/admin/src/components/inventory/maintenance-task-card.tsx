@@ -1,8 +1,9 @@
 import type { ProfileRow, PropertyRow, UnitRow } from "@hospedex/types";
-import { Wrench } from "lucide-react";
+import { ListChecks, Pencil, Wrench } from "lucide-react";
 
 import { Badge, Button, Card, CardContent, Label } from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { alterarStatusManutencaoAction } from "../../lib/inventory/actions";
 import {
   LABEL_PRIORIDADE_MANUTENCAO,
@@ -10,7 +11,7 @@ import {
   LABEL_TIPO_MANUTENCAO,
   STATUS_MANUTENCAO,
   type ItemInventarioCompleto,
-  type TarefaManutencaoCompleta
+  type TarefaManutencaoCompleta,
 } from "../../lib/inventory/types";
 import { MaintenanceTaskForm } from "./maintenance-task-form";
 
@@ -39,7 +40,7 @@ export function MaintenanceTaskCard({
   propriedades,
   responsaveis,
   tarefa,
-  unidades
+  unidades,
 }: MaintenanceTaskCardProps) {
   return (
     <Card className="admin-glass-card">
@@ -52,21 +53,47 @@ export function MaintenanceTaskCard({
               <Badge variant={obterVariantPrioridade(tarefa.priority)}>
                 {LABEL_PRIORIDADE_MANUTENCAO[tarefa.priority]}
               </Badge>
-              <Badge variant={tarefa.status === "completed" ? "success" : tarefa.status === "cancelled" ? "warning" : "info"}>
+              <Badge
+                variant={
+                  tarefa.status === "completed"
+                    ? "success"
+                    : tarefa.status === "cancelled"
+                      ? "warning"
+                      : "info"
+                }
+              >
                 {LABEL_STATUS_MANUTENCAO[tarefa.status]}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tarefa.propriedade?.name ?? "Propriedade"} · {tarefa.unidade?.name ?? "Sem unidade"}
+              {tarefa.propriedade?.name ?? "Propriedade"} ·{" "}
+              {tarefa.unidade?.name ?? "Sem unidade"}
             </p>
           </div>
         </div>
 
         <section className="grid gap-3 md:grid-cols-4">
-          <Info label="Tipo" valor={LABEL_TIPO_MANUTENCAO[tarefa.maintenance_type]} />
-          <Info label="Data prevista" valor={tarefa.scheduled_for ? formatarData(tarefa.scheduled_for) : "Sem data"} />
+          <Info
+            label="Tipo"
+            valor={LABEL_TIPO_MANUTENCAO[tarefa.maintenance_type]}
+          />
+          <Info
+            label="Data prevista"
+            valor={
+              tarefa.scheduled_for
+                ? formatarData(tarefa.scheduled_for)
+                : "Sem data"
+            }
+          />
           <Info label="Item" valor={tarefa.item?.name ?? "Sem item"} />
-          <Info label="Responsavel" valor={tarefa.responsavel?.full_name ?? tarefa.responsavel?.email ?? "Sem responsavel"} />
+          <Info
+            label="Responsavel"
+            valor={
+              tarefa.responsavel?.full_name ??
+              tarefa.responsavel?.email ??
+              "Sem responsavel"
+            }
+          />
         </section>
 
         {tarefa.notes ? (
@@ -75,25 +102,35 @@ export function MaintenanceTaskCard({
           </p>
         ) : null}
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Editar manutencao</summary>
-            <div className="mt-4">
-              <MaintenanceTaskForm
-                itens={itens}
-                modo="editar"
-                podeGerenciar={podeGerenciar}
-                propriedades={propriedades}
-                responsaveis={responsaveis}
-                tarefa={tarefa}
-                unidades={unidades}
-              />
-            </div>
-          </details>
+        <div className="flex flex-wrap gap-2">
+          <EntityModal
+            description="Atualize prioridade, responsável, item e data prevista."
+            disabled={!podeGerenciar}
+            eyebrow="Edição"
+            title="Editar manutenção"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <MaintenanceTaskForm
+              itens={itens}
+              modo="editar"
+              podeGerenciar={podeGerenciar}
+              propriedades={propriedades}
+              responsaveis={responsaveis}
+              tarefa={tarefa}
+              unidades={unidades}
+            />
+          </EntityModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Concluir ou cancelar</summary>
-            <form action={alterarStatusManutencaoAction} className="mt-4 grid gap-3">
+          <EntityModal
+            description="Conclua ou cancele a manutenção sem abrir a lista."
+            disabled={!podeGerenciar}
+            eyebrow="Status"
+            title="Concluir ou cancelar"
+            triggerIcon={<ListChecks className="h-4 w-4" />}
+            triggerLabel="Status"
+          >
+            <form action={alterarStatusManutencaoAction} className="grid gap-3">
               <input name="tarefaId" type="hidden" value={tarefa.id} />
               <div className="grid gap-2">
                 <Label htmlFor={`status-${tarefa.id}`}>Status</Label>
@@ -115,7 +152,7 @@ export function MaintenanceTaskCard({
                 Atualizar status
               </Button>
             </form>
-          </details>
+          </EntityModal>
         </div>
       </CardContent>
     </Card>
@@ -131,14 +168,17 @@ function Info({ label, valor }: { label: string; valor: string }) {
   );
 }
 
-function obterVariantPrioridade(prioridade: TarefaManutencaoCompleta["priority"]) {
+function obterVariantPrioridade(
+  prioridade: TarefaManutencaoCompleta["priority"],
+) {
   if (prioridade === "urgent" || prioridade === "high") return "warning";
   if (prioridade === "medium") return "info";
   return "outline";
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00Z`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00Z`));
 }

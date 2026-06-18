@@ -1,14 +1,29 @@
-import { CalendarCheck2, Clock3, Plus, Search, ShieldCheck } from "lucide-react";
+import {
+  CalendarCheck2,
+  Clock3,
+  Plus,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge, Button, Card, CardContent, FadeIn, Input, Label } from "@hospedex/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  FadeIn,
+  Input,
+  Label,
+} from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { ModuleToast } from "../admin/module-toast";
 import {
   LABEL_STATUS_RESERVA,
   STATUS_RESERVA,
   type DadosModuloReservas,
-  type SearchParamsReservas
+  type SearchParamsReservas,
 } from "../../lib/reservations/types";
 import { ReservationCard } from "./reservation-card";
 import { ReservationForm } from "./reservation-form";
@@ -31,7 +46,7 @@ const MENSAGENS_SUCESSO_RESERVAS: Record<string, string> = {
   "reserva-cancelada": "Reserva cancelada com sucesso.",
   "status-reserva": "Status da reserva atualizado.",
   "servico-extra": "Serviço extra adicionado.",
-  "observacao-adicionada": "Observação adicionada."
+  "observacao-adicionada": "Observação adicionada.",
 };
 
 export function ReservationModule({
@@ -43,7 +58,7 @@ export function ReservationModule({
   resumo,
   sucesso,
   tenantNome,
-  unidades
+  unidades,
 }: ReservationModuleProps) {
   return (
     <FadeIn className="space-y-5">
@@ -59,18 +74,30 @@ export function ReservationModule({
             <Badge variant={podeGerenciar ? "info" : "warning"}>
               {podeGerenciar ? "Gestão liberada" : "Somente leitura"}
             </Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Reservas</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{tenantNome}</p>
+            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
+              Reservas
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {tenantNome}
+            </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Resumo icon={<Clock3 />} label="Pendentes" valor={String(resumo.pendentes)} />
+            <Resumo
+              icon={<Clock3 />}
+              label="Pendentes"
+              valor={String(resumo.pendentes)}
+            />
             <Resumo
               icon={<CalendarCheck2 />}
               label="Confirmadas"
               valor={String(resumo.confirmadas)}
             />
-            <Resumo icon={<ShieldCheck />} label="Hospedados" valor={String(resumo.hospedadas)} />
+            <Resumo
+              icon={<ShieldCheck />}
+              label="Hospedados"
+              valor={String(resumo.hospedadas)}
+            />
             <Resumo label="Canceladas" valor={String(resumo.canceladas)} />
           </div>
         </div>
@@ -90,9 +117,20 @@ export function ReservationModule({
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
             />
-            <CampoUnidadeFiltro defaultValue={filtros.unidadeId ?? ""} unidades={unidades} />
-            <CampoData defaultValue={filtros.dataInicio ?? ""} label="Entrada" name="dataInicio" />
-            <CampoData defaultValue={filtros.dataFim ?? ""} label="Saida" name="dataFim" />
+            <CampoUnidadeFiltro
+              defaultValue={filtros.unidadeId ?? ""}
+              unidades={unidades}
+            />
+            <CampoData
+              defaultValue={filtros.dataInicio ?? ""}
+              label="Entrada"
+              name="dataInicio"
+            />
+            <CampoData
+              defaultValue={filtros.dataFim ?? ""}
+              label="Saida"
+              name="dataFim"
+            />
             <div className="flex items-end">
               <Button className="w-full" type="submit" variant="outline">
                 <Search />
@@ -104,21 +142,30 @@ export function ReservationModule({
       </Card>
 
       <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={reservas.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Nova reserva manual
-            </summary>
-            <div className="mt-5">
-              <ReservationForm
-                modo="criar"
-                podeGerenciar={podeGerenciar}
-                propriedades={propriedades}
-                unidades={unidades}
-              />
-            </div>
-          </details>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Cadastro de reserva</h2>
+            <p className="text-sm text-muted-foreground">
+              Abra o modal para registrar uma reserva manual.
+            </p>
+          </div>
+          <EntityModal
+            description="Informe casa, unidade, período, hóspede e valores da reserva."
+            disabled={!podeGerenciar}
+            eyebrow="Cadastro"
+            size="xl"
+            title="Nova reserva manual"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Nova reserva"
+            triggerVariant="default"
+          >
+            <ReservationForm
+              modo="criar"
+              podeGerenciar={podeGerenciar}
+              propriedades={propriedades}
+              unidades={unidades}
+            />
+          </EntityModal>
         </CardContent>
       </Card>
 
@@ -148,7 +195,7 @@ export function ReservationModule({
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon?: ReactNode;
   label: string;
@@ -156,7 +203,9 @@ function Resumo({
 }) {
   return (
     <div className="min-w-32 rounded-lg border bg-background/55 p-3 text-sm">
-      {icon ? <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div> : null}
+      {icon ? (
+        <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div>
+      ) : null}
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-semibold">{valor}</p>
     </div>
@@ -167,7 +216,7 @@ function CampoTexto({
   defaultValue,
   label,
   name,
-  placeholder
+  placeholder,
 }: {
   defaultValue?: string;
   label: string;
@@ -177,7 +226,12 @@ function CampoTexto({
   return (
     <div className="grid gap-2">
       <Label htmlFor={name}>{label}</Label>
-      <Input defaultValue={defaultValue} id={name} name={name} placeholder={placeholder} />
+      <Input
+        defaultValue={defaultValue}
+        id={name}
+        name={name}
+        placeholder={placeholder}
+      />
     </div>
   );
 }
@@ -205,7 +259,7 @@ function CampoStatus({ defaultValue }: { defaultValue: string }) {
 
 function CampoPropriedade({
   defaultValue,
-  propriedades
+  propriedades,
 }: {
   defaultValue: string;
   propriedades: Array<{ id: string; name: string }>;
@@ -232,7 +286,7 @@ function CampoPropriedade({
 
 function CampoUnidadeFiltro({
   defaultValue,
-  unidades
+  unidades,
 }: {
   defaultValue: string;
   unidades: Array<{ id: string; name: string }>;
@@ -260,7 +314,7 @@ function CampoUnidadeFiltro({
 function CampoData({
   defaultValue,
   label,
-  name
+  name,
 }: {
   defaultValue: string;
   label: string;

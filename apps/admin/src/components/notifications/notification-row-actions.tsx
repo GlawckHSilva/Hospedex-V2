@@ -4,9 +4,10 @@ import { Check, Trash2 } from "lucide-react";
 
 import { Button } from "@hospedex/ui";
 
+import { ConfirmDialog } from "../management/entity-modal";
 import {
   excluirNotificacaoAction,
-  marcarNotificacaoLidaAction
+  marcarNotificacaoLidaAction,
 } from "../../lib/notifications/actions";
 
 type NotificationRowActionsProps = {
@@ -16,7 +17,7 @@ type NotificationRowActionsProps = {
 
 export function NotificationRowActions({
   lida,
-  notificationKey
+  notificationKey,
 }: NotificationRowActionsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -29,20 +30,20 @@ export function NotificationRowActions({
           </Button>
         </form>
       ) : null}
-      <form
-        action={excluirNotificacaoAction}
-        onSubmit={(evento) => {
-          if (!window.confirm("Excluir esta notificacao da sua lista?")) {
-            evento.preventDefault();
-          }
-        }}
+      <ConfirmDialog
+        description="Esta notificação será removida apenas da sua lista."
+        title="Excluir notificação"
+        triggerIcon={<Trash2 className="h-4 w-4" />}
+        triggerLabel="Excluir"
       >
-        <input name="notificationKey" type="hidden" value={notificationKey} />
-        <Button size="sm" type="submit" variant="ghost">
-          <Trash2 className="h-4 w-4" />
-          Excluir
-        </Button>
-      </form>
+        <form action={excluirNotificacaoAction} className="grid gap-3">
+          <input name="notificationKey" type="hidden" value={notificationKey} />
+          <Button size="sm" type="submit" variant="destructive">
+            <Trash2 className="h-4 w-4" />
+            Excluir notificação
+          </Button>
+        </form>
+      </ConfirmDialog>
     </div>
   );
 }

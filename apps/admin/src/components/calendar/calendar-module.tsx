@@ -4,19 +4,28 @@ import {
   LockKeyhole,
   Search,
   ShieldCheck,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
-import { Badge, Button, Card, CardContent, FadeIn, Input, Label } from "@hospedex/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  FadeIn,
+  Input,
+  Label,
+} from "@hospedex/ui";
 
 import { ModuleToast } from "../admin/module-toast";
+import { EntityModal } from "../management/entity-modal";
 import { bloquearPeriodoCalendarioAction } from "../../lib/calendar/actions";
 import {
   LABEL_MOTIVO_BLOQUEIO,
   MOTIVOS_BLOQUEIO_CALENDARIO,
   type DadosModuloCalendario,
-  type SearchParamsCalendario
+  type SearchParamsCalendario,
 } from "../../lib/calendar/types";
 import { CalendarDayCell } from "./calendar-day-cell";
 
@@ -27,7 +36,7 @@ export type CalendarModuleProps = DadosModuloCalendario &
 
 const MENSAGENS_SUCESSO_CALENDARIO: Record<string, string> = {
   "bloqueio-criado": "Periodo bloqueado com sucesso.",
-  "periodo-liberado": "Periodo liberado com sucesso."
+  "periodo-liberado": "Periodo liberado com sucesso.",
 };
 
 const campoClasse =
@@ -46,12 +55,17 @@ export function CalendarModule({
   resumo,
   sucesso,
   tenantNome,
-  unidades
+  unidades,
 }: CalendarModuleProps) {
   const unidadesDoFormulario = filtros.propriedadeId
-    ? unidades.filter((unidade) => unidade.property_id === filtros.propriedadeId)
+    ? unidades.filter(
+        (unidade) => unidade.property_id === filtros.propriedadeId,
+      )
     : unidades;
-  const bloqueado = !podeGerenciar || propriedades.length === 0 || unidadesDoFormulario.length === 0;
+  const bloqueado =
+    !podeGerenciar ||
+    propriedades.length === 0 ||
+    unidadesDoFormulario.length === 0;
 
   return (
     <FadeIn className="space-y-5">
@@ -71,12 +85,22 @@ export function CalendarModule({
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">
               Calendario e disponibilidade
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{tenantNome}</p>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              {tenantNome}
+            </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Resumo icon={<LockKeyhole />} label="Bloqueios" valor={String(resumo.bloqueiosAtivos)} />
-            <Resumo icon={<CalendarDays />} label="Reservas" valor={String(resumo.reservasAtivas)} />
+            <Resumo
+              icon={<LockKeyhole />}
+              label="Bloqueios"
+              valor={String(resumo.bloqueiosAtivos)}
+            />
+            <Resumo
+              icon={<CalendarDays />}
+              label="Reservas"
+              valor={String(resumo.reservasAtivas)}
+            />
             <Resumo
               icon={<DoorOpen />}
               label="Unidades ativas"
@@ -113,7 +137,10 @@ export function CalendarModule({
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
             />
-            <CampoUnidade defaultValue={filtros.unidadeId ?? ""} unidades={unidades} />
+            <CampoUnidade
+              defaultValue={filtros.unidadeId ?? ""}
+              unidades={unidades}
+            />
             <div className="flex items-end">
               <Button className="w-full" type="submit" variant="outline">
                 <Search />
@@ -126,64 +153,100 @@ export function CalendarModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <details open={reservas.length === 0 && blocos.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Sparkles className="h-4 w-4" />
-              Bloquear periodo manualmente
-            </summary>
-
-            <form action={bloquearPeriodoCalendarioAction} className="mt-5 grid gap-4">
-              <input name="mes" type="hidden" value={filtros.mes} />
-              <input name="semana" type="hidden" value={filtros.semana} />
-              <input name="visao" type="hidden" value={filtros.visao} />
-              <input name="filtroPropriedadeId" type="hidden" value={filtros.propriedadeId ?? ""} />
-              <input name="filtroUnidadeId" type="hidden" value={filtros.unidadeId ?? ""} />
-
-              <div className="grid gap-4 lg:grid-cols-2">
-                <CampoPropriedade
-                  defaultValue={filtros.propriedadeId ?? propriedades[0]?.id ?? ""}
-                  disabled={bloqueado}
-                  permitirTodos={false}
-                  propriedades={propriedades}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-base font-semibold">Bloqueio manual</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Registre manutencoes, uso interno ou indisponibilidade
+                temporaria.
+              </p>
+            </div>
+            <EntityModal
+              description="Defina a casa, unidade e intervalo que ficarao indisponiveis."
+              disabled={bloqueado}
+              eyebrow="Disponibilidade"
+              title="Bloquear periodo"
+              triggerIcon={<Sparkles className="h-4 w-4" />}
+              triggerLabel="Bloquear periodo"
+            >
+              <form
+                action={bloquearPeriodoCalendarioAction}
+                className="mt-5 grid gap-4"
+              >
+                <input name="mes" type="hidden" value={filtros.mes} />
+                <input name="semana" type="hidden" value={filtros.semana} />
+                <input name="visao" type="hidden" value={filtros.visao} />
+                <input
+                  name="filtroPropriedadeId"
+                  type="hidden"
+                  value={filtros.propriedadeId ?? ""}
                 />
-                <CampoUnidade
-                  defaultValue={filtros.unidadeId ?? unidadesDoFormulario[0]?.id ?? ""}
-                  disabled={bloqueado}
-                  permitirTodos={false}
-                  unidades={unidadesDoFormulario}
+                <input
+                  name="filtroUnidadeId"
+                  type="hidden"
+                  value={filtros.unidadeId ?? ""}
                 />
-              </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <CampoTexto
-                  disabled={bloqueado}
-                  label="Inicio"
-                  name="inicio"
-                  required
-                  type="date"
-                />
-                <CampoTexto disabled={bloqueado} label="Fim" name="fim" required type="date" />
-              </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <CampoPropriedade
+                    defaultValue={
+                      filtros.propriedadeId ?? propriedades[0]?.id ?? ""
+                    }
+                    disabled={bloqueado}
+                    permitirTodos={false}
+                    propriedades={propriedades}
+                  />
+                  <CampoUnidade
+                    defaultValue={
+                      filtros.unidadeId ?? unidadesDoFormulario[0]?.id ?? ""
+                    }
+                    disabled={bloqueado}
+                    permitirTodos={false}
+                    unidades={unidadesDoFormulario}
+                  />
+                </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <CampoMotivoBloqueio disabled={bloqueado} />
-                <CampoTexto
-                  disabled={bloqueado}
-                  label="Detalhe do motivo"
-                  name="motivoDetalhe"
-                  placeholder="Ex.: troca de ar-condicionado"
-                />
-                <CampoArea disabled={bloqueado} label="Observacoes" name="observacoes" />
-              </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <CampoTexto
+                    disabled={bloqueado}
+                    label="Inicio"
+                    name="inicio"
+                    required
+                    type="date"
+                  />
+                  <CampoTexto
+                    disabled={bloqueado}
+                    label="Fim"
+                    name="fim"
+                    required
+                    type="date"
+                  />
+                </div>
 
-              <div className="flex justify-end">
-                <Button disabled={bloqueado} type="submit">
-                  <LockKeyhole />
-                  Bloquear datas
-                </Button>
-              </div>
-            </form>
-          </details>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <CampoMotivoBloqueio disabled={bloqueado} />
+                  <CampoTexto
+                    disabled={bloqueado}
+                    label="Detalhe do motivo"
+                    name="motivoDetalhe"
+                    placeholder="Ex.: troca de ar-condicionado"
+                  />
+                  <CampoArea
+                    disabled={bloqueado}
+                    label="Observacoes"
+                    name="observacoes"
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <Button disabled={bloqueado} type="submit">
+                    <LockKeyhole />
+                    Bloquear datas
+                  </Button>
+                </div>
+              </form>
+            </EntityModal>
+          </div>
         </CardContent>
       </Card>
 
@@ -195,8 +258,12 @@ export function CalendarModule({
         <Card className="admin-glass-card">
           <CardContent className="space-y-4 p-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold">{formatarPeriodo(filtros)}</h2>
-              <Badge variant="outline">{reservas.length + blocos.length} evento(s)</Badge>
+              <h2 className="text-lg font-semibold">
+                {formatarPeriodo(filtros)}
+              </h2>
+              <Badge variant="outline">
+                {reservas.length + blocos.length} evento(s)
+              </Badge>
             </div>
 
             <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-muted-foreground">
@@ -220,7 +287,8 @@ export function CalendarModule({
 
             {reservas.length === 0 && blocos.length === 0 ? (
               <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
-                Nenhuma reserva ou indisponibilidade encontrada para o filtro atual.
+                Nenhuma reserva ou indisponibilidade encontrada para o filtro
+                atual.
               </div>
             ) : null}
           </CardContent>
@@ -233,7 +301,7 @@ export function CalendarModule({
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon: ReactNode;
   label: string;
@@ -251,7 +319,9 @@ function Resumo({
 function EstadoVazio({ mensagem }: { mensagem: string }) {
   return (
     <Card className="admin-glass-card">
-      <CardContent className="p-5 text-sm text-muted-foreground">{mensagem}</CardContent>
+      <CardContent className="p-5 text-sm text-muted-foreground">
+        {mensagem}
+      </CardContent>
     </Card>
   );
 }
@@ -275,7 +345,7 @@ function CampoTexto({
 function CampoArea({
   disabled,
   label,
-  name
+  name,
 }: {
   disabled: boolean;
   label: string;
@@ -284,7 +354,12 @@ function CampoArea({
   return (
     <div className="grid gap-2">
       <Label htmlFor={name}>{label}</Label>
-      <textarea className={areaClasse} disabled={disabled} id={name} name={name} />
+      <textarea
+        className={areaClasse}
+        disabled={disabled}
+        id={name}
+        name={name}
+      />
     </div>
   );
 }
@@ -293,7 +368,7 @@ function CampoPropriedade({
   defaultValue,
   disabled,
   permitirTodos = true,
-  propriedades
+  propriedades,
 }: {
   defaultValue: string;
   disabled?: boolean;
@@ -325,7 +400,7 @@ function CampoUnidade({
   defaultValue,
   disabled,
   permitirTodos = true,
-  unidades
+  unidades,
 }: {
   defaultValue: string;
   disabled?: boolean;
@@ -357,7 +432,12 @@ function CampoVisao({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="visao">Visao</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="visao" name="visao">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="visao"
+        name="visao"
+      >
         <option value="mensal">Mensal</option>
         <option value="semanal">Semanal</option>
       </select>
@@ -399,12 +479,13 @@ function formatarMes(mes: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     month: "long",
     year: "numeric",
-    timeZone: "UTC"
+    timeZone: "UTC",
   }).format(data);
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00Z`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00Z`));
 }

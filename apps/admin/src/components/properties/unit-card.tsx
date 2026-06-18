@@ -1,8 +1,11 @@
 import {
   Bath,
   BedDouble,
+  Eye,
+  Pencil,
   PauseCircle,
   PlayCircle,
+  Trash2,
   Users,
   WalletCards,
 } from "lucide-react";
@@ -10,6 +13,11 @@ import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
 import {
   alternarStatusUnidadeAction,
   excluirUnidadeAction,
@@ -96,11 +104,41 @@ export function UnitCard({
           />
         </div>
 
-        <details className="rounded-lg border bg-background/45 p-3">
-          <summary className="cursor-pointer text-sm font-semibold">
-            Editar unidade
-          </summary>
-          <div className="mt-4">
+        <div className="flex flex-wrap gap-2">
+          <EntityViewModal
+            description="Resumo da unidade selecionada."
+            title={`Detalhes de ${unidade.name}`}
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <div className="grid gap-3 text-sm md:grid-cols-2">
+              <InfoModal
+                label="Status"
+                valor={obterLabelStatusUnidade(unidade.status)}
+              />
+              <InfoModal
+                label="Categoria"
+                valor={unidade.categoria?.name ?? "Categoria pendente"}
+              />
+              <InfoModal label="Capacidade" valor={String(unidade.capacity)} />
+              <InfoModal label="Quartos" valor={String(unidade.bedrooms)} />
+              <InfoModal label="Camas" valor={String(unidade.beds)} />
+              <InfoModal label="Banheiros" valor={String(unidade.bathrooms)} />
+              <InfoModal
+                label="Valor base"
+                valor={formatarMoeda(unidade.base_price)}
+              />
+            </div>
+          </EntityViewModal>
+
+          <EntityModal
+            description="Atualize dados operacionais e capacidade da unidade."
+            disabled={!podeGerenciar}
+            eyebrow="Edição"
+            title="Editar unidade"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
             <UnitForm
               modo="editar"
               podeGerenciar={podeGerenciar}
@@ -108,8 +146,8 @@ export function UnitCard({
               retorno={retorno}
               unidade={unidade}
             />
-          </div>
-        </details>
+          </EntityModal>
+        </div>
 
         <MediaGallery
           imagens={unidade.imagens}
@@ -120,10 +158,13 @@ export function UnitCard({
           unidadeId={unidade.id}
         />
 
-        <details className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-destructive">
-            Excluir unidade
-          </summary>
+        <ConfirmDialog
+          description="Esta ação remove a unidade da propriedade."
+          disabled={!podeGerenciar}
+          title="Excluir unidade"
+          triggerIcon={<Trash2 className="h-4 w-4" />}
+          triggerLabel="Excluir unidade"
+        >
           <form action={excluirUnidadeAction} className="mt-4 grid gap-3">
             <input name="retorno" type="hidden" value={retorno} />
             <input name="unidadeId" type="hidden" value={unidade.id} />
@@ -148,9 +189,18 @@ export function UnitCard({
               </Button>
             </div>
           </form>
-        </details>
+        </ConfirmDialog>
       </CardContent>
     </Card>
+  );
+}
+
+function InfoModal({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-lg border bg-background/55 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words font-medium">{valor}</p>
+    </div>
   );
 }
 

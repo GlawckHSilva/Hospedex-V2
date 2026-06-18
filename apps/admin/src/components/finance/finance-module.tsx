@@ -5,12 +5,21 @@ import {
   CircleDollarSign,
   Plus,
   Search,
-  WalletCards
+  WalletCards,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge, Button, Card, CardContent, FadeIn, Input, Label } from "@hospedex/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  FadeIn,
+  Input,
+  Label,
+} from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { ModuleToast } from "../admin/module-toast";
 import {
   LABEL_STATUS_LANCAMENTO,
@@ -18,7 +27,7 @@ import {
   STATUS_LANCAMENTO_FINANCEIRO,
   TIPOS_LANCAMENTO_FINANCEIRO,
   type DadosModuloFinanceiro,
-  type SearchParamsFinanceiro
+  type SearchParamsFinanceiro,
 } from "../../lib/finance/types";
 import { FinanceForm } from "./finance-form";
 import { FinanceTransactionCard } from "./finance-transaction-card";
@@ -38,7 +47,7 @@ export type FinanceModuleProps = DadosModuloFinanceiro &
 const MENSAGENS_SUCESSO_FINANCEIRO: Record<string, string> = {
   "lancamento-atualizado": "Lançamento atualizado com sucesso.",
   "lancamento-criado": "Lançamento criado com sucesso.",
-  "lancamento-excluido": "Lançamento excluído com sucesso."
+  "lancamento-excluido": "Lançamento excluído com sucesso.",
 };
 
 const campoClasse =
@@ -55,7 +64,7 @@ export function FinanceModule({
   propriedades,
   resumo,
   sucesso,
-  tenantNome
+  tenantNome,
 }: FinanceModuleProps) {
   return (
     <FadeIn className="space-y-5">
@@ -71,19 +80,45 @@ export function FinanceModule({
             <Badge variant={podeGerenciar ? "info" : "warning"}>
               {podeGerenciar ? "Financeiro manual" : "Somente leitura"}
             </Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Financeiro</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
+              Financeiro
+            </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} · Pagamentos online {pagamentosOnlineAtivo ? "ativos" : "desligados"}
+              {tenantNome} · Pagamentos online{" "}
+              {pagamentosOnlineAtivo ? "ativos" : "desligados"}
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Resumo icon={<CircleDollarSign />} label="Receita do mês" valor={formatarMoeda(resumo.receitaMes)} />
-            <Resumo icon={<WalletCards />} label="Despesas do mês" valor={formatarMoeda(resumo.despesasMes)} />
-            <Resumo icon={<ChartNoAxesCombined />} label="Lucro do mês" valor={formatarMoeda(resumo.lucroMes)} />
-            <Resumo icon={<Banknote />} label="Reservas pagas" valor={String(resumo.reservasPagas)} />
-            <Resumo icon={<CalendarClock />} label="Reservas pendentes" valor={String(resumo.reservasPendentes)} />
-            <Resumo label="Ticket médio" valor={formatarMoeda(resumo.ticketMedio)} />
+            <Resumo
+              icon={<CircleDollarSign />}
+              label="Receita do mês"
+              valor={formatarMoeda(resumo.receitaMes)}
+            />
+            <Resumo
+              icon={<WalletCards />}
+              label="Despesas do mês"
+              valor={formatarMoeda(resumo.despesasMes)}
+            />
+            <Resumo
+              icon={<ChartNoAxesCombined />}
+              label="Lucro do mês"
+              valor={formatarMoeda(resumo.lucroMes)}
+            />
+            <Resumo
+              icon={<Banknote />}
+              label="Reservas pagas"
+              valor={String(resumo.reservasPagas)}
+            />
+            <Resumo
+              icon={<CalendarClock />}
+              label="Reservas pendentes"
+              valor={String(resumo.reservasPendentes)}
+            />
+            <Resumo
+              label="Ticket médio"
+              valor={formatarMoeda(resumo.ticketMedio)}
+            />
           </div>
         </div>
       </section>
@@ -105,23 +140,31 @@ export function FinanceModule({
       </Card>
 
       <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={lancamentos.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Novo lançamento manual
-            </summary>
-            <div className="mt-5">
-              <FinanceForm
-                categorias={categorias}
-                contas={contas}
-                filtros={filtros}
-                modo="criar"
-                podeGerenciar={podeGerenciar}
-                propriedades={propriedades}
-              />
-            </div>
-          </details>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Lançamento manual</h2>
+            <p className="text-sm text-muted-foreground">
+              Registre receitas ou despesas em um modal central.
+            </p>
+          </div>
+          <EntityModal
+            description="Informe tipo, valor, vencimento, conta e categoria."
+            disabled={!podeGerenciar}
+            eyebrow="Cadastro"
+            title="Novo lançamento manual"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Novo lançamento"
+            triggerVariant="default"
+          >
+            <FinanceForm
+              categorias={categorias}
+              contas={contas}
+              filtros={filtros}
+              modo="criar"
+              podeGerenciar={podeGerenciar}
+              propriedades={propriedades}
+            />
+          </EntityModal>
         </CardContent>
       </Card>
 
@@ -151,7 +194,7 @@ export function FinanceModule({
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon?: ReactNode;
   label: string;
@@ -159,7 +202,9 @@ function Resumo({
 }) {
   return (
     <div className="min-w-36 rounded-lg border bg-background/55 p-3 text-sm">
-      {icon ? <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div> : null}
+      {icon ? (
+        <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div>
+      ) : null}
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-semibold">{valor}</p>
     </div>
@@ -169,7 +214,9 @@ function Resumo({
 function EstadoVazio({ mensagem }: { mensagem: string }) {
   return (
     <Card className="admin-glass-card">
-      <CardContent className="p-5 text-sm text-muted-foreground">{mensagem}</CardContent>
+      <CardContent className="p-5 text-sm text-muted-foreground">
+        {mensagem}
+      </CardContent>
     </Card>
   );
 }
@@ -178,7 +225,13 @@ function CampoMes({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="mes">Mês</Label>
-      <Input defaultValue={defaultValue} id="mes" name="mes" required type="month" />
+      <Input
+        defaultValue={defaultValue}
+        id="mes"
+        name="mes"
+        required
+        type="month"
+      />
     </div>
   );
 }
@@ -187,7 +240,12 @@ function CampoTipoFiltro({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="tipo">Tipo</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="tipo" name="tipo">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="tipo"
+        name="tipo"
+      >
         <option value="todos">Todos</option>
         {TIPOS_LANCAMENTO_FINANCEIRO.map((tipo) => (
           <option key={tipo} value={tipo}>
@@ -203,7 +261,12 @@ function CampoStatusFiltro({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="status">Status</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="status" name="status">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="status"
+        name="status"
+      >
         <option value="todos">Todos</option>
         {STATUS_LANCAMENTO_FINANCEIRO.map((status) => (
           <option key={status} value={status}>
@@ -218,6 +281,6 @@ function CampoStatusFiltro({ defaultValue }: { defaultValue: string }) {
 function formatarMoeda(valor: number) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }

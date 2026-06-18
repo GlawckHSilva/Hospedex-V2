@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Badge, Card, CardContent, FadeIn } from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { ModuleToast } from "../admin/module-toast";
 import type {
   DadosModuloPropriedades,
@@ -55,7 +56,6 @@ export function PropertyModule({
   sucesso,
   tenantNome,
 }: PropertyModuleProps) {
-  const unidades = propriedades.flatMap((propriedade) => propriedade.unidades);
   const titulo = modo === "propriedades" ? "Casas" : "Unidades";
 
   return (
@@ -118,7 +118,6 @@ export function PropertyModule({
         <VisaoUnidades
           podeGerenciar={podeGerenciar}
           propriedades={propriedades}
-          unidadesTotais={unidades.length}
         />
       )}
     </FadeIn>
@@ -140,20 +139,28 @@ function VisaoPropriedades({
   return (
     <>
       <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={propriedades.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Nova casa
-            </summary>
-            <div className="mt-5">
-              <PropertyForm
-                modo="criar"
-                multiUnidadesAtivo={multiUnidadesAtivo}
-                podeGerenciar={podeGerenciar}
-              />
-            </div>
-          </details>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Cadastro de casas</h2>
+            <p className="text-sm text-muted-foreground">
+              Use o modal para criar casas sem expandir a lista.
+            </p>
+          </div>
+          <EntityModal
+            description="Preencha os dados públicos e operacionais da casa."
+            disabled={!podeGerenciar}
+            eyebrow="Cadastro"
+            title="Nova casa"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Nova casa"
+            triggerVariant="default"
+          >
+            <PropertyForm
+              modo="criar"
+              multiUnidadesAtivo={multiUnidadesAtivo}
+              podeGerenciar={podeGerenciar}
+            />
+          </EntityModal>
         </CardContent>
       </Card>
 
@@ -184,28 +191,33 @@ function VisaoPropriedades({
 function VisaoUnidades({
   podeGerenciar,
   propriedades,
-  unidadesTotais,
-}: Pick<PropertyModuleProps, "podeGerenciar" | "propriedades"> & {
-  unidadesTotais: number;
-}) {
+}: Pick<PropertyModuleProps, "podeGerenciar" | "propriedades">) {
   return (
     <>
       <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={unidadesTotais === 0 && propriedades.length > 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Nova unidade
-            </summary>
-            <div className="mt-5">
-              <UnitForm
-                modo="criar"
-                podeGerenciar={podeGerenciar}
-                propriedades={propriedades}
-                retorno="/unidades"
-              />
-            </div>
-          </details>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Cadastro de unidades</h2>
+            <p className="text-sm text-muted-foreground">
+              A unidade é criada em modal e vinculada a uma casa existente.
+            </p>
+          </div>
+          <EntityModal
+            description="Informe capacidade, quartos, camas, banheiros e valor base."
+            disabled={!podeGerenciar || propriedades.length === 0}
+            eyebrow="Cadastro"
+            title="Nova unidade"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Nova unidade"
+            triggerVariant="default"
+          >
+            <UnitForm
+              modo="criar"
+              podeGerenciar={podeGerenciar}
+              propriedades={propriedades}
+              retorno="/unidades"
+            />
+          </EntityModal>
         </CardContent>
       </Card>
 

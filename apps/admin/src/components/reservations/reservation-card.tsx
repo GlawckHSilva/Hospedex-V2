@@ -1,30 +1,34 @@
-import {
-  type PropertyRow,
-  type UnitRow
-} from "@hospedex/types";
+import { type PropertyRow, type UnitRow } from "@hospedex/types";
 import {
   Ban,
   CalendarDays,
   CreditCard,
+  Eye,
   ListChecks,
   MessageSquarePlus,
-  UserRound
+  Pencil,
+  UserRound,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, Input, Label } from "@hospedex/ui";
 
 import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
+import {
   adicionarObservacaoReservaAction,
   adicionarServicoExtraReservaAction,
   alterarStatusReservaAction,
-  cancelarReservaAction
+  cancelarReservaAction,
 } from "../../lib/reservations/actions";
 import {
   LABEL_STATUS_RESERVA,
   STATUS_RESERVA,
   obterVariantStatusReserva,
-  type ReservaComRelacionamentos
+  type ReservaComRelacionamentos,
 } from "../../lib/reservations/types";
 import { ReservationForm } from "./reservation-form";
 import { ReservationTimeline } from "./reservation-timeline";
@@ -52,10 +56,13 @@ export function ReservationCard({
   podeGerenciar,
   propriedades,
   reserva,
-  unidades
+  unidades,
 }: ReservationCardProps) {
-  const hospedePrincipal = reserva.hospedes.find((hospede) => hospede.is_primary) ?? reserva.hospedes[0];
-  const encerrada = reserva.status === "cancelled" || reserva.status === "completed";
+  const hospedePrincipal =
+    reserva.hospedes.find((hospede) => hospede.is_primary) ??
+    reserva.hospedes[0];
+  const encerrada =
+    reserva.status === "cancelled" || reserva.status === "completed";
 
   return (
     <Card className="admin-glass-card">
@@ -94,28 +101,74 @@ export function ReservationCard({
         </div>
 
         <section className="grid gap-3 md:grid-cols-3">
-          <Info label="Hóspede" valor={hospedePrincipal?.full_name ?? "Sem hóspede"} />
-          <Info label="Telefone" valor={hospedePrincipal?.phone ?? "Não informado"} />
-          <Info label="E-mail" valor={hospedePrincipal?.email ?? "Não informado"} />
+          <Info
+            label="Hóspede"
+            valor={hospedePrincipal?.full_name ?? "Sem hóspede"}
+          />
+          <Info
+            label="Telefone"
+            valor={hospedePrincipal?.phone ?? "Não informado"}
+          />
+          <Info
+            label="E-mail"
+            valor={hospedePrincipal?.email ?? "Não informado"}
+          />
         </section>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Editar reserva</summary>
-            <div className="mt-4">
-              <ReservationForm
-                modo="editar"
-                podeGerenciar={podeGerenciar && !encerrada}
-                propriedades={propriedades}
-                reserva={reserva}
-                unidades={unidades}
-              />
+        <div className="flex flex-wrap gap-2">
+          <EntityViewModal
+            description="Dados consolidados, serviços extras e linha do tempo da reserva."
+            title={`Reserva ${reserva.code}`}
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
+              <ReservationTimeline reserva={reserva} />
+              <div className="grid content-start gap-3">
+                <Info
+                  label="Hóspede"
+                  valor={hospedePrincipal?.full_name ?? "Sem hóspede"}
+                />
+                <Info
+                  label="Telefone"
+                  valor={hospedePrincipal?.phone ?? "Não informado"}
+                />
+                <Info
+                  label="E-mail"
+                  valor={hospedePrincipal?.email ?? "Não informado"}
+                />
+                <ListaServicos reserva={reserva} />
+              </div>
             </div>
-          </details>
+          </EntityViewModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Alterar status</summary>
-            <form action={alterarStatusReservaAction} className="mt-4 grid gap-3">
+          <EntityModal
+            description="Atualize período, hóspede, unidade e valores da reserva."
+            disabled={!podeGerenciar || encerrada}
+            eyebrow="Edição"
+            size="xl"
+            title="Editar reserva"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <ReservationForm
+              modo="editar"
+              podeGerenciar={podeGerenciar && !encerrada}
+              propriedades={propriedades}
+              reserva={reserva}
+              unidades={unidades}
+            />
+          </EntityModal>
+
+          <EntityModal
+            description="Registre a transição de status com motivo para manter rastreabilidade."
+            disabled={!podeGerenciar || encerrada}
+            eyebrow="Status"
+            title="Alterar status"
+            triggerIcon={<ListChecks className="h-4 w-4" />}
+            triggerLabel="Status"
+          >
+            <form action={alterarStatusReservaAction} className="grid gap-3">
               <input name="reservaId" type="hidden" value={reserva.id} />
               <div className="grid gap-2">
                 <Label htmlFor={`status-${reserva.id}`}>Status</Label>
@@ -133,23 +186,39 @@ export function ReservationCard({
                   ))}
                 </select>
               </div>
-              <CampoArea disabled={!podeGerenciar || encerrada} label="Motivo" name="motivo" />
+              <CampoArea
+                disabled={!podeGerenciar || encerrada}
+                label="Motivo"
+                name="motivo"
+              />
               <Button disabled={!podeGerenciar || encerrada} type="submit">
                 <ListChecks />
                 Atualizar status
               </Button>
             </form>
-          </details>
-        </div>
+          </EntityModal>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Serviços extras</summary>
-            <div className="mt-4 space-y-4">
+          <EntityModal
+            description="Inclua serviços extras vinculados a esta reserva."
+            disabled={!podeGerenciar || encerrada}
+            eyebrow="Serviços"
+            title="Serviços extras"
+            triggerIcon={<CreditCard className="h-4 w-4" />}
+            triggerLabel="Serviços"
+          >
+            <div className="space-y-4">
               <ListaServicos reserva={reserva} />
-              <form action={adicionarServicoExtraReservaAction} className="grid gap-3">
+              <form
+                action={adicionarServicoExtraReservaAction}
+                className="grid gap-3"
+              >
                 <input name="reservaId" type="hidden" value={reserva.id} />
-                <CampoTexto disabled={!podeGerenciar || encerrada} label="Nome" name="servicoExtraNome" required />
+                <CampoTexto
+                  disabled={!podeGerenciar || encerrada}
+                  label="Nome"
+                  name="servicoExtraNome"
+                  required
+                />
                 <div className="grid gap-3 sm:grid-cols-2">
                   <CampoTexto
                     defaultValue="1"
@@ -176,16 +245,50 @@ export function ReservationCard({
                   label="Descrição"
                   name="servicoExtraDescricao"
                 />
-                <Button disabled={!podeGerenciar || encerrada} type="submit" variant="outline">
+                <Button
+                  disabled={!podeGerenciar || encerrada}
+                  type="submit"
+                  variant="outline"
+                >
                   Adicionar serviço
                 </Button>
               </form>
             </div>
-          </details>
+          </EntityModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Cancelamento</summary>
-            <form action={cancelarReservaAction} className="mt-4 grid gap-3">
+          <EntityModal
+            description="Adicione uma observação interna visível apenas no Gerenciamento."
+            disabled={!podeGerenciar}
+            eyebrow="Observação"
+            title="Nova observação interna"
+            triggerIcon={<MessageSquarePlus className="h-4 w-4" />}
+            triggerLabel="Observação"
+          >
+            <form
+              action={adicionarObservacaoReservaAction}
+              className="grid content-start gap-3"
+            >
+              <input name="reservaId" type="hidden" value={reserva.id} />
+              <CampoArea
+                disabled={!podeGerenciar}
+                label="Observação interna"
+                name="observacao"
+              />
+              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+                <MessageSquarePlus />
+                Adicionar observação
+              </Button>
+            </form>
+          </EntityModal>
+
+          <ConfirmDialog
+            description="O cancelamento altera o status da reserva e registra o motivo."
+            disabled={!podeGerenciar || reserva.status === "cancelled"}
+            title="Cancelar reserva"
+            triggerIcon={<Ban className="h-4 w-4" />}
+            triggerLabel="Cancelar"
+          >
+            <form action={cancelarReservaAction} className="grid gap-3">
               <input name="reservaId" type="hidden" value={reserva.id} />
               <CampoArea
                 disabled={!podeGerenciar || reserva.status === "cancelled"}
@@ -201,27 +304,8 @@ export function ReservationCard({
                 Cancelar reserva
               </Button>
             </form>
-          </details>
+          </ConfirmDialog>
         </div>
-
-        <details className="rounded-lg border bg-background/45 p-3" open>
-          <summary className="cursor-pointer text-sm font-semibold">Timeline</summary>
-          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_22rem]">
-            <ReservationTimeline reserva={reserva} />
-            <form action={adicionarObservacaoReservaAction} className="grid content-start gap-3">
-              <input name="reservaId" type="hidden" value={reserva.id} />
-              <CampoArea
-                disabled={!podeGerenciar}
-                label="Nova observação interna"
-                name="observacao"
-              />
-              <Button disabled={!podeGerenciar} type="submit" variant="outline">
-                <MessageSquarePlus />
-                Adicionar observação
-              </Button>
-            </form>
-          </div>
-        </details>
       </CardContent>
     </Card>
   );
@@ -239,10 +323,15 @@ function ListaServicos({ reserva }: { reserva: ReservaComRelacionamentos }) {
   return (
     <div className="space-y-2">
       {reserva.servicosExtras.map((servico) => (
-        <div className="rounded-lg border bg-background/55 p-3 text-sm" key={servico.id}>
+        <div
+          className="rounded-lg border bg-background/55 p-3 text-sm"
+          key={servico.id}
+        >
           <div className="flex items-center justify-between gap-3">
             <span className="font-medium">{servico.name}</span>
-            <span className="font-semibold">{formatarMoeda(Number(servico.total_amount))}</span>
+            <span className="font-semibold">
+              {formatarMoeda(Number(servico.total_amount))}
+            </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
             {servico.quantity} x {formatarMoeda(Number(servico.unit_price))}
@@ -256,7 +345,7 @@ function ListaServicos({ reserva }: { reserva: ReservaComRelacionamentos }) {
 function ResumoReserva({
   icone,
   label,
-  valor
+  valor,
 }: {
   icone: ReactNode;
   label: string;
@@ -300,7 +389,7 @@ function CampoArea({
   defaultValue,
   disabled,
   label,
-  name
+  name,
 }: {
   defaultValue?: string;
   disabled: boolean;
@@ -324,12 +413,12 @@ function CampoArea({
 function formatarMoeda(valor: number): string {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }
 
 function formatarData(valor: string): string {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
-    new Date(`${valor}T00:00:00`)
+    new Date(`${valor}T00:00:00`),
   );
 }

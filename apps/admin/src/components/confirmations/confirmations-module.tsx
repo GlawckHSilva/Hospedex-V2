@@ -6,24 +6,25 @@ import {
   DoorOpen,
   Sparkles,
   XCircle,
-  type LucideIcon
+  type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, FadeIn } from "@hospedex/ui";
 
+import { ConfirmDialog } from "../management/entity-modal";
 import {
   cancelarReservaConfirmacaoAction,
   confirmarCheckInConfirmacaoAction,
   confirmarCheckOutConfirmacaoAction,
   confirmarLimpezaConfirmacaoAction,
-  confirmarPagamentoConfirmacaoAction
+  confirmarPagamentoConfirmacaoAction,
 } from "../../lib/confirmations/actions";
 import type {
   DadosConfirmacoes,
   LimpezaConfirmacao,
   ReservaConfirmacao,
-  SearchParamsConfirmacoes
+  SearchParamsConfirmacoes,
 } from "../../lib/confirmations/types";
 import { ModuleToast } from "../admin/module-toast";
 
@@ -34,7 +35,7 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
   "checkout-confirmado": "Check-out confirmado.",
   "limpeza-confirmada": "Limpeza concluida.",
   "pagamento-confirmado": "Pagamento confirmado.",
-  "reserva-cancelada": "Reserva cancelada."
+  "reserva-cancelada": "Reserva cancelada.",
 };
 
 export function ConfirmationsModule({
@@ -51,7 +52,7 @@ export function ConfirmationsModule({
   resumo,
   sucesso,
   tenantNome,
-  timeline
+  timeline,
 }: ConfirmationsModuleProps) {
   const totalItens =
     checkInsHoje.length +
@@ -62,7 +63,11 @@ export function ConfirmationsModule({
 
   return (
     <FadeIn className="space-y-5">
-      <ModuleToast erro={erro} mensagensSucesso={MENSAGENS_SUCESSO} sucesso={sucesso} />
+      <ModuleToast
+        erro={erro}
+        mensagensSucesso={MENSAGENS_SUCESSO}
+        sucesso={sucesso}
+      />
 
       <section className="admin-glass-panel p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -76,18 +81,45 @@ export function ConfirmationsModule({
                 </span>
               ) : null}
             </div>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Confirmacoes</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
+              Confirmacoes
+            </h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {tenantNome} · {formatarData(hoje)}
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <ResumoCard icon={DoorOpen} label="Check-ins" tone="verde" valor={resumo.checkInsHoje} />
-            <ResumoCard icon={DoorClosed} label="Check-outs" tone="laranja" valor={resumo.checkOutsHoje} />
-            <ResumoCard icon={Bell} label="Pendentes" tone="cyan" valor={resumo.pendentes} />
-            <ResumoCard icon={Sparkles} label="Limpezas" tone="azul" valor={resumo.limpezasPendentes} />
-            <ResumoCard icon={Banknote} label="Pagamentos" tone="roxo" valor={resumo.aguardandoPagamento} />
+            <ResumoCard
+              icon={DoorOpen}
+              label="Check-ins"
+              tone="verde"
+              valor={resumo.checkInsHoje}
+            />
+            <ResumoCard
+              icon={DoorClosed}
+              label="Check-outs"
+              tone="laranja"
+              valor={resumo.checkOutsHoje}
+            />
+            <ResumoCard
+              icon={Bell}
+              label="Pendentes"
+              tone="cyan"
+              valor={resumo.pendentes}
+            />
+            <ResumoCard
+              icon={Sparkles}
+              label="Limpezas"
+              tone="azul"
+              valor={resumo.limpezasPendentes}
+            />
+            <ResumoCard
+              icon={Banknote}
+              label="Pagamentos"
+              tone="roxo"
+              valor={resumo.aguardandoPagamento}
+            />
           </div>
         </div>
       </section>
@@ -150,12 +182,17 @@ export function ConfirmationsModule({
                 <div className="mt-4 space-y-3">
                   {notificacoes.length ? (
                     notificacoes.map((notificacao) => (
-                      <div className="rounded-lg border bg-background/50 p-3 text-sm" key={notificacao.id}>
+                      <div
+                        className="rounded-lg border bg-background/50 p-3 text-sm"
+                        key={notificacao.id}
+                      >
                         {notificacao.descricao}
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">Sem notificacoes pendentes.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Sem notificacoes pendentes.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -167,15 +204,23 @@ export function ConfirmationsModule({
                 <div className="mt-4 space-y-3">
                   {timeline.length ? (
                     timeline.map((evento) => (
-                      <div className="rounded-lg border bg-background/50 p-3 text-sm" key={`${evento.tipo}-${evento.id}`}>
+                      <div
+                        className="rounded-lg border bg-background/50 p-3 text-sm"
+                        key={`${evento.tipo}-${evento.id}`}
+                      >
                         <p>{evento.descricao}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {evento.autor?.full_name ?? evento.autor?.email ?? "Sistema"} · {formatarDataHora(evento.data)}
+                          {evento.autor?.full_name ??
+                            evento.autor?.email ??
+                            "Sistema"}{" "}
+                          · {formatarDataHora(evento.data)}
                         </p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-muted-foreground">Sem eventos recentes.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Sem eventos recentes.
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -194,7 +239,7 @@ function GrupoReservas({
   icon,
   podeGerenciar,
   reservas,
-  titulo
+  titulo,
 }: {
   action: (formData: FormData) => Promise<void>;
   cor: "laranja" | "roxo" | "verde" | "vermelho";
@@ -209,7 +254,12 @@ function GrupoReservas({
   return (
     <Card className="admin-glass-card">
       <CardContent className="space-y-3 p-5">
-        <TituloGrupo cor={cor} icon={icon} titulo={titulo} total={reservas.length} />
+        <TituloGrupo
+          cor={cor}
+          icon={icon}
+          titulo={titulo}
+          total={reservas.length}
+        />
         {reservas.map((reserva) => (
           <LinhaOperacao
             action={action}
@@ -229,7 +279,7 @@ function GrupoReservas({
 
 function GrupoLimpeza({
   limpezas,
-  podeGerenciar
+  podeGerenciar,
 }: {
   limpezas: LimpezaConfirmacao[];
   podeGerenciar: boolean;
@@ -239,7 +289,12 @@ function GrupoLimpeza({
   return (
     <Card className="admin-glass-card">
       <CardContent className="space-y-3 p-5">
-        <TituloGrupo cor="azul" icon={<Sparkles />} titulo="Limpezas pendentes" total={limpezas.length} />
+        <TituloGrupo
+          cor="azul"
+          icon={<Sparkles />}
+          titulo="Limpezas pendentes"
+          total={limpezas.length}
+        />
         {limpezas.map((limpeza) => (
           <LinhaOperacao
             action={confirmarLimpezaConfirmacaoAction}
@@ -264,7 +319,7 @@ function LinhaOperacao({
   itemId,
   podeGerenciar,
   subtitulo,
-  titulo
+  titulo,
 }: {
   action: (formData: FormData) => Promise<void>;
   cta: string;
@@ -275,24 +330,35 @@ function LinhaOperacao({
   titulo: string;
 }) {
   return (
-    <form action={action} className="grid gap-3 rounded-lg border bg-background/45 p-3 lg:grid-cols-[1fr_220px]">
-      <input name={idName} type="hidden" value={itemId} />
+    <div className="grid gap-3 rounded-lg border bg-background/45 p-3 lg:grid-cols-[1fr_220px]">
       <div>
         <p className="font-medium">{titulo}</p>
         <p className="mt-1 text-sm text-muted-foreground">{subtitulo}</p>
-        <textarea
-          className="mt-3 min-h-16 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          name="observacao"
-          placeholder="Observacao opcional"
-        />
       </div>
       <div className="flex items-end justify-end">
-        <Button disabled={!podeGerenciar} type="submit">
-          <CheckCircle2 />
-          {cta}
-        </Button>
+        <ConfirmDialog
+          description="Registre uma observação opcional antes de confirmar a operação."
+          disabled={!podeGerenciar}
+          title={cta}
+          triggerIcon={<CheckCircle2 className="h-4 w-4" />}
+          triggerLabel={cta}
+          triggerVariant="default"
+        >
+          <form action={action} className="grid gap-3">
+            <input name={idName} type="hidden" value={itemId} />
+            <textarea
+              className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              name="observacao"
+              placeholder="Observação opcional"
+            />
+            <Button disabled={!podeGerenciar} type="submit">
+              <CheckCircle2 />
+              {cta}
+            </Button>
+          </form>
+        </ConfirmDialog>
       </div>
-    </form>
+    </div>
   );
 }
 
@@ -300,7 +366,7 @@ function TituloGrupo({
   cor,
   icon,
   titulo,
-  total
+  total,
 }: {
   cor: "azul" | "laranja" | "roxo" | "verde" | "vermelho";
   icon: ReactNode;
@@ -322,7 +388,7 @@ function ResumoCard({
   icon: Icon,
   label,
   tone,
-  valor
+  valor,
 }: {
   icon: LucideIcon;
   label: string;
@@ -340,29 +406,31 @@ function ResumoCard({
   );
 }
 
-function classeTom(tom: "azul" | "cyan" | "laranja" | "roxo" | "verde" | "vermelho") {
+function classeTom(
+  tom: "azul" | "cyan" | "laranja" | "roxo" | "verde" | "vermelho",
+) {
   const classes = {
     azul: "text-blue-500",
     cyan: "text-cyan-500",
     laranja: "text-orange-500",
     roxo: "text-violet-500",
     verde: "text-emerald-500",
-    vermelho: "text-red-500"
+    vermelho: "text-red-500",
   };
 
   return classes[tom];
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "full",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00`));
 }
 
 function formatarDataHora(valor: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(new Date(valor));
 }
-

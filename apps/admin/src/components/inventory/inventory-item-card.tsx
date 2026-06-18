@@ -1,13 +1,14 @@
 import type { PropertyRow, UnitRow } from "@hospedex/types";
-import { PackageCheck, Trash2 } from "lucide-react";
+import { Pencil, PackageCheck, Trash2 } from "lucide-react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
+import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import { excluirItemInventarioAction } from "../../lib/inventory/actions";
 import {
   LABEL_CATEGORIA_INVENTARIO,
   LABEL_ESTADO_CONSERVACAO,
-  type ItemInventarioCompleto
+  type ItemInventarioCompleto,
 } from "../../lib/inventory/types";
 import { InventoryItemForm } from "./inventory-item-form";
 
@@ -28,7 +29,7 @@ export function InventoryItemCard({
   item,
   podeGerenciar,
   propriedades,
-  unidades
+  unidades,
 }: InventoryItemCardProps) {
   return (
     <Card className="admin-glass-card">
@@ -38,12 +39,20 @@ export function InventoryItemCard({
             <div className="flex flex-wrap items-center gap-2">
               <PackageCheck className="h-4 w-4 text-primary" />
               <h2 className="truncate text-lg font-semibold">{item.name}</h2>
-              <Badge variant={item.conservation_state === "damaged" || item.conservation_state === "missing" ? "warning" : "outline"}>
+              <Badge
+                variant={
+                  item.conservation_state === "damaged" ||
+                  item.conservation_state === "missing"
+                    ? "warning"
+                    : "outline"
+                }
+              >
                 {LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {item.propriedade?.name ?? "Propriedade"} · {item.unidade?.name ?? "Sem unidade"}
+              {item.propriedade?.name ?? "Propriedade"} ·{" "}
+              {item.unidade?.name ?? "Sem unidade"}
             </p>
           </div>
           {item.image_url ? (
@@ -56,10 +65,19 @@ export function InventoryItemCard({
         </div>
 
         <section className="grid gap-3 md:grid-cols-4">
-          <Info label="Categoria" valor={LABEL_CATEGORIA_INVENTARIO[item.category]} />
+          <Info
+            label="Categoria"
+            valor={LABEL_CATEGORIA_INVENTARIO[item.category]}
+          />
           <Info label="Quantidade" valor={String(item.quantity)} />
-          <Info label="Valor estimado" valor={formatarMoeda(Number(item.estimated_value))} />
-          <Info label="Estado" valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]} />
+          <Info
+            label="Valor estimado"
+            valor={formatarMoeda(Number(item.estimated_value))}
+          />
+          <Info
+            label="Estado"
+            valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
+          />
         </section>
 
         {item.notes ? (
@@ -68,38 +86,54 @@ export function InventoryItemCard({
           </p>
         ) : null}
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Editar item</summary>
-            <div className="mt-4">
-              <InventoryItemForm
-                item={item}
-                modo="editar"
-                podeGerenciar={podeGerenciar}
-                propriedades={propriedades}
-                unidades={unidades}
-              />
-            </div>
-          </details>
+        <div className="flex flex-wrap gap-2">
+          <EntityModal
+            description="Atualize localização, quantidade e estado do item."
+            disabled={!podeGerenciar}
+            eyebrow="Edição"
+            title="Editar item"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <InventoryItemForm
+              item={item}
+              modo="editar"
+              podeGerenciar={podeGerenciar}
+              propriedades={propriedades}
+              unidades={unidades}
+            />
+          </EntityModal>
 
-          <form action={excluirItemInventarioAction} className="rounded-lg border border-destructive/25 p-3">
-            <input name="itemId" type="hidden" value={item.id} />
-            <label className="flex items-start gap-2 text-sm text-muted-foreground">
-              <input
-                className="mt-1"
+          <ConfirmDialog
+            description="A exclusão é lógica para preservar manutenção e auditoria futura."
+            disabled={!podeGerenciar}
+            title="Excluir item"
+            triggerIcon={<Trash2 className="h-4 w-4" />}
+            triggerLabel="Excluir"
+          >
+            <form action={excluirItemInventarioAction} className="grid gap-3">
+              <input name="itemId" type="hidden" value={item.id} />
+              <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                <input
+                  className="mt-1"
+                  disabled={!podeGerenciar}
+                  name="confirmarExclusao"
+                  required
+                  type="checkbox"
+                  value="confirmado"
+                />
+                Confirmo a exclusao do item.
+              </label>
+              <Button
                 disabled={!podeGerenciar}
-                name="confirmarExclusao"
-                required
-                type="checkbox"
-                value="confirmado"
-              />
-              Confirmo a exclusao do item.
-            </label>
-            <Button className="mt-3" disabled={!podeGerenciar} type="submit" variant="destructive">
-              <Trash2 />
-              Excluir item
-            </Button>
-          </form>
+                type="submit"
+                variant="destructive"
+              >
+                <Trash2 />
+                Excluir item
+              </Button>
+            </form>
+          </ConfirmDialog>
         </div>
       </CardContent>
     </Card>
@@ -118,6 +152,6 @@ function Info({ label, valor }: { label: string; valor: string }) {
 function formatarMoeda(valor: number) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }

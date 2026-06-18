@@ -1,4 +1,12 @@
-import { Filter, MailPlus, Plus, Search, ShieldCheck, UserCog, Users } from "lucide-react";
+import {
+  Filter,
+  MailPlus,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserCog,
+  Users,
+} from "lucide-react";
 
 import {
   Badge,
@@ -10,22 +18,23 @@ import {
   Input,
   Label,
   PremiumEmptyState,
-  StatusBadge
+  StatusBadge,
 } from "@hospedex/ui";
 
 import { ModuleToast } from "../admin/module-toast";
+import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import {
   alterarStatusFuncionarioAction,
   atualizarCargoPermissoesAction,
   criarCargoAction,
   excluirFuncionarioAction,
-  reenviarConviteAction
+  reenviarConviteAction,
 } from "../../lib/staff/actions";
 import { PERMISSOES_MODULO } from "../../lib/staff/catalog";
 import type {
   CargoComPermissoes,
   DadosModuloFuncionarios,
-  FuncionarioRegistro
+  FuncionarioRegistro,
 } from "../../lib/staff/types";
 import { FuncionarioForm } from "./funcionario-form";
 
@@ -41,7 +50,7 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
   "funcionario-criado": "Funcionario convidado com sucesso.",
   "funcionario-excluido": "Funcionario excluido com sucesso.",
   "permissoes-atualizadas": "Permissoes do cargo atualizadas.",
-  "status-atualizado": "Status do funcionario atualizado."
+  "status-atualizado": "Status do funcionario atualizado.",
 };
 
 /**
@@ -55,29 +64,46 @@ export function FuncionariosModule({
   erro,
   filtros,
   funcionarios,
-  sucesso
+  sucesso,
 }: FuncionariosModuleProps) {
   return (
     <FadeIn className="space-y-5">
-      <ModuleToast erro={erro} mensagensSucesso={MENSAGENS_SUCESSO} sucesso={sucesso} />
+      <ModuleToast
+        erro={erro}
+        mensagensSucesso={MENSAGENS_SUCESSO}
+        sucesso={sucesso}
+      />
 
       <GlassPanel className="p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <Badge variant="info">Equipe e acesso</Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Funcionarios</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
+              Funcionarios
+            </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Convide funcionarios, defina cargos e controle os modulos visiveis para cada perfil.
+              Convide funcionarios, defina cargos e controle os modulos visiveis
+              para cada perfil.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Resumo label="Funcionarios" valor={String(funcionarios.length)} tone="info" />
+            <Resumo
+              label="Funcionarios"
+              valor={String(funcionarios.length)}
+              tone="info"
+            />
             <Resumo
               label="Ativos"
-              valor={String(funcionarios.filter((item) => item.status === "active").length)}
+              valor={String(
+                funcionarios.filter((item) => item.status === "active").length,
+              )}
               tone="success"
             />
-            <Resumo label="Cargos" valor={String(cargos.length)} tone="warning" />
+            <Resumo
+              label="Cargos"
+              valor={String(cargos.length)}
+              tone="warning"
+            />
           </div>
         </div>
       </GlassPanel>
@@ -103,21 +129,34 @@ export function FuncionariosModule({
       </GlassCard>
 
       <GlassCard className="p-5">
-        <details open={funcionarios.length === 0}>
-          <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-            <Plus className="h-4 w-4" />
-            Criar funcionario
-          </summary>
-          <div className="mt-5">
-            <FuncionarioForm cargos={cargos} modo="criar" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Convite de funcionário</h2>
+            <p className="text-sm text-muted-foreground">
+              Convide e defina o cargo em um modal central.
+            </p>
           </div>
-        </details>
+          <EntityModal
+            description="Informe dados de contato e cargo do funcionário."
+            eyebrow="Cadastro"
+            title="Criar funcionário"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Criar funcionário"
+            triggerVariant="default"
+          >
+            <FuncionarioForm cargos={cargos} modo="criar" />
+          </EntityModal>
+        </div>
       </GlassCard>
 
       {funcionarios.length ? (
         <section className="grid gap-5">
           {funcionarios.map((funcionario) => (
-            <FuncionarioCard cargos={cargos} funcionario={funcionario} key={funcionario.id} />
+            <FuncionarioCard
+              cargos={cargos}
+              funcionario={funcionario}
+              key={funcionario.id}
+            />
           ))}
         </section>
       ) : (
@@ -135,7 +174,7 @@ export function FuncionariosModule({
 
 function FuncionarioCard({
   cargos,
-  funcionario
+  funcionario,
 }: {
   cargos: CargoComPermissoes[];
   funcionario: FuncionarioRegistro;
@@ -155,7 +194,9 @@ function FuncionarioCard({
               {funcionario.member ? "vinculado" : "convite"}
             </StatusBadge>
           </div>
-          <h2 className="mt-3 truncate text-xl font-semibold">{funcionario.nome}</h2>
+          <h2 className="mt-3 truncate text-xl font-semibold">
+            {funcionario.nome}
+          </h2>
           <p className="mt-1 truncate text-sm text-muted-foreground">
             {funcionario.email} - {funcionario.cargo?.role.name ?? "sem cargo"}
           </p>
@@ -164,7 +205,11 @@ function FuncionarioCard({
         <div className="flex flex-wrap gap-2">
           {funcionario.convite ? (
             <form action={reenviarConviteAction}>
-              <input name="conviteId" type="hidden" value={funcionario.convite.id} />
+              <input
+                name="conviteId"
+                type="hidden"
+                value={funcionario.convite.id}
+              />
               <Button type="submit" variant="outline">
                 <MailPlus />
                 Reenviar convite
@@ -174,9 +219,16 @@ function FuncionarioCard({
 
           {podeAlterarStatus ? (
             <form action={alterarStatusFuncionarioAction}>
-              <input name="memberId" type="hidden" value={funcionario.member?.id} />
+              <input
+                name="memberId"
+                type="hidden"
+                value={funcionario.member?.id}
+              />
               <input name="acao" type="hidden" value={acaoStatus} />
-              <Button type="submit" variant={acaoStatus === "ativar" ? "default" : "outline"}>
+              <Button
+                type="submit"
+                variant={acaoStatus === "ativar" ? "default" : "outline"}
+              >
                 {acaoStatus === "ativar" ? "Ativar" : "Desativar"}
               </Button>
             </form>
@@ -194,27 +246,50 @@ function FuncionarioCard({
         />
       </div>
 
-      <details>
-        <summary className="cursor-pointer text-sm font-semibold">Editar funcionario</summary>
-        <div className="mt-5">
-          <FuncionarioForm cargos={cargos} funcionario={funcionario} modo="editar" />
-        </div>
-      </details>
+      <div className="flex flex-wrap gap-2">
+        <EntityModal
+          description="Atualize cargo, telefone e dados do funcionário."
+          eyebrow="Edição"
+          title="Editar funcionário"
+          triggerLabel="Editar"
+        >
+          <FuncionarioForm
+            cargos={cargos}
+            funcionario={funcionario}
+            modo="editar"
+          />
+        </EntityModal>
 
-      <details>
-        <summary className="cursor-pointer text-sm font-semibold text-destructive">Excluir</summary>
-        <form action={excluirFuncionarioAction} className="mt-4 flex flex-col gap-3 rounded-lg border bg-background/45 p-4 sm:flex-row sm:items-center sm:justify-between">
-          {funcionario.member ? <input name="memberId" type="hidden" value={funcionario.member.id} /> : null}
-          {funcionario.convite ? <input name="conviteId" type="hidden" value={funcionario.convite.id} /> : null}
-          <label className="flex items-center gap-2 text-sm">
-            <input name="confirmar" type="checkbox" />
-            Confirmo a exclusao do vinculo/convite.
-          </label>
-          <Button type="submit" variant="destructive">
-            Excluir funcionario
-          </Button>
-        </form>
-      </details>
+        <ConfirmDialog
+          description="A exclusão remove o vínculo ou convite deste funcionário."
+          title="Excluir funcionário"
+          triggerLabel="Excluir"
+        >
+          <form action={excluirFuncionarioAction} className="grid gap-3">
+            {funcionario.member ? (
+              <input
+                name="memberId"
+                type="hidden"
+                value={funcionario.member.id}
+              />
+            ) : null}
+            {funcionario.convite ? (
+              <input
+                name="conviteId"
+                type="hidden"
+                value={funcionario.convite.id}
+              />
+            ) : null}
+            <label className="flex items-center gap-2 text-sm">
+              <input name="confirmar" type="checkbox" />
+              Confirmo a exclusao do vinculo/convite.
+            </label>
+            <Button type="submit" variant="destructive">
+              Excluir funcionario
+            </Button>
+          </form>
+        </ConfirmDialog>
+      </div>
     </GlassCard>
   );
 }
@@ -232,9 +307,14 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
         <UserCog className="h-5 w-5 text-cyan-500" />
       </div>
 
-      <details>
-        <summary className="cursor-pointer text-sm font-semibold">Criar cargo personalizado</summary>
-        <form action={criarCargoAction} className="mt-4 grid gap-4 rounded-lg border bg-background/45 p-4">
+      <EntityModal
+        description="Defina o nome, descrição e permissões iniciais do cargo."
+        eyebrow="Cadastro"
+        title="Criar cargo personalizado"
+        triggerIcon={<Plus className="h-4 w-4" />}
+        triggerLabel="Criar cargo"
+      >
+        <form action={criarCargoAction} className="grid gap-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="nomeCargo">Nome do cargo</Label>
@@ -250,19 +330,24 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
             <Button type="submit">Criar cargo</Button>
           </div>
         </form>
-      </details>
+      </EntityModal>
 
       {cargos.length ? (
         <div className="grid gap-4">
           {cargos.map((cargo) => (
             <GlassCard className="p-4" key={cargo.role.id}>
-              <form action={atualizarCargoPermissoesAction} className="grid gap-4">
+              <form
+                action={atualizarCargoPermissoesAction}
+                className="grid gap-4"
+              >
                 <input name="roleId" type="hidden" value={cargo.role.id} />
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold">{cargo.role.name}</p>
-                      <StatusBadge tone={cargo.role.is_system ? "info" : "neutral"}>
+                      <StatusBadge
+                        tone={cargo.role.is_system ? "info" : "neutral"}
+                      >
                         {cargo.role.is_system ? "inicial" : "personalizado"}
                       </StatusBadge>
                     </div>
@@ -290,7 +375,11 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
   );
 }
 
-function PermissoesChecklist({ permissoesAtivas }: { permissoesAtivas: string[] }) {
+function PermissoesChecklist({
+  permissoesAtivas,
+}: {
+  permissoesAtivas: string[];
+}) {
   const ativas = new Set(permissoesAtivas);
 
   return (
@@ -309,7 +398,9 @@ function PermissoesChecklist({ permissoesAtivas }: { permissoesAtivas: string[] 
           />
           <span>
             <span className="block font-medium">{permissao.label}</span>
-            <span className="block text-xs text-muted-foreground">{permissao.modulo}</span>
+            <span className="block text-xs text-muted-foreground">
+              {permissao.modulo}
+            </span>
           </span>
         </label>
       ))}
@@ -320,7 +411,7 @@ function PermissoesChecklist({ permissoesAtivas }: { permissoesAtivas: string[] 
 function Resumo({
   label,
   tone,
-  valor
+  valor,
 }: {
   label: string;
   tone: "success" | "warning" | "danger" | "info" | "neutral";
@@ -337,7 +428,7 @@ function Resumo({
 function Info({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon?: React.ReactNode;
   label: string;
@@ -345,7 +436,9 @@ function Info({
 }) {
   return (
     <div className="min-w-0 rounded-lg border bg-background/55 p-3 text-sm">
-      {icon ? <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div> : null}
+      {icon ? (
+        <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div>
+      ) : null}
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-semibold">{valor}</p>
     </div>
@@ -355,7 +448,8 @@ function Info({
 function toneStatus(status: FuncionarioRegistro["status"]) {
   if (status === "active" || status === "accepted") return "success";
   if (status === "invited" || status === "pending") return "warning";
-  if (status === "disabled" || status === "cancelled" || status === "expired") return "danger";
+  if (status === "disabled" || status === "cancelled" || status === "expired")
+    return "danger";
   return "neutral";
 }
 
@@ -367,7 +461,7 @@ function labelStatus(status: FuncionarioRegistro["status"]) {
     disabled: "Desativado",
     expired: "Expirado",
     invited: "Convidado",
-    pending: "Pendente"
+    pending: "Pendente",
   };
 
   return labels[status];

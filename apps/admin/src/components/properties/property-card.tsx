@@ -1,7 +1,22 @@
-import { Building2, MapPin, PauseCircle, PlayCircle, Plus } from "lucide-react";
+import {
+  Building2,
+  Eye,
+  MapPin,
+  Pencil,
+  PauseCircle,
+  PlayCircle,
+  Plus,
+  Settings2,
+  Trash2,
+} from "lucide-react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
 import {
   alternarStatusPropriedadeAction,
   excluirPropriedadeAction,
@@ -110,55 +125,112 @@ export function PropertyCard({
           ))}
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-3">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">
-              Editar casa
-            </summary>
-            <div className="mt-4">
-              <PropertyForm
-                modo="editar"
-                multiUnidadesAtivo={multiUnidadesAtivo}
-                podeGerenciar={podeGerenciar}
-                propriedade={propriedade}
+        <div className="flex flex-wrap gap-2">
+          <EntityViewModal
+            description="Resumo operacional da casa selecionada."
+            title={`Detalhes de ${propriedade.name}`}
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <div className="grid gap-3 text-sm md:grid-cols-2">
+              <InfoModal
+                label="Tipo"
+                valor={obterLabelTipo(propriedade.property_type)}
+              />
+              <InfoModal
+                label="Status"
+                valor={obterLabelStatusPropriedade(propriedade.status)}
+              />
+              <InfoModal
+                label="Cidade"
+                valor={propriedade.enderecoFormatado.cidade}
+              />
+              <InfoModal
+                label="Estado"
+                valor={propriedade.enderecoFormatado.estado}
+              />
+              <InfoModal
+                label="Endereço"
+                valor={propriedade.enderecoFormatado.linha1}
+              />
+              <InfoModal
+                label="Unidades"
+                valor={String(propriedade.unidades.length)}
               />
             </div>
-          </details>
+            {propriedade.description ? (
+              <p className="mt-4 rounded-lg border bg-background/55 p-3 text-sm leading-6 text-muted-foreground">
+                {propriedade.description}
+              </p>
+            ) : null}
+          </EntityViewModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">
-              Comodidades
-            </summary>
-            <div className="mt-4">
-              <AmenitiesForm
-                comodidades={comodidadesDisponiveis}
-                comodidadesSelecionadas={propriedade.comodidades}
-                podeGerenciar={podeGerenciar}
-                propriedadeId={propriedade.id}
-              />
-            </div>
-          </details>
+          <EntityModal
+            description="Atualize dados principais, endereço e status público da casa."
+            disabled={!podeGerenciar}
+            eyebrow="Edição"
+            title="Editar casa"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <PropertyForm
+              modo="editar"
+              multiUnidadesAtivo={multiUnidadesAtivo}
+              podeGerenciar={podeGerenciar}
+              propriedade={propriedade}
+            />
+          </EntityModal>
+
+          <EntityModal
+            description="Defina os itens exibidos como comodidades da casa."
+            disabled={!podeGerenciar}
+            eyebrow="Comodidades"
+            title="Comodidades da casa"
+            triggerIcon={<Settings2 className="h-4 w-4" />}
+            triggerLabel="Comodidades"
+          >
+            <AmenitiesForm
+              comodidades={comodidadesDisponiveis}
+              comodidadesSelecionadas={propriedade.comodidades}
+              podeGerenciar={podeGerenciar}
+              propriedadeId={propriedade.id}
+            />
+          </EntityModal>
 
           {multiUnidadesAtivo ? (
-            <details className="rounded-lg border bg-background/45 p-3">
-              <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-                <Plus className="h-4 w-4" />
-                Nova unidade
-              </summary>
-              <div className="mt-4">
-                <UnitForm
-                  modo="criar"
-                  podeGerenciar={podeGerenciar}
-                  propriedadeInicialId={propriedade.id}
-                  propriedades={propriedades}
-                  retorno="/propriedades"
-                />
-              </div>
-            </details>
+            <EntityModal
+              description="Crie uma unidade já vinculada a esta casa."
+              disabled={!podeGerenciar}
+              eyebrow="Cadastro"
+              title="Nova unidade"
+              triggerIcon={<Plus className="h-4 w-4" />}
+              triggerLabel="Nova unidade"
+            >
+              <UnitForm
+                modo="criar"
+                podeGerenciar={podeGerenciar}
+                propriedadeInicialId={propriedade.id}
+                propriedades={propriedades}
+                retorno="/propriedades"
+              />
+            </EntityModal>
           ) : null}
-        </div>
 
-        <PropertyRulesPanel podeGerenciar={podeGerenciar} propriedade={propriedade} />
+          <EntityModal
+            description="Ajuste regras da casa, reserva e cancelamento."
+            disabled={!podeGerenciar}
+            eyebrow="Políticas"
+            size="xl"
+            title="Políticas e regras"
+            triggerIcon={<Settings2 className="h-4 w-4" />}
+            triggerLabel="Políticas"
+          >
+            <PropertyRulesPanel
+              podeGerenciar={podeGerenciar}
+              propriedade={propriedade}
+            />
+          </EntityModal>
+        </div>
 
         <MediaGallery
           imagens={propriedade.imagens}
@@ -168,10 +240,13 @@ export function PropertyCard({
           tipo="propriedade"
         />
 
-        <details className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-destructive">
-            Excluir casa
-          </summary>
+        <ConfirmDialog
+          description="Esta ação remove a casa da operação do tenant."
+          disabled={!podeGerenciar}
+          title="Excluir casa"
+          triggerIcon={<Trash2 className="h-4 w-4" />}
+          triggerLabel="Excluir casa"
+        >
           <form action={excluirPropriedadeAction} className="mt-4 grid gap-3">
             <input name="propriedadeId" type="hidden" value={propriedade.id} />
             <label className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -196,7 +271,7 @@ export function PropertyCard({
               </Button>
             </div>
           </form>
-        </details>
+        </ConfirmDialog>
 
         {multiUnidadesAtivo ? (
           <section className="space-y-3">
@@ -228,6 +303,15 @@ export function PropertyCard({
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+function InfoModal({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-lg border bg-background/55 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words font-medium">{valor || "Não informado"}</p>
+    </div>
   );
 }
 

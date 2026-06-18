@@ -1,17 +1,24 @@
 import type { ReviewStatus } from "@hospedex/types";
-import { EyeOff, MessageSquareText, ShieldCheck, Star } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  MessageSquareText,
+  ShieldCheck,
+  Star,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, Label } from "@hospedex/ui";
 
+import { EntityModal, EntityViewModal } from "../management/entity-modal";
 import {
   alterarStatusAvaliacaoAction,
-  responderAvaliacaoAction
+  responderAvaliacaoAction,
 } from "../../lib/reviews/actions";
 import {
   LABEL_STATUS_AVALIACAO,
   obterVariantStatusAvaliacao,
-  type AvaliacaoComRelacionamentos
+  type AvaliacaoComRelacionamentos,
 } from "../../lib/reviews/types";
 
 type ReviewCardProps = {
@@ -23,7 +30,10 @@ const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
 export function ReviewCard({ avaliacao, podeGerenciar }: ReviewCardProps) {
-  const emailHospede = avaliacao.guest_email ?? avaliacao.hospedePrincipal?.email ?? "Nao informado";
+  const emailHospede =
+    avaliacao.guest_email ??
+    avaliacao.hospedePrincipal?.email ??
+    "Nao informado";
 
   return (
     <Card className="admin-glass-card">
@@ -39,7 +49,9 @@ export function ReviewCard({ avaliacao, podeGerenciar }: ReviewCardProps) {
                 <EstrelasNota nota={avaliacao.rating} />
               </Badge>
             </div>
-            <h2 className="mt-3 text-lg font-semibold">{avaliacao.guest_name}</h2>
+            <h2 className="mt-3 text-lg font-semibold">
+              {avaliacao.guest_name}
+            </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {avaliacao.propriedade?.name ?? "Casa removida"} -{" "}
               {formatarDataHora(avaliacao.reviewed_at)}
@@ -47,62 +59,93 @@ export function ReviewCard({ avaliacao, podeGerenciar }: ReviewCardProps) {
           </div>
 
           <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[30rem]">
-            <Info label="Casa" valor={avaliacao.propriedade?.name ?? "Nao encontrada"} />
-            <Info label="Reserva" valor={avaliacao.reserva?.code ?? "Nao vinculada"} />
+            <Info
+              label="Casa"
+              valor={avaliacao.propriedade?.name ?? "Nao encontrada"}
+            />
+            <Info
+              label="Reserva"
+              valor={avaliacao.reserva?.code ?? "Nao vinculada"}
+            />
             <Info label="E-mail" valor={emailHospede} />
           </div>
         </div>
 
-        <details className="rounded-lg border bg-background/45 p-3" open>
-          <summary className="cursor-pointer text-sm font-semibold">
-            Detalhes da avaliacao
-          </summary>
-          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_22rem]">
-            <div className="space-y-3">
-              <BlocoDetalhe label="Comentario">{avaliacao.comment}</BlocoDetalhe>
-              <BlocoDetalhe label="Resposta do proprietario">
-                {avaliacao.owner_response ?? "Nenhuma resposta cadastrada."}
-              </BlocoDetalhe>
-            </div>
+        <div className="flex flex-wrap gap-2">
+          <EntityViewModal
+            description="Comentário, resposta e dados da reserva relacionada."
+            title="Detalhes da avaliação"
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
+              <div className="space-y-3">
+                <BlocoDetalhe label="Comentario">
+                  {avaliacao.comment}
+                </BlocoDetalhe>
+                <BlocoDetalhe label="Resposta do proprietario">
+                  {avaliacao.owner_response ?? "Nenhuma resposta cadastrada."}
+                </BlocoDetalhe>
+              </div>
 
-            <div className="grid content-start gap-3">
-              <Info
-                label="Periodo da reserva"
-                valor={
-                  avaliacao.reserva
-                    ? `${formatarData(avaliacao.reserva.check_in)} - ${formatarData(
-                        avaliacao.reserva.check_out
-                      )}`
-                    : "Nao vinculado"
-                }
-              />
-              <Info
-                label="Contato"
-                valor={avaliacao.hospedePrincipal?.phone ?? "Nao informado"}
-              />
+              <div className="grid content-start gap-3">
+                <Info
+                  label="Periodo da reserva"
+                  valor={
+                    avaliacao.reserva
+                      ? `${formatarData(avaliacao.reserva.check_in)} - ${formatarData(
+                          avaliacao.reserva.check_out,
+                        )}`
+                      : "Nao vinculado"
+                  }
+                />
+                <Info
+                  label="Contato"
+                  valor={avaliacao.hospedePrincipal?.phone ?? "Nao informado"}
+                />
+              </div>
             </div>
-          </div>
-        </details>
+          </EntityViewModal>
 
-        <form action={responderAvaliacaoAction} className="grid gap-3">
-          <input name="avaliacaoId" type="hidden" value={avaliacao.id} />
-          <div className="grid gap-2">
-            <Label htmlFor={`resposta-${avaliacao.id}`}>Resposta do proprietario</Label>
-            <textarea
-              className={areaClasse}
-              defaultValue={avaliacao.owner_response ?? ""}
-              disabled={!podeGerenciar}
-              id={`resposta-${avaliacao.id}`}
-              name="resposta"
-              placeholder="Escreva uma resposta profissional e objetiva."
-              required
-            />
-          </div>
-          <Button className="w-fit" disabled={!podeGerenciar} type="submit">
-            <MessageSquareText />
-            {avaliacao.owner_response ? "Editar resposta" : "Responder avaliacao"}
-          </Button>
-        </form>
+          <EntityModal
+            description="Escreva uma resposta profissional e objetiva ao hóspede."
+            disabled={!podeGerenciar}
+            eyebrow="Resposta"
+            title={
+              avaliacao.owner_response
+                ? "Editar resposta"
+                : "Responder avaliação"
+            }
+            triggerIcon={<MessageSquareText className="h-4 w-4" />}
+            triggerLabel={
+              avaliacao.owner_response ? "Editar resposta" : "Responder"
+            }
+          >
+            <form action={responderAvaliacaoAction} className="grid gap-3">
+              <input name="avaliacaoId" type="hidden" value={avaliacao.id} />
+              <div className="grid gap-2">
+                <Label htmlFor={`resposta-${avaliacao.id}`}>
+                  Resposta do proprietário
+                </Label>
+                <textarea
+                  className={areaClasse}
+                  defaultValue={avaliacao.owner_response ?? ""}
+                  disabled={!podeGerenciar}
+                  id={`resposta-${avaliacao.id}`}
+                  name="resposta"
+                  placeholder="Escreva uma resposta profissional e objetiva."
+                  required
+                />
+              </div>
+              <Button className="w-fit" disabled={!podeGerenciar} type="submit">
+                <MessageSquareText />
+                {avaliacao.owner_response
+                  ? "Editar resposta"
+                  : "Responder avaliação"}
+              </Button>
+            </form>
+          </EntityModal>
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {avaliacao.status !== "approved" ? (
@@ -144,7 +187,7 @@ function BotaoStatus({
   icon,
   label,
   status,
-  variant = "default"
+  variant = "default",
 }: {
   avaliacaoId: string;
   disabled: boolean;
@@ -167,7 +210,10 @@ function BotaoStatus({
 
 function EstrelasNota({ nota }: { nota: number }) {
   return (
-    <span aria-label={`${nota} estrelas`} className="inline-flex gap-0.5 align-middle">
+    <span
+      aria-label={`${nota} estrelas`}
+      className="inline-flex gap-0.5 align-middle"
+    >
       {[1, 2, 3, 4, 5].map((estrela) => (
         <Star
           className={
@@ -191,7 +237,13 @@ function Info({ label, valor }: { label: string; valor: string }) {
   );
 }
 
-function BlocoDetalhe({ children, label }: { children: ReactNode; label: string }) {
+function BlocoDetalhe({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
   return (
     <div className="rounded-lg border bg-background/45 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -202,13 +254,13 @@ function BlocoDetalhe({ children, label }: { children: ReactNode; label: string 
 
 function formatarData(valor: string): string {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
-    new Date(`${valor}T00:00:00`)
+    new Date(`${valor}T00:00:00`),
   );
 }
 
 function formatarDataHora(valor: string): string {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(new Date(valor));
 }

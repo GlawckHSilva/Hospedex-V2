@@ -3,12 +3,13 @@ import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { criarLocalGuiaRegiaoAction } from "../../lib/regional-guide/actions";
 import {
   CATEGORIAS_GUIA_REGIAO,
   STATUS_GUIA_REGIAO,
   type DadosModuloGuiaRegiao,
-  type SearchParamsGuiaRegiao
+  type SearchParamsGuiaRegiao,
 } from "../../lib/regional-guide/types";
 import { ModuleToast } from "../admin/module-toast";
 import { RegionalGuideCard } from "./regional-guide-card";
@@ -21,13 +22,14 @@ import { RegionalGuideForm } from "./regional-guide-form";
  * automaticamente para hospedes.
  */
 
-export type RegionalGuideModuleProps = DadosModuloGuiaRegiao & SearchParamsGuiaRegiao;
+export type RegionalGuideModuleProps = DadosModuloGuiaRegiao &
+  SearchParamsGuiaRegiao;
 
 const MENSAGENS_SUCESSO: Record<string, string> = {
   "local-atualizado": "Local atualizado.",
   "local-criado": "Local criado.",
   "local-excluido": "Local excluido.",
-  "status-atualizado": "Status do local atualizado."
+  "status-atualizado": "Status do local atualizado.",
 };
 
 const campoClasse =
@@ -40,11 +42,15 @@ export function RegionalGuideModule({
   podeGerenciar,
   resumo,
   sucesso,
-  tenantNome
+  tenantNome,
 }: RegionalGuideModuleProps) {
   return (
     <FadeIn className="space-y-5">
-      <ModuleToast erro={erro} mensagensSucesso={MENSAGENS_SUCESSO} sucesso={sucesso} />
+      <ModuleToast
+        erro={erro}
+        mensagensSucesso={MENSAGENS_SUCESSO}
+        sucesso={sucesso}
+      />
 
       <section className="admin-glass-panel p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -52,16 +58,31 @@ export function RegionalGuideModule({
             <Badge variant={podeGerenciar ? "info" : "warning"}>
               {podeGerenciar ? "Guia editavel" : "Somente leitura"}
             </Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Guia da regiao</h1>
+            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
+              Guia da regiao
+            </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} · recomendacoes locais preparadas para exibicao futura.
+              {tenantNome} · recomendacoes locais preparadas para exibicao
+              futura.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <Resumo icon={<MapPin />} label="Locais" valor={String(resumo.total)} />
-            <Resumo icon={<ShieldCheck />} label="Ativos" valor={String(resumo.ativos)} />
-            <Resumo icon={<ToggleLeft />} label="Inativos" valor={String(resumo.inativos)} />
+            <Resumo
+              icon={<MapPin />}
+              label="Locais"
+              valor={String(resumo.total)}
+            />
+            <Resumo
+              icon={<ShieldCheck />}
+              label="Ativos"
+              valor={String(resumo.ativos)}
+            />
+            <Resumo
+              icon={<ToggleLeft />}
+              label="Inativos"
+              valor={String(resumo.inativos)}
+            />
           </div>
         </div>
       </section>
@@ -82,27 +103,39 @@ export function RegionalGuideModule({
       </Card>
 
       <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={locais.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Novo local
-            </summary>
-            <div className="mt-5">
-              <RegionalGuideForm
-                action={criarLocalGuiaRegiaoAction}
-                modo="criar"
-                podeGerenciar={podeGerenciar}
-              />
-            </div>
-          </details>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Recomendação local</h2>
+            <p className="text-sm text-muted-foreground">
+              Cadastre restaurantes, praias, mercados e outros locais via modal.
+            </p>
+          </div>
+          <EntityModal
+            description="Informe categoria, contato, endereço, horário e imagem de capa."
+            disabled={!podeGerenciar}
+            eyebrow="Cadastro"
+            title="Novo local"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Novo local"
+            triggerVariant="default"
+          >
+            <RegionalGuideForm
+              action={criarLocalGuiaRegiaoAction}
+              modo="criar"
+              podeGerenciar={podeGerenciar}
+            />
+          </EntityModal>
         </CardContent>
       </Card>
 
       {locais.length > 0 ? (
         <section className="grid gap-5">
           {locais.map((local) => (
-            <RegionalGuideCard key={local.id} local={local} podeGerenciar={podeGerenciar} />
+            <RegionalGuideCard
+              key={local.id}
+              local={local}
+              podeGerenciar={podeGerenciar}
+            />
           ))}
         </section>
       ) : (
@@ -119,7 +152,7 @@ export function RegionalGuideModule({
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon: ReactNode;
   label: string;
@@ -138,7 +171,12 @@ function CampoCategoria({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="categoria">Categoria</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="categoria" name="categoria">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="categoria"
+        name="categoria"
+      >
         {CATEGORIAS_GUIA_REGIAO.map((categoria) => (
           <option key={categoria.value} value={categoria.value}>
             {categoria.label}
@@ -153,7 +191,12 @@ function CampoStatus({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="status">Status</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="status" name="status">
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="status"
+        name="status"
+      >
         {STATUS_GUIA_REGIAO.map((status) => (
           <option key={status.value} value={status.value}>
             {status.label}

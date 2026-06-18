@@ -1,11 +1,13 @@
 import type { RegionalGuideLocationRow } from "@hospedex/types";
+import { Pencil, Trash2 } from "lucide-react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
+import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import {
   alternarStatusLocalGuiaRegiaoAction,
   atualizarLocalGuiaRegiaoAction,
-  excluirLocalGuiaRegiaoAction
+  excluirLocalGuiaRegiaoAction,
 } from "../../lib/regional-guide/actions";
 import { LABEL_CATEGORIA_GUIA_REGIAO } from "../../lib/regional-guide/types";
 import { RegionalGuideForm } from "./regional-guide-form";
@@ -21,23 +23,34 @@ type RegionalGuideCardProps = {
   podeGerenciar: boolean;
 };
 
-export function RegionalGuideCard({ local, podeGerenciar }: RegionalGuideCardProps) {
+export function RegionalGuideCard({
+  local,
+  podeGerenciar,
+}: RegionalGuideCardProps) {
   const statusDestino = local.status === "active" ? "inactive" : "active";
 
   return (
     <Card className="admin-glass-card overflow-hidden">
       {local.cover_image_url ? (
-        <img alt={`Foto de ${local.name}`} className="h-40 w-full object-cover" src={local.cover_image_url} />
+        <img
+          alt={`Foto de ${local.name}`}
+          className="h-40 w-full object-cover"
+          src={local.cover_image_url}
+        />
       ) : null}
 
       <CardContent className="p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={local.status === "active" ? "success" : "secondary"}>
+              <Badge
+                variant={local.status === "active" ? "success" : "secondary"}
+              >
                 {local.status === "active" ? "Ativo" : "Inativo"}
               </Badge>
-              <Badge variant="info">{LABEL_CATEGORIA_GUIA_REGIAO[local.category]}</Badge>
+              <Badge variant="info">
+                {LABEL_CATEGORIA_GUIA_REGIAO[local.category]}
+              </Badge>
               <Badge variant="outline">Ordem {local.display_order}</Badge>
             </div>
             <h2 className="mt-3 text-lg font-semibold">{local.name}</h2>
@@ -49,7 +62,10 @@ export function RegionalGuideCard({ local, podeGerenciar }: RegionalGuideCardPro
 
         <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
           <Info label="Endereco" valor={local.address || "Nao informado"} />
-          <Info label="Horario" valor={local.opening_hours || "Nao informado"} />
+          <Info
+            label="Horario"
+            valor={local.opening_hours || "Nao informado"}
+          />
           <Info label="Telefone" valor={local.phone || "Nao informado"} />
           <Info label="WhatsApp" valor={local.whatsapp || "Nao informado"} />
           <Info label="Site" valor={local.website_url || "Nao informado"} />
@@ -59,37 +75,55 @@ export function RegionalGuideCard({ local, podeGerenciar }: RegionalGuideCardPro
           <form action={alternarStatusLocalGuiaRegiaoAction}>
             <input name="localId" type="hidden" value={local.id} />
             <input name="status" type="hidden" value={statusDestino} />
-            <Button disabled={!podeGerenciar} size="sm" type="submit" variant="outline">
+            <Button
+              disabled={!podeGerenciar}
+              size="sm"
+              type="submit"
+              variant="outline"
+            >
               {local.status === "active" ? "Desativar" : "Ativar"}
             </Button>
           </form>
 
-          <details className="rounded-lg border bg-background/35 px-3 py-2">
-            <summary className="cursor-pointer text-sm font-medium">Editar</summary>
-            <div className="mt-4">
-              <RegionalGuideForm
-                action={atualizarLocalGuiaRegiaoAction}
-                local={local}
-                modo="editar"
-                podeGerenciar={podeGerenciar}
-              />
-            </div>
-          </details>
+          <EntityModal
+            description="Atualize categoria, contatos, descrição, ordem e status do local."
+            disabled={!podeGerenciar}
+            eyebrow="Edição"
+            title="Editar local"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <RegionalGuideForm
+              action={atualizarLocalGuiaRegiaoAction}
+              local={local}
+              modo="editar"
+              podeGerenciar={podeGerenciar}
+            />
+          </EntityModal>
 
-          <details className="rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2">
-            <summary className="cursor-pointer text-sm font-medium text-destructive">
-              Excluir
-            </summary>
-            <form action={excluirLocalGuiaRegiaoAction} className="mt-4 grid gap-3">
+          <ConfirmDialog
+            description="Esta exclusão remove o local do Gerenciamento."
+            disabled={!podeGerenciar}
+            title="Excluir local"
+            triggerIcon={<Trash2 className="h-4 w-4" />}
+            triggerLabel="Excluir"
+          >
+            <form action={excluirLocalGuiaRegiaoAction} className="grid gap-3">
               <input name="localId" type="hidden" value={local.id} />
               <p className="text-sm text-muted-foreground">
-                Esta exclusao remove o local do gerenciamento e preserva historico futuro.
+                Esta exclusao remove o local do gerenciamento e preserva
+                historico futuro.
               </p>
-              <Button disabled={!podeGerenciar} size="sm" type="submit" variant="destructive">
+              <Button
+                disabled={!podeGerenciar}
+                size="sm"
+                type="submit"
+                variant="destructive"
+              >
                 Confirmar exclusao
               </Button>
             </form>
-          </details>
+          </ConfirmDialog>
         </div>
       </CardContent>
     </Card>

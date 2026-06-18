@@ -1,16 +1,31 @@
-import { Ban, CalendarDays, History, ShieldAlert, Trash2, UserRound, WalletCards } from "lucide-react";
+import {
+  Ban,
+  CalendarDays,
+  Eye,
+  History,
+  Pencil,
+  ShieldAlert,
+  Trash2,
+  UserRound,
+  WalletCards,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, Label } from "@hospedex/ui";
 
 import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
+import {
   alternarBloqueioHospedeAction,
-  excluirHospedeAction
+  excluirHospedeAction,
 } from "../../lib/guests/actions";
 import {
   LABEL_AVALIACAO_HOSPEDE_CRM,
   LABEL_STATUS_HOSPEDE_CRM,
-  type HospedeCrmCompleto
+  type HospedeCrmCompleto,
 } from "../../lib/guests/types";
 import { GuestForm } from "./guest-form";
 
@@ -34,134 +49,245 @@ export function GuestCard({ hospede, podeGerenciar }: GuestCardProps) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <UserRound className="h-4 w-4 text-primary" />
-              <h2 className="truncate text-xl font-semibold">{hospede.full_name}</h2>
-              <Badge variant={hospede.status === "blocked" ? "warning" : "success"}>
+              <h2 className="truncate text-xl font-semibold">
+                {hospede.full_name}
+              </h2>
+              <Badge
+                variant={hospede.status === "blocked" ? "warning" : "success"}
+              >
                 {LABEL_STATUS_HOSPEDE_CRM[hospede.status]}
               </Badge>
-              <Badge variant={hospede.internal_rating === "attention" ? "warning" : "outline"}>
+              <Badge
+                variant={
+                  hospede.internal_rating === "attention"
+                    ? "warning"
+                    : "outline"
+                }
+              >
                 {LABEL_AVALIACAO_HOSPEDE_CRM[hospede.internal_rating]}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {hospede.phone ?? "Sem telefone"} · {hospede.email ?? "Sem e-mail"}
+              {hospede.phone ?? "Sem telefone"} ·{" "}
+              {hospede.email ?? "Sem e-mail"}
             </p>
           </div>
 
           <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[30rem]">
-            <Resumo icon={<CalendarDays />} label="Reservas" valor={String(hospede.metricas.quantidadeReservas)} />
-            <Resumo icon={<WalletCards />} label="Valor total" valor={formatarMoeda(hospede.metricas.valorTotalGasto)} />
-            <Resumo icon={<ShieldAlert />} label="Cancelamentos" valor={String(hospede.metricas.cancelamentos)} />
+            <Resumo
+              icon={<CalendarDays />}
+              label="Reservas"
+              valor={String(hospede.metricas.quantidadeReservas)}
+            />
+            <Resumo
+              icon={<WalletCards />}
+              label="Valor total"
+              valor={formatarMoeda(hospede.metricas.valorTotalGasto)}
+            />
+            <Resumo
+              icon={<ShieldAlert />}
+              label="Cancelamentos"
+              valor={String(hospede.metricas.cancelamentos)}
+            />
           </div>
         </div>
 
         <section className="grid gap-3 md:grid-cols-4">
-          <Info label="Documento" valor={hospede.document_number ?? "Nao informado"} />
+          <Info
+            label="Documento"
+            valor={hospede.document_number ?? "Nao informado"}
+          />
           <Info label="Cidade" valor={hospede.city ?? "Nao informada"} />
           <Info label="Estado" valor={hospede.state ?? "Nao informado"} />
-          <Info label="Aniversario" valor={hospede.birth_date ? formatarData(hospede.birth_date) : "Nao informado"} />
-          <Info label="Ultima hospedagem" valor={hospede.metricas.ultimaHospedagem ? formatarData(hospede.metricas.ultimaHospedagem) : "Sem historico"} />
-          <Info label="Proxima hospedagem" valor={hospede.metricas.proximaHospedagem ? formatarData(hospede.metricas.proximaHospedagem) : "Sem reserva"} />
+          <Info
+            label="Aniversario"
+            valor={
+              hospede.birth_date
+                ? formatarData(hospede.birth_date)
+                : "Nao informado"
+            }
+          />
+          <Info
+            label="Ultima hospedagem"
+            valor={
+              hospede.metricas.ultimaHospedagem
+                ? formatarData(hospede.metricas.ultimaHospedagem)
+                : "Sem historico"
+            }
+          />
+          <Info
+            label="Proxima hospedagem"
+            valor={
+              hospede.metricas.proximaHospedagem
+                ? formatarData(hospede.metricas.proximaHospedagem)
+                : "Sem reserva"
+            }
+          />
           <Info label="Check-ins" valor={String(hospede.metricas.checkIns)} />
           <Info label="Check-outs" valor={String(hospede.metricas.checkOuts)} />
         </section>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Perfil do hospede</summary>
-            <div className="mt-4">
-              <GuestForm hospede={hospede} podeGerenciar={podeGerenciar} />
-            </div>
-          </details>
+        <div className="flex flex-wrap gap-2">
+          <EntityViewModal
+            description="Resumo do perfil e métricas do hóspede."
+            title={`Perfil de ${hospede.full_name}`}
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <section className="grid gap-3 md:grid-cols-2">
+              <Info
+                label="Documento"
+                valor={hospede.document_number ?? "Não informado"}
+              />
+              <Info label="Cidade" valor={hospede.city ?? "Não informada"} />
+              <Info label="Estado" valor={hospede.state ?? "Não informado"} />
+              <Info
+                label="Aniversário"
+                valor={
+                  hospede.birth_date
+                    ? formatarData(hospede.birth_date)
+                    : "Não informado"
+                }
+              />
+              <Info
+                label="Check-ins"
+                valor={String(hospede.metricas.checkIns)}
+              />
+              <Info
+                label="Check-outs"
+                valor={String(hospede.metricas.checkOuts)}
+              />
+            </section>
+          </EntityViewModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Acoes e CRM futuro</summary>
-            <div className="mt-4 grid gap-3">
-              <p className="rounded-lg border bg-background/55 p-3 text-sm text-muted-foreground">
-                Estrutura preparada para WhatsApp automatico, e-mails, campanhas, fidelizacao,
-                cupons e aniversarios. Nenhum envio real foi implementado.
-              </p>
-              <form action={alternarBloqueioHospedeAction}>
-                <input name="hospedeId" type="hidden" value={hospede.id} />
-                <Button disabled={!podeGerenciar} type="submit" variant="outline">
-                  <Ban />
-                  {hospede.status === "blocked" ? "Desbloquear hospede" : "Bloquear hospede"}
-                </Button>
-              </form>
-              <form action={excluirHospedeAction} className="rounded-lg border border-destructive/25 p-3">
-                <input name="hospedeId" type="hidden" value={hospede.id} />
-                <label className="flex items-start gap-2 text-sm text-muted-foreground">
-                  <input
-                    className="mt-1"
-                    disabled={!podeGerenciar}
-                    name="confirmarExclusao"
-                    required
-                    type="checkbox"
-                    value="confirmado"
-                  />
-                  Confirmo a exclusao logica do hospede. Reservas historicas serao preservadas.
-                </label>
-                <Button className="mt-3" disabled={!podeGerenciar} type="submit" variant="destructive">
-                  <Trash2 />
-                  Excluir hospede
-                </Button>
-              </form>
-            </div>
-          </details>
-        </div>
+          <EntityModal
+            description="Atualize dados do perfil e observações internas."
+            disabled={!podeGerenciar}
+            eyebrow="Edição"
+            title="Perfil do hóspede"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <GuestForm hospede={hospede} podeGerenciar={podeGerenciar} />
+          </EntityModal>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <CalendarDays className="h-4 w-4" />
-              Historico de reservas
-            </summary>
-            <div className="mt-4 space-y-2">
+          <form action={alternarBloqueioHospedeAction}>
+            <input name="hospedeId" type="hidden" value={hospede.id} />
+            <Button
+              disabled={!podeGerenciar}
+              size="sm"
+              type="submit"
+              variant="outline"
+            >
+              <Ban />
+              {hospede.status === "blocked" ? "Desbloquear" : "Bloquear"}
+            </Button>
+          </form>
+
+          <EntityViewModal
+            description="Reservas vinculadas ao hóspede no tenant atual."
+            title="Histórico de reservas"
+            triggerIcon={<CalendarDays className="h-4 w-4" />}
+            triggerLabel="Histórico"
+          >
+            <div className="space-y-2">
               {hospede.reservas.length > 0 ? (
                 hospede.reservas.map((reserva) => (
-                  <div className="rounded-lg border bg-background/55 p-3 text-sm" key={reserva.id}>
+                  <div
+                    className="rounded-lg border bg-background/55 p-3 text-sm"
+                    key={reserva.id}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-semibold">{reserva.code}</span>
                       <Badge variant="outline">{reserva.status}</Badge>
                     </div>
                     <p className="mt-1 text-muted-foreground">
-                      {reserva.propriedade?.name ?? "Propriedade"} · {reserva.unidade?.name ?? "Unidade"}
+                      {reserva.propriedade?.name ?? "Propriedade"} ·{" "}
+                      {reserva.unidade?.name ?? "Unidade"}
                     </p>
                     <p className="text-muted-foreground">
-                      {formatarData(reserva.check_in)} - {formatarData(reserva.check_out)}
+                      {formatarData(reserva.check_in)} -{" "}
+                      {formatarData(reserva.check_out)}
                     </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">Sem reservas vinculadas.</p>
+                <p className="text-sm text-muted-foreground">
+                  Sem reservas vinculadas.
+                </p>
               )}
             </div>
-          </details>
+          </EntityViewModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <History className="h-4 w-4" />
-              Timeline do hospede
-            </summary>
-            <div className="mt-4 space-y-2">
+          <EntityViewModal
+            description="Eventos recentes consolidados do hóspede."
+            title="Timeline do hóspede"
+            triggerIcon={<History className="h-4 w-4" />}
+            triggerLabel="Timeline"
+          >
+            <div className="space-y-2">
               {hospede.timeline.length > 0 ? (
                 hospede.timeline.slice(0, 10).map((evento) => (
-                  <div className="rounded-lg border bg-background/55 p-3 text-sm" key={evento.id}>
+                  <div
+                    className="rounded-lg border bg-background/55 p-3 text-sm"
+                    key={evento.id}
+                  >
                     <p className="font-semibold">{evento.titulo}</p>
-                    <p className="text-xs text-muted-foreground">{formatarDataHora(evento.data)}</p>
-                    <p className="mt-1 text-muted-foreground">{evento.detalhe}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatarDataHora(evento.data)}
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      {evento.detalhe}
+                    </p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground">Sem eventos registrados.</p>
+                <p className="text-sm text-muted-foreground">
+                  Sem eventos registrados.
+                </p>
               )}
             </div>
-          </details>
+          </EntityViewModal>
+
+          <ConfirmDialog
+            description="A exclusão lógica preserva reservas históricas do hóspede."
+            disabled={!podeGerenciar}
+            title="Excluir hóspede"
+            triggerIcon={<Trash2 className="h-4 w-4" />}
+            triggerLabel="Excluir"
+          >
+            <form action={excluirHospedeAction} className="grid gap-3">
+              <input name="hospedeId" type="hidden" value={hospede.id} />
+              <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                <input
+                  className="mt-1"
+                  disabled={!podeGerenciar}
+                  name="confirmarExclusao"
+                  required
+                  type="checkbox"
+                  value="confirmado"
+                />
+                Confirmo a exclusão lógica do hóspede. Reservas históricas serão
+                preservadas.
+              </label>
+              <Button
+                disabled={!podeGerenciar}
+                type="submit"
+                variant="destructive"
+              >
+                <Trash2 />
+                Excluir hóspede
+              </Button>
+            </form>
+          </ConfirmDialog>
         </div>
 
         {hospede.private_notes ? (
           <div className="rounded-lg border bg-background/45 p-3">
             <Label>Observacoes privadas</Label>
-            <p className="mt-2 text-sm text-muted-foreground">{hospede.private_notes}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {hospede.private_notes}
+            </p>
           </div>
         ) : null}
       </CardContent>
@@ -172,7 +298,7 @@ export function GuestCard({ hospede, podeGerenciar }: GuestCardProps) {
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon: ReactNode;
   label: string;
@@ -199,19 +325,20 @@ function Info({ label, valor }: { label: string; valor: string }) {
 function formatarMoeda(valor: number) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00Z`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00Z`));
 }
 
 function formatarDataHora(valor: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    timeStyle: "short"
+    timeStyle: "short",
   }).format(new Date(valor));
 }

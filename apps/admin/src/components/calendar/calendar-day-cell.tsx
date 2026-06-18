@@ -1,15 +1,23 @@
-import { CalendarCheck2, LogIn, LogOut, LockKeyhole, Unlock } from "lucide-react";
+import {
+  CalendarCheck2,
+  Eye,
+  LogIn,
+  LogOut,
+  LockKeyhole,
+  Unlock,
+} from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, cn } from "@hospedex/ui";
 
+import { ConfirmDialog, EntityViewModal } from "../management/entity-modal";
 import { liberarPeriodoCalendarioAction } from "../../lib/calendar/actions";
 import {
   CLASSE_STATUS_RESERVA_CALENDARIO,
   LABEL_STATUS_BLOQUEIO,
   LABEL_STATUS_RESERVA_CALENDARIO,
   statusBloqueiaDisponibilidade,
-  type DiaCalendario
+  type DiaCalendario,
 } from "../../lib/calendar/types";
 
 export type CalendarDayCellProps = {
@@ -31,10 +39,10 @@ export function CalendarDayCell({
   mes,
   podeGerenciar,
   propriedadeId,
-  unidadeId
+  unidadeId,
 }: CalendarDayCellProps) {
   const bloqueiosAtivos = dia.blocos.filter((bloco) =>
-    statusBloqueiaDisponibilidade(bloco.status)
+    statusBloqueiaDisponibilidade(bloco.status),
   );
   const liberados = dia.blocos.filter((bloco) => bloco.status === "released");
 
@@ -43,7 +51,7 @@ export function CalendarDayCell({
       className={cn(
         "min-h-36 rounded-lg border bg-background/55 p-2 text-sm transition-colors",
         dia.foraDoMes && "bg-background/25 text-muted-foreground",
-        bloqueiosAtivos.length > 0 && "border-zinc-500/35 bg-zinc-500/10"
+        bloqueiosAtivos.length > 0 && "border-zinc-500/35 bg-zinc-500/10",
       )}
     >
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -73,17 +81,19 @@ export function CalendarDayCell({
         ))}
 
         {dia.reservas.map((reserva) => (
-          <details
+          <div
             className={cn(
               "rounded-md border px-2 py-1",
-              CLASSE_STATUS_RESERVA_CALENDARIO[reserva.status]
+              CLASSE_STATUS_RESERVA_CALENDARIO[reserva.status],
             )}
             key={reserva.id}
           >
-            <summary className="cursor-pointer list-none">
+            <div>
               <div className="flex items-center gap-1.5">
                 <CalendarCheck2 className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate text-xs font-semibold">{reserva.code}</span>
+                <span className="truncate text-xs font-semibold">
+                  {reserva.code}
+                </span>
               </div>
               <span className="text-[10px] font-medium uppercase tracking-normal opacity-75">
                 {LABEL_STATUS_RESERVA_CALENDARIO[reserva.status]}
@@ -91,47 +101,121 @@ export function CalendarDayCell({
               <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                 {reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}
               </p>
-            </summary>
-            <div className="mt-2 space-y-1 border-t pt-2 text-[11px] text-muted-foreground">
-              <p>{formatarPeriodo(reserva.check_in, reserva.check_out)}</p>
-              <p>{formatarMoeda(Number(reserva.total_amount))}</p>
             </div>
-          </details>
+            <EntityViewModal
+              description="Dados resumidos da reserva neste dia."
+              title={`Reserva ${reserva.code}`}
+              triggerClassName="mt-2 h-7 w-full justify-center text-[11px]"
+              triggerIcon={<Eye className="h-3.5 w-3.5" />}
+              triggerLabel="Detalhes"
+            >
+              <div className="grid gap-3 text-sm">
+                <InfoModal
+                  label="Periodo"
+                  valor={formatarPeriodo(reserva.check_in, reserva.check_out)}
+                />
+                <InfoModal
+                  label="Valor"
+                  valor={formatarMoeda(Number(reserva.total_amount))}
+                />
+                <InfoModal
+                  label="Hospede"
+                  valor={
+                    reserva.hospedePrincipal?.full_name ??
+                    "Hospede nao informado"
+                  }
+                />
+                <InfoModal
+                  label="Status"
+                  valor={LABEL_STATUS_RESERVA_CALENDARIO[reserva.status]}
+                />
+              </div>
+            </EntityViewModal>
+          </div>
         ))}
 
         {bloqueiosAtivos.map((bloco) => (
-          <details
+          <div
             className="rounded-md border border-zinc-500/30 bg-zinc-500/10 px-2 py-1"
             key={bloco.id}
           >
-            <summary className="cursor-pointer list-none">
-              <Badge className="mb-1" variant={bloco.status === "reserved" ? "success" : "outline"}>
+            <div>
+              <Badge
+                className="mb-1"
+                variant={bloco.status === "reserved" ? "success" : "outline"}
+              >
                 {LABEL_STATUS_BLOQUEIO[bloco.status]}
               </Badge>
-              <p className="truncate text-xs font-medium">{bloco.reason ?? "Periodo bloqueado"}</p>
-            </summary>
-            <div className="mt-2 space-y-2 border-t pt-2 text-[11px] text-muted-foreground">
-              <p>{formatarPeriodo(bloco.starts_on, bloco.ends_on)}</p>
-              <p>{bloco.notes ?? "Bloqueio manual do calendario."}</p>
-              {podeGerenciar && bloco.source !== "reservation" ? (
-                <form action={liberarPeriodoCalendarioAction}>
+              <p className="truncate text-xs font-medium">
+                {bloco.reason ?? "Periodo bloqueado"}
+              </p>
+            </div>
+            {podeGerenciar && bloco.source !== "reservation" ? (
+              <ConfirmDialog
+                description="Confirme a liberacao do periodo bloqueado no calendario."
+                title="Liberar periodo"
+                triggerClassName="mt-2 h-7 w-full justify-center text-[11px]"
+                triggerIcon={<Unlock className="h-3.5 w-3.5" />}
+                triggerLabel="Liberar"
+                triggerVariant="outline"
+              >
+                <div className="mb-4 grid gap-3 text-sm">
+                  <InfoModal
+                    label="Periodo"
+                    valor={formatarPeriodo(bloco.starts_on, bloco.ends_on)}
+                  />
+                  <InfoModal
+                    label="Observacoes"
+                    valor={bloco.notes ?? "Bloqueio manual do calendario."}
+                  />
+                </div>
+                <form
+                  action={liberarPeriodoCalendarioAction}
+                  className="flex justify-end"
+                >
                   <input name="bloqueioId" type="hidden" value={bloco.id} />
                   <input name="mes" type="hidden" value={mes} />
-                  <input name="filtroPropriedadeId" type="hidden" value={propriedadeId ?? ""} />
-                  <input name="filtroUnidadeId" type="hidden" value={unidadeId ?? ""} />
-                  <Button
-                    aria-label="Liberar periodo"
-                    className="h-7 w-7"
-                    size="icon"
-                    type="submit"
-                    variant="ghost"
-                  >
-                    <Unlock className="h-3.5 w-3.5" />
+                  <input
+                    name="filtroPropriedadeId"
+                    type="hidden"
+                    value={propriedadeId ?? ""}
+                  />
+                  <input
+                    name="filtroUnidadeId"
+                    type="hidden"
+                    value={unidadeId ?? ""}
+                  />
+                  <Button type="submit" variant="default">
+                    <Unlock />
+                    Liberar periodo
                   </Button>
                 </form>
-              ) : null}
-            </div>
-          </details>
+              </ConfirmDialog>
+            ) : (
+              <EntityViewModal
+                description="Dados resumidos da indisponibilidade neste dia."
+                title="Periodo bloqueado"
+                triggerClassName="mt-2 h-7 w-full justify-center text-[11px]"
+                triggerIcon={<Eye className="h-3.5 w-3.5" />}
+                triggerLabel="Detalhes"
+              >
+                <div className="grid gap-3 text-sm">
+                  <InfoModal
+                    label="Periodo"
+                    valor={formatarPeriodo(bloco.starts_on, bloco.ends_on)}
+                  />
+                  <InfoModal
+                    label="Status"
+                    valor={LABEL_STATUS_BLOQUEIO[bloco.status]}
+                  />
+                  <InfoModal
+                    label="Observacoes"
+                    valor={bloco.notes ?? "Bloqueio manual do calendario."}
+                  />
+                </div>
+              </EntityViewModal>
+            )}
+          </div>
         ))}
 
         {liberados.length > 0 ? (
@@ -140,7 +224,9 @@ export function CalendarDayCell({
           </p>
         ) : null}
 
-        {dia.reservas.length === 0 && bloqueiosAtivos.length === 0 && dia.checkOuts.length === 0 ? (
+        {dia.reservas.length === 0 &&
+        bloqueiosAtivos.length === 0 &&
+        dia.checkOuts.length === 0 ? (
           <p className="text-[11px] text-muted-foreground">Disponivel</p>
         ) : null}
       </div>
@@ -148,10 +234,19 @@ export function CalendarDayCell({
   );
 }
 
+function InfoModal({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="rounded-lg border bg-background/45 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-sm font-medium">{valor}</p>
+    </div>
+  );
+}
+
 function MarcadorOperacional({
   icone,
   texto,
-  tipo
+  tipo,
 }: {
   icone: ReactNode;
   texto: string;
@@ -163,7 +258,7 @@ function MarcadorOperacional({
         "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-semibold",
         tipo === "entrada"
           ? "border-cyan-400/35 bg-cyan-400/12 text-cyan-950 dark:text-cyan-100"
-          : "border-violet-400/35 bg-violet-400/12 text-violet-950 dark:text-violet-100"
+          : "border-violet-400/35 bg-violet-400/12 text-violet-950 dark:text-violet-100",
       )}
     >
       {icone}
@@ -177,14 +272,15 @@ function formatarPeriodo(inicio: string, fim: string) {
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00Z`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00Z`));
 }
 
 function formatarMoeda(valor: number) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }
