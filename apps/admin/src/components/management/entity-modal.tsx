@@ -13,6 +13,12 @@ import { createPortal } from "react-dom";
 
 import { Button, cn } from "@hospedex/ui";
 
+import {
+  ActionButton,
+  type ActionButtonSize,
+  type ActionButtonVariant,
+} from "./action-button";
+
 type ModalSize = "sm" | "md" | "lg" | "xl";
 
 type AppModalProps = {
@@ -33,9 +39,13 @@ type EntityModalProps = {
   size?: ModalSize;
   title: string;
   triggerClassName?: string | undefined;
+  triggerAction?: ActionButtonVariant | undefined;
   triggerIcon?: ReactNode | undefined;
   triggerLabel: string;
-  triggerSize?: ComponentProps<typeof Button>["size"] | undefined;
+  triggerSize?:
+    | ActionButtonSize
+    | ComponentProps<typeof Button>["size"]
+    | undefined;
   triggerVariant?: ComponentProps<typeof Button>["variant"] | undefined;
 };
 
@@ -45,6 +55,66 @@ const sizeClass: Record<ModalSize, string> = {
   sm: "max-w-md",
   xl: "max-w-5xl",
 };
+
+function normalizarTexto(texto: string) {
+  return texto
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function inferirAcaoDoBotao(
+  label: string,
+  triggerVariant?: ComponentProps<typeof Button>["variant"],
+): ActionButtonVariant {
+  const texto = normalizarTexto(label);
+
+  if (texto.includes("visualizar") || texto.includes("ver ")) return "view";
+  if (texto.includes("excluir") || texto.includes("remover")) return "delete";
+  if (texto.includes("cancelar")) return "cancel";
+  if (
+    texto.includes("config") ||
+    texto.includes("preferencia") ||
+    texto.includes("permiss") ||
+    texto.includes("politica") ||
+    texto.includes("senha") ||
+    texto.includes("comodidade")
+  ) {
+    return "settings";
+  }
+  if (
+    texto.includes("status") ||
+    texto.includes("ativar") ||
+    texto.includes("desativar") ||
+    texto.includes("pausar") ||
+    texto.includes("confirmar") ||
+    texto.includes("reenviar")
+  ) {
+    return "status";
+  }
+  if (
+    texto.includes("novo") ||
+    texto.includes("nova") ||
+    texto.includes("criar") ||
+    texto.includes("adicionar") ||
+    texto.includes("enviar")
+  ) {
+    return "add";
+  }
+  if (texto.includes("servico") || texto.includes("manutencao")) return "service";
+  if (
+    texto.includes("editar") ||
+    texto.includes("alterar") ||
+    texto.includes("responder")
+  ) {
+    return "edit";
+  }
+
+  if (triggerVariant === "destructive") return "delete";
+  if (triggerVariant === "default") return "add";
+
+  return "settings";
+}
 
 export function AppModal({
   children,
@@ -158,6 +228,7 @@ export function EntityModal({
   eyebrow,
   size = "lg",
   title,
+  triggerAction,
   triggerClassName,
   triggerIcon,
   triggerLabel,
@@ -168,17 +239,17 @@ export function EntityModal({
 
   return (
     <>
-      <Button
+      <ActionButton
         className={triggerClassName}
         disabled={disabled}
+        icon={triggerIcon}
         onClick={() => setOpen(true)}
-        size={triggerSize}
+        size={triggerSize ?? "sm"}
         type="button"
-        variant={triggerVariant}
+        variant={triggerAction ?? inferirAcaoDoBotao(triggerLabel, triggerVariant)}
       >
-        {triggerIcon}
         {triggerLabel}
-      </Button>
+      </ActionButton>
 
       <AppModal
         description={description}
@@ -199,6 +270,7 @@ export function EntityViewModal({
   description,
   disabled,
   title,
+  triggerAction,
   triggerClassName,
   triggerIcon,
   triggerLabel = "Visualizar",
@@ -215,6 +287,7 @@ export function EntityViewModal({
       eyebrow="Visualização"
       size="lg"
       title={title}
+      triggerAction={triggerAction ?? "view"}
       triggerClassName={triggerClassName}
       triggerIcon={triggerIcon}
       triggerLabel={triggerLabel}
@@ -230,6 +303,7 @@ export function ConfirmDialog({
   description,
   disabled,
   title,
+  triggerAction,
   triggerClassName,
   triggerIcon,
   triggerLabel = "Excluir",
@@ -248,6 +322,9 @@ export function ConfirmDialog({
       eyebrow="Confirmação"
       size="sm"
       title={title}
+      triggerAction={
+        triggerAction ?? inferirAcaoDoBotao(triggerLabel, triggerVariant)
+      }
       triggerClassName={triggerClassName}
       triggerIcon={triggerIcon}
       triggerLabel={triggerLabel}
