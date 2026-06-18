@@ -21,6 +21,7 @@ import type {
   NotificacaoGerenciamento
 } from "../../lib/notifications/types";
 import { ModuleToast } from "../admin/module-toast";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { NotificationRowActions } from "./notification-row-actions";
 
 type NotificationsModuleProps = DadosNotificacoesGerenciamento & {
@@ -114,24 +115,17 @@ export function NotificationsModule({
       </Card>
 
       {itens.length ? (
-        <section className="space-y-3">
+        <EntityGrid>
           {itens.map((notificacao) => (
             <NotificationCard key={notificacao.key} notificacao={notificacao} />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-8 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-cyan-300/25 bg-cyan-500/10 text-cyan-700 dark:text-cyan-200">
-              <Bell className="h-5 w-5" />
-            </div>
-            <h2 className="mt-4 text-lg font-semibold">Nenhuma notificacao encontrada</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Quando houver eventos reais de reservas, limpeza, pagamentos ou licenca,
-              eles aparecem aqui conforme suas permissoes.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Quando houver eventos reais de reservas, limpeza, pagamentos ou licenca, eles aparecem aqui conforme suas permissoes."
+          icon={<Bell className="h-5 w-5" />}
+          title="Nenhuma notificacao encontrada"
+        />
       )}
     </FadeIn>
   );

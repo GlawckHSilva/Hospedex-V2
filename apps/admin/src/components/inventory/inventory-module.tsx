@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
 import { EntityModal } from "../management/entity-modal";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ModuleToast } from "../admin/module-toast";
 import type {
   DadosModuloInventario,
@@ -179,36 +180,48 @@ export function InventoryModule({
       <section className="grid gap-5">
         <h2 className="text-lg font-semibold">Itens de inventario</h2>
         {itens.length > 0 ? (
-          itens.map((item) => (
-            <InventoryItemCard
-              item={item}
-              key={item.id}
-              podeGerenciar={podeGerenciar}
-              propriedades={propriedades}
-              unidades={unidades}
-            />
-          ))
+          <EntityGrid>
+            {itens.map((item) => (
+              <InventoryItemCard
+                item={item}
+                key={item.id}
+                podeGerenciar={podeGerenciar}
+                propriedades={propriedades}
+                unidades={unidades}
+              />
+            ))}
+          </EntityGrid>
         ) : (
-          <EstadoVazio mensagem="Nenhum item encontrado para o filtro atual." />
+          <EmptyState
+            description="Ajuste os filtros ou cadastre um novo item de inventario."
+            icon={<Boxes className="h-5 w-5" />}
+            title="Nenhum item encontrado"
+          />
         )}
       </section>
 
       <section className="grid gap-5">
         <h2 className="text-lg font-semibold">Agenda de manutencao</h2>
         {tarefas.length > 0 ? (
-          tarefas.map((tarefa) => (
-            <MaintenanceTaskCard
-              itens={itens}
-              key={tarefa.id}
-              podeGerenciar={podeGerenciar}
-              propriedades={propriedades}
-              responsaveis={responsaveis}
-              tarefa={tarefa}
-              unidades={unidades}
-            />
-          ))
+          <EntityGrid>
+            {tarefas.map((tarefa) => (
+              <MaintenanceTaskCard
+                itens={itens}
+                key={tarefa.id}
+                podeGerenciar={podeGerenciar}
+                propriedades={propriedades}
+                responsaveis={responsaveis}
+                tarefa={tarefa}
+                unidades={unidades}
+              />
+            ))}
+          </EntityGrid>
         ) : (
-          <EstadoVazio mensagem="Nenhuma manutencao encontrada para o filtro atual." />
+          <EmptyState
+            description="Quando houver manutencoes planejadas, elas aparecem aqui em cards compactos."
+            icon={<Wrench className="h-5 w-5" />}
+            title="Nenhuma manutencao encontrada"
+          />
         )}
       </section>
     </FadeIn>
@@ -230,16 +243,6 @@ function Resumo({
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-semibold">{valor}</p>
     </div>
-  );
-}
-
-function EstadoVazio({ mensagem }: { mensagem: string }) {
-  return (
-    <Card className="admin-glass-card">
-      <CardContent className="p-5 text-sm text-muted-foreground">
-        {mensagem}
-      </CardContent>
-    </Card>
   );
 }
 

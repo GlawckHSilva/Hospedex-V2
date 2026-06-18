@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
 import { EntityModal } from "../management/entity-modal";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { criarLocalGuiaRegiaoAction } from "../../lib/regional-guide/actions";
 import {
   CATEGORIAS_GUIA_REGIAO,
@@ -129,7 +130,7 @@ export function RegionalGuideModule({
       </Card>
 
       {locais.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {locais.map((local) => (
             <RegionalGuideCard
               key={local.id}
@@ -137,13 +138,13 @@ export function RegionalGuideModule({
               podeGerenciar={podeGerenciar}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhum local encontrado para o filtro atual.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Ajuste os filtros ou cadastre uma recomendacao local."
+          icon={<MapPin className="h-5 w-5" />}
+          title="Nenhum local encontrado"
+        />
       )}
     </FadeIn>
   );

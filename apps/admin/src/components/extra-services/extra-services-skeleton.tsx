@@ -1,4 +1,6 @@
-import { Card, CardContent, FadeIn, Skeleton } from "@hospedex/ui";
+import { FadeIn, Skeleton } from "@hospedex/ui";
+
+import { EntityGrid, SkeletonCard } from "../management/entity-card";
 
 /**
  * Skeleton do modulo de Servicos Extras.
@@ -22,12 +24,11 @@ export function ExtraServicesSkeleton() {
         <Skeleton className="h-24" />
       </section>
 
-      <Card className="admin-glass-card">
-        <CardContent className="grid gap-4 p-5">
-          <Skeleton className="h-12" />
-          <Skeleton className="h-32" />
-        </CardContent>
-      </Card>
+      <EntityGrid>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </EntityGrid>
     </FadeIn>
   );
 }

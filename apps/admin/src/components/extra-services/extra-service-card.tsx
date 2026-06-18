@@ -1,13 +1,14 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil } from "lucide-react";
 
-import { Badge, Button, Card, CardContent } from "@hospedex/ui";
+import { Badge } from "@hospedex/ui";
 
-import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import {
-  alternarStatusServicoExtraAction,
-  atualizarServicoExtraAction,
-  excluirServicoExtraAction,
-} from "../../lib/extra-services/actions";
+  EntityCard,
+  EntityCardActions,
+  EntityCardHeader,
+} from "../management/entity-card";
+import { EntityModal } from "../management/entity-modal";
+import { atualizarServicoExtraAction } from "../../lib/extra-services/actions";
 import {
   LABEL_TIPO_COBRANCA,
   type CasaServicoExtra,
@@ -16,12 +17,10 @@ import {
 import { ExtraServiceForm } from "./extra-service-form";
 
 /**
- * Card individual de servico extra.
+ * Card compacto de servico extra.
  *
- * As acoes de status e exclusao passam por server actions para manter RLS e
- * regras de tenant no servidor.
+ * A listagem mostra nome, categoria e valor. Edicao detalhada fica em modal.
  */
-
 type ExtraServiceCardProps = {
   casas: CasaServicoExtra[];
   podeGerenciar: boolean;
@@ -33,134 +32,47 @@ export function ExtraServiceCard({
   podeGerenciar,
   servico,
 }: ExtraServiceCardProps) {
-  const statusDestino = servico.status === "active" ? "inactive" : "active";
-
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant={servico.status === "active" ? "success" : "secondary"}
-              >
-                {servico.status === "active" ? "Ativo" : "Inativo"}
-              </Badge>
-              {servico.is_required ? (
-                <Badge variant="warning">Obrigatorio</Badge>
-              ) : null}
-              <Badge variant="info">
-                {LABEL_TIPO_COBRANCA[servico.charge_type]}
-              </Badge>
-            </div>
-            <h2 className="mt-3 text-lg font-semibold">{servico.name}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {servico.description || "Sem descricao publica cadastrada."}
-            </p>
-          </div>
+    <EntityCard>
+      <EntityCardHeader
+        badges={
+          <>
+            <Badge variant={servico.status === "active" ? "success" : "secondary"}>
+              {servico.status === "active" ? "Ativo" : "Inativo"}
+            </Badge>
+            <Badge variant="info">{LABEL_TIPO_COBRANCA[servico.charge_type]}</Badge>
+          </>
+        }
+        subtitle={servico.is_required ? "Obrigatorio" : "Opcional"}
+        title={servico.name}
+      />
 
-          <div className="rounded-lg border bg-background/55 p-3 text-sm">
-            <p className="text-xs text-muted-foreground">Valor</p>
-            <p className="font-semibold">{formatarMoeda(servico.amount)}</p>
-          </div>
-        </div>
+      <div className="rounded-lg border bg-background/55 p-3 text-sm">
+        <p className="text-xs text-muted-foreground">Valor</p>
+        <p className="mt-1 text-lg font-semibold">{formatarMoeda(servico.amount)}</p>
+      </div>
 
-        <div className="mt-4 grid gap-3 text-sm md:grid-cols-2">
-          <Info label="Casas" valor={descreverCasas(servico)} />
-          <Info
-            label="Observacoes internas"
-            valor={servico.internal_notes || "Sem observacoes."}
+      <EntityCardActions>
+        <EntityModal
+          description="Atualize preco, cobranca, casas vinculadas e status operacional."
+          disabled={!podeGerenciar}
+          eyebrow="Edicao"
+          title="Editar servico extra"
+          triggerClassName="col-span-2 h-9 justify-center"
+          triggerIcon={<Pencil className="h-4 w-4" />}
+          triggerLabel="Editar"
+        >
+          <ExtraServiceForm
+            action={atualizarServicoExtraAction}
+            casas={casas}
+            modo="editar"
+            podeGerenciar={podeGerenciar}
+            servico={servico}
           />
-        </div>
-
-        <div className="mt-5 flex flex-wrap gap-3">
-          <ConfirmDialog
-            description="Esta acao altera a disponibilidade do servico nas novas reservas."
-            disabled={!podeGerenciar}
-            title={
-              servico.status === "active"
-                ? "Desativar servico"
-                : "Ativar servico"
-            }
-            triggerLabel={servico.status === "active" ? "Desativar" : "Ativar"}
-            triggerVariant="outline"
-          >
-            <form
-              action={alternarStatusServicoExtraAction}
-              className="grid gap-3"
-            >
-              <input name="servicoId" type="hidden" value={servico.id} />
-              <input name="status" type="hidden" value={statusDestino} />
-              <p className="text-sm text-muted-foreground">
-                Confirme para{" "}
-                {servico.status === "active" ? "desativar" : "ativar"} este
-                servico extra.
-              </p>
-              <Button disabled={!podeGerenciar} type="submit" variant="outline">
-                {servico.status === "active" ? "Desativar" : "Ativar"}
-              </Button>
-            </form>
-          </ConfirmDialog>
-
-          <EntityModal
-            description="Atualize preço, cobrança, casas vinculadas e status operacional."
-            disabled={!podeGerenciar}
-            eyebrow="Edição"
-            title="Editar serviço extra"
-            triggerIcon={<Pencil className="h-4 w-4" />}
-            triggerLabel="Editar"
-          >
-            <ExtraServiceForm
-              action={atualizarServicoExtraAction}
-              casas={casas}
-              modo="editar"
-              podeGerenciar={podeGerenciar}
-              servico={servico}
-            />
-          </EntityModal>
-
-          <ConfirmDialog
-            description="Esta exclusão remove o serviço de novas reservas e preserva histórico futuro."
-            disabled={!podeGerenciar}
-            title="Excluir serviço extra"
-            triggerIcon={<Trash2 className="h-4 w-4" />}
-            triggerLabel="Excluir"
-          >
-            <form action={excluirServicoExtraAction} className="grid gap-3">
-              <input name="servicoId" type="hidden" value={servico.id} />
-              <p className="text-sm text-muted-foreground">
-                Esta exclusao remove o servico de novas reservas e preserva
-                historico futuro.
-              </p>
-              <Button
-                disabled={!podeGerenciar}
-                size="sm"
-                type="submit"
-                variant="destructive"
-              >
-                Confirmar exclusao
-              </Button>
-            </form>
-          </ConfirmDialog>
-        </div>
-      </CardContent>
-    </Card>
+        </EntityModal>
+      </EntityCardActions>
+    </EntityCard>
   );
-}
-
-function Info({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div className="rounded-lg border bg-background/45 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1">{valor}</p>
-    </div>
-  );
-}
-
-function descreverCasas(servico: ServicoExtraComCasas): string {
-  if (servico.applies_to_all_properties) return "Todas as casas";
-  if (servico.casas.length === 0) return "Nenhuma casa vinculada";
-  return servico.casas.map((casa) => casa.name).join(", ");
 }
 
 function formatarMoeda(valor: number) {

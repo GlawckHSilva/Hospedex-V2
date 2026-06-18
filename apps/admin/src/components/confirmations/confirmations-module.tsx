@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, FadeIn } from "@hospedex/ui";
 
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ConfirmDialog } from "../management/entity-modal";
 import {
   cancelarReservaConfirmacaoAction,
@@ -125,14 +126,14 @@ export function ConfirmationsModule({
       </section>
 
       {totalItens === 0 ? (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhuma confirmacao pendente para hoje.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Check-ins, check-outs, pagamentos e limpezas pendentes aparecem aqui quando exigirem acao."
+          icon={<CheckCircle2 className="h-5 w-5" />}
+          title="Nenhuma confirmacao pendente para hoje"
+        />
       ) : (
         <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <div className="space-y-4">
+          <EntityGrid>
             <GrupoReservas
               action={confirmarCheckInConfirmacaoAction}
               cor="verde"
@@ -173,7 +174,7 @@ export function ConfirmationsModule({
               limpezas={limpezasPendentes}
               podeGerenciar={podeGerenciarLimpeza}
             />
-          </div>
+          </EntityGrid>
 
           <aside className="space-y-4">
             <Card className="admin-glass-card">

@@ -20,6 +20,7 @@ import {
 } from "@hospedex/ui";
 
 import { EntityModal } from "../management/entity-modal";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ModuleToast } from "../admin/module-toast";
 import {
   LABEL_STATUS_LANCAMENTO,
@@ -171,7 +172,7 @@ export function FinanceModule({
       {contas.length === 0 || categorias.length === 0 ? (
         <EstadoVazio mensagem="As categorias e a conta inicial ainda não foram carregadas para este tenant." />
       ) : lancamentos.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {lancamentos.map((lancamento) => (
             <FinanceTransactionCard
               categorias={categorias}
@@ -183,7 +184,7 @@ export function FinanceModule({
               propriedades={propriedades}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
         <EstadoVazio mensagem="Nenhum lançamento encontrado para o filtro atual." />
       )}
@@ -213,11 +214,11 @@ function Resumo({
 
 function EstadoVazio({ mensagem }: { mensagem: string }) {
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="p-5 text-sm text-muted-foreground">
-        {mensagem}
-      </CardContent>
-    </Card>
+    <EmptyState
+      description={mensagem}
+      icon={<CircleDollarSign className="h-5 w-5" />}
+      title="Nenhum lancamento encontrado"
+    />
   );
 }
 

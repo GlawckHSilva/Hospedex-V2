@@ -1,5 +1,7 @@
 import { Card, CardContent, FadeIn, Skeleton } from "@hospedex/ui";
 
+import { EntityGrid, SkeletonCard } from "../management/entity-card";
+
 /**
  * Skeleton do módulo de Reservas.
  *
@@ -24,10 +26,11 @@ export function ReservationModuleSkeleton() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4">
-        <Skeleton className="h-48" />
-        <Skeleton className="h-48" />
-      </div>
+      <EntityGrid>
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </EntityGrid>
     </FadeIn>
   );
 }

@@ -1,8 +1,7 @@
 import type { PropertyRow, UnitRow } from "@hospedex/types";
 
-import { Card, CardContent } from "@hospedex/ui";
-
 import type { ReservaComRelacionamentos } from "../../lib/reservations/types";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ReservationCard } from "./reservation-card";
 
 type ReservationGridProps = {
@@ -20,24 +19,15 @@ export function ReservationGrid({
 }: ReservationGridProps) {
   if (reservas.length === 0) {
     return (
-      <Card className="admin-glass-card">
-        <CardContent className="grid min-h-52 place-items-center p-8 text-center">
-          <div>
-            <p className="text-base font-semibold">
-              Nenhuma reserva encontrada
-            </p>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              Ajuste os filtros ou registre uma nova reserva manual quando
-              houver demanda confirmada.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <EmptyState
+        description="Ajuste os filtros ou registre uma nova reserva manual quando houver demanda confirmada."
+        title="Nenhuma reserva encontrada"
+      />
     );
   }
 
   return (
-    <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+    <EntityGrid>
       {reservas.map((reserva) => (
         <ReservationCard
           key={reserva.id}
@@ -47,6 +37,6 @@ export function ReservationGrid({
           unidades={unidades}
         />
       ))}
-    </section>
+    </EntityGrid>
   );
 }

@@ -141,7 +141,7 @@ export function ReservationCard({
           />
         </section>
 
-        <div className="mt-auto grid grid-cols-2 gap-2">
+        <div className="mt-auto grid grid-cols-2 gap-2 [&>*:nth-child(n+3)]:hidden">
           <EntityViewModal
             description="Dados consolidados, serviços extras e linha do tempo da reserva."
             title={`Reserva ${reserva.code}`}

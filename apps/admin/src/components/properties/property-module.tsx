@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Badge, Card, CardContent, FadeIn } from "@hospedex/ui";
 
 import { EntityModal } from "../management/entity-modal";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ModuleToast } from "../admin/module-toast";
 import type {
   DadosModuloPropriedades,
@@ -165,7 +166,7 @@ function VisaoPropriedades({
       </Card>
 
       {propriedades.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {propriedades.map((propriedade) => (
             <PropertyCard
               key={propriedade.id}
@@ -176,13 +177,13 @@ function VisaoPropriedades({
               propriedades={propriedades}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhuma casa cadastrada.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Cadastre a primeira casa para iniciar a operacao do tenant."
+          icon={<Building2 className="h-5 w-5" />}
+          title="Nenhuma casa cadastrada"
+        />
       )}
     </>
   );
@@ -222,11 +223,11 @@ function VisaoUnidades({
       </Card>
 
       {propriedades.length === 0 ? (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Cadastre uma propriedade antes de criar unidades.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Cadastre uma casa antes de criar unidades internas."
+          icon={<Home className="h-5 w-5" />}
+          title="Nenhuma casa cadastrada"
+        />
       ) : (
         <section className="grid gap-5">
           {propriedades.map((propriedade) => (
@@ -240,7 +241,7 @@ function VisaoUnidades({
                 </div>
 
                 {propriedade.unidades.length > 0 ? (
-                  <div className="grid gap-3">
+                  <EntityGrid className="gap-3">
                     {propriedade.unidades.map((unidade) => (
                       <UnitCard
                         key={unidade.id}
@@ -250,7 +251,7 @@ function VisaoUnidades({
                         unidade={unidade}
                       />
                     ))}
-                  </div>
+                  </EntityGrid>
                 ) : (
                   <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
                     Nenhuma unidade cadastrada nesta propriedade.

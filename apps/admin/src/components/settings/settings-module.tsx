@@ -19,6 +19,7 @@ import {
 } from "@hospedex/ui";
 
 import { ConfirmDialog, EntityModal } from "../management/entity-modal";
+import { EntityGrid } from "../management/entity-card";
 import { sairAction } from "../../lib/auth/actions";
 import {
   alterarSenhaConfiguracoesAction,
@@ -109,7 +110,7 @@ export function SettingsModule({
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-2">
+      <EntityGrid>
         <Card className="admin-glass-card">
           <CardContent className="p-5">
             <CabecalhoCard icon={<Building2 />} titulo="Configuracoes gerais" />
@@ -291,7 +292,7 @@ export function SettingsModule({
             </EntityModal>
           </CardContent>
         </Card>
-      </section>
+      </EntityGrid>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_380px]">
         <Card className="admin-glass-card">
@@ -300,7 +301,7 @@ export function SettingsModule({
               icon={<SlidersHorizontal />}
               titulo="Modulos habilitados"
             />
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
+            <EntityGrid className="mt-5 gap-3">
               {modulos.length ? (
                 modulos.map((modulo) => (
                   <ModuloCard
@@ -314,7 +315,7 @@ export function SettingsModule({
                   Nenhum modulo configuravel encontrado para este tenant.
                 </p>
               )}
-            </div>
+            </EntityGrid>
           </CardContent>
         </Card>
 

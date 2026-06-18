@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
 import { EntityModal } from "../management/entity-modal";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import { criarServicoExtraAction } from "../../lib/extra-services/actions";
 import {
   STATUS_SERVICO_EXTRA,
@@ -148,7 +149,7 @@ export function ExtraServicesModule({
       </Card>
 
       {servicos.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {servicos.map((servico) => (
             <ExtraServiceCard
               casas={casas}
@@ -157,13 +158,13 @@ export function ExtraServicesModule({
               servico={servico}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhum servico extra encontrado para o filtro atual.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Ajuste o filtro ou cadastre um servico extra para reservas futuras."
+          icon={<Gift className="h-5 w-5" />}
+          title="Nenhum servico extra encontrado"
+        />
       )}
     </FadeIn>
   );

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, FadeIn, Input, Label } from "@hospedex/ui";
 
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import {
   NOTAS_AVALIACAO,
   STATUS_AVALIACAO,
@@ -134,7 +135,7 @@ export function ReviewsModule({
       </Card>
 
       {avaliacoes.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {avaliacoes.map((avaliacao) => (
             <ReviewCard
               avaliacao={avaliacao}
@@ -142,13 +143,13 @@ export function ReviewsModule({
               podeGerenciar={podeGerenciar}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhuma avaliacao encontrada para os filtros atuais.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Ajuste os filtros ou aguarde novas avaliacoes internas."
+          icon={<Star className="h-5 w-5" />}
+          title="Nenhuma avaliacao encontrada"
+        />
       )}
     </FadeIn>
   );

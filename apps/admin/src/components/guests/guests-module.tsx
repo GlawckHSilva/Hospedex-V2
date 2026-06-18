@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Badge, Button, Card, CardContent, FadeIn, Input, Label } from "@hospedex/ui";
 
 import { ModuleToast } from "../admin/module-toast";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import {
   LABEL_STATUS_HOSPEDE_CRM,
   STATUS_HOSPEDE_CRM,
@@ -84,17 +85,17 @@ export function GuestsModule({
       </Card>
 
       {hospedes.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {hospedes.map((hospede) => (
             <GuestCard hospede={hospede} key={hospede.id} podeGerenciar={podeGerenciar} />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhum hospede encontrado. Hospedes serao consolidados a partir das reservas criadas.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Hospedes serao consolidados a partir das reservas criadas."
+          icon={<UsersRound className="h-5 w-5" />}
+          title="Nenhum hospede encontrado"
+        />
       )}
     </FadeIn>
   );

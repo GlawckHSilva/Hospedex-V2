@@ -14,7 +14,6 @@ import {
   FadeIn,
   GlassCard,
   GlassPanel,
-  GlassTable,
   Input,
   Label,
   PremiumEmptyState,
@@ -22,6 +21,10 @@ import {
 } from "@hospedex/ui";
 
 import { ModuleToast } from "../admin/module-toast";
+import {
+  EmptyState,
+  EntityGrid,
+} from "../management/entity-card";
 import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import {
   alterarStatusFuncionarioAction,
@@ -150,7 +153,7 @@ export function FuncionariosModule({
       </GlassCard>
 
       {funcionarios.length ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {funcionarios.map((funcionario) => (
             <FuncionarioCard
               cargos={cargos}
@@ -158,9 +161,9 @@ export function FuncionariosModule({
               key={funcionario.id}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <PremiumEmptyState
+        <EmptyState
           description="Nenhum funcionario encontrado para os filtros atuais."
           icon={<Filter className="h-5 w-5" />}
           title="Sem funcionarios"
@@ -324,7 +327,7 @@ function FuncionarioCard({
 
 function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
   return (
-    <GlassTable className="space-y-5 p-5">
+    <GlassCard className="space-y-5 p-5">
       <div className="flex items-center justify-between gap-3 border-b pb-4">
         <div>
           <p className="font-semibold">Cargos e permissoes</p>
@@ -361,7 +364,7 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
       </EntityModal>
 
       {cargos.length ? (
-        <div className="grid gap-4">
+        <EntityGrid>
           {cargos.map((cargo) => (
             <GlassCard className="p-4" key={cargo.role.id}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -401,7 +404,7 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
               </div>
             </GlassCard>
           ))}
-        </div>
+        </EntityGrid>
       ) : (
         <PremiumEmptyState
           description="Os cargos iniciais ainda nao foram criados para este tenant."
@@ -409,7 +412,7 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
           title="Sem cargos"
         />
       )}
-    </GlassTable>
+    </GlassCard>
   );
 }
 

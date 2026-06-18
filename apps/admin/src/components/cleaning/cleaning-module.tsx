@@ -5,6 +5,7 @@ import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
 import { ModuleToast } from "../admin/module-toast";
 import { ConfirmDialog, EntityModal } from "../management/entity-modal";
+import { EmptyState, EntityGrid } from "../management/entity-card";
 import {
   confirmarCheckInAction,
   confirmarCheckOutAction,
@@ -145,7 +146,7 @@ export function CleaningModule({
       </Card>
 
       {tarefas.length > 0 ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {tarefas.map((tarefa) => (
             <CleaningTaskCard
               key={tarefa.id}
@@ -157,13 +158,13 @@ export function CleaningModule({
               unidades={unidades}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhuma tarefa de limpeza encontrada.
-          </CardContent>
-        </Card>
+        <EmptyState
+          description="Quando houver tarefas manuais ou geradas por check-out, elas aparecem aqui."
+          icon={<Sparkles className="h-5 w-5" />}
+          title="Nenhuma tarefa de limpeza encontrada"
+        />
       )}
     </FadeIn>
   );

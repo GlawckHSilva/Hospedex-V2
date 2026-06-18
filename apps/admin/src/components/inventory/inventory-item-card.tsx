@@ -1,14 +1,14 @@
 import type { PropertyRow, UnitRow } from "@hospedex/types";
-import { Eye, Pencil, PackageCheck, Trash2 } from "lucide-react";
+import { Eye, PackageCheck, Pencil } from "lucide-react";
 
-import { Badge, Button, Card, CardContent } from "@hospedex/ui";
+import { Badge } from "@hospedex/ui";
 
 import {
-  ConfirmDialog,
-  EntityModal,
-  EntityViewModal,
-} from "../management/entity-modal";
-import { excluirItemInventarioAction } from "../../lib/inventory/actions";
+  EntityCard,
+  EntityCardActions,
+  EntityCardHeader,
+} from "../management/entity-card";
+import { EntityModal, EntityViewModal } from "../management/entity-modal";
 import {
   LABEL_CATEGORIA_INVENTARIO,
   LABEL_ESTADO_CONSERVACAO,
@@ -17,11 +17,8 @@ import {
 import { InventoryItemForm } from "./inventory-item-form";
 
 /**
- * Card de item de inventario.
- *
- * A exclusao e logica no banco para preservar manutencoes e auditoria futura.
+ * Card compacto de inventario.
  */
-
 export type InventoryItemCardProps = {
   item: ItemInventarioCompleto;
   podeGerenciar: boolean;
@@ -35,149 +32,77 @@ export function InventoryItemCard({
   propriedades,
   unidades,
 }: InventoryItemCardProps) {
+  const statusCritico =
+    item.conservation_state === "damaged" ||
+    item.conservation_state === "missing";
+  const media = item.image_url ? (
+    <img alt={item.name} className="h-36 w-full object-cover" src={item.image_url} />
+  ) : (
+    <div className="flex h-36 items-center justify-center bg-primary/15 text-primary">
+      <PackageCheck className="h-10 w-10" />
+    </div>
+  );
+
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="space-y-4 p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <PackageCheck className="h-4 w-4 text-primary" />
-              <h2 className="truncate text-lg font-semibold">{item.name}</h2>
-              <Badge
-                variant={
-                  item.conservation_state === "damaged" ||
-                  item.conservation_state === "missing"
-                    ? "warning"
-                    : "outline"
-                }
-              >
-                {LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
-              </Badge>
+    <EntityCard media={media}>
+      <EntityCardHeader
+        badges={
+          <>
+            <Badge variant={statusCritico ? "warning" : "outline"}>
+              {LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
+            </Badge>
+            <Badge variant="info">{LABEL_CATEGORIA_INVENTARIO[item.category]}</Badge>
+          </>
+        }
+        subtitle={`${item.propriedade?.name ?? "Propriedade"} - ${item.unidade?.name ?? "Sem unidade"}`}
+        title={item.name}
+      />
+
+      <div className="rounded-lg border bg-background/55 p-3 text-sm">
+        <p className="text-xs text-muted-foreground">Quantidade</p>
+        <p className="mt-1 text-lg font-semibold">{item.quantity}</p>
+      </div>
+
+      <EntityCardActions>
+        <EntityViewModal
+          description="Dados do item, localizacao, quantidade e observacoes."
+          title={item.name}
+          triggerClassName="h-9 justify-center"
+          triggerIcon={<Eye className="h-4 w-4" />}
+          triggerLabel="Visualizar"
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            <Info label="Categoria" valor={LABEL_CATEGORIA_INVENTARIO[item.category]} />
+            <Info label="Quantidade" valor={String(item.quantity)} />
+            <Info label="Estado" valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]} />
+            <Info label="Valor estimado" valor={formatarMoeda(Number(item.estimated_value))} />
+            <Info label="Propriedade" valor={item.propriedade?.name ?? "Propriedade"} />
+            <Info label="Unidade" valor={item.unidade?.name ?? "Sem unidade"} />
+            <div className="md:col-span-2">
+              <Info label="Observacoes" valor={item.notes ?? "Sem observacoes"} />
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {item.propriedade?.name ?? "Propriedade"} ·{" "}
-              {item.unidade?.name ?? "Sem unidade"}
-            </p>
           </div>
-          {item.image_url ? (
-            <img
-              alt={item.name}
-              className="h-20 w-28 rounded-lg border object-cover"
-              src={item.image_url}
-            />
-          ) : null}
-        </div>
+        </EntityViewModal>
 
-        <section className="grid gap-3 md:grid-cols-4">
-          <Info
-            label="Categoria"
-            valor={LABEL_CATEGORIA_INVENTARIO[item.category]}
+        <EntityModal
+          description="Atualize localizacao, quantidade e estado do item."
+          disabled={!podeGerenciar}
+          eyebrow="Edicao"
+          title="Editar item"
+          triggerClassName="h-9 justify-center"
+          triggerIcon={<Pencil className="h-4 w-4" />}
+          triggerLabel="Editar"
+        >
+          <InventoryItemForm
+            item={item}
+            modo="editar"
+            podeGerenciar={podeGerenciar}
+            propriedades={propriedades}
+            unidades={unidades}
           />
-          <Info label="Quantidade" valor={String(item.quantity)} />
-          <Info
-            label="Valor estimado"
-            valor={formatarMoeda(Number(item.estimated_value))}
-          />
-          <Info
-            label="Estado"
-            valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
-          />
-        </section>
-
-        {item.notes ? (
-          <p className="rounded-lg border bg-background/45 p-3 text-sm text-muted-foreground">
-            {item.notes}
-          </p>
-        ) : null}
-
-        <div className="flex flex-wrap gap-2">
-          <EntityViewModal
-            description="Dados do item, localizacao, quantidade e observacoes."
-            title={item.name}
-            triggerIcon={<Eye className="h-4 w-4" />}
-            triggerLabel="Visualizar"
-          >
-            <div className="grid gap-3 md:grid-cols-2">
-              <Info
-                label="Categoria"
-                valor={LABEL_CATEGORIA_INVENTARIO[item.category]}
-              />
-              <Info label="Quantidade" valor={String(item.quantity)} />
-              <Info
-                label="Estado"
-                valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
-              />
-              <Info
-                label="Valor estimado"
-                valor={formatarMoeda(Number(item.estimated_value))}
-              />
-              <Info
-                label="Propriedade"
-                valor={item.propriedade?.name ?? "Propriedade"}
-              />
-              <Info
-                label="Unidade"
-                valor={item.unidade?.name ?? "Sem unidade"}
-              />
-              <div className="md:col-span-2">
-                <Info
-                  label="Observacoes"
-                  valor={item.notes ?? "Sem observacoes"}
-                />
-              </div>
-            </div>
-          </EntityViewModal>
-
-          <EntityModal
-            description="Atualize localização, quantidade e estado do item."
-            disabled={!podeGerenciar}
-            eyebrow="Edição"
-            title="Editar item"
-            triggerIcon={<Pencil className="h-4 w-4" />}
-            triggerLabel="Editar"
-          >
-            <InventoryItemForm
-              item={item}
-              modo="editar"
-              podeGerenciar={podeGerenciar}
-              propriedades={propriedades}
-              unidades={unidades}
-            />
-          </EntityModal>
-
-          <ConfirmDialog
-            description="A exclusão é lógica para preservar manutenção e auditoria futura."
-            disabled={!podeGerenciar}
-            title="Excluir item"
-            triggerIcon={<Trash2 className="h-4 w-4" />}
-            triggerLabel="Excluir"
-          >
-            <form action={excluirItemInventarioAction} className="grid gap-3">
-              <input name="itemId" type="hidden" value={item.id} />
-              <label className="flex items-start gap-2 text-sm text-muted-foreground">
-                <input
-                  className="mt-1"
-                  disabled={!podeGerenciar}
-                  name="confirmarExclusao"
-                  required
-                  type="checkbox"
-                  value="confirmado"
-                />
-                Confirmo a exclusao do item.
-              </label>
-              <Button
-                disabled={!podeGerenciar}
-                type="submit"
-                variant="destructive"
-              >
-                <Trash2 />
-                Excluir item
-              </Button>
-            </form>
-          </ConfirmDialog>
-        </div>
-      </CardContent>
-    </Card>
+        </EntityModal>
+      </EntityCardActions>
+    </EntityCard>
   );
 }
 

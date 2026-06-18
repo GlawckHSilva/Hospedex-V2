@@ -1,9 +1,13 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 
-import { Badge, Button, Card, CardContent } from "@hospedex/ui";
+import { Badge } from "@hospedex/ui";
 
-import { ConfirmDialog, EntityModal } from "../management/entity-modal";
-import { excluirLancamentoFinanceiroAction } from "../../lib/finance/actions";
+import {
+  EntityCard,
+  EntityCardActions,
+  EntityCardHeader,
+} from "../management/entity-card";
+import { EntityModal, EntityViewModal } from "../management/entity-modal";
 import {
   LABEL_TIPO_LANCAMENTO,
   obterVariantStatusFinanceiro,
@@ -14,12 +18,8 @@ import { LABEL_STATUS_LANCAMENTO } from "../../lib/finance/types";
 import { FinanceForm } from "./finance-form";
 
 /**
- * Card de lançamento financeiro.
- *
- * A exclusão exige confirmação em modal para evitar remoção acidental.
- * Lançamentos vinculados a reserva ficam protegidos contra edição manual.
+ * Card compacto de lancamento financeiro.
  */
-
 export type FinanceTransactionCardProps = Pick<
   DadosModuloFinanceiro,
   "categorias" | "contas" | "filtros" | "podeGerenciar" | "propriedades"
@@ -37,112 +37,73 @@ export function FinanceTransactionCard({
 }: FinanceTransactionCardProps) {
   const manual = !lancamento.reservation_id;
   const podeEditar = podeGerenciar && manual;
+  const descricao = lancamento.description ?? "Lancamento sem descricao";
 
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="space-y-4 p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge
-                variant={
-                  lancamento.transaction_type === "income"
-                    ? "success"
-                    : "warning"
-                }
-              >
-                {LABEL_TIPO_LANCAMENTO[lancamento.transaction_type]}
-              </Badge>
-              <Badge variant={obterVariantStatusFinanceiro(lancamento.status)}>
-                {LABEL_STATUS_LANCAMENTO[lancamento.status]}
-              </Badge>
-              {!manual ? <Badge variant="outline">Reserva</Badge> : null}
-            </div>
-            <h2 className="mt-3 text-lg font-semibold">
-              {lancamento.description ?? "Lançamento sem descrição"}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {lancamento.categoria?.name ?? "Sem categoria"} ·{" "}
-              {lancamento.conta?.name ?? "Conta removida"}
-            </p>
-          </div>
-
-          <div className="text-left lg:text-right">
-            <p className="text-2xl font-semibold">
-              {formatarMoeda(Number(lancamento.amount))}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {formatarData(lancamento)}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 text-sm md:grid-cols-3">
-          <Info
-            label="Propriedade"
-            valor={lancamento.propriedade?.name ?? "Sem vínculo"}
-          />
-          <Info
-            label="Conta"
-            valor={lancamento.conta?.name ?? "Conta removida"}
-          />
-          <Info
-            label="Categoria"
-            valor={lancamento.categoria?.name ?? "Sem categoria"}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <EntityModal
-            description="Atualize os dados do lançamento manual."
-            disabled={!podeEditar}
-            eyebrow="Edição"
-            title="Editar lançamento"
-            triggerIcon={<Pencil className="h-4 w-4" />}
-            triggerLabel="Editar"
-          >
-            <FinanceForm
-              categorias={categorias}
-              contas={contas}
-              filtros={filtros}
-              lancamento={lancamento}
-              modo="editar"
-              podeGerenciar={podeEditar}
-              propriedades={propriedades}
-            />
-          </EntityModal>
-
-          <ConfirmDialog
-            description="Confirme apenas se este lançamento manual deve sair do financeiro."
-            disabled={!podeEditar}
-            title="Excluir lançamento"
-            triggerIcon={<Trash2 className="h-4 w-4" />}
-            triggerLabel="Excluir"
-          >
-            <form
-              action={excluirLancamentoFinanceiroAction}
-              className="grid gap-3"
+    <EntityCard>
+      <EntityCardHeader
+        badges={
+          <>
+            <Badge
+              variant={lancamento.transaction_type === "income" ? "success" : "warning"}
             >
-              <input name="lancamentoId" type="hidden" value={lancamento.id} />
-              <input name="mes" type="hidden" value={filtros.mes} />
-              <input name="filtroTipo" type="hidden" value={filtros.tipo} />
-              <input name="filtroStatus" type="hidden" value={filtros.status} />
-              <p className="text-sm text-muted-foreground">
-                Confirme apenas se este lançamento manual deve sair do
-                financeiro.
-              </p>
-              <Button
-                disabled={!podeEditar}
-                type="submit"
-                variant="destructive"
-              >
-                Confirmar exclusão
-              </Button>
-            </form>
-          </ConfirmDialog>
-        </div>
-      </CardContent>
-    </Card>
+              {LABEL_TIPO_LANCAMENTO[lancamento.transaction_type]}
+            </Badge>
+            <Badge variant={obterVariantStatusFinanceiro(lancamento.status)}>
+              {LABEL_STATUS_LANCAMENTO[lancamento.status]}
+            </Badge>
+          </>
+        }
+        subtitle={lancamento.categoria?.name ?? "Sem categoria"}
+        title={descricao}
+      />
+
+      <div className="rounded-lg border bg-background/55 p-3 text-sm">
+        <p className="text-xs text-muted-foreground">Valor</p>
+        <p className="mt-1 text-xl font-semibold">
+          {formatarMoeda(Number(lancamento.amount))}
+        </p>
+      </div>
+
+      <EntityCardActions>
+        <EntityViewModal
+          description="Resumo do lancamento financeiro."
+          title={descricao}
+          triggerClassName="h-9 justify-center"
+          triggerIcon={<Eye className="h-4 w-4" />}
+          triggerLabel="Visualizar"
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            <Info label="Categoria" valor={lancamento.categoria?.name ?? "Sem categoria"} />
+            <Info label="Status" valor={LABEL_STATUS_LANCAMENTO[lancamento.status]} />
+            <Info label="Conta" valor={lancamento.conta?.name ?? "Conta removida"} />
+            <Info label="Propriedade" valor={lancamento.propriedade?.name ?? "Sem vinculo"} />
+            <Info label="Data" valor={formatarData(lancamento)} />
+            <Info label="Origem" valor={manual ? "Manual" : "Reserva"} />
+          </div>
+        </EntityViewModal>
+
+        <EntityModal
+          description="Atualize os dados do lancamento manual."
+          disabled={!podeEditar}
+          eyebrow="Edicao"
+          title="Editar lancamento"
+          triggerClassName="h-9 justify-center"
+          triggerIcon={<Pencil className="h-4 w-4" />}
+          triggerLabel="Editar"
+        >
+          <FinanceForm
+            categorias={categorias}
+            contas={contas}
+            filtros={filtros}
+            lancamento={lancamento}
+            modo="editar"
+            podeGerenciar={podeEditar}
+            propriedades={propriedades}
+          />
+        </EntityModal>
+      </EntityCardActions>
+    </EntityCard>
   );
 }
 

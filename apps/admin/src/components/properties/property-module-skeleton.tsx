@@ -1,4 +1,6 @@
-import { Card, CardContent, FadeIn, Skeleton } from "@hospedex/ui";
+import { FadeIn, Skeleton } from "@hospedex/ui";
+
+import { EntityGrid, SkeletonCard } from "../management/entity-card";
 
 /**
  * Skeleton das páginas de Propriedades e Unidades.
@@ -22,12 +24,11 @@ export function PropertyModuleSkeleton() {
         <Skeleton className="h-24" />
       </section>
 
-      <Card className="admin-glass-card">
-        <CardContent className="grid gap-4 p-5 md:grid-cols-2">
-          <Skeleton className="h-44" />
-          <Skeleton className="h-44" />
-        </CardContent>
-      </Card>
+      <EntityGrid>
+        <SkeletonCard withMedia />
+        <SkeletonCard withMedia />
+        <SkeletonCard withMedia />
+      </EntityGrid>
     </FadeIn>
   );
 }
