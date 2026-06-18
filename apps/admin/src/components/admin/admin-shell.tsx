@@ -195,15 +195,15 @@ type SidebarAdminProps = {
 
 function SidebarAdmin({ itens, pathname, tituloPerfil }: SidebarAdminProps) {
   return (
-    <aside className="hidden lg:block">
-      <div className="glass-sidebar sticky top-21 h-[calc(100vh-6.5rem)] overflow-hidden p-3">
-        <div className="mb-4 px-2">
+    <aside className="hidden min-h-0 lg:block">
+      <div className="glass-sidebar sticky top-[5.25rem] flex h-[calc(100dvh-6.5rem)] min-h-0 flex-col overflow-hidden p-3">
+        <div className="shrink-0 px-2 pb-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
             {tituloPerfil}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Navegação por perfil</p>
         </div>
-        <nav className="space-y-1 overflow-y-auto pr-1">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-track]:bg-transparent">
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} pathname={pathname} />
           ))}
@@ -227,12 +227,12 @@ function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobile
     >
       <motion.aside
         animate={{ x: 0 }}
-        className="glass-sidebar h-full w-[min(22rem,88vw)] rounded-none border-y-0 border-l-0 p-4 shadow-xl"
+        className="glass-sidebar flex h-full w-[min(22rem,88vw)] flex-col rounded-none border-y-0 border-l-0 p-4 shadow-xl"
         exit={{ x: "-100%" }}
         initial={{ x: "-100%" }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
-        <div className="mb-4 flex items-center justify-between">
+        <div className="flex shrink-0 items-center justify-between pb-4">
           <div>
             <p className="text-sm font-semibold">{tituloPerfil}</p>
             <p className="text-xs text-muted-foreground">Menu administrativo</p>
@@ -242,7 +242,7 @@ function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobile
           </Button>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-track]:bg-transparent">
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} onNavigate={onFechar} pathname={pathname} />
           ))}
