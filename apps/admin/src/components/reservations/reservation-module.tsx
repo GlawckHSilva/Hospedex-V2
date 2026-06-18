@@ -25,8 +25,8 @@ import {
   type DadosModuloReservas,
   type SearchParamsReservas,
 } from "../../lib/reservations/types";
-import { ReservationCard } from "./reservation-card";
 import { ReservationForm } from "./reservation-form";
+import { ReservationGrid } from "./reservation-grid";
 
 /**
  * Módulo base de Reservas.
@@ -37,6 +37,7 @@ import { ReservationForm } from "./reservation-form";
 
 export type ReservationModuleProps = DadosModuloReservas &
   SearchParamsReservas & {
+    multiUnidadesAtivo: boolean;
     tenantNome: string;
   };
 
@@ -52,6 +53,7 @@ const MENSAGENS_SUCESSO_RESERVAS: Record<string, string> = {
 export function ReservationModule({
   erro,
   filtros,
+  multiUnidadesAtivo,
   podeGerenciar,
   propriedades,
   reservas,
@@ -80,6 +82,25 @@ export function ReservationModule({
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               {tenantNome}
             </p>
+            <div className="mt-5">
+              <EntityModal
+                description="Informe casa, unidade, período, hóspede e valores da reserva."
+                disabled={!podeGerenciar}
+                eyebrow="Cadastro"
+                size="xl"
+                title="Nova reserva manual"
+                triggerIcon={<Plus className="h-4 w-4" />}
+                triggerLabel="Nova reserva"
+                triggerVariant="default"
+              >
+                <ReservationForm
+                  modo="criar"
+                  podeGerenciar={podeGerenciar}
+                  propriedades={propriedades}
+                  unidades={unidades}
+                />
+              </EntityModal>
+            </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -105,7 +126,13 @@ export function ReservationModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <form className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr_0.8fr_0.7fr_0.7fr_auto]">
+          <form
+            className={
+              multiUnidadesAtivo
+                ? "grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr_0.8fr_0.7fr_0.7fr_auto]"
+                : "grid gap-4 lg:grid-cols-[1fr_0.8fr_0.9fr_0.7fr_0.7fr_auto]"
+            }
+          >
             <CampoTexto
               defaultValue={filtros.busca ?? ""}
               label="Busca"
@@ -117,10 +144,12 @@ export function ReservationModule({
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
             />
-            <CampoUnidadeFiltro
-              defaultValue={filtros.unidadeId ?? ""}
-              unidades={unidades}
-            />
+            {multiUnidadesAtivo ? (
+              <CampoUnidadeFiltro
+                defaultValue={filtros.unidadeId ?? ""}
+                unidades={unidades}
+              />
+            ) : null}
             <CampoData
               defaultValue={filtros.dataInicio ?? ""}
               label="Entrada"
@@ -141,53 +170,12 @@ export function ReservationModule({
         </CardContent>
       </Card>
 
-      <Card className="admin-glass-card">
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold">Cadastro de reserva</h2>
-            <p className="text-sm text-muted-foreground">
-              Abra o modal para registrar uma reserva manual.
-            </p>
-          </div>
-          <EntityModal
-            description="Informe casa, unidade, período, hóspede e valores da reserva."
-            disabled={!podeGerenciar}
-            eyebrow="Cadastro"
-            size="xl"
-            title="Nova reserva manual"
-            triggerIcon={<Plus className="h-4 w-4" />}
-            triggerLabel="Nova reserva"
-            triggerVariant="default"
-          >
-            <ReservationForm
-              modo="criar"
-              podeGerenciar={podeGerenciar}
-              propriedades={propriedades}
-              unidades={unidades}
-            />
-          </EntityModal>
-        </CardContent>
-      </Card>
-
-      {reservas.length > 0 ? (
-        <section className="grid gap-5">
-          {reservas.map((reserva) => (
-            <ReservationCard
-              key={reserva.id}
-              podeGerenciar={podeGerenciar}
-              propriedades={propriedades}
-              reserva={reserva}
-              unidades={unidades}
-            />
-          ))}
-        </section>
-      ) : (
-        <Card className="admin-glass-card">
-          <CardContent className="p-5 text-sm text-muted-foreground">
-            Nenhuma reserva encontrada.
-          </CardContent>
-        </Card>
-      )}
+      <ReservationGrid
+        podeGerenciar={podeGerenciar}
+        propriedades={propriedades}
+        reservas={reservas}
+        unidades={unidades}
+      />
     </FadeIn>
   );
 }

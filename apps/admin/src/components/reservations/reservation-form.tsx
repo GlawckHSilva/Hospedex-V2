@@ -4,7 +4,7 @@ import type { ComponentProps } from "react";
 
 import {
   atualizarReservaAction,
-  criarReservaManualAction
+  criarReservaManualAction,
 } from "../../lib/reservations/actions";
 import type { ReservaComRelacionamentos } from "../../lib/reservations/types";
 
@@ -33,15 +33,19 @@ export function ReservationForm({
   podeGerenciar,
   propriedades,
   reserva,
-  unidades
+  unidades,
 }: ReservationFormProps) {
-  const action = modo === "editar" ? atualizarReservaAction : criarReservaManualAction;
+  const action =
+    modo === "editar" ? atualizarReservaAction : criarReservaManualAction;
   const bloqueado = !podeGerenciar || propriedades.length === 0;
-  const propriedadeSelecionada = reserva?.property_id ?? propriedades[0]?.id ?? "";
+  const propriedadeSelecionada =
+    reserva?.property_id ?? propriedades[0]?.id ?? "";
 
   return (
     <form action={action} className="grid gap-4">
-      {reserva ? <input name="reservaId" type="hidden" value={reserva.id} /> : null}
+      {reserva ? (
+        <input name="reservaId" type="hidden" value={reserva.id} />
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoPropriedade
@@ -161,8 +165,8 @@ export function ReservationForm({
 
 function CamposServicoExtra({ disabled }: { disabled: boolean }) {
   return (
-    <details className="rounded-lg border bg-background/45 p-3">
-      <summary className="cursor-pointer text-sm font-semibold">Serviço extra inicial</summary>
+    <div className="rounded-lg border bg-background/45 p-3">
+      <p className="text-sm font-semibold">Serviço extra inicial</p>
       <div className="mt-4 grid gap-4 md:grid-cols-[1fr_0.5fr_0.5fr]">
         <CampoTexto disabled={disabled} label="Nome" name="servicoExtraNome" />
         <CampoTexto
@@ -183,10 +187,14 @@ function CamposServicoExtra({ disabled }: { disabled: boolean }) {
           type="number"
         />
         <div className="md:col-span-3">
-          <CampoArea disabled={disabled} label="Descrição" name="servicoExtraDescricao" />
+          <CampoArea
+            disabled={disabled}
+            label="Descrição"
+            name="servicoExtraDescricao"
+          />
         </div>
       </div>
-    </details>
+    </div>
   );
 }
 
@@ -210,7 +218,7 @@ function CampoArea({
   defaultValue,
   disabled,
   label,
-  name
+  name,
 }: {
   defaultValue?: string;
   disabled: boolean;
@@ -234,7 +242,7 @@ function CampoArea({
 function CampoPropriedade({
   defaultValue,
   disabled,
-  propriedades
+  propriedades,
 }: {
   defaultValue: string;
   disabled: boolean;
@@ -263,7 +271,7 @@ function CampoPropriedade({
 function CampoUnidade({
   defaultValue,
   disabled,
-  unidades
+  unidades,
 }: {
   defaultValue: string;
   disabled: boolean;

@@ -6,7 +6,7 @@ import { ReservationModule } from "../../components/reservations/reservation-mod
 import { exigirAutenticacao } from "../../lib/auth/context";
 import {
   carregarDadosModuloReservas,
-  podeLerReservas
+  podeLerReservas,
 } from "../../lib/reservations/data";
 import { STATUS_RESERVA } from "../../lib/reservations/types";
 
@@ -47,6 +47,7 @@ export default async function ReservasPage({ searchParams }: PageProps) {
       <ReservationModule
         {...dados}
         erro={lerParametro(params, "erro")}
+        multiUnidadesAtivo={Boolean(contexto.featureFlags.multi_unit)}
         sucesso={lerParametro(params, "sucesso")}
         tenantNome={contexto.tenant.name}
       />
@@ -63,7 +64,7 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
     dataFim?: string;
     status: ReservationStatus | "todos";
   } = {
-    status: lerStatus(params)
+    status: lerStatus(params),
   };
   const busca = lerParametro(params, "busca");
   const propriedadeId = lerParametro(params, "propriedadeId");
@@ -82,14 +83,14 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
 
 function lerParametro(
   params: Record<string, string | string[] | undefined>,
-  chave: string
+  chave: string,
 ): string | undefined {
   const valor = params[chave];
   return Array.isArray(valor) ? valor[0] : valor;
 }
 
 function lerStatus(
-  params: Record<string, string | string[] | undefined>
+  params: Record<string, string | string[] | undefined>,
 ): ReservationStatus | "todos" {
   const valor = lerParametro(params, "status");
   if (!valor || valor === "todos") return "todos";
@@ -100,7 +101,7 @@ function lerStatus(
 
 function lerData(
   params: Record<string, string | string[] | undefined>,
-  chave: string
+  chave: string,
 ): string | undefined {
   const valor = lerParametro(params, chave);
   return valor && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : undefined;
