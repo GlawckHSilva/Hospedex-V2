@@ -9,6 +9,7 @@ import {
   useId,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { Button, cn } from "@hospedex/ui";
 
@@ -55,6 +56,11 @@ export function AppModal({
   title,
 }: AppModalProps) {
   const titleId = useId();
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalRoot(document.body);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -73,12 +79,12 @@ export function AppModal({
     };
   }, [onOpenChange, open]);
 
-  return (
+  const modal = (
     <AnimatePresence>
       {open ? (
         <motion.div
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/72 px-4 py-6 backdrop-blur-md"
+          className="fixed inset-0 z-[2147483647] isolate grid place-items-center overflow-y-auto overscroll-contain bg-black/72 px-4 py-6 backdrop-blur-md"
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           onMouseDown={() => onOpenChange(false)}
@@ -138,6 +144,11 @@ export function AppModal({
       ) : null}
     </AnimatePresence>
   );
+
+  if (!portalRoot) return null;
+
+  // O Portal garante que a modal saia de cards, tabelas e containers com overflow.
+  return createPortal(modal, portalRoot);
 }
 
 export function EntityModal({
