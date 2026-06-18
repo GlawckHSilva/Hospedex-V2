@@ -14,8 +14,8 @@ import {
 /**
  * Pagina de Calendario do Admin V2.
  *
- * A rota renderiza disponibilidade mensal por propriedade/unidade do tenant
- * atual e nunca usa filtros para trocar o escopo autenticado.
+ * A rota renderiza a agenda por casa do tenant atual. O escopo autenticado
+ * continua vindo do servidor; a query string apenas escolhe a casa visualizada.
  */
 
 export const dynamic = "force-dynamic";
@@ -60,19 +60,16 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
   const filtros: {
     mes: string;
     semana: string;
-    visao: "mensal" | "semanal";
+    visao: "mensal" | "semanal" | "agenda";
     propriedadeId?: string;
-    unidadeId?: string;
   } = {
     mes,
     semana: normalizarSemanaCalendario(lerParametro(params, "semana"), mes),
     visao: normalizarVisaoCalendario(lerParametro(params, "visao"))
   };
-  const propriedadeId = lerParametro(params, "propriedadeId");
-  const unidadeId = lerParametro(params, "unidadeId");
+  const propriedadeId = lerParametro(params, "propriedadeId") ?? lerParametro(params, "casa");
 
   if (propriedadeId) filtros.propriedadeId = propriedadeId;
-  if (unidadeId) filtros.unidadeId = unidadeId;
 
   return filtros;
 }

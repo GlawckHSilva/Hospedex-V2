@@ -1,6 +1,8 @@
 import type {
   CalendarAvailabilityBlockRow,
   CalendarAvailabilityStatus,
+  CleaningTaskRow,
+  MaintenanceTaskRow,
   PropertyRow,
   ReservationGuestRow,
   ReservationRow,
@@ -23,13 +25,15 @@ export type FiltrosCalendario = {
   unidadeId?: string;
 };
 
-export type VisaoCalendario = "mensal" | "semanal";
+export type VisaoCalendario = "mensal" | "semanal" | "agenda";
 
 export type ReservaCalendario = ReservationRow & {
   hospedePrincipal: ReservationGuestRow | null;
 };
 
 export type BlocoCalendario = CalendarAvailabilityBlockRow;
+export type LimpezaCalendario = CleaningTaskRow;
+export type ManutencaoCalendario = MaintenanceTaskRow;
 
 export type DiaCalendario = {
   data: string;
@@ -39,6 +43,8 @@ export type DiaCalendario = {
   reservas: ReservaCalendario[];
   checkIns: ReservaCalendario[];
   checkOuts: ReservaCalendario[];
+  limpezas: LimpezaCalendario[];
+  manutencoes: ManutencaoCalendario[];
 };
 
 export type DadosModuloCalendario = {
@@ -48,9 +54,15 @@ export type DadosModuloCalendario = {
   propriedades: PropertyRow[];
   unidades: UnitRow[];
   blocos: BlocoCalendario[];
+  limpezas: LimpezaCalendario[];
+  manutencoes: ManutencaoCalendario[];
   reservas: ReservaCalendario[];
   resumo: {
     bloqueiosAtivos: number;
+    checkInsProximos: number;
+    checkOutsProximos: number;
+    limpezasPendentes: number;
+    manutencoesPendentes: number;
     reservasAtivas: number;
     unidadesDisponiveis: number;
     conflitosPermitidos: number;
