@@ -70,15 +70,22 @@ function inferirAcaoDoBotao(
   const texto = normalizarTexto(label);
 
   if (texto.includes("visualizar") || texto.includes("ver ")) return "view";
-  if (texto.includes("excluir") || texto.includes("remover")) return "delete";
-  if (texto.includes("cancelar")) return "cancel";
+  if (
+    texto.includes("excluir") ||
+    texto.includes("remover") ||
+    texto.includes("cancelar")
+  ) {
+    return "delete";
+  }
   if (
     texto.includes("config") ||
     texto.includes("preferencia") ||
     texto.includes("permiss") ||
     texto.includes("politica") ||
     texto.includes("senha") ||
-    texto.includes("comodidade")
+    texto.includes("comodidade") ||
+    texto.includes("servico") ||
+    texto.includes("manutencao")
   ) {
     return "settings";
   }
@@ -101,7 +108,6 @@ function inferirAcaoDoBotao(
   ) {
     return "add";
   }
-  if (texto.includes("servico") || texto.includes("manutencao")) return "service";
   if (
     texto.includes("editar") ||
     texto.includes("alterar") ||

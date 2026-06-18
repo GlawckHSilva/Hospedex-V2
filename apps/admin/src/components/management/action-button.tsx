@@ -1,22 +1,15 @@
 "use client";
 
-import { AnimatePresence, motion, type HTMLMotionProps } from "framer-motion";
+import { motion, type HTMLMotionProps } from "framer-motion";
 import {
-  Check,
   Eye,
   Pencil,
   Plus,
   Settings,
-  ShieldCheck,
+  SlidersHorizontal,
   Trash2,
-  Wrench,
-  XCircle,
 } from "lucide-react";
-import {
-  type ReactNode,
-  useEffect,
-  useState,
-} from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "@hospedex/ui";
 
@@ -26,9 +19,7 @@ export type ActionButtonVariant =
   | "view"
   | "delete"
   | "settings"
-  | "status"
-  | "service"
-  | "cancel";
+  | "status";
 
 export type ActionButtonSize = "sm" | "md" | "lg" | "icon";
 
@@ -36,36 +27,49 @@ type ActionButtonProps = Omit<HTMLMotionProps<"button">, "children" | "size"> & 
   children: ReactNode;
   icon?: ReactNode | undefined;
   size?: ActionButtonSize | undefined;
-  success?: boolean | undefined;
-  successKey?: number | string | undefined;
   variant: ActionButtonVariant;
 };
 
 const iconByVariant: Record<ActionButtonVariant, ReactNode> = {
   add: <Plus />,
-  cancel: <XCircle />,
   delete: <Trash2 />,
   edit: <Pencil />,
-  service: <Wrench />,
   settings: <Settings />,
-  status: <ShieldCheck />,
+  status: <SlidersHorizontal />,
   view: <Eye />,
 };
 
-const variantClass: Record<ActionButtonVariant, string> = {
-  add: "border-emerald-400/35 bg-emerald-500/10 text-emerald-700 shadow-emerald-950/10 hover:border-emerald-300/60 hover:bg-emerald-500/18 dark:text-emerald-200",
-  cancel:
-    "border-rose-300/35 bg-rose-500/8 text-rose-700 shadow-rose-950/10 hover:border-rose-300/55 hover:bg-rose-500/14 dark:text-rose-200",
-  delete:
-    "border-red-400/35 bg-red-500/10 text-red-700 shadow-red-950/10 hover:border-red-300/60 hover:bg-red-500/18 dark:text-red-200",
-  edit: "border-cyan-400/35 bg-cyan-500/10 text-cyan-700 shadow-cyan-950/10 hover:border-cyan-300/60 hover:bg-cyan-500/18 dark:text-cyan-200",
-  service:
-    "border-blue-950/20 bg-blue-950/8 text-blue-950 shadow-blue-950/10 hover:border-blue-900/35 hover:bg-blue-950/14 dark:border-blue-300/25 dark:text-blue-200",
-  settings:
-    "border-violet-400/35 bg-violet-500/10 text-violet-700 shadow-violet-950/10 hover:border-violet-300/60 hover:bg-violet-500/18 dark:text-violet-200",
-  status:
-    "border-amber-400/40 bg-amber-400/12 text-amber-700 shadow-amber-950/10 hover:border-amber-300/65 hover:bg-amber-400/20 dark:text-amber-200",
-  view: "border-blue-400/35 bg-blue-500/10 text-blue-700 shadow-blue-950/10 hover:border-blue-300/60 hover:bg-blue-500/18 dark:text-blue-200",
+const variantClass: Record<ActionButtonVariant, { fill: string; shell: string }> = {
+  add: {
+    fill: "bg-emerald-500",
+    shell:
+      "border-emerald-500/35 bg-emerald-500/8 text-emerald-700 shadow-emerald-950/10 dark:text-emerald-200",
+  },
+  delete: {
+    fill: "bg-red-600",
+    shell:
+      "border-red-500/35 bg-red-500/8 text-red-700 shadow-red-950/10 dark:text-red-200",
+  },
+  edit: {
+    fill: "bg-cyan-500",
+    shell:
+      "border-cyan-400/35 bg-cyan-500/8 text-cyan-700 shadow-cyan-950/10 dark:text-cyan-200",
+  },
+  settings: {
+    fill: "bg-violet-600",
+    shell:
+      "border-violet-500/35 bg-violet-500/8 text-violet-700 shadow-violet-950/10 dark:text-violet-200",
+  },
+  status: {
+    fill: "bg-orange-500",
+    shell:
+      "border-orange-400/40 bg-orange-400/10 text-orange-700 shadow-orange-950/10 dark:text-orange-200",
+  },
+  view: {
+    fill: "bg-blue-600",
+    shell:
+      "border-blue-500/35 bg-blue-500/8 text-blue-700 shadow-blue-950/10 dark:text-blue-200",
+  },
 };
 
 const sizeClass: Record<ActionButtonSize, string> = {
@@ -75,21 +79,11 @@ const sizeClass: Record<ActionButtonSize, string> = {
   sm: "h-8 px-3 text-xs",
 };
 
-const labelVariants = {
-  hover: { opacity: 0, x: -8 },
-  rest: { opacity: 1, x: 0 },
-};
-
-const iconVariants = {
-  hover: { scale: 1.18 },
-  rest: { scale: 1 },
-};
-
 /**
  * Botao de acao premium do Gerenciamento.
  *
- * O estado de sucesso e opt-in para preservar as regras de negocio existentes:
- * quem conhece o retorno da acao pode informar success ou successKey.
+ * A camada de cor cresce da esquerda para a direita no hover, mantendo texto e
+ * icone acima da animacao para preservar leitura e acessibilidade.
  */
 export function ActionButton({
   children,
@@ -97,32 +91,20 @@ export function ActionButton({
   disabled,
   icon,
   size = "sm",
-  success,
-  successKey,
   type = "button",
   variant,
   ...props
 }: ActionButtonProps) {
-  const [showSuccess, setShowSuccess] = useState(false);
-
-  useEffect(() => {
-    if (!success && successKey === undefined) return;
-
-    setShowSuccess(true);
-    const timeout = window.setTimeout(() => setShowSuccess(false), 900);
-
-    return () => window.clearTimeout(timeout);
-  }, [success, successKey]);
-
-  const currentIcon = showSuccess ? <Check /> : (icon ?? iconByVariant[variant]);
+  const currentIcon = icon ?? iconByVariant[variant];
+  const colors = variantClass[variant];
 
   return (
     <motion.button
       animate="rest"
       className={cn(
-        "group/action-button inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl border font-semibold tracking-normal shadow-sm backdrop-blur-md transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0",
+        "group/action-button relative isolate inline-flex shrink-0 items-center justify-center gap-2 overflow-hidden rounded-xl border font-semibold tracking-normal shadow-sm backdrop-blur-md transition-colors duration-200 hover:border-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 disabled:pointer-events-none disabled:opacity-50 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0",
         sizeClass[size],
-        variantClass[variant],
+        colors.shell,
         className,
       )}
       disabled={disabled}
@@ -138,34 +120,20 @@ export function ActionButton({
         : {})}
       {...props}
     >
-      {size !== "icon" ? (
-        <motion.span
-          className="min-w-0 truncate"
-          transition={{ duration: 0.16, ease: "easeOut" }}
-          variants={labelVariants}
-        >
-          {children}
-        </motion.span>
-      ) : null}
-
       <motion.span
-        className="flex items-center justify-center"
-        transition={{ duration: 0.16, ease: "easeOut" }}
-        variants={iconVariants}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span
-            className="flex items-center justify-center"
-            key={showSuccess ? "success" : variant}
-            animate={{ opacity: 1, rotate: 0, scale: 1 }}
-            exit={{ opacity: 0, rotate: -18, scale: 0.82 }}
-            initial={{ opacity: 0, rotate: 18, scale: 0.82 }}
-            transition={{ duration: 0.16, ease: "easeOut" }}
-          >
-            {currentIcon}
-          </motion.span>
-        </AnimatePresence>
-      </motion.span>
+        className={cn("absolute inset-y-0 left-0 z-0 w-full origin-left", colors.fill)}
+        transition={{ duration: 0.22, ease: "easeOut" }}
+        variants={{ hover: { scaleX: 1 }, rest: { scaleX: 0 } }}
+      />
+
+      <span className="relative z-10 flex min-w-0 items-center justify-center gap-2 transition-colors duration-200 group-hover/action-button:text-white">
+        {size !== "icon" ? (
+          <span className="min-w-0 truncate">
+            {children}
+          </span>
+        ) : null}
+        <span className="flex items-center justify-center">{currentIcon}</span>
+      </span>
     </motion.button>
   );
 }
