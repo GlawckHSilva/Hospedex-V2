@@ -32,6 +32,7 @@ export const TIPOS_NOTIFICACAO: Array<{ label: string; tipo: FiltroTipoNotificac
 ];
 
 export function podeUsarNotificacoesGerenciamento(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.notifications) return false;
   if (!contexto.tenant || contexto.role === "super_admin") return false;
   if (contexto.role === "owner") return true;
 

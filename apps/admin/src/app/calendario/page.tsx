@@ -31,8 +31,12 @@ export default async function CalendarioPage({ searchParams }: PageProps) {
     redirect(contexto.role === "super_admin" ? "/super-admin" : "/sem-acesso");
   }
 
+  if (!contexto.featureFlags.calendar) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeLerCalendario(contexto)) {
-    redirect("/sem-acesso");
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   const params = await searchParams;

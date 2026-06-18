@@ -31,6 +31,10 @@ export default async function ConfirmacoesPage({ searchParams }: PageProps) {
     );
   }
 
+  if (!contexto.featureFlags.confirmations) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeLerConfirmacoes(contexto)) {
     redirect("/sem-acesso?motivo=permissao-insuficiente");
   }

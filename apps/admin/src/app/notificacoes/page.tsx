@@ -35,6 +35,10 @@ export default async function NotificacoesPage({ searchParams }: PageProps) {
     );
   }
 
+  if (!contexto.featureFlags.notifications) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeUsarNotificacoesGerenciamento(contexto)) {
     redirect("/sem-acesso?motivo=permissao-insuficiente");
   }

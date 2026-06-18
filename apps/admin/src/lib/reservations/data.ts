@@ -24,11 +24,13 @@ import type {
  */
 
 export function podeLerReservas(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.manual_approval) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("reservations.read");
 }
 
 export function podeGerenciarReservas(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.manual_approval) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("reservations.manage");
 }

@@ -20,6 +20,7 @@ import type {
 } from "./types";
 
 export function podeLerConfirmacoes(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.confirmations) return false;
   if (contexto.role === "owner") return true;
   return (
     contexto.permissions.includes("reservations.read") ||
@@ -28,11 +29,13 @@ export function podeLerConfirmacoes(contexto: ContextoAutenticacao): boolean {
 }
 
 export function podeGerenciarOperacaoDiaria(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.confirmations) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("reservations.manage");
 }
 
 export function podeGerenciarLimpezaDiaria(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.confirmations) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("cleaning.manage");
 }

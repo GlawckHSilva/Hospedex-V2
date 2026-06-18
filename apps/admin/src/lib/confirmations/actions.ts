@@ -137,6 +137,10 @@ async function carregarEscopoOperacao(): Promise<EscopoConfirmacao> {
     );
   }
 
+  if (!contexto.featureFlags.confirmations) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeGerenciarOperacaoDiaria(contexto)) {
     redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
@@ -153,6 +157,10 @@ async function carregarEscopoLimpeza(): Promise<EscopoConfirmacao> {
         ? "/super-admin"
         : "/sem-acesso?motivo=tenant-nao-encontrado"
     );
+  }
+
+  if (!contexto.featureFlags.confirmations) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
   }
 
   if (!podeGerenciarLimpezaDiaria(contexto)) {

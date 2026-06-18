@@ -27,8 +27,16 @@ export type EscopoCalendario = {
 export async function carregarEscopoCalendario(): Promise<EscopoCalendario> {
   const contexto = await exigirAutenticacao();
 
-  if (!contexto.tenant || !podeGerenciarCalendario(contexto)) {
-    redirect("/sem-acesso");
+  if (!contexto.tenant) {
+    redirect("/sem-acesso?motivo=tenant-nao-encontrado");
+  }
+
+  if (!contexto.featureFlags.calendar) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
+  if (!podeGerenciarCalendario(contexto)) {
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   return {

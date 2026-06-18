@@ -37,7 +37,15 @@ export async function marcarNotificacaoLidaAction(formData: FormData) {
 export async function marcarTodasNotificacoesLidasAction() {
   const contexto = await exigirAutenticacao();
 
-  if (!contexto.tenant || !podeUsarNotificacoesGerenciamento(contexto)) {
+  if (!contexto.tenant) {
+    redirect("/sem-acesso?motivo=tenant-nao-encontrado");
+  }
+
+  if (!contexto.featureFlags.notifications) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
+  if (!podeUsarNotificacoesGerenciamento(contexto)) {
     redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
@@ -96,6 +104,10 @@ async function carregarEscopoNotificacao(): Promise<EscopoNotificacao> {
         ? "/super-admin"
         : "/sem-acesso?motivo=tenant-nao-encontrado"
     );
+  }
+
+  if (!contexto.featureFlags.notifications) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
   }
 
   if (!podeUsarNotificacoesGerenciamento(contexto)) {

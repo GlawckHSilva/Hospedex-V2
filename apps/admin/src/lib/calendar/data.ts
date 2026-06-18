@@ -25,11 +25,13 @@ import { statusBloqueiaDisponibilidade } from "./types";
  */
 
 export function podeLerCalendario(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.calendar) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("reservations.read");
 }
 
 export function podeGerenciarCalendario(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.calendar) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("reservations.manage");
 }

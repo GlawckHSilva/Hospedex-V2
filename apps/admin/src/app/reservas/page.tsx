@@ -30,8 +30,12 @@ export default async function ReservasPage({ searchParams }: PageProps) {
     redirect(contexto.role === "super_admin" ? "/super-admin" : "/sem-acesso");
   }
 
+  if (!contexto.featureFlags.manual_approval) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeLerReservas(contexto)) {
-    redirect("/sem-acesso");
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   const params = await searchParams;

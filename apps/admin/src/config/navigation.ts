@@ -60,6 +60,7 @@ const MENU_PROPRIETARIO = [
     href: "/confirmacoes",
     descricao: "Check-ins, check-outs e pendencias do dia.",
     icone: "confirmacoes",
+    featureFlag: "confirmations",
     permissoes: ["reservations.read", "cleaning.read"]
   },
   {
@@ -99,6 +100,7 @@ const MENU_PROPRIETARIO = [
     href: "/calendario",
     descricao: "Disponibilidade, bloqueios e reservas.",
     icone: "calendario",
+    featureFlag: "calendar",
     permissoes: ["calendar.read", "reservations.read"]
   },
   {

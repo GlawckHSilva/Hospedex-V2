@@ -14,6 +14,10 @@ export async function exigirGestaoFuncionarios(): Promise<ContextoAutenticacao> 
 
   if (contexto.role === "super_admin") redirect("/super-admin");
   if (!contexto.tenant) redirect("/sem-acesso?motivo=tenant-ausente");
+  if (!contexto.featureFlags.staff) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (contexto.role === "owner") return contexto;
 
   const podeGerenciar =

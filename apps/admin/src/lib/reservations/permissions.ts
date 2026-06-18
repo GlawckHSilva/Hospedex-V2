@@ -27,8 +27,16 @@ export type EscopoReserva = {
 export async function carregarEscopoReservas(): Promise<EscopoReserva> {
   const contexto = await exigirAutenticacao();
 
-  if (!contexto.tenant || !podeGerenciarReservas(contexto)) {
-    redirect("/sem-acesso");
+  if (!contexto.tenant) {
+    redirect("/sem-acesso?motivo=tenant-nao-encontrado");
+  }
+
+  if (!contexto.featureFlags.manual_approval) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
+  if (!podeGerenciarReservas(contexto)) {
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   return {
