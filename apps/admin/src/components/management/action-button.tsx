@@ -8,6 +8,7 @@ import {
   Settings,
   SlidersHorizontal,
   Trash2,
+  XCircle,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -18,6 +19,7 @@ export type ActionButtonVariant =
   | "edit"
   | "view"
   | "delete"
+  | "cancel"
   | "settings"
   | "status";
 
@@ -32,6 +34,7 @@ type ActionButtonProps = Omit<HTMLMotionProps<"button">, "children" | "size"> & 
 
 const iconByVariant: Record<ActionButtonVariant, ReactNode> = {
   add: <Plus />,
+  cancel: <XCircle />,
   delete: <Trash2 />,
   edit: <Pencil />,
   settings: <Settings />,
@@ -44,6 +47,11 @@ const variantClass: Record<ActionButtonVariant, { fill: string; shell: string }>
     fill: "bg-emerald-500",
     shell:
       "border-emerald-500/35 bg-emerald-500/8 text-emerald-700 shadow-emerald-950/10 dark:text-emerald-200",
+  },
+  cancel: {
+    fill: "bg-rose-500",
+    shell:
+      "border-rose-400/35 bg-rose-500/8 text-rose-700 shadow-rose-950/10 dark:text-rose-200",
   },
   delete: {
     fill: "bg-red-600",

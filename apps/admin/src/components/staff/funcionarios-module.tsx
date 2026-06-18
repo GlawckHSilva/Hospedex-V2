@@ -23,9 +23,14 @@ import {
 import { ModuleToast } from "../admin/module-toast";
 import {
   EmptyState,
+  EntityCardActions,
   EntityGrid,
 } from "../management/entity-card";
-import { ConfirmDialog, EntityModal } from "../management/entity-modal";
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
 import {
   alterarStatusFuncionarioAction,
   atualizarCargoPermissoesAction,
@@ -277,21 +282,77 @@ function FuncionarioCard({
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <EntityCardActions>
+        <EntityViewModal
+          description="Resumo do acesso e vinculo deste funcionario."
+          title={`Funcionario ${funcionario.nome}`}
+          triggerClassName="h-9 justify-center"
+          triggerLabel="Visualizar"
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            <Info label="Nome" valor={funcionario.nome} />
+            <Info label="Email" valor={funcionario.email} />
+            <Info label="Telefone" valor={funcionario.telefone ?? "sem telefone"} />
+            <Info
+              label="Cargo"
+              valor={funcionario.cargo?.role.name ?? "sem cargo"}
+            />
+            <Info label="Status" valor={labelStatus(funcionario.status)} />
+            <Info
+              label="Permissoes"
+              valor={String(funcionario.cargo?.permissoes.length ?? 0)}
+            />
+          </div>
+        </EntityViewModal>
         <EntityModal
           description="Atualize cargo, telefone e dados do funcionário."
           eyebrow="Edição"
           title="Editar funcionário"
           triggerLabel="Editar"
         >
-          <FuncionarioForm
-            cargos={cargos}
-            funcionario={funcionario}
-            modo="editar"
-          />
+          <div className="space-y-5">
+            <FuncionarioForm
+              cargos={cargos}
+              funcionario={funcionario}
+              modo="editar"
+            />
+
+            <div className="border-t pt-4">
+              <ConfirmDialog
+                description="A exclusao remove o vinculo ou convite deste funcionario."
+                title="Excluir funcionario"
+                triggerLabel="Excluir"
+              >
+                <form action={excluirFuncionarioAction} className="grid gap-3">
+                  {funcionario.member ? (
+                    <input
+                      name="memberId"
+                      type="hidden"
+                      value={funcionario.member.id}
+                    />
+                  ) : null}
+                  {funcionario.convite ? (
+                    <input
+                      name="conviteId"
+                      type="hidden"
+                      value={funcionario.convite.id}
+                    />
+                  ) : null}
+                  <label className="flex items-center gap-2 text-sm">
+                    <input name="confirmar" type="checkbox" />
+                    Confirmo a exclusao do vinculo/convite.
+                  </label>
+                  <Button type="submit" variant="destructive">
+                    Excluir funcionario
+                  </Button>
+                </form>
+              </ConfirmDialog>
+            </div>
+          </div>
         </EntityModal>
 
-        <ConfirmDialog
+        <div className="hidden">
+          <ConfirmDialog
           description="A exclusão remove o vínculo ou convite deste funcionário."
           title="Excluir funcionário"
           triggerLabel="Excluir"
@@ -319,8 +380,9 @@ function FuncionarioCard({
               Excluir funcionario
             </Button>
           </form>
-        </ConfirmDialog>
-      </div>
+          </ConfirmDialog>
+        </div>
+      </EntityCardActions>
     </GlassCard>
   );
 }

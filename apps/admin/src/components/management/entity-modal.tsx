@@ -70,13 +70,8 @@ function inferirAcaoDoBotao(
   const texto = normalizarTexto(label);
 
   if (texto.includes("visualizar") || texto.includes("ver ")) return "view";
-  if (
-    texto.includes("excluir") ||
-    texto.includes("remover") ||
-    texto.includes("cancelar")
-  ) {
-    return "delete";
-  }
+  if (texto.includes("cancelar")) return "cancel";
+  if (texto.includes("excluir") || texto.includes("remover")) return "delete";
   if (
     texto.includes("config") ||
     texto.includes("preferencia") ||

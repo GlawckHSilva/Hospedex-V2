@@ -125,7 +125,18 @@ export function EntityCardHeader({
 }
 
 export function EntityCardActions({ children }: { children: ReactNode }) {
-  return <div className="mt-auto grid grid-cols-2 gap-2">{children}</div>;
+  const totalAcoes = Children.count(children);
+
+  return (
+    <div
+      className={cn(
+        "mt-auto grid gap-2 [&>button]:w-full [&>button]:justify-center",
+        totalAcoes <= 1 ? "grid-cols-1" : "grid-cols-2",
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function EmptyState({

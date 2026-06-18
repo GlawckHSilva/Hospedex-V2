@@ -197,10 +197,6 @@ export function PropertyCard({
               />
             </EntityModal>
 
-            <AcaoExcluirCasa
-              podeGerenciar={podeGerenciar}
-              propriedadeId={propriedade.id}
-            />
           </div>
 
           <div className="mt-5">
@@ -252,12 +248,21 @@ export function PropertyCard({
           triggerIcon={<Pencil className="h-4 w-4" />}
           triggerLabel="Editar"
         >
-          <PropertyForm
-            modo="editar"
-            multiUnidadesAtivo={multiUnidadesAtivo}
-            podeGerenciar={podeGerenciar}
-            propriedade={propriedade}
-          />
+          <div className="space-y-5">
+            <PropertyForm
+              modo="editar"
+              multiUnidadesAtivo={multiUnidadesAtivo}
+              podeGerenciar={podeGerenciar}
+              propriedade={propriedade}
+            />
+
+            <div className="border-t pt-4">
+              <AcaoExcluirCasa
+                podeGerenciar={podeGerenciar}
+                propriedadeId={propriedade.id}
+              />
+            </div>
+          </div>
         </EntityModal>
       </EntityCardActions>
     </EntityCard>

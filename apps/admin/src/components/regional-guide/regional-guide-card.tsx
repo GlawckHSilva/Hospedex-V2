@@ -1,15 +1,22 @@
 import type { RegionalGuideLocationRow } from "@hospedex/types";
-import { Eye, MapPin, Pencil } from "lucide-react";
+import { Eye, MapPin, Pencil, Trash2 } from "lucide-react";
 
-import { Badge } from "@hospedex/ui";
+import { Badge, Button } from "@hospedex/ui";
 
 import {
   EntityCard,
   EntityCardActions,
   EntityCardHeader,
 } from "../management/entity-card";
-import { EntityModal, EntityViewModal } from "../management/entity-modal";
-import { atualizarLocalGuiaRegiaoAction } from "../../lib/regional-guide/actions";
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
+import {
+  atualizarLocalGuiaRegiaoAction,
+  excluirLocalGuiaRegiaoAction,
+} from "../../lib/regional-guide/actions";
 import { LABEL_CATEGORIA_GUIA_REGIAO } from "../../lib/regional-guide/types";
 import { RegionalGuideForm } from "./regional-guide-form";
 
@@ -85,12 +92,49 @@ export function RegionalGuideCard({
           triggerIcon={<Pencil className="h-4 w-4" />}
           triggerLabel="Editar"
         >
-          <RegionalGuideForm
-            action={atualizarLocalGuiaRegiaoAction}
-            local={local}
-            modo="editar"
-            podeGerenciar={podeGerenciar}
-          />
+          <div className="space-y-5">
+            <RegionalGuideForm
+              action={atualizarLocalGuiaRegiaoAction}
+              local={local}
+              modo="editar"
+              podeGerenciar={podeGerenciar}
+            />
+
+            <div className="border-t pt-4">
+              <ConfirmDialog
+                description="Esta acao remove o local do Guia da Regiao deste tenant."
+                disabled={!podeGerenciar}
+                title="Excluir local"
+                triggerIcon={<Trash2 className="h-4 w-4" />}
+                triggerLabel="Excluir"
+              >
+                <form
+                  action={excluirLocalGuiaRegiaoAction}
+                  className="grid gap-3"
+                >
+                  <input name="localId" type="hidden" value={local.id} />
+                  <label className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <input
+                      className="mt-1"
+                      disabled={!podeGerenciar}
+                      name="confirmarExclusao"
+                      required
+                      type="checkbox"
+                      value="confirmado"
+                    />
+                    Confirmo que desejo remover este local do Guia da Regiao.
+                  </label>
+                  <Button
+                    disabled={!podeGerenciar}
+                    type="submit"
+                    variant="destructive"
+                  >
+                    Excluir local
+                  </Button>
+                </form>
+              </ConfirmDialog>
+            </div>
+          </div>
         </EntityModal>
       </EntityCardActions>
     </EntityCard>
