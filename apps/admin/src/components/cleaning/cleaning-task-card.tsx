@@ -1,13 +1,19 @@
-import type { ProfileRow, PropertyRow, ReservationRow, UnitRow } from "@hospedex/types";
-import { ClipboardCheck, UserRound } from "lucide-react";
+import type {
+  ProfileRow,
+  PropertyRow,
+  ReservationRow,
+  UnitRow,
+} from "@hospedex/types";
+import { ClipboardCheck, ListChecks, Pencil, UserRound } from "lucide-react";
 
 import { Badge, Button, Card, CardContent, Label } from "@hospedex/ui";
 
+import { EntityModal } from "../management/entity-modal";
 import { alterarStatusTarefaLimpezaAction } from "../../lib/cleaning/actions";
 import {
   LABEL_STATUS_TAREFA_LIMPEZA,
   STATUS_TAREFA_LIMPEZA,
-  type TarefaLimpezaCompleta
+  type TarefaLimpezaCompleta,
 } from "../../lib/cleaning/types";
 import { CleaningTaskForm } from "./cleaning-task-form";
 
@@ -36,7 +42,7 @@ export function CleaningTaskCard({
   reservas,
   responsaveis,
   tarefa,
-  unidades
+  unidades,
 }: CleaningTaskCardProps) {
   return (
     <Card className="admin-glass-card">
@@ -51,7 +57,8 @@ export function CleaningTaskCard({
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tarefa.propriedade?.name ?? "Propriedade"} · {tarefa.unidade?.name ?? "Unidade"}
+              {tarefa.propriedade?.name ?? "Propriedade"} ·{" "}
+              {tarefa.unidade?.name ?? "Unidade"}
             </p>
           </div>
 
@@ -61,15 +68,30 @@ export function CleaningTaskCard({
             </div>
             <p className="text-xs text-muted-foreground">Responsavel</p>
             <p className="truncate font-semibold">
-              {tarefa.responsavel?.full_name ?? tarefa.responsavel?.email ?? "Sem responsavel"}
+              {tarefa.responsavel?.full_name ??
+                tarefa.responsavel?.email ??
+                "Sem responsavel"}
             </p>
           </div>
         </div>
 
         <section className="grid gap-3 md:grid-cols-3">
-          <Info label="Data prevista" valor={tarefa.scheduled_for ? formatarData(tarefa.scheduled_for) : "Sem data"} />
-          <Info label="Origem" valor={tarefa.source === "checkout" ? "Check-out" : "Manual"} />
-          <Info label="Reserva" valor={tarefa.reserva?.code ?? "Nao vinculada"} />
+          <Info
+            label="Data prevista"
+            valor={
+              tarefa.scheduled_for
+                ? formatarData(tarefa.scheduled_for)
+                : "Sem data"
+            }
+          />
+          <Info
+            label="Origem"
+            valor={tarefa.source === "checkout" ? "Check-out" : "Manual"}
+          />
+          <Info
+            label="Reserva"
+            valor={tarefa.reserva?.code ?? "Nao vinculada"}
+          />
         </section>
 
         {tarefa.notes ? (
@@ -78,25 +100,39 @@ export function CleaningTaskCard({
           </p>
         ) : null}
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Editar tarefa</summary>
-            <div className="mt-4">
-              <CleaningTaskForm
-                modo="editar"
-                podeGerenciar={podeGerenciar}
-                propriedades={propriedades}
-                reservas={reservas}
-                responsaveis={responsaveis}
-                tarefa={tarefa}
-                unidades={unidades}
-              />
-            </div>
-          </details>
+        <div className="flex flex-wrap gap-2">
+          <EntityModal
+            description="Atualize data, responsavel, origem e vinculos da tarefa."
+            disabled={!podeGerenciar}
+            eyebrow="Limpeza"
+            title="Editar tarefa"
+            triggerIcon={<Pencil className="h-4 w-4" />}
+            triggerLabel="Editar"
+          >
+            <CleaningTaskForm
+              modo="editar"
+              podeGerenciar={podeGerenciar}
+              propriedades={propriedades}
+              reservas={reservas}
+              responsaveis={responsaveis}
+              tarefa={tarefa}
+              unidades={unidades}
+            />
+          </EntityModal>
 
-          <details className="rounded-lg border bg-background/45 p-3">
-            <summary className="cursor-pointer text-sm font-semibold">Alterar status</summary>
-            <form action={alterarStatusTarefaLimpezaAction} className="mt-4 grid gap-3">
+          <EntityModal
+            description="Atualize o status operacional da limpeza sem expandir o card."
+            disabled={!podeGerenciar}
+            eyebrow="Status"
+            size="sm"
+            title="Alterar status"
+            triggerIcon={<ListChecks className="h-4 w-4" />}
+            triggerLabel="Status"
+          >
+            <form
+              action={alterarStatusTarefaLimpezaAction}
+              className="grid gap-3"
+            >
               <input name="tarefaId" type="hidden" value={tarefa.id} />
               <div className="grid gap-2">
                 <Label htmlFor={`status-${tarefa.id}`}>Status</Label>
@@ -118,7 +154,7 @@ export function CleaningTaskCard({
                 Atualizar status
               </Button>
             </form>
-          </details>
+          </EntityModal>
         </div>
       </CardContent>
     </Card>
@@ -142,7 +178,8 @@ function obterVariant(status: TarefaLimpezaCompleta["status"]) {
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00Z`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00Z`));
 }

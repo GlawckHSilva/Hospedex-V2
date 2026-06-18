@@ -4,14 +4,15 @@ import type { ReactNode } from "react";
 import { Badge, Button, Card, CardContent, FadeIn, Label } from "@hospedex/ui";
 
 import { ModuleToast } from "../admin/module-toast";
+import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import {
   confirmarCheckInAction,
-  confirmarCheckOutAction
+  confirmarCheckOutAction,
 } from "../../lib/cleaning/actions";
 import type {
   DadosModuloLimpeza,
   ReservaOperacional,
-  SearchParamsLimpeza
+  SearchParamsLimpeza,
 } from "../../lib/cleaning/types";
 import { CleaningTaskCard } from "./cleaning-task-card";
 import { CleaningTaskForm } from "./cleaning-task-form";
@@ -30,7 +31,7 @@ const MENSAGENS_SUCESSO_LIMPEZA: Record<string, string> = {
   "checkout-confirmado": "Check-out confirmado com sucesso.",
   "status-limpeza": "Status da limpeza atualizado.",
   "tarefa-atualizada": "Tarefa atualizada com sucesso.",
-  "tarefa-criada": "Tarefa criada com sucesso."
+  "tarefa-criada": "Tarefa criada com sucesso.",
 };
 
 const areaClasse =
@@ -49,7 +50,7 @@ export function CleaningModule({
   sucesso,
   tarefas,
   tenantNome,
-  unidades
+  unidades,
 }: CleaningModuleProps) {
   const reservasOperacionais = [...checkInsHoje, ...checkOutsHoje];
 
@@ -76,9 +77,21 @@ export function CleaningModule({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <Resumo icon={<LogIn />} label="Check-ins hoje" valor={String(checkInsHoje.length)} />
-            <Resumo icon={<LogOut />} label="Check-outs hoje" valor={String(checkOutsHoje.length)} />
-            <Resumo icon={<Sparkles />} label="Tarefas" valor={String(tarefas.length)} />
+            <Resumo
+              icon={<LogIn />}
+              label="Check-ins hoje"
+              valor={String(checkInsHoje.length)}
+            />
+            <Resumo
+              icon={<LogOut />}
+              label="Check-outs hoje"
+              valor={String(checkOutsHoje.length)}
+            />
+            <Resumo
+              icon={<Sparkles />}
+              label="Tarefas"
+              valor={String(tarefas.length)}
+            />
           </div>
         </div>
       </section>
@@ -103,23 +116,31 @@ export function CleaningModule({
       </div>
 
       <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={tarefas.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Nova tarefa de limpeza
-            </summary>
-            <div className="mt-5">
-              <CleaningTaskForm
-                modo="criar"
-                podeGerenciar={podeGerenciarLimpeza}
-                propriedades={propriedades}
-                reservas={reservasOperacionais}
-                responsaveis={responsaveis}
-                unidades={unidades}
-              />
-            </div>
-          </details>
+        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold">Tarefas de limpeza</h2>
+            <p className="text-sm text-muted-foreground">
+              Cadastre tarefas manuais em modal central, sem expandir a lista.
+            </p>
+          </div>
+          <EntityModal
+            description="Informe casa, unidade, reserva vinculada e responsavel pela limpeza."
+            disabled={!podeGerenciarLimpeza}
+            eyebrow="Limpeza"
+            title="Nova tarefa de limpeza"
+            triggerIcon={<Plus className="h-4 w-4" />}
+            triggerLabel="Nova tarefa"
+            triggerVariant="default"
+          >
+            <CleaningTaskForm
+              modo="criar"
+              podeGerenciar={podeGerenciarLimpeza}
+              propriedades={propriedades}
+              reservas={reservasOperacionais}
+              responsaveis={responsaveis}
+              unidades={unidades}
+            />
+          </EntityModal>
         </CardContent>
       </Card>
 
@@ -154,7 +175,7 @@ function SecaoOperacional({
   icon,
   reservas,
   titulo,
-  vazio
+  vazio,
 }: {
   action: (formData: FormData) => Promise<void>;
   disabled: boolean;
@@ -173,16 +194,20 @@ function SecaoOperacional({
 
         {reservas.length > 0 ? (
           reservas.map((reserva) => (
-            <form action={action} className="rounded-lg border bg-background/45 p-3" key={reserva.id}>
-              <input name="reservaId" type="hidden" value={reserva.id} />
+            <div
+              className="rounded-lg border bg-background/45 p-3"
+              key={reserva.id}
+            >
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="font-semibold">{reserva.code}</p>
                   <p className="text-sm text-muted-foreground">
-                    {reserva.propriedade?.name ?? "Propriedade"} · {reserva.unidade?.name ?? "Unidade"}
+                    {reserva.propriedade?.name ?? "Propriedade"} ·{" "}
+                    {reserva.unidade?.name ?? "Unidade"}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}
+                    {reserva.hospedePrincipal?.full_name ??
+                      "Hospede nao informado"}
                   </p>
                 </div>
                 <Badge variant="outline">
@@ -190,21 +215,34 @@ function SecaoOperacional({
                   {formatarPeriodo(reserva.check_in, reserva.check_out)}
                 </Badge>
               </div>
-              <div className="mt-3 grid gap-2">
-                <Label htmlFor={`observacao-${reserva.id}`}>Observacao</Label>
-                <textarea
-                  className={areaClasse}
-                  disabled={disabled}
-                  id={`observacao-${reserva.id}`}
-                  name="observacao"
-                />
-              </div>
-              <div className="mt-3 flex justify-end">
-                <Button disabled={disabled} type="submit">
-                  Confirmar
-                </Button>
-              </div>
-            </form>
+              <ConfirmDialog
+                description="Confirme a operacao e registre uma observacao opcional."
+                disabled={disabled}
+                title={titulo}
+                triggerClassName="mt-3"
+                triggerIcon={<CalendarCheck2 className="h-4 w-4" />}
+                triggerLabel="Confirmar"
+                triggerVariant="default"
+              >
+                <form action={action} className="grid gap-3">
+                  <input name="reservaId" type="hidden" value={reserva.id} />
+                  <div className="grid gap-2">
+                    <Label htmlFor={`observacao-${reserva.id}`}>
+                      Observacao
+                    </Label>
+                    <textarea
+                      className={areaClasse}
+                      disabled={disabled}
+                      id={`observacao-${reserva.id}`}
+                      name="observacao"
+                    />
+                  </div>
+                  <Button disabled={disabled} type="submit">
+                    Confirmar
+                  </Button>
+                </form>
+              </ConfirmDialog>
+            </div>
           ))
         ) : (
           <p className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
@@ -219,7 +257,7 @@ function SecaoOperacional({
 function Resumo({
   icon,
   label,
-  valor
+  valor,
 }: {
   icon: ReactNode;
   label: string;
@@ -239,7 +277,8 @@ function formatarPeriodo(inicio: string, fim: string) {
 }
 
 function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "UTC" }).format(
-    new Date(`${valor}T00:00:00Z`)
-  );
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00Z`));
 }

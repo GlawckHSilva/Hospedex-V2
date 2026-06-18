@@ -83,18 +83,38 @@ export function PropertyCard({
             </p>
           </div>
 
-          <form action={alternarStatusPropriedadeAction}>
-            <input name="propriedadeId" type="hidden" value={propriedade.id} />
-            <Button
-              disabled={!podeGerenciar}
-              size="sm"
-              type="submit"
-              variant="outline"
+          <ConfirmDialog
+            description="Esta acao altera a disponibilidade operacional da casa."
+            disabled={!podeGerenciar}
+            title={estaPausada ? "Ativar casa" : "Pausar casa"}
+            triggerIcon={
+              estaPausada ? (
+                <PlayCircle className="h-4 w-4" />
+              ) : (
+                <PauseCircle className="h-4 w-4" />
+              )
+            }
+            triggerLabel={estaPausada ? "Ativar" : "Pausar"}
+            triggerVariant="outline"
+          >
+            <form
+              action={alternarStatusPropriedadeAction}
+              className="grid gap-3"
             >
-              {estaPausada ? <PlayCircle /> : <PauseCircle />}
-              {estaPausada ? "Ativar" : "Pausar"}
-            </Button>
-          </form>
+              <input
+                name="propriedadeId"
+                type="hidden"
+                value={propriedade.id}
+              />
+              <p className="text-sm text-muted-foreground">
+                Confirme para {estaPausada ? "ativar" : "pausar"} esta casa.
+              </p>
+              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+                {estaPausada ? <PlayCircle /> : <PauseCircle />}
+                {estaPausada ? "Ativar" : "Pausar"}
+              </Button>
+            </form>
+          </ConfirmDialog>
         </div>
 
         <div className="grid gap-3 text-sm md:grid-cols-[1fr_auto]">

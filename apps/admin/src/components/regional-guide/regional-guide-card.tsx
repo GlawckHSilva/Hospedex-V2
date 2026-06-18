@@ -1,9 +1,13 @@
 import type { RegionalGuideLocationRow } from "@hospedex/types";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
-import { ConfirmDialog, EntityModal } from "../management/entity-modal";
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
 import {
   alternarStatusLocalGuiaRegiaoAction,
   atualizarLocalGuiaRegiaoAction,
@@ -72,18 +76,65 @@ export function RegionalGuideCard({
         </div>
 
         <div className="mt-5 grid gap-3 lg:grid-cols-[auto_auto_1fr]">
-          <form action={alternarStatusLocalGuiaRegiaoAction}>
-            <input name="localId" type="hidden" value={local.id} />
-            <input name="status" type="hidden" value={statusDestino} />
-            <Button
-              disabled={!podeGerenciar}
-              size="sm"
-              type="submit"
-              variant="outline"
+          <EntityViewModal
+            description="Dados publicados internamente para orientar hospedes."
+            title={local.name}
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <Info
+                label="Categoria"
+                valor={LABEL_CATEGORIA_GUIA_REGIAO[local.category]}
+              />
+              <Info
+                label="Status"
+                valor={local.status === "active" ? "Ativo" : "Inativo"}
+              />
+              <Info label="Endereco" valor={local.address || "Nao informado"} />
+              <Info
+                label="Horario"
+                valor={local.opening_hours || "Nao informado"}
+              />
+              <Info label="Telefone" valor={local.phone || "Nao informado"} />
+              <Info
+                label="WhatsApp"
+                valor={local.whatsapp || "Nao informado"}
+              />
+              <Info label="Site" valor={local.website_url || "Nao informado"} />
+              <div className="md:col-span-2">
+                <Info
+                  label="Descricao"
+                  valor={local.description || "Sem descricao cadastrada."}
+                />
+              </div>
+            </div>
+          </EntityViewModal>
+
+          <ConfirmDialog
+            description="Esta acao altera a visibilidade operacional do local."
+            disabled={!podeGerenciar}
+            title={
+              local.status === "active" ? "Desativar local" : "Ativar local"
+            }
+            triggerLabel={local.status === "active" ? "Desativar" : "Ativar"}
+            triggerVariant="outline"
+          >
+            <form
+              action={alternarStatusLocalGuiaRegiaoAction}
+              className="grid gap-3"
             >
-              {local.status === "active" ? "Desativar" : "Ativar"}
-            </Button>
-          </form>
+              <input name="localId" type="hidden" value={local.id} />
+              <input name="status" type="hidden" value={statusDestino} />
+              <p className="text-sm text-muted-foreground">
+                Confirme para{" "}
+                {local.status === "active" ? "desativar" : "ativar"} este local.
+              </p>
+              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+                {local.status === "active" ? "Desativar" : "Ativar"}
+              </Button>
+            </form>
+          </ConfirmDialog>
 
           <EntityModal
             description="Atualize categoria, contatos, descrição, ordem e status do local."

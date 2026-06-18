@@ -73,19 +73,34 @@ export function ExtraServiceCard({
           />
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-[auto_auto_1fr]">
-          <form action={alternarStatusServicoExtraAction}>
-            <input name="servicoId" type="hidden" value={servico.id} />
-            <input name="status" type="hidden" value={statusDestino} />
-            <Button
-              disabled={!podeGerenciar}
-              size="sm"
-              type="submit"
-              variant="outline"
+        <div className="mt-5 flex flex-wrap gap-3">
+          <ConfirmDialog
+            description="Esta acao altera a disponibilidade do servico nas novas reservas."
+            disabled={!podeGerenciar}
+            title={
+              servico.status === "active"
+                ? "Desativar servico"
+                : "Ativar servico"
+            }
+            triggerLabel={servico.status === "active" ? "Desativar" : "Ativar"}
+            triggerVariant="outline"
+          >
+            <form
+              action={alternarStatusServicoExtraAction}
+              className="grid gap-3"
             >
-              {servico.status === "active" ? "Desativar" : "Ativar"}
-            </Button>
-          </form>
+              <input name="servicoId" type="hidden" value={servico.id} />
+              <input name="status" type="hidden" value={statusDestino} />
+              <p className="text-sm text-muted-foreground">
+                Confirme para{" "}
+                {servico.status === "active" ? "desativar" : "ativar"} este
+                servico extra.
+              </p>
+              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+                {servico.status === "active" ? "Desativar" : "Ativar"}
+              </Button>
+            </form>
+          </ConfirmDialog>
 
           <EntityModal
             description="Atualize preço, cobrança, casas vinculadas e status operacional."

@@ -14,6 +14,16 @@ import { Button, cn } from "@hospedex/ui";
 
 type ModalSize = "sm" | "md" | "lg" | "xl";
 
+type AppModalProps = {
+  children: ReactNode;
+  description?: string | undefined;
+  eyebrow?: string | undefined;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  size?: ModalSize;
+  title: string;
+};
+
 type EntityModalProps = {
   children: ReactNode;
   description?: string | undefined;
@@ -35,6 +45,101 @@ const sizeClass: Record<ModalSize, string> = {
   xl: "max-w-5xl",
 };
 
+export function AppModal({
+  children,
+  description,
+  eyebrow,
+  onOpenChange,
+  open,
+  size = "lg",
+  title,
+}: AppModalProps) {
+  const titleId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+
+    function fecharComEscape(evento: KeyboardEvent) {
+      if (evento.key === "Escape") onOpenChange(false);
+    }
+
+    const overflowAnterior = document.body.style.overflow;
+    document.addEventListener("keydown", fecharComEscape);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", fecharComEscape);
+      document.body.style.overflow = overflowAnterior;
+    };
+  }, [onOpenChange, open]);
+
+  return (
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/72 px-4 py-6 backdrop-blur-md"
+          exit={{ opacity: 0 }}
+          initial={{ opacity: 0 }}
+          onMouseDown={() => onOpenChange(false)}
+        >
+          <motion.div
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            aria-labelledby={titleId}
+            aria-modal="true"
+            className={cn(
+              "relative my-auto flex max-h-[calc(100svh-3rem)] w-full flex-col overflow-hidden rounded-2xl border border-cyan-300/20 bg-background/92 shadow-2xl shadow-cyan-950/30 ring-1 ring-white/10 dark:bg-zinc-950/92",
+              sizeClass[size],
+            )}
+            exit={{ opacity: 0, scale: 0.98, y: 10 }}
+            initial={{ opacity: 0, scale: 0.98, y: 14 }}
+            onMouseDown={(evento) => evento.stopPropagation()}
+            role="dialog"
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            <div className="shrink-0 border-b bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_32%)] px-5 py-4 sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  {eyebrow ? (
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-300">
+                      {eyebrow}
+                    </p>
+                  ) : null}
+                  <h2
+                    className="mt-1 text-xl font-semibold tracking-normal"
+                    id={titleId}
+                  >
+                    {title}
+                  </h2>
+                  {description ? (
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      {description}
+                    </p>
+                  ) : null}
+                </div>
+
+                <Button
+                  aria-label="Fechar modal"
+                  onClick={() => onOpenChange(false)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              {children}
+            </div>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 export function EntityModal({
   children,
   description,
@@ -49,23 +154,6 @@ export function EntityModal({
   triggerVariant = "outline",
 }: EntityModalProps) {
   const [open, setOpen] = useState(false);
-  const titleId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-
-    function fecharComEscape(evento: KeyboardEvent) {
-      if (evento.key === "Escape") setOpen(false);
-    }
-
-    document.addEventListener("keydown", fecharComEscape);
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.removeEventListener("keydown", fecharComEscape);
-      document.body.style.overflow = "";
-    };
-  }, [open]);
 
   return (
     <>
@@ -81,69 +169,16 @@ export function EntityModal({
         {triggerLabel}
       </Button>
 
-      <AnimatePresence>
-        {open ? (
-          <motion.div
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/68 px-4 py-6 backdrop-blur-md"
-            exit={{ opacity: 0 }}
-            initial={{ opacity: 0 }}
-            onMouseDown={() => setOpen(false)}
-          >
-            <motion.div
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              aria-labelledby={titleId}
-              aria-modal="true"
-              className={cn(
-                "relative my-auto flex max-h-[calc(100svh-3rem)] w-full flex-col overflow-hidden rounded-2xl border border-cyan-300/20 bg-background/92 shadow-2xl shadow-cyan-950/30 ring-1 ring-white/10 dark:bg-zinc-950/92",
-                sizeClass[size],
-              )}
-              exit={{ opacity: 0, scale: 0.98, y: 10 }}
-              initial={{ opacity: 0, scale: 0.98, y: 14 }}
-              onMouseDown={(evento) => evento.stopPropagation()}
-              role="dialog"
-              transition={{ duration: 0.18, ease: "easeOut" }}
-            >
-              <div className="border-b bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_32%)] px-5 py-4 sm:px-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    {eyebrow ? (
-                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-300">
-                        {eyebrow}
-                      </p>
-                    ) : null}
-                    <h2
-                      className="mt-1 text-xl font-semibold tracking-normal"
-                      id={titleId}
-                    >
-                      {title}
-                    </h2>
-                    {description ? (
-                      <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                        {description}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <Button
-                    aria-label="Fechar modal"
-                    onClick={() => setOpen(false)}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="overflow-y-auto px-5 py-5 sm:px-6">
-                {children}
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <AppModal
+        description={description}
+        eyebrow={eyebrow}
+        onOpenChange={setOpen}
+        open={open}
+        size={size}
+        title={title}
+      >
+        {children}
+      </AppModal>
     </>
   );
 }

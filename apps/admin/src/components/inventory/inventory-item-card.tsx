@@ -1,9 +1,13 @@
 import type { PropertyRow, UnitRow } from "@hospedex/types";
-import { Pencil, PackageCheck, Trash2 } from "lucide-react";
+import { Eye, Pencil, PackageCheck, Trash2 } from "lucide-react";
 
 import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
-import { ConfirmDialog, EntityModal } from "../management/entity-modal";
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
 import { excluirItemInventarioAction } from "../../lib/inventory/actions";
 import {
   LABEL_CATEGORIA_INVENTARIO,
@@ -87,6 +91,43 @@ export function InventoryItemCard({
         ) : null}
 
         <div className="flex flex-wrap gap-2">
+          <EntityViewModal
+            description="Dados do item, localizacao, quantidade e observacoes."
+            title={item.name}
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Visualizar"
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <Info
+                label="Categoria"
+                valor={LABEL_CATEGORIA_INVENTARIO[item.category]}
+              />
+              <Info label="Quantidade" valor={String(item.quantity)} />
+              <Info
+                label="Estado"
+                valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]}
+              />
+              <Info
+                label="Valor estimado"
+                valor={formatarMoeda(Number(item.estimated_value))}
+              />
+              <Info
+                label="Propriedade"
+                valor={item.propriedade?.name ?? "Propriedade"}
+              />
+              <Info
+                label="Unidade"
+                valor={item.unidade?.name ?? "Sem unidade"}
+              />
+              <div className="md:col-span-2">
+                <Info
+                  label="Observacoes"
+                  valor={item.notes ?? "Sem observacoes"}
+                />
+              </div>
+            </div>
+          </EntityViewModal>
+
           <EntityModal
             description="Atualize localização, quantidade e estado do item."
             disabled={!podeGerenciar}

@@ -18,7 +18,7 @@ import {
   Label,
 } from "@hospedex/ui";
 
-import { EntityModal } from "../management/entity-modal";
+import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import { sairAction } from "../../lib/auth/actions";
 import {
   alterarSenhaConfiguracoesAction,
@@ -522,18 +522,26 @@ function ModuloCard({
           {modulo.motivoBloqueio}
         </p>
       ) : null}
-      <form action={alternarModuloGerenciamentoAction} className="mt-4">
-        <input name="modulo" type="hidden" value={modulo.key} />
-        <input name="ativo" type="hidden" value={String(!modulo.ativo)} />
-        <Button
-          disabled={!podeAlternar}
-          size="sm"
-          type="submit"
-          variant="outline"
-        >
-          {modulo.ativo ? "Desativar" : "Ativar"}
-        </Button>
-      </form>
+      <ConfirmDialog
+        description="Confirme a alteracao deste modulo para o tenant atual."
+        disabled={!podeAlternar}
+        title={modulo.ativo ? "Desativar modulo" : "Ativar modulo"}
+        triggerClassName="mt-4"
+        triggerLabel={modulo.ativo ? "Desativar" : "Ativar"}
+        triggerVariant="outline"
+      >
+        <form action={alternarModuloGerenciamentoAction} className="grid gap-3">
+          <input name="modulo" type="hidden" value={modulo.key} />
+          <input name="ativo" type="hidden" value={String(!modulo.ativo)} />
+          <p className="text-sm text-muted-foreground">
+            Confirme para {modulo.ativo ? "desativar" : "ativar"} {modulo.label}
+            .
+          </p>
+          <Button disabled={!podeAlternar} type="submit" variant="outline">
+            {modulo.ativo ? "Desativar" : "Ativar"}
+          </Button>
+        </form>
+      </ConfirmDialog>
     </div>
   );
 }

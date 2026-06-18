@@ -204,34 +204,62 @@ function FuncionarioCard({
 
         <div className="flex flex-wrap gap-2">
           {funcionario.convite ? (
-            <form action={reenviarConviteAction}>
-              <input
-                name="conviteId"
-                type="hidden"
-                value={funcionario.convite.id}
-              />
-              <Button type="submit" variant="outline">
-                <MailPlus />
-                Reenviar convite
-              </Button>
-            </form>
+            <ConfirmDialog
+              description="O convite sera reenviado para o e-mail do funcionario."
+              title="Reenviar convite"
+              triggerIcon={<MailPlus className="h-4 w-4" />}
+              triggerLabel="Reenviar convite"
+              triggerVariant="outline"
+            >
+              <form action={reenviarConviteAction} className="grid gap-3">
+                <input
+                  name="conviteId"
+                  type="hidden"
+                  value={funcionario.convite.id}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Confirme o reenvio para {funcionario.email}.
+                </p>
+                <Button type="submit" variant="outline">
+                  <MailPlus />
+                  Reenviar convite
+                </Button>
+              </form>
+            </ConfirmDialog>
           ) : null}
 
           {podeAlterarStatus ? (
-            <form action={alterarStatusFuncionarioAction}>
-              <input
-                name="memberId"
-                type="hidden"
-                value={funcionario.member?.id}
-              />
-              <input name="acao" type="hidden" value={acaoStatus} />
-              <Button
-                type="submit"
-                variant={acaoStatus === "ativar" ? "default" : "outline"}
+            <ConfirmDialog
+              description="Esta acao altera o acesso do funcionario ao Gerenciamento."
+              title={
+                acaoStatus === "ativar"
+                  ? "Ativar funcionario"
+                  : "Desativar funcionario"
+              }
+              triggerLabel={acaoStatus === "ativar" ? "Ativar" : "Desativar"}
+              triggerVariant={acaoStatus === "ativar" ? "default" : "outline"}
+            >
+              <form
+                action={alterarStatusFuncionarioAction}
+                className="grid gap-3"
               >
-                {acaoStatus === "ativar" ? "Ativar" : "Desativar"}
-              </Button>
-            </form>
+                <input
+                  name="memberId"
+                  type="hidden"
+                  value={funcionario.member?.id}
+                />
+                <input name="acao" type="hidden" value={acaoStatus} />
+                <p className="text-sm text-muted-foreground">
+                  Confirme para {acaoStatus} o acesso de {funcionario.nome}.
+                </p>
+                <Button
+                  type="submit"
+                  variant={acaoStatus === "ativar" ? "default" : "outline"}
+                >
+                  {acaoStatus === "ativar" ? "Ativar" : "Desativar"}
+                </Button>
+              </form>
+            </ConfirmDialog>
           ) : null}
         </div>
       </div>
@@ -336,31 +364,41 @@ function CargosPanel({ cargos }: { cargos: CargoComPermissoes[] }) {
         <div className="grid gap-4">
           {cargos.map((cargo) => (
             <GlassCard className="p-4" key={cargo.role.id}>
-              <form
-                action={atualizarCargoPermissoesAction}
-                className="grid gap-4"
-              >
-                <input name="roleId" type="hidden" value={cargo.role.id} />
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{cargo.role.name}</p>
-                      <StatusBadge
-                        tone={cargo.role.is_system ? "info" : "neutral"}
-                      >
-                        {cargo.role.is_system ? "inicial" : "personalizado"}
-                      </StatusBadge>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {cargo.role.description ?? "Sem descricao."}
-                    </p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold">{cargo.role.name}</p>
+                    <StatusBadge
+                      tone={cargo.role.is_system ? "info" : "neutral"}
+                    >
+                      {cargo.role.is_system ? "inicial" : "personalizado"}
+                    </StatusBadge>
                   </div>
-                  <Button type="submit" variant="outline">
-                    Salvar permissoes
-                  </Button>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {cargo.role.description ?? "Sem descricao."}
+                  </p>
                 </div>
-                <PermissoesChecklist permissoesAtivas={cargo.permissoes} />
-              </form>
+                <EntityModal
+                  description="Ajuste quais modulos este cargo pode acessar."
+                  eyebrow="Permissoes"
+                  title={`Permissoes de ${cargo.role.name}`}
+                  triggerIcon={<ShieldCheck className="h-4 w-4" />}
+                  triggerLabel="Permissoes"
+                >
+                  <form
+                    action={atualizarCargoPermissoesAction}
+                    className="grid gap-4"
+                  >
+                    <input name="roleId" type="hidden" value={cargo.role.id} />
+                    <PermissoesChecklist permissoesAtivas={cargo.permissoes} />
+                    <div className="flex justify-end">
+                      <Button type="submit" variant="outline">
+                        Salvar permissoes
+                      </Button>
+                    </div>
+                  </form>
+                </EntityModal>
+              </div>
             </GlassCard>
           ))}
         </div>

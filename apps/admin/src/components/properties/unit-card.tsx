@@ -66,19 +66,32 @@ export function UnitCard({
             </p>
           </div>
 
-          <form action={alternarStatusUnidadeAction}>
-            <input name="retorno" type="hidden" value={retorno} />
-            <input name="unidadeId" type="hidden" value={unidade.id} />
-            <Button
-              disabled={!podeGerenciar}
-              size="sm"
-              type="submit"
-              variant="outline"
-            >
-              {estaAtiva ? <PauseCircle /> : <PlayCircle />}
-              {estaAtiva ? "Pausar" : "Ativar"}
-            </Button>
-          </form>
+          <ConfirmDialog
+            description="Esta acao altera a disponibilidade operacional da unidade."
+            disabled={!podeGerenciar}
+            title={estaAtiva ? "Pausar unidade" : "Ativar unidade"}
+            triggerIcon={
+              estaAtiva ? (
+                <PauseCircle className="h-4 w-4" />
+              ) : (
+                <PlayCircle className="h-4 w-4" />
+              )
+            }
+            triggerLabel={estaAtiva ? "Pausar" : "Ativar"}
+            triggerVariant="outline"
+          >
+            <form action={alternarStatusUnidadeAction} className="grid gap-3">
+              <input name="retorno" type="hidden" value={retorno} />
+              <input name="unidadeId" type="hidden" value={unidade.id} />
+              <p className="text-sm text-muted-foreground">
+                Confirme para {estaAtiva ? "pausar" : "ativar"} esta unidade.
+              </p>
+              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+                {estaAtiva ? <PauseCircle /> : <PlayCircle />}
+                {estaAtiva ? "Pausar" : "Ativar"}
+              </Button>
+            </form>
+          </ConfirmDialog>
         </div>
 
         <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">

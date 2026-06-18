@@ -171,18 +171,33 @@ export function GuestCard({ hospede, podeGerenciar }: GuestCardProps) {
             <GuestForm hospede={hospede} podeGerenciar={podeGerenciar} />
           </EntityModal>
 
-          <form action={alternarBloqueioHospedeAction}>
-            <input name="hospedeId" type="hidden" value={hospede.id} />
-            <Button
-              disabled={!podeGerenciar}
-              size="sm"
-              type="submit"
-              variant="outline"
-            >
-              <Ban />
-              {hospede.status === "blocked" ? "Desbloquear" : "Bloquear"}
-            </Button>
-          </form>
+          <ConfirmDialog
+            description="Esta acao altera o status operacional do hospede no CRM."
+            disabled={!podeGerenciar}
+            title={
+              hospede.status === "blocked"
+                ? "Desbloquear hospede"
+                : "Bloquear hospede"
+            }
+            triggerIcon={<Ban className="h-4 w-4" />}
+            triggerLabel={
+              hospede.status === "blocked" ? "Desbloquear" : "Bloquear"
+            }
+            triggerVariant="outline"
+          >
+            <form action={alternarBloqueioHospedeAction} className="grid gap-3">
+              <input name="hospedeId" type="hidden" value={hospede.id} />
+              <p className="text-sm text-muted-foreground">
+                Confirme para{" "}
+                {hospede.status === "blocked" ? "desbloquear" : "bloquear"} este
+                hospede.
+              </p>
+              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+                <Ban />
+                {hospede.status === "blocked" ? "Desbloquear" : "Bloquear"}
+              </Button>
+            </form>
+          </ConfirmDialog>
 
           <EntityViewModal
             description="Reservas vinculadas ao hóspede no tenant atual."

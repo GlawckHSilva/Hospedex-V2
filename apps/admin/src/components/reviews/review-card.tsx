@@ -10,7 +10,11 @@ import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, Label } from "@hospedex/ui";
 
-import { EntityModal, EntityViewModal } from "../management/entity-modal";
+import {
+  ConfirmDialog,
+  EntityModal,
+  EntityViewModal,
+} from "../management/entity-modal";
 import {
   alterarStatusAvaliacaoAction,
   responderAvaliacaoAction,
@@ -197,14 +201,26 @@ function BotaoStatus({
   variant?: "default" | "outline";
 }) {
   return (
-    <form action={alterarStatusAvaliacaoAction}>
-      <input name="avaliacaoId" type="hidden" value={avaliacaoId} />
-      <input name="status" type="hidden" value={status} />
-      <Button disabled={disabled} size="sm" type="submit" variant={variant}>
-        {icon}
-        {label}
-      </Button>
-    </form>
+    <ConfirmDialog
+      description="Confirme a alteracao de status desta avaliacao interna."
+      disabled={disabled}
+      title={label}
+      triggerIcon={icon}
+      triggerLabel={label}
+      triggerVariant={variant}
+    >
+      <form action={alterarStatusAvaliacaoAction} className="grid gap-3">
+        <input name="avaliacaoId" type="hidden" value={avaliacaoId} />
+        <input name="status" type="hidden" value={status} />
+        <p className="text-sm text-muted-foreground">
+          A avaliacao sera atualizada para {label.toLowerCase()}.
+        </p>
+        <Button disabled={disabled} type="submit" variant={variant}>
+          {icon}
+          {label}
+        </Button>
+      </form>
+    </ConfirmDialog>
   );
 }
 

@@ -3,7 +3,7 @@ import { Button, Input, Label } from "@hospedex/ui";
 import {
   atualizarPoliticaCancelamentoAction,
   atualizarRegrasCasaAction,
-  atualizarRegrasReservaAction
+  atualizarRegrasReservaAction,
 } from "../../lib/properties/actions";
 import type { PropriedadeComRelacionamentos } from "../../lib/properties/types";
 
@@ -24,13 +24,16 @@ const campoClasse =
 const areaClasse =
   "min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
-export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRulesPanelProps) {
+export function PropertyRulesPanel({
+  podeGerenciar,
+  propriedade,
+}: PropertyRulesPanelProps) {
   const regras = propriedade.regras;
 
   return (
     <section className="grid gap-3 lg:grid-cols-3">
-      <details className="rounded-lg border bg-background/45 p-3">
-        <summary className="cursor-pointer text-sm font-semibold">Regras</summary>
+      <div className="rounded-lg border bg-background/45 p-3">
+        <p className="text-sm font-semibold">Regras</p>
         <form action={atualizarRegrasCasaAction} className="mt-4 grid gap-4">
           <input name="propriedadeId" type="hidden" value={propriedade.id} />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -68,9 +71,24 @@ export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRules
             />
           </div>
           <div className="grid gap-3">
-            <CampoCheckbox checked={regras.allow_pets} disabled={!podeGerenciar} label="Permite pets" name="allowPets" />
-            <CampoCheckbox checked={regras.allow_smoking} disabled={!podeGerenciar} label="Permite fumantes" name="allowSmoking" />
-            <CampoCheckbox checked={regras.allow_events} disabled={!podeGerenciar} label="Permite festas/eventos" name="allowEvents" />
+            <CampoCheckbox
+              checked={regras.allow_pets}
+              disabled={!podeGerenciar}
+              label="Permite pets"
+              name="allowPets"
+            />
+            <CampoCheckbox
+              checked={regras.allow_smoking}
+              disabled={!podeGerenciar}
+              label="Permite fumantes"
+              name="allowSmoking"
+            />
+            <CampoCheckbox
+              checked={regras.allow_events}
+              disabled={!podeGerenciar}
+              label="Permite festas/eventos"
+              name="allowEvents"
+            />
           </div>
           <CampoTextoArea
             defaultValue={regras.additional_rules ?? ""}
@@ -82,11 +100,14 @@ export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRules
             Salvar regras
           </Button>
         </form>
-      </details>
+      </div>
 
-      <details className="rounded-lg border bg-background/45 p-3">
-        <summary className="cursor-pointer text-sm font-semibold">Cancelamento</summary>
-        <form action={atualizarPoliticaCancelamentoAction} className="mt-4 grid gap-4">
+      <div className="rounded-lg border bg-background/45 p-3">
+        <p className="text-sm font-semibold">Cancelamento</p>
+        <form
+          action={atualizarPoliticaCancelamentoAction}
+          className="mt-4 grid gap-4"
+        >
           <input name="propriedadeId" type="hidden" value={propriedade.id} />
           <div className="grid gap-4 sm:grid-cols-2">
             <CampoTexto
@@ -149,10 +170,10 @@ export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRules
             Salvar cancelamento
           </Button>
         </form>
-      </details>
+      </div>
 
-      <details className="rounded-lg border bg-background/45 p-3">
-        <summary className="cursor-pointer text-sm font-semibold">Reserva</summary>
+      <div className="rounded-lg border bg-background/45 p-3">
+        <p className="text-sm font-semibold">Reserva</p>
         <form action={atualizarRegrasReservaAction} className="mt-4 grid gap-4">
           <input name="propriedadeId" type="hidden" value={propriedade.id} />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -183,7 +204,9 @@ export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRules
               type="number"
             />
             <CampoTexto
-              defaultValue={regras.max_advance_days ? String(regras.max_advance_days) : ""}
+              defaultValue={
+                regras.max_advance_days ? String(regras.max_advance_days) : ""
+              }
               disabled={!podeGerenciar}
               label="Antecedencia maxima"
               min="0"
@@ -192,7 +215,9 @@ export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRules
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor={`bookingMode-${propriedade.id}`}>Modo de reserva</Label>
+            <Label htmlFor={`bookingMode-${propriedade.id}`}>
+              Modo de reserva
+            </Label>
             <select
               className={campoClasse}
               defaultValue={regras.booking_mode}
@@ -201,14 +226,16 @@ export function PropertyRulesPanel({ podeGerenciar, propriedade }: PropertyRules
               name="bookingMode"
             >
               <option value="manual_approval">Exigir aprovacao manual</option>
-              <option value="instant_booking">Permitir reserva automatica futuramente</option>
+              <option value="instant_booking">
+                Permitir reserva automatica futuramente
+              </option>
             </select>
           </div>
           <Button disabled={!podeGerenciar} type="submit">
             Salvar reserva
           </Button>
         </form>
-      </details>
+      </div>
     </section>
   );
 }
@@ -222,7 +249,7 @@ function CampoTexto({
   name,
   required,
   step,
-  type = "text"
+  type = "text",
 }: {
   defaultValue: string;
   disabled?: boolean;
@@ -256,7 +283,7 @@ function CampoTextoArea({
   defaultValue,
   disabled,
   label,
-  name
+  name,
 }: {
   defaultValue: string;
   disabled?: boolean;
@@ -281,7 +308,7 @@ function CampoCheckbox({
   checked,
   disabled,
   label,
-  name
+  name,
 }: {
   checked: boolean;
   disabled?: boolean;
