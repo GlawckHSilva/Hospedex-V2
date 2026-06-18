@@ -2,12 +2,8 @@ import {
   BedDouble,
   CheckCircle2,
   Clock,
-  ConciergeBell,
   Info,
   MapPin,
-  Navigation,
-  ShieldCheck,
-  Star,
   Users
 } from "lucide-react";
 import { notFound } from "next/navigation";
@@ -16,6 +12,11 @@ import type { ReactNode } from "react";
 import { FadeIn, GlassCard, GlassPanel, StatusBadge } from "@hospedex/ui";
 
 import { PublicShell } from "../../../components/layout/public-shell";
+import {
+  PropertyRegionalGuideSection,
+  PropertyReviewsSection,
+  PropertyRulesSection
+} from "../../../components/properties/property-detail-sections";
 import { PropertyGallery } from "../../../components/properties/property-gallery";
 import {
   PropertyReservationCard,
@@ -26,29 +27,6 @@ import { carregarPropriedadePublica } from "../../../lib/marketplace/data";
 
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-const blocosFuturos = [
-  {
-    title: "Avaliações futuras",
-    description: "Notas e comentários públicos serão exibidos quando o módulo for ativado.",
-    icon: Star
-  },
-  {
-    title: "Serviços extras futuros",
-    description: "Café, limpeza extra, traslados e experiências poderão aparecer aqui.",
-    icon: ConciergeBell
-  },
-  {
-    title: "Guia da região futuro",
-    description: "Recomendações locais e pontos de interesse serão conectados ao marketplace.",
-    icon: Navigation
-  },
-  {
-    title: "Política de cancelamento futura",
-    description: "As regras comerciais serão apresentadas antes da confirmação da reserva.",
-    icon: ShieldCheck
-  }
-] as const;
 
 export default async function PropriedadePage({
   params,
@@ -141,6 +119,8 @@ export default async function PropriedadePage({
               </p>
             </Secao>
 
+            <PropertyReviewsSection reviews={propriedade.reviews} />
+
             <Secao title="Comodidades">
               {propriedade.amenities.length ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -191,19 +171,9 @@ export default async function PropriedadePage({
               </div>
             </Secao>
 
-            <Secao title="Regras da hospedagem">
-              <div className="grid gap-3">
-                {propriedade.rules.map((regra) => (
-                  <p
-                    className="flex items-start gap-2 text-sm leading-6 text-muted-foreground"
-                    key={regra}
-                  >
-                    <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    {regra}
-                  </p>
-                ))}
-              </div>
-            </Secao>
+            <PropertyRulesSection rules={propriedade.houseRules} />
+
+            <PropertyRegionalGuideSection locations={propriedade.regionalGuide} />
 
             <Secao title="Localização">
               <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
@@ -228,24 +198,6 @@ export default async function PropriedadePage({
                 </div>
               </div>
             </Secao>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {blocosFuturos.map((bloco) => {
-                const Icone = bloco.icon;
-
-                return (
-                  <GlassCard className="p-5" key={bloco.title}>
-                    <span className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
-                      <Icone className="h-5 w-5" />
-                    </span>
-                    <h2 className="mt-4 text-lg font-semibold">{bloco.title}</h2>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      {bloco.description}
-                    </p>
-                  </GlassCard>
-                );
-              })}
-            </div>
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">

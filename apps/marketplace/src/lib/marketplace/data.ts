@@ -5,8 +5,12 @@ import type {
   JsonValue,
   MediaAssetRow,
   PropertyAmenityRow,
+  PropertyReviewRow,
   PropertyRow,
+  PropertySettingRow,
   PropertyType,
+  RegionalGuideCategory,
+  RegionalGuideLocationRow,
   ReservationRow,
   UnitCategoryRow,
   UnitRow
@@ -69,6 +73,60 @@ type VinculoComodidadeRowPublica = Pick<
   "property_id" | "amenity_id"
 >;
 
+type RegrasCasaRowPublica = Pick<
+  PropertySettingRow,
+  | "tenant_id"
+  | "property_id"
+  | "check_in_time"
+  | "check_out_time"
+  | "min_nights"
+  | "max_nights"
+  | "allow_pets"
+  | "allow_smoking"
+  | "allow_events"
+  | "max_guests"
+  | "min_responsible_age"
+  | "additional_rules"
+  | "cancellation_refund_until_days"
+  | "cancellation_refund_until_percentage"
+  | "cancellation_late_until_days"
+  | "cancellation_late_refund_percentage"
+  | "cancellation_no_refund_within_days"
+  | "cancellation_notes"
+>;
+
+type GuiaRegiaoRowPublica = Pick<
+  RegionalGuideLocationRow,
+  | "id"
+  | "tenant_id"
+  | "category"
+  | "name"
+  | "description"
+  | "address"
+  | "phone"
+  | "whatsapp"
+  | "website_url"
+  | "opening_hours"
+  | "cover_image_url"
+  | "display_order"
+  | "status"
+  | "deleted_at"
+>;
+
+type AvaliacaoRowPublica = Pick<
+  PropertyReviewRow,
+  | "id"
+  | "tenant_id"
+  | "property_id"
+  | "guest_name"
+  | "rating"
+  | "comment"
+  | "reviewed_at"
+  | "status"
+  | "owner_response"
+  | "owner_responded_at"
+>;
+
 export type ImagemPublica = {
   id: string;
   url: string;
@@ -101,6 +159,63 @@ export type EnderecoPublico = {
   estado: string;
 };
 
+export type PoliticaCancelamentoPublica = {
+  itens: string[];
+  observacoes: string | null;
+};
+
+export type RegrasCasaPublicas = {
+  checkIn: string;
+  checkOut: string;
+  allowPets: boolean;
+  allowSmoking: boolean;
+  allowEvents: boolean;
+  maxGuests: number;
+  minResponsibleAge: number;
+  minNights: number;
+  maxNights: number | null;
+  additionalRules: string | null;
+  cancellationPolicy: PoliticaCancelamentoPublica;
+  summary: string[];
+};
+
+export type LocalGuiaRegiaoPublico = {
+  id: string;
+  category: RegionalGuideCategory;
+  categoryLabel: string;
+  name: string;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  websiteUrl: string | null;
+  openingHours: string | null;
+  coverImageUrl: string | null;
+};
+
+export type DistribuicaoAvaliacoesPublicas = {
+  stars: number;
+  count: number;
+  percentage: number;
+};
+
+export type AvaliacaoPublica = {
+  id: string;
+  guestName: string;
+  rating: number;
+  comment: string;
+  reviewedAt: string;
+  ownerResponse: string | null;
+  ownerRespondedAt: string | null;
+};
+
+export type ResumoAvaliacoesPublicas = {
+  average: number | null;
+  total: number;
+  distribution: DistribuicaoAvaliacoesPublicas[];
+  comments: AvaliacaoPublica[];
+};
+
 export type PropriedadePublica = {
   id: string;
   tenantId: string;
@@ -121,6 +236,9 @@ export type PropriedadePublica = {
   rules: string[];
   checkIn: string;
   checkOut: string;
+  houseRules: RegrasCasaPublicas;
+  regionalGuide: LocalGuiaRegiaoPublico[];
+  reviews: ResumoAvaliacoesPublicas;
 };
 
 export type ResultadoPropriedadesPublicas = {
@@ -160,6 +278,12 @@ const CAMPOS_COMODIDADE = "id,code,name,category";
 const CAMPOS_VINCULO_COMODIDADE = "property_id,amenity_id";
 const CAMPOS_RESERVA_OCUPACAO = "property_id,unit_id,status,check_in,check_out";
 const CAMPOS_BLOQUEIO_OCUPACAO = "property_id,unit_id,status,starts_on,ends_on";
+const CAMPOS_REGRAS_CASA =
+  "tenant_id,property_id,check_in_time,check_out_time,min_nights,max_nights,allow_pets,allow_smoking,allow_events,max_guests,min_responsible_age,additional_rules,cancellation_refund_until_days,cancellation_refund_until_percentage,cancellation_late_until_days,cancellation_late_refund_percentage,cancellation_no_refund_within_days,cancellation_notes";
+const CAMPOS_GUIA_REGIAO =
+  "id,tenant_id,category,name,description,address,phone,whatsapp,website_url,opening_hours,cover_image_url,display_order,status,deleted_at";
+const CAMPOS_AVALIACAO_PUBLICA =
+  "id,tenant_id,property_id,guest_name,rating,comment,reviewed_at,status,owner_response,owner_responded_at";
 const TIPOS_PROPRIEDADE = new Set<PropertyType>([
   "seasonal_home",
   "inn",
@@ -385,7 +509,9 @@ export async function carregarPropriedadePublica(slugOuId: string) {
       };
     }
 
-    const [propriedade] = await montarPropriedadesPublicas(supabase, [resultado.data]);
+    const [propriedade] = await montarPropriedadesPublicas(supabase, [resultado.data], {
+      detalhes: true
+    });
 
     return {
       propriedade: propriedade ?? null,
@@ -445,11 +571,13 @@ function criarClienteMarketplace() {
 
 async function montarPropriedadesPublicas(
   supabase: SupabaseClient,
-  propriedades: PropriedadeRowPublica[]
+  propriedades: PropriedadeRowPublica[],
+  opcoes: { detalhes?: boolean } = {}
 ) {
   if (!propriedades.length) return [];
 
   const ids = propriedades.map((propriedade) => propriedade.id);
+  const tenantIds = [...new Set(propriedades.map((propriedade) => propriedade.tenant_id))];
   const [midiasResultado, unidadesResultado, categoriasResultado, vinculosResultado] =
     await Promise.all([
       supabase
@@ -488,6 +616,9 @@ async function montarPropriedadesPublicas(
     supabase,
     vinculosResultado.data ?? []
   );
+  const detalhes = opcoes.detalhes
+    ? await carregarDetalhesPublicosPropriedade(supabase, ids, tenantIds)
+    : criarDetalhesPublicosVazios();
 
   return propriedades.map((propriedade) =>
     montarPropriedadePublica(propriedade, {
@@ -496,9 +627,69 @@ async function montarPropriedadesPublicas(
       unidades: unidadesResultado.data ?? [],
       categorias: categoriasResultado.data ?? [],
       vinculosComodidades: vinculosResultado.data ?? [],
-      comodidades
+      comodidades,
+      regras: detalhes.regras,
+      guiaRegiao: detalhes.guiaRegiao,
+      avaliacoes: detalhes.avaliacoes
     })
   );
+}
+
+type DetalhesPublicosPropriedade = {
+  regras: RegrasCasaRowPublica[];
+  guiaRegiao: GuiaRegiaoRowPublica[];
+  avaliacoes: AvaliacaoRowPublica[];
+};
+
+function criarDetalhesPublicosVazios(): DetalhesPublicosPropriedade {
+  return {
+    regras: [],
+    guiaRegiao: [],
+    avaliacoes: []
+  };
+}
+
+async function carregarDetalhesPublicosPropriedade(
+  supabase: SupabaseClient,
+  propriedadeIds: string[],
+  tenantIds: string[]
+): Promise<DetalhesPublicosPropriedade> {
+  if (!propriedadeIds.length) return criarDetalhesPublicosVazios();
+
+  const [regrasResultado, guiaResultado, avaliacoesResultado] = await Promise.all([
+    supabase
+      .from("property_settings")
+      .select(CAMPOS_REGRAS_CASA)
+      .in("property_id", propriedadeIds)
+      .returns<RegrasCasaRowPublica[]>(),
+    supabase
+      .from("regional_guide_locations")
+      .select(CAMPOS_GUIA_REGIAO)
+      .in("tenant_id", tenantIds)
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .order("display_order", { ascending: true })
+      .order("name", { ascending: true })
+      .returns<GuiaRegiaoRowPublica[]>(),
+    supabase
+      .from("property_reviews")
+      .select(CAMPOS_AVALIACAO_PUBLICA)
+      .in("property_id", propriedadeIds)
+      .eq("status", "approved")
+      .order("reviewed_at", { ascending: false })
+      .limit(80)
+      .returns<AvaliacaoRowPublica[]>()
+  ]);
+
+  registrarErroLeitura("regras publicas da propriedade", regrasResultado.error);
+  registrarErroLeitura("guia publico da regiao", guiaResultado.error);
+  registrarErroLeitura("avaliacoes publicas", avaliacoesResultado.error);
+
+  return {
+    regras: regrasResultado.data ?? [],
+    guiaRegiao: guiaResultado.data ?? [],
+    avaliacoes: avaliacoesResultado.data ?? []
+  };
 }
 
 async function carregarComodidadesPublicas(
@@ -528,6 +719,9 @@ function montarPropriedadePublica(
     categorias: CategoriaRowPublica[];
     vinculosComodidades: VinculoComodidadeRowPublica[];
     comodidades: ComodidadeRowPublica[];
+    regras: RegrasCasaRowPublica[];
+    guiaRegiao: GuiaRegiaoRowPublica[];
+    avaliacoes: AvaliacaoRowPublica[];
   }
 ): PropriedadePublica {
   const endereco = normalizarEndereco(propriedade.address);
@@ -540,7 +734,11 @@ function montarPropriedadePublica(
   const unidades = montarUnidadesPublicas(propriedade.id, relacionamentos);
   const comodidades = montarComodidadesPublicas(propriedade.id, relacionamentos);
   const minPrice = obterMenorPreco(unidades);
-  const maxGuests = Math.max(...unidades.map((unidade) => unidade.capacity), 1);
+  const maxGuestsUnidades = Math.max(...unidades.map((unidade) => unidade.capacity), 1);
+  const regrasCasa = montarRegrasCasaPublicas(
+    relacionamentos.regras.find((regra) => regra.property_id === propriedade.id),
+    maxGuestsUnidades
+  );
 
   return {
     id: propriedade.id,
@@ -562,14 +760,164 @@ function montarPropriedadePublica(
     amenities: comodidades,
     units: unidades,
     minPrice,
-    maxGuests,
+    maxGuests: regrasCasa.maxGuests,
     rules: [
-      "Check-in e check-out confirmados pelo proprietário.",
-      "Documento dos hóspedes pode ser solicitado antes da entrada.",
-      "Regras específicas da unidade são confirmadas na solicitação de reserva."
+      ...regrasCasa.summary
     ],
-    checkIn: "A partir das 14h",
-    checkOut: "Até 11h"
+    checkIn: regrasCasa.checkIn,
+    checkOut: regrasCasa.checkOut,
+    houseRules: regrasCasa,
+    regionalGuide: montarGuiaRegiaoPublico(
+      propriedade.tenant_id,
+      relacionamentos.guiaRegiao
+    ),
+    reviews: montarAvaliacoesPublicas(propriedade.id, relacionamentos.avaliacoes)
+  };
+}
+
+function montarRegrasCasaPublicas(
+  regras: RegrasCasaRowPublica | undefined,
+  maxGuestsUnidades: number
+): RegrasCasaPublicas {
+  const checkIn = `A partir das ${formatarHorarioRegra(regras?.check_in_time, "14:00")}`;
+  const checkOut = `Até ${formatarHorarioRegra(regras?.check_out_time, "11:00")}`;
+  const minNights = Math.max(regras?.min_nights ?? 1, 1);
+  const maxNights = regras?.max_nights ?? null;
+  const maxGuests = Math.max(regras?.max_guests ?? maxGuestsUnidades, 1);
+  const minResponsibleAge = Math.max(regras?.min_responsible_age ?? 18, 0);
+  const allowPets = regras?.allow_pets ?? false;
+  const allowSmoking = regras?.allow_smoking ?? false;
+  const allowEvents = regras?.allow_events ?? false;
+  const additionalRules = normalizarTextoOpcional(regras?.additional_rules);
+  const cancellationPolicy = montarPoliticaCancelamentoPublica(regras);
+  const summary = [
+    `${checkIn}; check-out ${checkOut.replace(/^Até /, "até ")}.`,
+    `Capacidade máxima de ${maxGuests} ${maxGuests === 1 ? "hóspede" : "hóspedes"}.`,
+    `Estadia mínima de ${minNights} ${minNights === 1 ? "noite" : "noites"}.`,
+    allowPets ? "Pets permitidos pelo proprietário." : "Pets não permitidos.",
+    allowSmoking ? "Fumantes permitidos em áreas autorizadas." : "Ambiente para não fumantes.",
+    allowEvents ? "Eventos permitidos conforme aprovação prévia." : "Eventos não permitidos."
+  ];
+
+  if (maxNights) {
+    summary.push(`Estadia máxima de ${maxNights} ${maxNights === 1 ? "noite" : "noites"}.`);
+  }
+
+  if (minResponsibleAge > 0) {
+    summary.push(`Responsável pela reserva a partir de ${minResponsibleAge} anos.`);
+  }
+
+  if (additionalRules) {
+    summary.push(additionalRules);
+  }
+
+  return {
+    checkIn,
+    checkOut,
+    allowPets,
+    allowSmoking,
+    allowEvents,
+    maxGuests,
+    minResponsibleAge,
+    minNights,
+    maxNights,
+    additionalRules,
+    cancellationPolicy,
+    summary
+  };
+}
+
+function montarPoliticaCancelamentoPublica(
+  regras: RegrasCasaRowPublica | undefined
+): PoliticaCancelamentoPublica {
+  if (!regras) {
+    return {
+      itens: [],
+      observacoes: null
+    };
+  }
+
+  const itens = [
+    `Até ${regras.cancellation_refund_until_days} dias antes do check-in: reembolso de ${formatarPercentual(
+      regras.cancellation_refund_until_percentage
+    )}.`,
+    `Até ${regras.cancellation_late_until_days} dias antes do check-in: reembolso de ${formatarPercentual(
+      regras.cancellation_late_refund_percentage
+    )}.`,
+    `Dentro dos últimos ${regras.cancellation_no_refund_within_days} dias: sem reembolso.`
+  ];
+
+  return {
+    itens,
+    observacoes: normalizarTextoOpcional(regras.cancellation_notes)
+  };
+}
+
+function montarGuiaRegiaoPublico(
+  tenantId: string,
+  locais: GuiaRegiaoRowPublica[]
+): LocalGuiaRegiaoPublico[] {
+  return locais
+    .filter(
+      (local) =>
+        local.tenant_id === tenantId &&
+        local.status === "active" &&
+        local.deleted_at === null
+    )
+    .map((local) => ({
+      id: local.id,
+      category: local.category,
+      categoryLabel: rotuloCategoriaGuiaRegiao(local.category),
+      name: local.name,
+      description: normalizarTextoOpcional(local.description),
+      address: normalizarTextoOpcional(local.address),
+      phone: normalizarTextoOpcional(local.phone),
+      whatsapp: normalizarTextoOpcional(local.whatsapp),
+      websiteUrl: normalizarTextoOpcional(local.website_url),
+      openingHours: normalizarTextoOpcional(local.opening_hours),
+      coverImageUrl: normalizarTextoOpcional(local.cover_image_url)
+    }));
+}
+
+function montarAvaliacoesPublicas(
+  propriedadeId: string,
+  avaliacoes: AvaliacaoRowPublica[]
+): ResumoAvaliacoesPublicas {
+  const publicadas = avaliacoes
+    .filter(
+      (avaliacao) =>
+        avaliacao.property_id === propriedadeId && avaliacao.status === "approved"
+    )
+    .map((avaliacao) => ({
+      ...avaliacao,
+      rating: limitarNotaAvaliacao(avaliacao.rating)
+    }));
+  const total = publicadas.length;
+  const soma = publicadas.reduce((acumulado, avaliacao) => acumulado + avaliacao.rating, 0);
+  const average = total ? Number((soma / total).toFixed(1)) : null;
+  const distribution = [5, 4, 3, 2, 1].map((stars) => {
+    const count = publicadas.filter((avaliacao) => avaliacao.rating === stars).length;
+
+    return {
+      stars,
+      count,
+      percentage: total ? Math.round((count / total) * 100) : 0
+    };
+  });
+
+  return {
+    average,
+    total,
+    distribution,
+    comments: publicadas.map((avaliacao) => ({
+      id: avaliacao.id,
+      guestName: avaliacao.guest_name,
+      rating: avaliacao.rating,
+      comment: avaliacao.comment,
+      reviewedAt: avaliacao.reviewed_at,
+      ownerResponse: normalizarTextoOpcional(avaliacao.owner_response),
+      ownerRespondedAt: avaliacao.owner_responded_at
+    }))
   };
 }
 
@@ -663,6 +1011,11 @@ function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string
   return typeof dado === "string" ? dado : "";
 }
 
+function normalizarTextoOpcional(valor: string | null | undefined) {
+  const texto = valor?.trim();
+  return texto ? texto : null;
+}
+
 function valorEhObjeto(valor: JsonValue): valor is Record<string, JsonValue> {
   return Boolean(valor) && typeof valor === "object" && !Array.isArray(valor);
 }
@@ -710,6 +1063,41 @@ function rotuloTipoPropriedade(tipo: PropertyType) {
   };
 
   return rotulos[tipo];
+}
+
+function rotuloCategoriaGuiaRegiao(categoria: RegionalGuideCategory) {
+  const rotulos: Record<RegionalGuideCategory, string> = {
+    beaches: "Praias",
+    coffee_shops: "Cafeterias",
+    hospitals: "Hospitais",
+    markets: "Mercados",
+    nightlife: "Vida noturna",
+    others: "Outros",
+    pharmacies: "Farmácias",
+    restaurants: "Restaurantes",
+    snack_bars: "Lanchonetes",
+    tourist_spots: "Pontos turísticos",
+    tours: "Passeios",
+    waterfalls: "Cachoeiras"
+  };
+
+  return rotulos[categoria];
+}
+
+function formatarHorarioRegra(valor: string | null | undefined, fallback: string) {
+  const horario = valor || fallback;
+  const [hora, minuto = "00"] = horario.split(":");
+  const horaNormalizada = hora?.padStart(2, "0") || fallback.slice(0, 2);
+
+  return minuto === "00" ? `${horaNormalizada}h` : `${horaNormalizada}h${minuto}`;
+}
+
+function formatarPercentual(valor: number) {
+  return `${Math.round(valor)}%`;
+}
+
+function limitarNotaAvaliacao(valor: number) {
+  return Math.min(Math.max(Math.round(valor), 1), 5);
 }
 
 function limitarQuantidade(valor: number) {
