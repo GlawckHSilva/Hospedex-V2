@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -10,6 +11,7 @@ import {
   BedDouble,
   Building2,
   CalendarDays,
+  ChevronDown,
   ClipboardCheck,
   CreditCard,
   FileBarChart,
@@ -25,6 +27,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  UserRound,
   Users,
   X,
   type LucideIcon
@@ -68,7 +71,10 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
 };
 
 export type AdminShellProps = {
-  acaoSair: ReactNode;
+  acaoSairHeader: ReactNode;
+  acaoSairMenu: ReactNode;
+  acaoSairMobile: ReactNode;
+  acaoSairSidebar: ReactNode;
   children: ReactNode;
   contexto: ContextoAutenticacao;
   notificacoes: ResumoNotificacoesGerenciamento;
@@ -80,7 +86,15 @@ export type AdminShellProps = {
  * A navegação é calculada a partir do contexto multi-tenant recebido do servidor,
  * garantindo que funcionário, proprietário e super admin vejam estruturas distintas.
  */
-export function AdminShell({ acaoSair, children, contexto, notificacoes }: AdminShellProps) {
+export function AdminShell({
+  acaoSairHeader,
+  acaoSairMenu,
+  acaoSairMobile,
+  acaoSairSidebar,
+  children,
+  contexto,
+  notificacoes
+}: AdminShellProps) {
   const pathname = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
   const itensMenu = obterMenuAdmin(contexto);
@@ -88,6 +102,8 @@ export function AdminShell({ acaoSair, children, contexto, notificacoes }: Admin
   const tituloPerfil = obterTituloPerfilAdmin(perfil);
   const nomeUsuario = contexto.profile.full_name ?? contexto.profile.email;
   const nomeTenant = perfil === "super_admin" ? "Plataforma" : contexto.tenant?.name ?? "Sem tenant";
+  const iniciaisUsuario = obterIniciaisUsuario(nomeUsuario, contexto.profile.email);
+  const gerenciamento = perfil !== "super_admin";
 
   return (
     <div
@@ -99,7 +115,12 @@ export function AdminShell({ acaoSair, children, contexto, notificacoes }: Admin
       data-admin-perfil={perfil}
     >
       <TopbarAdmin
-        acaoSair={acaoSair}
+        acaoSairHeader={acaoSairHeader}
+        acaoSairMenu={acaoSairMenu}
+        avatarUrl={contexto.profile.avatar_url}
+        emailUsuario={contexto.profile.email}
+        gerenciamento={gerenciamento}
+        iniciaisUsuario={iniciaisUsuario}
         nomeTenant={nomeTenant}
         nomeUsuario={nomeUsuario}
         notificacoes={notificacoes}
@@ -108,7 +129,14 @@ export function AdminShell({ acaoSair, children, contexto, notificacoes }: Admin
       />
 
       <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[264px_1fr]">
-        <SidebarAdmin itens={itensMenu} pathname={pathname} tituloPerfil={tituloPerfil} />
+        <SidebarAdmin
+          acaoSairSidebar={acaoSairSidebar}
+          gerenciamento={gerenciamento}
+          itens={itensMenu}
+          nomeTenant={nomeTenant}
+          pathname={pathname}
+          tituloPerfil={tituloPerfil}
+        />
 
         <motion.main
           animate={{ opacity: 1, y: 0 }}
@@ -123,7 +151,10 @@ export function AdminShell({ acaoSair, children, contexto, notificacoes }: Admin
       <AnimatePresence>
         {menuAberto ? (
           <MenuMobileAdmin
+            acaoSairMobile={acaoSairMobile}
+            gerenciamento={gerenciamento}
             itens={itensMenu}
+            nomeTenant={nomeTenant}
             onFechar={() => setMenuAberto(false)}
             pathname={pathname}
             tituloPerfil={tituloPerfil}
@@ -135,7 +166,12 @@ export function AdminShell({ acaoSair, children, contexto, notificacoes }: Admin
 }
 
 type TopbarAdminProps = {
-  acaoSair: ReactNode;
+  acaoSairHeader: ReactNode;
+  acaoSairMenu: ReactNode;
+  avatarUrl: string | null;
+  emailUsuario: string;
+  gerenciamento: boolean;
+  iniciaisUsuario: string;
   nomeTenant: string;
   nomeUsuario: string;
   notificacoes: ResumoNotificacoesGerenciamento;
@@ -144,7 +180,12 @@ type TopbarAdminProps = {
 };
 
 function TopbarAdmin({
-  acaoSair,
+  acaoSairHeader,
+  acaoSairMenu,
+  avatarUrl,
+  emailUsuario,
+  gerenciamento,
+  iniciaisUsuario,
   nomeTenant,
   nomeUsuario,
   notificacoes,
@@ -167,9 +208,11 @@ function TopbarAdmin({
           </Button>
 
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 shadow-sm shadow-cyan-500/10 dark:text-cyan-200">
-              <ShieldCheck className="h-4 w-4" />
-            </div>
+            {!gerenciamento ? (
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 shadow-sm shadow-cyan-500/10 dark:text-cyan-200">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+            ) : null}
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">Admin Hospedex</p>
               <p className="truncate text-xs text-muted-foreground">{nomeTenant}</p>
@@ -187,44 +230,190 @@ function TopbarAdmin({
           </div>
           <ThemeToggle />
           {tituloPerfil !== "Super Admin" ? <NotificationBell resumo={notificacoes} /> : null}
-          {acaoSair}
+          {gerenciamento ? (
+            <PerfilUsuarioMenu
+              acaoSairMenu={acaoSairMenu}
+              avatarUrl={avatarUrl}
+              emailUsuario={emailUsuario}
+              iniciaisUsuario={iniciaisUsuario}
+              nomeUsuario={nomeUsuario}
+            />
+          ) : (
+            acaoSairHeader
+          )}
         </div>
       </div>
     </header>
   );
 }
 
+type PerfilUsuarioMenuProps = {
+  acaoSairMenu: ReactNode;
+  avatarUrl: string | null;
+  emailUsuario: string;
+  iniciaisUsuario: string;
+  nomeUsuario: string;
+};
+
+function PerfilUsuarioMenu({
+  acaoSairMenu,
+  avatarUrl,
+  emailUsuario,
+  iniciaisUsuario,
+  nomeUsuario
+}: PerfilUsuarioMenuProps) {
+  const [aberto, setAberto] = useState(false);
+
+  return (
+    <div className="relative">
+      <Button
+        aria-expanded={aberto}
+        aria-haspopup="menu"
+        aria-label="Abrir menu do perfil"
+        className="gap-2 rounded-full border border-border/70 bg-background/70 px-1.5 shadow-sm hover:bg-cyan-500/10"
+        onClick={() => setAberto((valorAtual) => !valorAtual)}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        <AvatarUsuario avatarUrl={avatarUrl} iniciaisUsuario={iniciaisUsuario} nomeUsuario={nomeUsuario} />
+        <ChevronDown className={cn("h-3.5 w-3.5 transition", aberto && "rotate-180")} />
+      </Button>
+
+      <AnimatePresence>
+        {aberto ? (
+          <motion.div
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-border/70 bg-background/95 p-2 shadow-xl shadow-cyan-950/10 backdrop-blur-xl dark:shadow-black/30"
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            role="menu"
+            transition={{ duration: 0.16, ease: "easeOut" }}
+          >
+            <div className="px-3 py-2">
+              <p className="truncate text-sm font-semibold">{nomeUsuario}</p>
+              <p className="truncate text-xs text-muted-foreground">{emailUsuario}</p>
+            </div>
+            <div className="my-1 h-px bg-border/70" />
+            <Link
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-cyan-500/10 hover:text-foreground"
+              href="/configuracoes"
+              onClick={() => setAberto(false)}
+              role="menuitem"
+            >
+              <UserRound className="h-4 w-4" />
+              <span>Meu perfil</span>
+            </Link>
+            <Link
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-cyan-500/10 hover:text-foreground"
+              href="/configuracoes"
+              onClick={() => setAberto(false)}
+              role="menuitem"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Configurações</span>
+            </Link>
+            <div className="my-1 h-px bg-border/70" />
+            {acaoSairMenu}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function AvatarUsuario({
+  avatarUrl,
+  iniciaisUsuario,
+  nomeUsuario
+}: {
+  avatarUrl: string | null;
+  iniciaisUsuario: string;
+  nomeUsuario: string;
+}) {
+  return (
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/40 bg-cyan-500/15 text-xs font-semibold text-cyan-800 dark:text-cyan-100">
+      {avatarUrl ? (
+        <Image
+          alt={nomeUsuario}
+          className="h-full w-full object-cover"
+          height={32}
+          src={avatarUrl}
+          unoptimized
+          width={32}
+        />
+      ) : (
+        iniciaisUsuario
+      )}
+    </span>
+  );
+}
+
 type SidebarAdminProps = {
+  acaoSairSidebar: ReactNode;
+  gerenciamento: boolean;
   itens: ItemMenuAdminResolvido[];
+  nomeTenant: string;
   pathname: string;
   tituloPerfil: string;
 };
 
-function SidebarAdmin({ itens, pathname, tituloPerfil }: SidebarAdminProps) {
+function SidebarAdmin({
+  acaoSairSidebar,
+  gerenciamento,
+  itens,
+  nomeTenant,
+  pathname,
+  tituloPerfil
+}: SidebarAdminProps) {
   return (
     <aside className="hidden min-h-0 lg:block">
       <div className="glass-sidebar sticky top-[5.25rem] flex h-[calc(100dvh-6.5rem)] min-h-0 flex-col overflow-hidden p-3">
         <div className="shrink-0 px-2 pb-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
-            {tituloPerfil}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">Navegação por perfil</p>
+          {gerenciamento ? (
+            <>
+              <p className="truncate text-sm font-semibold">Admin Hospedex</p>
+              <p className="mt-1 truncate text-xs text-muted-foreground">{nomeTenant}</p>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
+                {tituloPerfil}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Navegação por perfil</p>
+            </>
+          )}
         </div>
         <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} pathname={pathname} />
           ))}
+          {gerenciamento ? <div className="pt-1">{acaoSairSidebar}</div> : null}
         </nav>
       </div>
     </aside>
   );
 }
 
-type MenuMobileAdminProps = SidebarAdminProps & {
+type MenuMobileAdminProps = {
+  acaoSairMobile: ReactNode;
+  gerenciamento: boolean;
+  itens: ItemMenuAdminResolvido[];
+  nomeTenant: string;
   onFechar: () => void;
+  pathname: string;
+  tituloPerfil: string;
 };
 
-function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobileAdminProps) {
+function MenuMobileAdmin({
+  acaoSairMobile,
+  gerenciamento,
+  itens,
+  nomeTenant,
+  onFechar,
+  pathname,
+  tituloPerfil
+}: MenuMobileAdminProps) {
   return (
     <motion.div
       animate={{ opacity: 1 }}
@@ -241,8 +430,17 @@ function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobile
       >
         <div className="flex shrink-0 items-center justify-between pb-4">
           <div>
-            <p className="text-sm font-semibold">{tituloPerfil}</p>
-            <p className="text-xs text-muted-foreground">Menu administrativo</p>
+            {gerenciamento ? (
+              <>
+                <p className="text-sm font-semibold">Admin Hospedex</p>
+                <p className="text-xs text-muted-foreground">{nomeTenant}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold">{tituloPerfil}</p>
+                <p className="text-xs text-muted-foreground">Menu administrativo</p>
+              </>
+            )}
           </div>
           <Button aria-label="Fechar menu" onClick={onFechar} size="icon" type="button" variant="ghost">
             <X />
@@ -253,6 +451,7 @@ function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobile
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} onNavigate={onFechar} pathname={pathname} />
           ))}
+          {gerenciamento ? <div className="pt-1">{acaoSairMobile}</div> : null}
         </nav>
       </motion.aside>
     </motion.div>
@@ -300,4 +499,15 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
       {conteudo}
     </Link>
   );
+}
+
+function obterIniciaisUsuario(nomeUsuario: string, emailUsuario: string) {
+  const base = (nomeUsuario || emailUsuario).trim();
+  const partesNome = base.split(/\s+/).filter(Boolean);
+
+  if (partesNome.length >= 2) {
+    return `${partesNome[0]?.[0] ?? ""}${partesNome[1]?.[0] ?? ""}`.toUpperCase();
+  }
+
+  return (base.slice(0, 2) || "HP").toUpperCase();
 }
