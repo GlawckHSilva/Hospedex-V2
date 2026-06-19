@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input, Label, cn } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
+import { AppModal } from "../management/entity-modal";
 import {
   atualizarPropriedadeAction,
   criarPropriedadeAction,
@@ -82,6 +83,44 @@ const campoClasse =
 const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const MAX_PARCELAS_CARTAO = 12;
+
+type JurosParcelaCartao = PropriedadeComRelacionamentos["valores"]["jurosParcelasCartao"][number];
+
+function limitarParcelasCartao(valor: number) {
+  if (!Number.isFinite(valor)) return 1;
+  return Math.min(Math.max(Math.trunc(valor), 1), MAX_PARCELAS_CARTAO);
+}
+
+function normalizarValorJuros(valor: string | number | undefined) {
+  const numero = Number(String(valor ?? "0").replace(",", "."));
+  if (!Number.isFinite(numero) || numero < 0) return "0";
+  return String(numero);
+}
+
+function formatarJuros(valor: string | number | undefined) {
+  const numero = Number(normalizarValorJuros(valor));
+  return `${new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: Number.isInteger(numero) ? 0 : 2,
+  }).format(numero)}%`;
+}
+
+function criarJurosParcelasIniciais(
+  maxParcelas: number,
+  jurosExistentes: JurosParcelaCartao[] = [],
+) {
+  const jurosPorParcela = new Map(
+    jurosExistentes.map((item) => [item.parcela, item.jurosPercentual]),
+  );
+
+  return Array.from({ length: maxParcelas }, (_, indice) => {
+    const parcela = indice + 1;
+    return [parcela, normalizarValorJuros(jurosPorParcela.get(parcela) ?? 0)] as const;
+  }).reduce<Record<number, string>>((resultado, [parcela, juros]) => {
+    resultado[parcela] = juros;
+    return resultado;
+  }, {});
+}
 
 type PreviewGaleria = {
   id: string;
@@ -479,18 +518,51 @@ function EtapaValores({
   unidadeCasa?: PropriedadeComRelacionamentos["unidades"][number] | undefined;
   valores?: PropriedadeComRelacionamentos["valores"] | undefined;
 }) {
+  const maxParcelasInicial = limitarParcelasCartao(valores?.maxParcelasCartao ?? 1);
   const [aceitaCartaoCredito, setAceitaCartaoCredito] = useState(
     valores?.aceitaCartaoCredito ?? false,
   );
-  const [maxParcelasCartao, setMaxParcelasCartao] = useState(
-    Math.min(valores?.maxParcelasCartao ?? 1, MAX_PARCELAS_CARTAO),
+  const [maxParcelasCartao, setMaxParcelasCartao] = useState(maxParcelasInicial);
+  const [jurosCartao, setJurosCartao] = useState(() =>
+    criarJurosParcelasIniciais(maxParcelasInicial, valores?.jurosParcelasCartao),
   );
-  const jurosPorParcela = new Map(
-    (valores?.jurosParcelasCartao ?? []).map((item) => [
-      item.parcela,
-      item.jurosPercentual,
-    ]),
-  );
+  const [parcelaEmEdicao, setParcelaEmEdicao] = useState<number | null>(null);
+  const [jurosEmEdicao, setJurosEmEdicao] = useState("0");
+  const parcelasCartao = Array.from({ length: maxParcelasCartao }, (_, indice) => indice + 1);
+
+  function alterarMaxParcelasCartao(valor: string) {
+    const novoLimite = limitarParcelasCartao(Number.parseInt(valor || "1", 10));
+    setMaxParcelasCartao(novoLimite);
+
+    setJurosCartao((jurosAtuais) =>
+      Array.from({ length: novoLimite }, (_, indice) => {
+        const parcela = indice + 1;
+        return [parcela, jurosAtuais[parcela] ?? "0"] as const;
+      }).reduce<Record<number, string>>((resultado, [parcela, juros]) => {
+        resultado[parcela] = juros;
+        return resultado;
+      }, {}),
+    );
+
+    if (parcelaEmEdicao && parcelaEmEdicao > novoLimite) {
+      setParcelaEmEdicao(null);
+    }
+  }
+
+  function abrirEdicaoJuros(parcela: number) {
+    setParcelaEmEdicao(parcela);
+    setJurosEmEdicao(jurosCartao[parcela] ?? "0");
+  }
+
+  function salvarJurosParcela() {
+    if (!parcelaEmEdicao) return;
+
+    setJurosCartao((jurosAtuais) => ({
+      ...jurosAtuais,
+      [parcelaEmEdicao]: normalizarValorJuros(jurosEmEdicao),
+    }));
+    setParcelaEmEdicao(null);
+  }
 
   return (
     <div className="grid gap-5">
@@ -533,35 +605,101 @@ function EtapaValores({
             max={MAX_PARCELAS_CARTAO}
             min={1}
             name="maxParcelasCartao"
-            onChange={(evento) =>
-              setMaxParcelasCartao(
-                Math.min(
-                  Math.max(Number.parseInt(evento.currentTarget.value || "1", 10), 1),
-                  MAX_PARCELAS_CARTAO,
-                ),
-              )
-            }
+            onChange={(evento) => alterarMaxParcelasCartao(evento.currentTarget.value)}
             value={maxParcelasCartao}
           />
         </div>
 
         {aceitaCartaoCredito ? (
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: maxParcelasCartao }, (_, indice) => {
-              const parcela = indice + 1;
-              return (
-                <CampoNumero
-                  defaultValue={jurosPorParcela.get(parcela) ?? (parcela === 1 ? 0 : "")}
-                  disabled={disabled}
-                  key={parcela}
-                  label={`${parcela}x - juros %`}
-                  min={0}
-                  name={`jurosParcela${parcela}`}
-                  step="0.01"
-                />
-              );
-            })}
-          </div>
+          <>
+            {/*
+              Mantemos os campos ocultos com o contrato atual da server action.
+              A UI fica limpa, mas cada parcela continua sendo salva individualmente.
+            */}
+            {parcelasCartao.map((parcela) => (
+              <input
+                key={parcela}
+                name={`jurosParcela${parcela}`}
+                type="hidden"
+                value={jurosCartao[parcela] ?? "0"}
+              />
+            ))}
+
+            <div className="mt-4 overflow-hidden rounded-xl border bg-background/55">
+              <div className="grid grid-cols-[0.7fr_1fr_auto] gap-3 border-b bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
+                <span>Parcela</span>
+                <span>Juros</span>
+                <span className="text-right">Acao</span>
+              </div>
+              <div className="divide-y">
+                {parcelasCartao.map((parcela) => (
+                  <div
+                    className="grid grid-cols-[0.7fr_1fr_auto] items-center gap-3 px-3 py-3 text-sm"
+                    key={parcela}
+                  >
+                    <span className="font-semibold">{parcela}x</span>
+                    <span className="text-muted-foreground">
+                      {formatarJuros(jurosCartao[parcela])}
+                    </span>
+                    <ActionButton
+                      disabled={disabled}
+                      onClick={() => abrirEdicaoJuros(parcela)}
+                      size="sm"
+                      type="button"
+                      variant="edit"
+                    >
+                      Editar
+                    </ActionButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <AppModal
+              description="Informe o percentual aplicado a esta parcela."
+              eyebrow="Cartao de credito"
+              onOpenChange={(open) => {
+                if (!open) setParcelaEmEdicao(null);
+              }}
+              open={parcelaEmEdicao !== null}
+              size="sm"
+              title="Editar juros da parcela"
+            >
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="parcelaCartaoSelecionada">Parcela</Label>
+                  <Input
+                    id="parcelaCartaoSelecionada"
+                    readOnly
+                    value={parcelaEmEdicao ? `${parcelaEmEdicao}x` : ""}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="jurosCartaoSelecionado">Juros (%)</Label>
+                  <Input
+                    disabled={disabled}
+                    id="jurosCartaoSelecionado"
+                    min={0}
+                    onChange={(evento) => setJurosEmEdicao(evento.currentTarget.value)}
+                    step="0.01"
+                    type="number"
+                    value={jurosEmEdicao}
+                  />
+                </div>
+                <div className="flex justify-end border-t pt-4">
+                  <ActionButton
+                    disabled={disabled}
+                    onClick={salvarJurosParcela}
+                    size="md"
+                    type="button"
+                    variant="add"
+                  >
+                    Salvar
+                  </ActionButton>
+                </div>
+              </div>
+            </AppModal>
+          </>
         ) : null}
       </section>
     </div>
