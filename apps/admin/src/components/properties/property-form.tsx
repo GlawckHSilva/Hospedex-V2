@@ -92,6 +92,31 @@ type PreviewGaleria = {
   url: string;
 };
 
+function criarPreviewGaleria(arquivo: File, ordem: number, principal: boolean): PreviewGaleria {
+  return {
+    id: `${arquivo.name}-${arquivo.lastModified}-${arquivo.size}-${crypto.randomUUID()}`,
+    nome: arquivo.name,
+    ordem,
+    principal,
+    titulo: arquivo.name.replace(/\.[^.]+$/, ""),
+    url: URL.createObjectURL(arquivo),
+  };
+}
+
+function normalizarGaleria(previews: PreviewGaleria[]): PreviewGaleria[] {
+  const indicePrincipal = Math.max(
+    previews.findIndex((preview) => preview.principal),
+    0,
+  );
+
+  return previews.map((preview, indice) => ({
+    ...preview,
+    ordem: indice + 1,
+    // Toda galeria precisa manter uma imagem principal para uso futuro no marketplace.
+    principal: indice === indicePrincipal,
+  }));
+}
+
 export function PropertyForm({
   comodidadesDisponiveis,
   modo,
@@ -106,6 +131,9 @@ export function PropertyForm({
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>([]);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
+  const arquivosGaleriaRef = useRef<File[]>([]);
+  const previewCapaRef = useRef<string | null>(null);
+  const previewsGaleriaRef = useRef<PreviewGaleria[]>([]);
   const endereco = propriedade?.enderecoFormatado;
   const estrutura = propriedade?.estrutura;
   const valores = propriedade?.valores;
@@ -116,11 +144,19 @@ export function PropertyForm({
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
 
   useEffect(() => {
+    previewCapaRef.current = previewCapa;
+  }, [previewCapa]);
+
+  useEffect(() => {
+    previewsGaleriaRef.current = previewsGaleria;
+  }, [previewsGaleria]);
+
+  useEffect(() => {
     return () => {
-      if (previewCapa) URL.revokeObjectURL(previewCapa);
-      previewsGaleria.forEach((preview) => URL.revokeObjectURL(preview.url));
+      if (previewCapaRef.current) URL.revokeObjectURL(previewCapaRef.current);
+      previewsGaleriaRef.current.forEach((preview) => URL.revokeObjectURL(preview.url));
     };
-  }, [previewCapa, previewsGaleria]);
+  }, []);
 
   function validarImagem(arquivo?: File) {
     if (!arquivo) return null;
@@ -140,35 +176,56 @@ export function PropertyForm({
     setPreviewCapa(arquivo && !erro ? URL.createObjectURL(arquivo) : null);
   }
 
+  function sincronizarArquivosGaleria(arquivos: File[]) {
+    arquivosGaleriaRef.current = arquivos;
+
+    if (!galeriaRef.current) return;
+
+    const colecao = new DataTransfer();
+    arquivos.forEach((arquivo) => colecao.items.add(arquivo));
+    galeriaRef.current.files = colecao.files;
+  }
+
   function selecionarGaleria(arquivos: FileList | null) {
-    previewsGaleria.forEach((preview) => URL.revokeObjectURL(preview.url));
-    const lista = Array.from(arquivos ?? []);
-    const erro = lista.map((arquivo) => validarImagem(arquivo)).find(Boolean) ?? null;
+    const novasImagens = Array.from(arquivos ?? []);
+
+    if (novasImagens.length === 0) return;
+
+    const erro = novasImagens.map((arquivo) => validarImagem(arquivo)).find(Boolean) ?? null;
     setErroImagem(erro);
-    setPreviewsGaleria(
-      erro
-        ? []
-        : lista.map((arquivo, indice) => ({
-            id: `${arquivo.name}-${arquivo.lastModified}-${indice}`,
-            nome: arquivo.name,
-            ordem: indice + 1,
-            principal: indice === 0,
-            titulo: arquivo.name.replace(/\.[^.]+$/, ""),
-            url: URL.createObjectURL(arquivo),
-          })),
+
+    if (erro) {
+      sincronizarArquivosGaleria(arquivosGaleriaRef.current);
+      return;
+    }
+
+    // O input file do navegador substitui a selecao a cada upload.
+    // A ref preserva a colecao real para que novas fotos sejam adicionadas sem apagar as anteriores.
+    sincronizarArquivosGaleria([...arquivosGaleriaRef.current, ...novasImagens]);
+
+    setPreviewsGaleria((previewsAtuais) =>
+      normalizarGaleria([
+        ...previewsAtuais,
+        ...novasImagens.map((arquivo, indice) =>
+          criarPreviewGaleria(
+            arquivo,
+            previewsAtuais.length + indice + 1,
+            previewsAtuais.length === 0 && indice === 0,
+          ),
+        ),
+      ]),
     );
   }
 
   function removerGaleria(indiceRemovido: number) {
-    const input = galeriaRef.current;
-    if (!input?.files) return;
+    setPreviewsGaleria((previewsAtuais) => {
+      const previewRemovido = previewsAtuais[indiceRemovido];
+      if (previewRemovido) URL.revokeObjectURL(previewRemovido.url);
 
-    const dataTransfer = new DataTransfer();
-    Array.from(input.files).forEach((arquivo, indice) => {
-      if (indice !== indiceRemovido) dataTransfer.items.add(arquivo);
+      return normalizarGaleria(previewsAtuais.filter((_, indice) => indice !== indiceRemovido));
     });
-    input.files = dataTransfer.files;
-    selecionarGaleria(input.files);
+
+    sincronizarArquivosGaleria(arquivosGaleriaRef.current.filter((_, indice) => indice !== indiceRemovido));
   }
 
   function atualizarTituloGaleria(indiceAlterado: number, titulo: string) {
@@ -590,7 +647,7 @@ function EtapaImagens({
         <div className="rounded-xl border bg-background/45 p-3">
           <p className="mb-3 text-sm font-semibold">Galeria</p>
           {previewsGaleria.length ? (
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {previewsGaleria.map((preview, indice) => (
                 <div className="grid gap-3 overflow-hidden rounded-lg border bg-background/55 p-3" key={preview.id}>
                   <input name="titulosGaleria" readOnly type="hidden" value={preview.titulo} />
