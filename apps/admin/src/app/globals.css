@@ -58,25 +58,16 @@
 body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card) {
   --interactive-card-x: 50%;
   --interactive-card-y: 50%;
-  --interactive-card-rotate-x: 0deg;
-  --interactive-card-rotate-y: 0deg;
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  transform:
-    perspective(900px)
-    translateY(0)
-    rotateX(var(--interactive-card-rotate-x))
-    rotateY(var(--interactive-card-rotate-y));
-  transform-style: preserve-3d;
   transition:
-    transform 180ms ease,
     border-color 180ms ease,
     box-shadow 180ms ease,
     background-color 180ms ease;
 }
 
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card)::before {
+body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card)::after {
   position: absolute;
   inset: 0;
   z-index: 0;
@@ -101,37 +92,25 @@ body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-
 body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover {
   border-color: color-mix(in oklch, var(--premium-cyan) 52%, var(--border));
   box-shadow:
-    0 26px 76px color-mix(in oklch, var(--premium-cyan) 18%, transparent),
-    0 10px 26px color-mix(in oklch, var(--foreground) 10%, transparent),
+    0 20px 56px color-mix(in oklch, var(--premium-cyan) 12%, transparent),
+    0 8px 22px color-mix(in oklch, var(--foreground) 8%, transparent),
     inset 0 1px 0 color-mix(in oklch, white 34%, transparent);
-  transform:
-    perspective(900px)
-    translateY(-4px)
-    rotateX(var(--interactive-card-rotate-x))
-    rotateY(var(--interactive-card-rotate-y));
-  will-change: transform;
 }
 
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover::before {
+body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover::after {
   opacity: 1;
 }
 
 .dark body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover {
   border-color: color-mix(in oklch, var(--premium-cyan) 46%, var(--border));
   box-shadow:
-    0 26px 76px color-mix(in oklch, var(--premium-cyan) 16%, transparent),
-    0 10px 30px color-mix(in oklch, black 44%, transparent),
+    0 20px 56px color-mix(in oklch, var(--premium-cyan) 12%, transparent),
+    0 8px 24px color-mix(in oklch, black 38%, transparent),
     inset 0 1px 0 color-mix(in oklch, white 16%, transparent);
 }
 
 @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
-  body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card),
-  body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover {
-    transform: none;
-    will-change: auto;
-  }
-
-  body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card)::before {
+  body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card)::after {
     display: none;
   }
 }

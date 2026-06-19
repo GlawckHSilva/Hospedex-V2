@@ -8,11 +8,11 @@ const SELETOR_CARTAO_INTERATIVO =
   ".admin-glass-card, .glass-card, .admin-interactive-card";
 
 /**
- * Camada reutilizavel para o efeito premium dos cards do Gerenciamento.
+ * Camada reutilizavel para a luz interna dos cards do Gerenciamento.
  *
  * A regra fica centralizada para evitar duplicacao em cada modulo. O listener
- * atualiza variaveis CSS no card sob o mouse, permitindo brilho posicional e
- * inclinacao sutil sem alterar regras de negocio, permissoes ou dados.
+ * atualiza apenas a posicao do brilho ciano no card sob o mouse; nenhum
+ * transform e aplicado para manter os cards totalmente estaticos.
  */
 export function InteractiveCardEffects() {
   useEffect(() => {
@@ -20,8 +20,8 @@ export function InteractiveCardEffects() {
     const permiteHoverFino = window.matchMedia("(hover: hover) and (pointer: fine)");
     const permiteMovimento = window.matchMedia("(prefers-reduced-motion: no-preference)");
 
-    // O efeito de profundidade fica restrito a desktop com mouse preciso.
-    // Em mobile ou reduced motion mantemos leitura e acessibilidade sem rotação.
+    // A luz interna fica restrita a desktop com mouse preciso.
+    // Em mobile ou reduced motion mantemos leitura e acessibilidade sem animacao.
     if (!shellGerenciamento || !permiteHoverFino.matches || !permiteMovimento.matches) {
       return;
     }
@@ -36,7 +36,7 @@ export function InteractiveCardEffects() {
       return alvo.closest<HTMLElement>(SELETOR_CARTAO_INTERATIVO);
     }
 
-    function atualizarCartao(evento: PointerEvent) {
+    function atualizarLuzCartao(evento: PointerEvent) {
       const cartao = obterCartao(evento.target);
 
       if (!cartao) {
@@ -46,22 +46,12 @@ export function InteractiveCardEffects() {
       const limite = cartao.getBoundingClientRect();
       const posicaoX = evento.clientX - limite.left;
       const posicaoY = evento.clientY - limite.top;
-      const percentualX = limite.width > 0 ? posicaoX / limite.width : 0.5;
-      const percentualY = limite.height > 0 ? posicaoY / limite.height : 0.5;
-      const rotacaoY = (percentualX - 0.5) * 3;
-      const rotacaoX = (0.5 - percentualY) * 3;
 
       cartao.style.setProperty("--interactive-card-x", `${posicaoX}px`);
       cartao.style.setProperty("--interactive-card-y", `${posicaoY}px`);
-      cartao.style.setProperty("--interactive-card-rotate-x", `${rotacaoX.toFixed(2)}deg`);
-      cartao.style.setProperty("--interactive-card-rotate-y", `${rotacaoY.toFixed(2)}deg`);
-      cartao.style.setProperty(
-        "transform",
-        `perspective(900px) translateY(-4px) rotateX(${rotacaoX.toFixed(2)}deg) rotateY(${rotacaoY.toFixed(2)}deg)`,
-      );
     }
 
-    function resetarCartao(evento: PointerEvent) {
+    function resetarLuzCartao(evento: PointerEvent) {
       const cartaoAtual = obterCartao(evento.target);
       const proximoCartao = obterCartao(evento.relatedTarget);
 
@@ -71,28 +61,19 @@ export function InteractiveCardEffects() {
 
       cartaoAtual.style.setProperty("--interactive-card-x", "50%");
       cartaoAtual.style.setProperty("--interactive-card-y", "50%");
-      cartaoAtual.style.setProperty("--interactive-card-rotate-x", "0deg");
-      cartaoAtual.style.setProperty("--interactive-card-rotate-y", "0deg");
-      cartaoAtual.style.setProperty(
-        "transform",
-        "perspective(900px) translateY(0) rotateX(0deg) rotateY(0deg)",
-      );
     }
 
-    document.addEventListener("pointermove", atualizarCartao, { passive: true });
-    document.addEventListener("pointerout", resetarCartao, { passive: true });
+    document.addEventListener("pointermove", atualizarLuzCartao, { passive: true });
+    document.addEventListener("pointerout", resetarLuzCartao, { passive: true });
 
     return () => {
       document.body.classList.remove("admin-interactive-cards-enabled");
       document.querySelectorAll<HTMLElement>(SELETOR_CARTAO_INTERATIVO).forEach((cartao) => {
-        cartao.style.removeProperty("transform");
         cartao.style.removeProperty("--interactive-card-x");
         cartao.style.removeProperty("--interactive-card-y");
-        cartao.style.removeProperty("--interactive-card-rotate-x");
-        cartao.style.removeProperty("--interactive-card-rotate-y");
       });
-      document.removeEventListener("pointermove", atualizarCartao);
-      document.removeEventListener("pointerout", resetarCartao);
+      document.removeEventListener("pointermove", atualizarLuzCartao);
+      document.removeEventListener("pointerout", resetarLuzCartao);
     };
   }, []);
 
