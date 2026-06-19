@@ -118,6 +118,7 @@ export function FullCalendarBoard({
 
   const dataInicial =
     filtros.visao === "semanal" ? filtros.semana : `${filtros.mes}-01`;
+  const periodoLabel = obterPeriodoLabel(filtros);
 
   function abrirEvento(info: EventClickArg) {
     const evento = eventosPorId.get(info.event.id);
@@ -138,40 +139,49 @@ export function FullCalendarBoard({
   }
 
   return (
-    <Card className="admin-glass-card overflow-hidden">
-      <CardContent className="space-y-4 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              aria-label="Periodo anterior"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background/70 text-sm shadow-sm transition hover:border-cyan-300 hover:text-cyan-600"
-              href={hrefPeriodoAnterior}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-            <Link
-              className="inline-flex h-9 items-center rounded-full border bg-background/70 px-4 text-sm font-semibold shadow-sm transition hover:border-cyan-300 hover:text-cyan-600"
-              href={hrefHoje}
-            >
-              Hoje
-            </Link>
-            <Link
-              aria-label="Proximo periodo"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border bg-background/70 text-sm shadow-sm transition hover:border-cyan-300 hover:text-cyan-600"
-              href={hrefPeriodoProximo}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Link>
+    <Card className="overflow-hidden border-cyan-300/20 bg-slate-950/90 text-slate-100 shadow-2xl shadow-cyan-950/20">
+      <CardContent className="space-y-4 p-3 sm:p-4 lg:p-5">
+        <div className="rounded-2xl border border-cyan-300/20 bg-slate-900/80 p-3 shadow-inner shadow-white/5 ring-1 ring-white/5">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                aria-label="Periodo anterior"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-sm shadow-sm transition hover:border-cyan-300/50 hover:bg-cyan-400/20 hover:text-cyan-100"
+                href={hrefPeriodoAnterior}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Link>
+              <Link
+                className="inline-flex h-9 items-center rounded-full border border-cyan-300/20 bg-cyan-400/20 px-4 text-sm font-semibold text-cyan-100 shadow-sm transition hover:border-cyan-200/60 hover:bg-cyan-400/25"
+                href={hrefHoje}
+              >
+                Hoje
+              </Link>
+              <Link
+                aria-label="Proximo periodo"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-sm shadow-sm transition hover:border-cyan-300/50 hover:bg-cyan-400/20 hover:text-cyan-100"
+                href={hrefPeriodoProximo}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+              <div className="ml-0 min-w-0 sm:ml-2">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-cyan-200/70">
+                  Calendario
+                </p>
+                <h2 className="truncate text-xl font-semibold capitalize tracking-normal text-white sm:text-2xl">
+                  {periodoLabel}
+                </h2>
+              </div>
           </div>
 
-          <div className="inline-flex w-fit rounded-full border bg-background/65 p-1 shadow-sm">
+            <div className="inline-flex w-fit rounded-full border border-white/10 bg-slate-950/60 p-1 shadow-sm">
             {modos.map((modo) => (
               <Link
                 className={cn(
                   "rounded-full px-3 py-1.5 text-xs font-semibold transition",
                   filtros.visao === modo.value
-                    ? "bg-cyan-500 text-white shadow-sm shadow-cyan-500/25"
-                    : "text-muted-foreground hover:text-cyan-600",
+                    ? "bg-cyan-400 text-slate-950 shadow-sm shadow-cyan-400/25"
+                    : "text-slate-300 hover:bg-white/[0.08] hover:text-cyan-100",
                 )}
                 href={montarHrefModo(filtros, modo.value)}
                 key={modo.value}
@@ -179,6 +189,7 @@ export function FullCalendarBoard({
                 {modo.label}
               </Link>
             ))}
+            </div>
           </div>
         </div>
 
@@ -189,6 +200,7 @@ export function FullCalendarBoard({
             editable={false}
             eventClick={abrirEvento}
             eventContent={renderizarEvento}
+            eventDisplay="block"
             eventStartEditable={false}
             events={eventosFullCalendar}
             expandRows
@@ -251,12 +263,13 @@ export function FullCalendarBoard({
 function renderizarEvento(info: EventContentArg) {
   const horario = String(info.event.extendedProps["horario"] ?? "");
   const tipo = String(info.event.extendedProps["tipo"] ?? "");
+  const detalhe = String(info.event.extendedProps["detalhe"] ?? "");
 
   return (
-    <div className="min-w-0 px-1 py-0.5">
-      <div className="flex min-w-0 items-center gap-1">
+    <div className="min-w-0 px-1.5 py-0.5" title={`${tipo} - ${detalhe}`}>
+      <div className="flex min-w-0 items-center gap-1.5">
         {horario ? (
-          <span className="shrink-0 text-[10px] font-bold opacity-90">
+          <span className="shrink-0 text-[10px] font-black opacity-95">
             {horario}
           </span>
         ) : null}
@@ -341,57 +354,100 @@ function formatarData(data?: string) {
   }).format(new Date(`${data}T12:00:00`));
 }
 
+function obterPeriodoLabel(filtros: FiltrosCalendario) {
+  if (filtros.visao === "semanal") {
+    return `Semana de ${formatarData(filtros.semana)}`;
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${filtros.mes}-01T12:00:00`));
+}
+
 function EstilosFullCalendar() {
   return (
     <style jsx global>{`
       .hospedex-fullcalendar .fc {
-        --fc-border-color: hsl(var(--border));
-        --fc-neutral-bg-color: rgba(34, 211, 238, 0.07);
-        --fc-today-bg-color: rgba(34, 211, 238, 0.08);
-        color: hsl(var(--foreground));
+        --fc-border-color: rgba(148, 163, 184, 0.18);
+        --fc-neutral-bg-color: rgba(15, 23, 42, 0.92);
+        --fc-page-bg-color: transparent;
+        --fc-today-bg-color: rgba(34, 211, 238, 0.09);
+        --fc-event-border-color: transparent;
+        --fc-list-event-hover-bg-color: rgba(34, 211, 238, 0.08);
+        color: #e2e8f0;
         font-family: inherit;
       }
 
       .hospedex-fullcalendar .fc-theme-standard .fc-scrollgrid {
         overflow: hidden;
-        border-radius: 1.35rem;
-        border: 1px solid hsl(var(--border));
-        background: color-mix(
-          in srgb,
-          hsl(var(--background)) 82%,
-          transparent
-        );
-        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+        border-radius: 1.25rem;
+        border: 1px solid rgba(34, 211, 238, 0.14);
+        background:
+          radial-gradient(circle at top left, rgba(34, 211, 238, 0.1), transparent 28%),
+          linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(2, 6, 23, 0.94));
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.06),
+          0 28px 80px rgba(2, 6, 23, 0.38);
       }
 
       .hospedex-fullcalendar .fc-theme-standard td,
       .hospedex-fullcalendar .fc-theme-standard th {
-        border-color: hsl(var(--border));
+        border-color: rgba(148, 163, 184, 0.16);
       }
 
       .hospedex-fullcalendar .fc .fc-col-header-cell {
-        padding: 0.55rem 0;
-        background: rgba(34, 211, 238, 0.06);
+        padding: 0.5rem 0;
+        background: rgba(15, 23, 42, 0.92);
+        border-bottom: 1px solid rgba(34, 211, 238, 0.18);
       }
 
       .hospedex-fullcalendar .fc .fc-col-header-cell-cushion,
       .hospedex-fullcalendar .fc .fc-daygrid-day-number {
-        color: hsl(var(--muted-foreground));
-        font-size: 0.72rem;
-        font-weight: 700;
+        color: rgba(203, 213, 225, 0.8);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
         text-decoration: none;
         text-transform: uppercase;
       }
 
       .hospedex-fullcalendar .fc .fc-daygrid-day {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(15, 23, 42, 0.56);
+        transition:
+          background-color 0.16s ease,
+          box-shadow 0.16s ease;
+      }
+
+      .hospedex-fullcalendar .fc .fc-daygrid-day:hover {
+        background: rgba(30, 41, 59, 0.78);
+        box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.16);
+      }
+
+      .hospedex-fullcalendar .fc .fc-day-other {
+        background: rgba(2, 6, 23, 0.58);
+      }
+
+      .hospedex-fullcalendar .fc .fc-daygrid-day-frame {
+        min-height: 5.75rem;
+        padding: 0.25rem;
+      }
+
+      .hospedex-fullcalendar .fc .fc-daygrid-day-top {
+        padding: 0.1rem 0.12rem;
+      }
+
+      .hospedex-fullcalendar .fc .fc-daygrid-day-events {
+        margin: 0 0.05rem 0.25rem;
       }
 
       .hospedex-fullcalendar .fc .fc-daygrid-day.fc-day-today {
-        background: rgba(34, 211, 238, 0.08);
+        background:
+          radial-gradient(circle at top right, rgba(34, 211, 238, 0.16), transparent 42%),
+          rgba(8, 47, 73, 0.36);
         box-shadow:
-          inset 0 0 0 1px rgba(34, 211, 238, 0.7),
-          0 0 26px rgba(34, 211, 238, 0.16);
+          inset 0 0 0 1px rgba(34, 211, 238, 0.72),
+          0 0 28px rgba(34, 211, 238, 0.2);
       }
 
       .hospedex-fullcalendar
@@ -404,37 +460,74 @@ function EstilosFullCalendar() {
         background: linear-gradient(135deg, #0891b2, #22d3ee);
         color: white;
         text-align: center;
+        box-shadow: 0 0 18px rgba(34, 211, 238, 0.35);
       }
 
       .hospedex-fullcalendar .fc .fc-event {
         cursor: pointer;
-        border-radius: 0.65rem;
-        border-width: 1px;
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+        overflow: hidden;
+        border-radius: 0.55rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 9px 22px rgba(2, 6, 23, 0.22);
+        transition:
+          filter 0.16s ease,
+          transform 0.16s ease,
+          box-shadow 0.16s ease;
+      }
+
+      .hospedex-fullcalendar .fc .fc-event:hover {
+        filter: saturate(1.08) brightness(1.08);
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(2, 6, 23, 0.32);
       }
 
       .hospedex-fullcalendar .fc .fc-daygrid-event {
-        margin-top: 0.18rem;
-        padding: 0.05rem 0.25rem;
+        margin-top: 0.14rem;
+        padding: 0;
       }
 
       .hospedex-fullcalendar .fc .fc-timegrid-event {
-        padding: 0.2rem;
+        padding: 0;
+      }
+
+      .hospedex-fullcalendar .fc .fc-timegrid-slot {
+        height: 2.6rem;
+        background: rgba(15, 23, 42, 0.45);
+      }
+
+      .hospedex-fullcalendar .fc .fc-timegrid-axis,
+      .hospedex-fullcalendar .fc .fc-timegrid-slot-label {
+        color: rgba(203, 213, 225, 0.62);
+        font-size: 0.7rem;
       }
 
       .hospedex-fullcalendar .fc .fc-more-link {
-        color: #0891b2;
+        display: inline-flex;
+        margin-top: 0.12rem;
+        border-radius: 999px;
+        background: rgba(34, 211, 238, 0.12);
+        padding: 0.05rem 0.4rem;
+        color: #67e8f9;
         font-size: 0.72rem;
         font-weight: 800;
+        text-decoration: none;
       }
 
       .hospedex-fullcalendar .fc .fc-list {
         overflow: hidden;
-        border-radius: 1.35rem;
+        border-radius: 1.25rem;
+        background: rgba(15, 23, 42, 0.84);
+      }
+
+      .hospedex-fullcalendar .fc .fc-list-table td,
+      .hospedex-fullcalendar .fc .fc-list-event-title,
+      .hospedex-fullcalendar .fc .fc-list-event-time {
+        color: #dbeafe;
       }
 
       .hospedex-fullcalendar .fc .fc-list-day-cushion {
-        background: rgba(34, 211, 238, 0.08);
+        background: rgba(8, 47, 73, 0.72);
+        color: #cffafe;
       }
 
       .hospedex-fullcalendar .fc .fc-list-event:hover td {
@@ -449,6 +542,22 @@ function EstilosFullCalendar() {
         border-color: #22d3ee;
         border-top-color: transparent;
         border-bottom-color: transparent;
+      }
+
+      @media (max-width: 768px) {
+        .hospedex-fullcalendar .fc .fc-daygrid-day-frame {
+          min-height: 4.8rem;
+          padding: 0.18rem;
+        }
+
+        .hospedex-fullcalendar .fc .fc-col-header-cell-cushion,
+        .hospedex-fullcalendar .fc .fc-daygrid-day-number {
+          font-size: 0.64rem;
+        }
+
+        .hospedex-fullcalendar .fc .fc-daygrid-event {
+          border-radius: 0.45rem;
+        }
       }
     `}</style>
   );

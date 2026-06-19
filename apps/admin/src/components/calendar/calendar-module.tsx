@@ -111,7 +111,7 @@ export function CalendarModule({
                   className={cn(
                     "rounded-full border px-4 py-2 text-sm font-medium transition hover:-translate-y-0.5 hover:bg-cyan-500/10",
                     propriedade.id === filtros.propriedadeId
-                      ? "border-cyan-400/50 bg-cyan-500/15 text-cyan-800 dark:text-cyan-100"
+                      ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-800 dark:text-cyan-100"
                       : "text-muted-foreground"
                   )}
                   href={montarHref(filtros, { propriedadeId: propriedade.id })}
@@ -129,7 +129,7 @@ export function CalendarModule({
         <EstadoVazio mensagem="Cadastre uma casa antes de visualizar o calendario." />
       ) : (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <section className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <ResumoCompacto label="Proximos check-ins" valor={String(resumo.checkInsProximos)} />
             <ResumoCompacto label="Proximos check-outs" valor={String(resumo.checkOutsProximos)} />
             <ResumoCompacto label="Limpezas pendentes" valor={String(resumo.limpezasPendentes)} />
@@ -394,8 +394,8 @@ function Resumo({ icon, label, valor }: { icon: ReactNode; label: string; valor:
 
 function ResumoCompacto({ label, valor }: { label: string; valor: string }) {
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="p-4">
+    <Card className="admin-glass-card overflow-hidden">
+      <CardContent className="min-h-24 p-4">
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="mt-1 text-xl font-semibold">{valor}</p>
       </CardContent>
