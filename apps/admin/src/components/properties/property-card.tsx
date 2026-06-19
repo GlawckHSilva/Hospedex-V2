@@ -38,8 +38,8 @@ import { UnitForm } from "./unit-form";
 /**
  * Card compacto de casa.
  *
- * A listagem exibe apenas dados essenciais. Acoes secundarias ficam dentro da
- * modal de visualizacao para evitar cards gigantes e excesso de botoes.
+ * A listagem exibe dados essenciais e mantem as acoes principais visiveis.
+ * Acoes destrutivas ficam dentro da modal de edicao para evitar exclusao acidental.
  */
 export type PropertyCardProps = {
   comodidadesDisponiveis: PropriedadeComRelacionamentos["comodidades"];
@@ -72,7 +72,7 @@ export function PropertyCard({
   );
 
   return (
-    <EntityCard media={media}>
+    <EntityCard className="flex flex-col" contentClassName="!h-auto min-h-0 flex-1" media={media}>
       <EntityCardHeader
         badges={
           <>
@@ -93,6 +93,7 @@ export function PropertyCard({
         <EntityViewModal
           description="Resumo operacional da casa selecionada."
           title={`Detalhes de ${propriedade.name}`}
+          triggerAction="view"
           triggerClassName="h-9 justify-center"
           triggerIcon={<Eye className="h-4 w-4" />}
           triggerLabel="Visualizar"
@@ -245,6 +246,7 @@ export function PropertyCard({
           disabled={!podeGerenciar}
           eyebrow="Edicao"
           title="Editar casa"
+          triggerAction="edit"
           triggerClassName="h-9 justify-center"
           triggerIcon={<Pencil className="h-4 w-4" />}
           triggerLabel="Editar"
@@ -321,6 +323,7 @@ function AcaoExcluirCasa({
       description="Esta acao remove a casa da operacao do tenant."
       disabled={!podeGerenciar}
       title="Excluir casa"
+      triggerAction="delete"
       triggerIcon={<Trash2 className="h-4 w-4" />}
       triggerLabel="Excluir"
     >

@@ -1,8 +1,9 @@
 import type { RegionalGuideLocationRow } from "@hospedex/types";
 import { Eye, MapPin, Pencil, Trash2 } from "lucide-react";
 
-import { Badge, Button } from "@hospedex/ui";
+import { Badge } from "@hospedex/ui";
 
+import { ActionButton } from "../management/action-button";
 import {
   EntityCard,
   EntityCardActions,
@@ -45,7 +46,7 @@ export function RegionalGuideCard({
   );
 
   return (
-    <EntityCard media={media}>
+    <EntityCard className="flex flex-col" contentClassName="!h-auto min-h-0 flex-1" media={media}>
       <EntityCardHeader
         badges={
           <>
@@ -65,6 +66,7 @@ export function RegionalGuideCard({
         <EntityViewModal
           description="Dados cadastrados para orientar hospedes."
           title={local.name}
+          triggerAction="view"
           triggerClassName="h-9 justify-center"
           triggerIcon={<Eye className="h-4 w-4" />}
           triggerLabel="Visualizar"
@@ -88,6 +90,7 @@ export function RegionalGuideCard({
           disabled={!podeGerenciar}
           eyebrow="Edicao"
           title="Editar local"
+          triggerAction="edit"
           triggerClassName="h-9 justify-center"
           triggerIcon={<Pencil className="h-4 w-4" />}
           triggerLabel="Editar"
@@ -105,6 +108,7 @@ export function RegionalGuideCard({
                 description="Esta acao remove o local do Guia da Regiao deste tenant."
                 disabled={!podeGerenciar}
                 title="Excluir local"
+                triggerAction="delete"
                 triggerIcon={<Trash2 className="h-4 w-4" />}
                 triggerLabel="Excluir"
               >
@@ -124,13 +128,13 @@ export function RegionalGuideCard({
                     />
                     Confirmo que desejo remover este local do Guia da Regiao.
                   </label>
-                  <Button
+                  <ActionButton
                     disabled={!podeGerenciar}
                     type="submit"
-                    variant="destructive"
+                    variant="delete"
                   >
                     Excluir local
-                  </Button>
+                  </ActionButton>
                 </form>
               </ConfirmDialog>
             </div>
