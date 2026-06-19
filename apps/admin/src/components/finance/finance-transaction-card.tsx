@@ -55,7 +55,7 @@ export function FinanceTransactionCard({
   return (
     <Card
       className={cn(
-        "admin-glass-card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-xl",
+        "admin-glass-card overflow-hidden transition",
         receita
           ? "border-emerald-400/25 bg-emerald-500/5"
           : "border-rose-400/25 bg-rose-500/5",

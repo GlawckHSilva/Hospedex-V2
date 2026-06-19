@@ -72,12 +72,11 @@ export function EntityCard({
       initial={{ opacity: 0, y: 8 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
       viewport={{ once: true, margin: "-32px" }}
-      whileHover={{ y: -2 }}
       whileInView={{ opacity: 1, y: 0 }}
     >
       <Card
         className={cn(
-          "admin-glass-card group h-full overflow-hidden transition duration-200 hover:border-cyan-300/40 hover:shadow-xl hover:shadow-cyan-950/10",
+          "admin-glass-card group h-full overflow-hidden transition duration-200",
           className,
         )}
       >

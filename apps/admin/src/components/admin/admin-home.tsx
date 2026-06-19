@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   AlertTriangle,
   CalendarCheck2,
@@ -117,13 +116,8 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
 
 function CartaoMetrica({ card }: { card: CardDashboard }) {
   return (
-    <motion.div
-      className="h-full"
-      style={{ transformStyle: "preserve-3d" }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
-      whileHover={{ rotateX: 1.2, rotateY: -1.2, scale: 1.01, y: -4 }}
-    >
-      <GlassCard className="group h-full overflow-hidden p-5 transition duration-200 hover:border-cyan-300/50 hover:shadow-xl hover:shadow-cyan-500/10">
+    <div className="h-full">
+      <GlassCard className="group h-full overflow-hidden p-5 transition duration-200">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm text-muted-foreground">{card.titulo}</p>
@@ -136,7 +130,7 @@ function CartaoMetrica({ card }: { card: CardDashboard }) {
         <p className="mt-4 text-sm text-muted-foreground">{card.descricao}</p>
         <MiniGrafico estadoVazio={card.estadoVazioGrafico} serie={card.serie} />
       </GlassCard>
-    </motion.div>
+    </div>
   );
 }
 
@@ -191,13 +185,8 @@ function AlertaOperacional({ alerta }: { alerta: AlertaDashboard }) {
   const Icone = alerta.tipo === "warning" ? AlertTriangle : CheckCircle2;
 
   return (
-    <motion.div
-      className="h-full"
-      style={{ transformStyle: "preserve-3d" }}
-      transition={{ duration: 0.18, ease: "easeOut" }}
-      whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01, y: -3 }}
-    >
-      <GlassCard className="h-full p-5 transition duration-200 hover:border-cyan-300/50 hover:shadow-lg hover:shadow-cyan-500/10">
+    <div className="h-full">
+      <GlassCard className="h-full p-5 transition duration-200">
         <div className="flex items-start justify-between gap-3">
           <div>
             <StatusBadge tone={alerta.tipo}>{alerta.valor}</StatusBadge>
@@ -207,7 +196,7 @@ function AlertaOperacional({ alerta }: { alerta: AlertaDashboard }) {
         </div>
         <p className="mt-3 text-sm text-muted-foreground">{alerta.descricao}</p>
       </GlassCard>
-    </motion.div>
+    </div>
   );
 }
 

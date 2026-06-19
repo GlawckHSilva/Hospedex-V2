@@ -44,6 +44,7 @@ import {
 } from "../../config/navigation";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
 import type { ResumoNotificacoesGerenciamento } from "../../lib/notifications/types";
+import { InteractiveCardEffects } from "../management/interactive-card";
 import { NotificationBell } from "../notifications/notification-bell";
 
 const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
@@ -114,6 +115,8 @@ export function AdminShell({
       )}
       data-admin-perfil={perfil}
     >
+      {gerenciamento ? <InteractiveCardEffects /> : null}
+
       <TopbarAdmin
         acaoSairHeader={acaoSairHeader}
         acaoSairMenu={acaoSairMenu}

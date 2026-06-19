@@ -198,7 +198,7 @@ function Resumo({
   return (
     <Card
       className={cn(
-        "admin-glass-card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg",
+        "admin-glass-card overflow-hidden transition",
         tone === "income" && "border-emerald-400/30 bg-emerald-500/5",
         tone === "expense" && "border-rose-400/30 bg-rose-500/5",
       )}

@@ -57,7 +57,7 @@ export function ReservationCard({
   const valorTotal = formatarMoeda(reserva.valorTotalComExtras);
 
   return (
-    <Card className="group admin-glass-card h-full overflow-hidden transition duration-200 hover:-translate-y-0.5 hover:border-cyan-300/40 hover:shadow-xl hover:shadow-cyan-950/10">
+    <Card className="group admin-glass-card h-full overflow-hidden transition duration-200">
       <CardContent className="flex h-full flex-col gap-3 p-4">
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
