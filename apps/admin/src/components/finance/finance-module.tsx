@@ -3,25 +3,21 @@ import {
   CalendarClock,
   ChartNoAxesCombined,
   CircleDollarSign,
+  Filter,
   Plus,
   Search,
+  TrendingDown,
+  TrendingUp,
   WalletCards,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  FadeIn,
-  Input,
-  Label,
-} from "@hospedex/ui";
+import { Badge, Card, CardContent, FadeIn, Input, Label, cn } from "@hospedex/ui";
 
-import { EntityModal } from "../management/entity-modal";
-import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ModuleToast } from "../admin/module-toast";
+import { EmptyState, EntityGrid } from "../management/entity-card";
+import { EntityModal } from "../management/entity-modal";
+import { ActionButton } from "../management/action-button";
 import {
   LABEL_STATUS_LANCAMENTO,
   LABEL_TIPO_LANCAMENTO,
@@ -34,21 +30,21 @@ import { FinanceForm } from "./finance-form";
 import { FinanceTransactionCard } from "./finance-transaction-card";
 
 /**
- * Módulo financeiro inicial do proprietário.
+ * Modulo financeiro do Gerenciamento.
  *
- * Entrega lançamentos manuais e indicadores do mês. Gateway, repasses, DRE e
- * exportações ficam apenas preparados no modelo, sem lógica real nesta etapa.
+ * Esta tela foca controle mensal manual por tenant. Pagamento online, repasse e
+ * conciliacao continuam fora do fluxo para evitar expor regras futuras antes da
+ * infraestrutura segura estar pronta.
  */
-
 export type FinanceModuleProps = DadosModuloFinanceiro &
   SearchParamsFinanceiro & {
     tenantNome: string;
   };
 
 const MENSAGENS_SUCESSO_FINANCEIRO: Record<string, string> = {
-  "lancamento-atualizado": "Lançamento atualizado com sucesso.",
-  "lancamento-criado": "Lançamento criado com sucesso.",
-  "lancamento-excluido": "Lançamento excluído com sucesso.",
+  "lancamento-atualizado": "Lancamento atualizado com sucesso.",
+  "lancamento-criado": "Lancamento criado com sucesso.",
+  "lancamento-excluido": "Lancamento excluido com sucesso.",
 };
 
 const campoClasse =
@@ -85,77 +81,20 @@ export function FinanceModule({
               Financeiro
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} · Pagamentos online{" "}
-              {pagamentosOnlineAtivo ? "ativos" : "desligados"}
+              {tenantNome} - controle mensal sem pagamento online. Pagamentos{" "}
+              {pagamentosOnlineAtivo ? "liberados por feature flag" : "desligados"}.
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Resumo
-              icon={<CircleDollarSign />}
-              label="Receita do mês"
-              valor={formatarMoeda(resumo.receitaMes)}
-            />
-            <Resumo
-              icon={<WalletCards />}
-              label="Despesas do mês"
-              valor={formatarMoeda(resumo.despesasMes)}
-            />
-            <Resumo
-              icon={<ChartNoAxesCombined />}
-              label="Lucro do mês"
-              valor={formatarMoeda(resumo.lucroMes)}
-            />
-            <Resumo
-              icon={<Banknote />}
-              label="Reservas pagas"
-              valor={String(resumo.reservasPagas)}
-            />
-            <Resumo
-              icon={<CalendarClock />}
-              label="Reservas pendentes"
-              valor={String(resumo.reservasPendentes)}
-            />
-            <Resumo
-              label="Ticket médio"
-              valor={formatarMoeda(resumo.ticketMedio)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <form className="grid gap-4 lg:grid-cols-[0.8fr_0.8fr_0.8fr_auto]">
-            <CampoMes defaultValue={filtros.mes} />
-            <CampoTipoFiltro defaultValue={filtros.tipo} />
-            <CampoStatusFiltro defaultValue={filtros.status} />
-            <div className="flex items-end">
-              <Button className="w-full" type="submit" variant="outline">
-                <Search />
-                Filtrar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card className="admin-glass-card">
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold">Lançamento manual</h2>
-            <p className="text-sm text-muted-foreground">
-              Registre receitas ou despesas em um modal central.
-            </p>
-          </div>
           <EntityModal
             description="Informe tipo, valor, vencimento, conta e categoria."
             disabled={!podeGerenciar}
             eyebrow="Cadastro"
-            title="Novo lançamento manual"
+            title="Novo lancamento manual"
+            triggerAction="add"
             triggerIcon={<Plus className="h-4 w-4" />}
-            triggerLabel="Novo lançamento"
-            triggerVariant="default"
+            triggerLabel="Novo lancamento"
+            triggerSize="md"
           >
             <FinanceForm
               categorias={categorias}
@@ -166,11 +105,64 @@ export function FinanceModule({
               propriedades={propriedades}
             />
           </EntityModal>
+        </div>
+      </section>
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+        <Resumo
+          icon={<TrendingUp />}
+          label="Receita do mes"
+          tone="income"
+          valor={formatarMoeda(resumo.receitaMes)}
+        />
+        <Resumo
+          icon={<TrendingDown />}
+          label="Despesas do mes"
+          tone="expense"
+          valor={formatarMoeda(resumo.despesasMes)}
+        />
+        <Resumo
+          icon={<ChartNoAxesCombined />}
+          label="Lucro do mes"
+          tone={resumo.lucroMes >= 0 ? "income" : "expense"}
+          valor={formatarMoeda(resumo.lucroMes)}
+        />
+        <Resumo icon={<Banknote />} label="Reservas pagas" valor={String(resumo.reservasPagas)} />
+        <Resumo
+          icon={<CalendarClock />}
+          label="Pendentes"
+          valor={String(resumo.reservasPendentes)}
+        />
+        <Resumo
+          icon={<WalletCards />}
+          label="Ticket medio"
+          valor={formatarMoeda(resumo.ticketMedio)}
+        />
+      </section>
+
+      <Card className="admin-glass-card">
+        <CardContent className="space-y-4 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Filter className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
+            Filtros do mes
+          </div>
+          <form className="grid gap-4 xl:grid-cols-[0.8fr_0.8fr_0.8fr_1fr_1.2fr_auto]">
+            <CampoMes defaultValue={filtros.mes} />
+            <CampoTipoFiltro defaultValue={filtros.tipo} />
+            <CampoStatusFiltro defaultValue={filtros.status} />
+            <CampoCategoriaFiltro categorias={categorias} defaultValue={filtros.categoriaId} />
+            <CampoBusca defaultValue={filtros.busca} />
+            <div className="flex items-end">
+              <ActionButton className="w-full" icon={<Search />} type="submit" variant="settings">
+                Filtrar
+              </ActionButton>
+            </div>
+          </form>
         </CardContent>
       </Card>
 
       {contas.length === 0 || categorias.length === 0 ? (
-        <EstadoVazio mensagem="As categorias e a conta inicial ainda não foram carregadas para este tenant." />
+        <EstadoVazio mensagem="As categorias e a conta inicial ainda nao foram carregadas para este tenant." />
       ) : lancamentos.length > 0 ? (
         <EntityGrid>
           {lancamentos.map((lancamento) => (
@@ -186,7 +178,7 @@ export function FinanceModule({
           ))}
         </EntityGrid>
       ) : (
-        <EstadoVazio mensagem="Nenhum lançamento encontrado para o filtro atual." />
+        <EstadoVazio mensagem="Nenhum lancamento encontrado para o filtro atual." />
       )}
     </FadeIn>
   );
@@ -195,20 +187,37 @@ export function FinanceModule({
 function Resumo({
   icon,
   label,
+  tone = "neutral",
   valor,
 }: {
   icon?: ReactNode;
   label: string;
+  tone?: "expense" | "income" | "neutral";
   valor: string;
 }) {
   return (
-    <div className="min-w-36 rounded-lg border bg-background/55 p-3 text-sm">
-      {icon ? (
-        <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div>
-      ) : null}
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="truncate font-semibold">{valor}</p>
-    </div>
+    <Card
+      className={cn(
+        "admin-glass-card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg",
+        tone === "income" && "border-emerald-400/30 bg-emerald-500/5",
+        tone === "expense" && "border-rose-400/30 bg-rose-500/5",
+      )}
+    >
+      <CardContent className="min-h-28 p-4">
+        <div
+          className={cn(
+            "mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border [&_svg]:h-4 [&_svg]:w-4",
+            tone === "income" && "border-emerald-400/30 bg-emerald-400/10 text-emerald-600 dark:text-emerald-300",
+            tone === "expense" && "border-rose-400/30 bg-rose-400/10 text-rose-600 dark:text-rose-300",
+            tone === "neutral" && "border-cyan-400/25 bg-cyan-400/10 text-cyan-600 dark:text-cyan-300",
+          )}
+        >
+          {icon ?? <CircleDollarSign />}
+        </div>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="mt-1 truncate text-lg font-semibold">{valor}</p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -225,14 +234,8 @@ function EstadoVazio({ mensagem }: { mensagem: string }) {
 function CampoMes({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="mes">Mês</Label>
-      <Input
-        defaultValue={defaultValue}
-        id="mes"
-        name="mes"
-        required
-        type="month"
-      />
+      <Label htmlFor="mes">Mes</Label>
+      <Input defaultValue={defaultValue} id="mes" name="mes" required type="month" />
     </div>
   );
 }
@@ -241,12 +244,7 @@ function CampoTipoFiltro({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="tipo">Tipo</Label>
-      <select
-        className={campoClasse}
-        defaultValue={defaultValue}
-        id="tipo"
-        name="tipo"
-      >
+      <select className={campoClasse} defaultValue={defaultValue} id="tipo" name="tipo">
         <option value="todos">Todos</option>
         {TIPOS_LANCAMENTO_FINANCEIRO.map((tipo) => (
           <option key={tipo} value={tipo}>
@@ -262,12 +260,7 @@ function CampoStatusFiltro({ defaultValue }: { defaultValue: string }) {
   return (
     <div className="grid gap-2">
       <Label htmlFor="status">Status</Label>
-      <select
-        className={campoClasse}
-        defaultValue={defaultValue}
-        id="status"
-        name="status"
-      >
+      <select className={campoClasse} defaultValue={defaultValue} id="status" name="status">
         <option value="todos">Todos</option>
         {STATUS_LANCAMENTO_FINANCEIRO.map((status) => (
           <option key={status} value={status}>
@@ -275,6 +268,47 @@ function CampoStatusFiltro({ defaultValue }: { defaultValue: string }) {
           </option>
         ))}
       </select>
+    </div>
+  );
+}
+
+function CampoCategoriaFiltro({
+  categorias,
+  defaultValue,
+}: {
+  categorias: DadosModuloFinanceiro["categorias"];
+  defaultValue: string;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="categoriaId">Categoria</Label>
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        id="categoriaId"
+        name="categoriaId"
+      >
+        <option value="todas">Todas</option>
+        {categorias.map((categoria) => (
+          <option key={categoria.id} value={categoria.id}>
+            {categoria.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CampoBusca({ defaultValue }: { defaultValue: string }) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="busca">Busca</Label>
+      <Input
+        defaultValue={defaultValue}
+        id="busca"
+        name="busca"
+        placeholder="Descricao, casa, reserva..."
+      />
     </div>
   );
 }

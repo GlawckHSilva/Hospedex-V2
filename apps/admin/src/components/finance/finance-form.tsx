@@ -1,7 +1,9 @@
 import type { ExpenseCategoryRow, FinancialAccountRow, PropertyRow } from "@hospedex/types";
 import type { ComponentProps } from "react";
 
-import { Button, Input, Label } from "@hospedex/ui";
+import { Input, Label } from "@hospedex/ui";
+
+import { ActionButton } from "../management/action-button";
 
 import {
   atualizarLancamentoFinanceiroAction,
@@ -56,6 +58,8 @@ export function FinanceForm({
       <input name="mes" type="hidden" value={filtros.mes} />
       <input name="filtroTipo" type="hidden" value={filtros.tipo} />
       <input name="filtroStatus" type="hidden" value={filtros.status} />
+      <input name="filtroCategoriaId" type="hidden" value={filtros.categoriaId} />
+      <input name="filtroBusca" type="hidden" value={filtros.busca} />
       {lancamento ? <input name="lancamentoId" type="hidden" value={lancamento.id} /> : null}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -109,9 +113,9 @@ export function FinanceForm({
       />
 
       <div className="flex justify-end">
-        <Button disabled={bloqueado} type="submit">
+        <ActionButton disabled={bloqueado} type="submit" variant={modo === "criar" ? "add" : "edit"}>
           {modo === "criar" ? "Criar lançamento" : "Salvar lançamento"}
-        </Button>
+        </ActionButton>
       </div>
     </form>
   );

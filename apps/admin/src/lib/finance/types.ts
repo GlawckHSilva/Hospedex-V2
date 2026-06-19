@@ -17,6 +17,8 @@ import type {
 export type TipoLancamentoFinanceiro = Extract<TransactionType, "income" | "expense">;
 
 export type FiltrosFinanceiro = {
+  busca: string;
+  categoriaId: string;
   mes: string;
   status: TransactionStatus | "todos";
   tipo: TipoLancamentoFinanceiro | "todos";

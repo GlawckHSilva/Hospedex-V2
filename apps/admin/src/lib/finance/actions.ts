@@ -214,10 +214,14 @@ function montarRetornoFinanceiro(formData: FormData) {
   const mes = textoOpcional(formData, "mes");
   const tipo = textoOpcional(formData, "filtroTipo");
   const status = textoOpcional(formData, "filtroStatus");
+  const categoriaId = textoOpcional(formData, "filtroCategoriaId");
+  const busca = textoOpcional(formData, "filtroBusca");
 
   if (mes) params.set("mes", mes);
   if (tipo) params.set("tipo", tipo);
   if (status) params.set("status", status);
+  if (categoriaId) params.set("categoriaId", categoriaId);
+  if (busca) params.set("busca", busca);
 
   const query = params.toString();
   return query ? `${CAMINHO_FINANCEIRO}?${query}` : `${CAMINHO_FINANCEIRO}?`;

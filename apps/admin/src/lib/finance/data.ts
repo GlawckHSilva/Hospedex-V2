@@ -178,7 +178,31 @@ async function carregarReservasPendentesMes(tenantId: string, ownerId: string, m
 function correspondeFiltros(lancamento: LancamentoFinanceiro, filtros: FiltrosFinanceiro) {
   if (filtros.tipo !== "todos" && lancamento.transaction_type !== filtros.tipo) return false;
   if (filtros.status !== "todos" && lancamento.status !== filtros.status) return false;
+  if (filtros.categoriaId !== "todas" && lancamento.expense_category_id !== filtros.categoriaId) {
+    return false;
+  }
+  if (filtros.busca && !lancamentoCorrespondeBusca(lancamento, filtros.busca)) return false;
   return transacaoPertenceAoMes(lancamento, filtros.mes);
+}
+
+function lancamentoCorrespondeBusca(lancamento: LancamentoFinanceiro, busca: string) {
+  const termo = normalizarBusca(busca);
+  const campos = [
+    lancamento.description,
+    lancamento.categoria?.name,
+    lancamento.conta?.name,
+    lancamento.propriedade?.name,
+    lancamento.reservation_id
+  ];
+
+  return campos.some((campo) => normalizarBusca(campo ?? "").includes(termo));
+}
+
+function normalizarBusca(valor: string) {
+  return valor
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function transacaoPertenceAoMes(transacao: TransactionRow, mes: string) {

@@ -56,6 +56,8 @@ export default async function FinanceiroPage({ searchParams }: PageProps) {
 
 function montarFiltros(params: Record<string, string | string[] | undefined>) {
   return {
+    busca: lerParametro(params, "busca")?.trim() ?? "",
+    categoriaId: lerParametro(params, "categoriaId") ?? "todas",
     mes: normalizarMesFinanceiro(lerParametro(params, "mes")),
     status: lerStatus(params),
     tipo: lerTipo(params)
