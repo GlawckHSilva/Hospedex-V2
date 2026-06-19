@@ -45,6 +45,7 @@ const TIPOS_PROPRIEDADE: PropertyType[] = [
 ];
 const STATUS_UNIDADE: UnitStatus[] = ["active", "inactive", "maintenance"];
 const CATEGORIAS_UNIDADE = ["Standard", "Luxo", "Master"];
+const MAX_PARCELAS_CARTAO = 12;
 
 type EntradaPropriedade = {
   endereco: EnderecoPropriedade;
@@ -59,10 +60,14 @@ type EntradaPropriedade = {
     quartos: number;
   };
   comodidadeIds: string[];
+  comodidadesPersonalizadas: string[];
   descricaoCompleta: string | null;
   descricaoCurta: string | null;
   destaqueMarketplace: boolean;
   galeriaArquivos: File[];
+  galeriaIndicePrincipal: number | null;
+  galeriaOrdens: number[];
+  galeriaTitulos: string[];
   imagemCapaArquivo: File | null;
   nome: string;
   publica: boolean;
@@ -77,8 +82,14 @@ type EntradaPropriedade = {
   status: PropertyStatus;
   tipo: PropertyType;
   valores: {
+    aceitaCartaoCredito: boolean;
     caucao: number;
     hospedesInclusos: number;
+    jurosParcelasCartao: Array<{
+      jurosPercentual: number;
+      parcela: number;
+    }>;
+    maxParcelasCartao: number;
     taxaLimpeza: number;
     valorDiaria: number;
     valorHospedeExtra: number;
@@ -145,7 +156,7 @@ export async function criarPropriedadeAction(formData: FormData) {
     }
 
     await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
-    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada.comodidadeIds);
+    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
     await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
@@ -205,7 +216,7 @@ export async function atualizarPropriedadeAction(formData: FormData) {
     }
 
     await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
-    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada.comodidadeIds);
+    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
     await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
@@ -646,6 +657,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       cidade: textoObrigatorio(formData, "cidade", "cidade"),
       complemento: textoOpcional(formData, "complemento") ?? "",
       estado: textoObrigatorio(formData, "estado", "estado"),
+      googleMapsLink: textoOpcional(formData, "googleMapsLink") ?? "",
       linha1: textoObrigatorio(formData, "endereco", "endereco"),
       numero: textoOpcional(formData, "numero") ?? "",
       referencia: textoOpcional(formData, "referencia") ?? "",
@@ -661,10 +673,18 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       quartos,
     },
     comodidadeIds: obterValoresMultiplos(formData, "comodidadeIds"),
+    comodidadesPersonalizadas: obterComodidadesPersonalizadas(formData),
     descricaoCompleta: textoOpcional(formData, "descricaoCompleta"),
     descricaoCurta: textoOpcional(formData, "descricaoCurta"),
     destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
     galeriaArquivos: obterArquivosImagem(formData, "imagensGaleriaArquivos"),
+    galeriaIndicePrincipal: numeroInteiroOpcionalOuNulo(
+      formData,
+      "imagemPrincipalGaleriaIndice",
+      0,
+    ),
+    galeriaOrdens: obterNumerosInteirosMultiplos(formData, "ordensGaleria"),
+    galeriaTitulos: obterValoresMultiplos(formData, "titulosGaleria"),
     imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
     nome: textoObrigatorio(formData, "nome", "nome"),
     publica: checkboxAtivo(formData, "visibilidadePublica"),
@@ -681,13 +701,51 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     ),
     tipo: validarTipoPropriedade(textoObrigatorio(formData, "tipo", "tipo")),
     valores: {
+      aceitaCartaoCredito: checkboxAtivo(formData, "aceitaCartaoCredito"),
       caucao: numeroMoedaOpcional(formData, "caucao", 0),
       hospedesInclusos: numeroInteiroOpcional(formData, "hospedesInclusos", 1, 1),
+      jurosParcelasCartao: obterJurosParcelasCartao(formData),
+      maxParcelasCartao: Math.min(
+        numeroInteiroOpcional(formData, "maxParcelasCartao", 1, 1),
+        MAX_PARCELAS_CARTAO,
+      ),
       taxaLimpeza: numeroMoedaOpcional(formData, "taxaLimpeza", 0),
       valorDiaria,
       valorHospedeExtra: numeroMoedaOpcional(formData, "valorHospedeExtra", 0),
     },
   };
+}
+
+function obterJurosParcelasCartao(formData: FormData) {
+  if (!checkboxAtivo(formData, "aceitaCartaoCredito")) return [];
+
+  const maxParcelas = Math.min(
+    numeroInteiroOpcional(formData, "maxParcelasCartao", 1, 1),
+    MAX_PARCELAS_CARTAO,
+  );
+
+  return Array.from({ length: maxParcelas }, (_, indice) => {
+    const parcela = indice + 1;
+    return {
+      jurosPercentual: numeroPercentualOpcional(
+        formData,
+        `jurosParcela${parcela}`,
+        0,
+      ),
+      parcela,
+    };
+  });
+}
+
+function obterComodidadesPersonalizadas(formData: FormData): string[] {
+  const nomes = obterValoresMultiplos(formData, "comodidadesPersonalizadas");
+
+  return Array.from(new Set(nomes)).map((nome) => {
+    if (nome.length > 80) {
+      throw new ErroRegraNegocio("Comodidade personalizada deve ter no maximo 80 caracteres.");
+    }
+    return nome;
+  });
 }
 
 
@@ -788,9 +846,18 @@ async function salvarComodidadesDaCasa(
   supabase: ClienteSupabaseServer,
   escopo: EscopoGerenciamento,
   propriedadeId: string,
-  comodidadeIds: string[],
+  entrada: EntradaPropriedade,
 ) {
-  const idsValidos = await obterComodidadesValidas(supabase, escopo.tenantId, comodidadeIds);
+  const idsPersonalizados = await obterOuCriarComodidadesPersonalizadas(
+    supabase,
+    escopo.tenantId,
+    entrada.comodidadesPersonalizadas,
+  );
+  const idsValidos = await obterComodidadesValidas(
+    supabase,
+    escopo.tenantId,
+    [...entrada.comodidadeIds, ...idsPersonalizados],
+  );
 
   const { error: erroLimpeza } = await supabase
     .from("property_amenities")
@@ -810,6 +877,53 @@ async function salvarComodidadesDaCasa(
   );
 
   if (error) throw new Error(error.message);
+}
+
+async function obterOuCriarComodidadesPersonalizadas(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  nomes: string[],
+) {
+  const ids: string[] = [];
+
+  for (const nome of nomes) {
+    const code = normalizarCodigoUnico(nome);
+
+    // Comodidade personalizada pertence ao tenant. Outro proprietario pode usar o mesmo nome sem compartilhar dados.
+    const { data: existente, error: erroBusca } = await supabase
+      .from("amenities")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("code", code)
+      .maybeSingle<{ id: string }>();
+
+    if (erroBusca) throw new Error(erroBusca.message);
+
+    if (existente) {
+      ids.push(existente.id);
+      continue;
+    }
+
+    const { data: criada, error } = await supabase
+      .from("amenities")
+      .insert({
+        category: "personalizada",
+        code,
+        is_system: false,
+        name: nome,
+        tenant_id: tenantId,
+      })
+      .select("id")
+      .single<{ id: string }>();
+
+    if (error || !criada) {
+      throw new Error(error?.message ?? "Comodidade personalizada nao criada.");
+    }
+
+    ids.push(criada.id);
+  }
+
+  return ids;
 }
 
 async function obterComodidadesValidas(
@@ -1117,6 +1231,22 @@ async function salvarGaleriaPropriedade(
 ) {
   if (!entrada.galeriaArquivos.length) return;
 
+  const galeriaDefineCapa =
+    entrada.galeriaIndicePrincipal !== null && !entrada.imagemCapaArquivo;
+
+  if (galeriaDefineCapa) {
+    // Apenas uma imagem principal por propriedade evita conflito no marketplace e nos cards do gerenciamento.
+    const { error } = await supabase
+      .from("media_assets")
+      .update({ is_cover: false })
+      .eq("tenant_id", tenantId)
+      .eq("property_id", propriedadeId)
+      .is("unit_id", null)
+      .eq("is_cover", true);
+
+    if (error) throw new Error(error.message);
+  }
+
   const proximaOrdem = await obterProximaOrdemMidia(
     supabase,
     tenantId,
@@ -1136,12 +1266,15 @@ async function salvarGaleriaPropriedade(
         arquivo,
       );
 
+      const titulo = entrada.galeriaTitulos[indice]?.trim() || arquivo.name;
+      const ordemInformada = entrada.galeriaOrdens[indice];
+
       const { error } = await supabase.from("media_assets").insert({
-        alt: arquivo.name,
-        is_cover: false,
+        alt: titulo,
+        is_cover: galeriaDefineCapa && entrada.galeriaIndicePrincipal === indice,
         media_type: "image",
         property_id: propriedadeId,
-        sort_order: proximaOrdem + indice,
+        sort_order: ordemInformada ?? proximaOrdem + indice,
         status: "active",
         storage_bucket: midia.bucket,
         storage_path: midia.path,
@@ -1175,6 +1308,28 @@ function obterValoresMultiplos(formData: FormData, chave: string): string[] {
     .getAll(chave)
     .map((valor) => valor.toString().trim())
     .filter(Boolean);
+}
+
+function obterNumerosInteirosMultiplos(formData: FormData, chave: string): number[] {
+  return formData
+    .getAll(chave)
+    .map((valor) => Number.parseInt(valor.toString(), 10))
+    .filter((valor) => Number.isFinite(valor) && valor >= 0);
+}
+
+function numeroInteiroOpcionalOuNulo(
+  formData: FormData,
+  chave: string,
+  minimo: number,
+): number | null {
+  const valorBruto = formData.get(chave)?.toString().trim();
+  if (!valorBruto) return null;
+
+  const valor = Number.parseInt(valorBruto, 10);
+  if (Number.isNaN(valor) || valor < minimo) {
+    throw new ErroRegraNegocio("Informe os dados da galeria corretamente.");
+  }
+  return valor;
 }
 
 function numeroInteiroOpcional(
@@ -1229,6 +1384,21 @@ function numeroPercentual(formData: FormData, chave: string, label: string): num
   );
   if (Number.isNaN(valor) || valor < 0 || valor > 100) {
     throw new ErroRegraNegocio(`Informe ${label} entre 0 e 100.`);
+  }
+  return valor;
+}
+
+function numeroPercentualOpcional(
+  formData: FormData,
+  chave: string,
+  padrao: number,
+): number {
+  const valorBruto = formData.get(chave)?.toString().trim();
+  if (!valorBruto) return padrao;
+
+  const valor = Number.parseFloat(valorBruto.replace(",", "."));
+  if (Number.isNaN(valor) || valor < 0 || valor > 100) {
+    throw new ErroRegraNegocio("Informe o percentual de juros entre 0 e 100.");
   }
   return valor;
 }
@@ -1333,6 +1503,18 @@ function gerarIdentificadorUrl(valor: string): string {
     .slice(0, 48);
 
   return `${base || "item"}-${Date.now().toString(36)}`;
+}
+
+function normalizarCodigoUnico(valor: string): string {
+  return (
+    valor
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "")
+      .slice(0, 48) || "comodidade"
+  );
 }
 
 function redirecionarComErro(

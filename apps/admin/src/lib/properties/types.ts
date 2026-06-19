@@ -20,6 +20,7 @@ export type EnderecoPropriedade = {
   cep: string;
   complemento: string;
   estado: string;
+  googleMapsLink: string;
   linha1: string;
   numero: string;
   referencia: string;
@@ -37,8 +38,14 @@ export type EstruturaPropriedade = {
 };
 
 export type ValoresPropriedade = {
+  aceitaCartaoCredito: boolean;
   caucao: number;
   hospedesInclusos: number;
+  jurosParcelasCartao: Array<{
+    jurosPercentual: number;
+    parcela: number;
+  }>;
+  maxParcelasCartao: number;
   taxaLimpeza: number;
   valorDiaria: number;
   valorHospedeExtra: number;

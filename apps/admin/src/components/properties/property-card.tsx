@@ -12,6 +12,7 @@ import {
 
 import { Badge, Button } from "@hospedex/ui";
 
+import { ActionButton } from "../management/action-button";
 import {
   EntityCard,
   EntityCardActions,
@@ -336,9 +337,9 @@ function AcaoExcluirCasa({
           />
           Confirmo que desejo remover esta propriedade da operacao do tenant.
         </label>
-        <Button disabled={!podeGerenciar} type="submit" variant="destructive">
+        <ActionButton disabled={!podeGerenciar} type="submit" variant="delete">
           Excluir casa
-        </Button>
+        </ActionButton>
       </form>
     </ConfirmDialog>
   );

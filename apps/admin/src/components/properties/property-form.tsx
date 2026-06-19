@@ -4,21 +4,23 @@ import type { AmenityRow, PropertyStatus, PropertyType } from "@hospedex/types";
 import {
   BedDouble,
   Camera,
-  ChevronLeft,
-  ChevronRight,
   Clock3,
+  CreditCard,
   Home,
   ImagePlus,
   MapPin,
+  Plus,
   Sparkles,
+  Star,
   Trash2,
   WalletCards,
 } from "lucide-react";
 import type { ComponentProps, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 
-import { Button, Input, Label, cn } from "@hospedex/ui";
+import { Input, Label, cn } from "@hospedex/ui";
 
+import { ActionButton } from "../management/action-button";
 import {
   atualizarPropriedadeAction,
   criarPropriedadeAction,
@@ -79,6 +81,16 @@ const campoClasse =
   "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+const MAX_PARCELAS_CARTAO = 12;
+
+type PreviewGaleria = {
+  id: string;
+  nome: string;
+  ordem: number;
+  principal: boolean;
+  titulo: string;
+  url: string;
+};
 
 export function PropertyForm({
   comodidadesDisponiveis,
@@ -91,7 +103,7 @@ export function PropertyForm({
   const [etapaAtual, setEtapaAtual] = useState(0);
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
-  const [previewsGaleria, setPreviewsGaleria] = useState<Array<{ nome: string; url: string }>>([]);
+  const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>([]);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
   const endereco = propriedade?.enderecoFormatado;
@@ -136,7 +148,14 @@ export function PropertyForm({
     setPreviewsGaleria(
       erro
         ? []
-        : lista.map((arquivo) => ({ nome: arquivo.name, url: URL.createObjectURL(arquivo) })),
+        : lista.map((arquivo, indice) => ({
+            id: `${arquivo.name}-${arquivo.lastModified}-${indice}`,
+            nome: arquivo.name,
+            ordem: indice + 1,
+            principal: indice === 0,
+            titulo: arquivo.name.replace(/\.[^.]+$/, ""),
+            url: URL.createObjectURL(arquivo),
+          })),
     );
   }
 
@@ -152,12 +171,21 @@ export function PropertyForm({
     selecionarGaleria(input.files);
   }
 
-  function avancar() {
-    setEtapaAtual((atual) => Math.min(atual + 1, ETAPAS.length - 1));
+  function atualizarTituloGaleria(indiceAlterado: number, titulo: string) {
+    setPreviewsGaleria((atuais) =>
+      atuais.map((preview, indice) =>
+        indice === indiceAlterado ? { ...preview, titulo } : preview,
+      ),
+    );
   }
 
-  function voltar() {
-    setEtapaAtual((atual) => Math.max(atual - 1, 0));
+  function definirPrincipalGaleria(indicePrincipal: number) {
+    setPreviewsGaleria((atuais) =>
+      atuais.map((preview, indice) => ({
+        ...preview,
+        principal: indice === indicePrincipal,
+      })),
+    );
   }
 
   return (
@@ -243,6 +271,8 @@ export function PropertyForm({
             galeriaRef={galeriaRef}
             previewCapa={previewCapa}
             previewsGaleria={previewsGaleria}
+            atualizarTituloGaleria={atualizarTituloGaleria}
+            definirPrincipalGaleria={definirPrincipalGaleria}
             removerGaleria={removerGaleria}
             selecionarCapa={selecionarCapa}
             selecionarGaleria={selecionarGaleria}
@@ -258,22 +288,10 @@ export function PropertyForm({
         </div>
       </section>
 
-      <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button disabled={etapaAtual === 0} onClick={voltar} type="button" variant="outline">
-          <ChevronLeft />
-          Voltar
-        </Button>
-        <div className="flex justify-end gap-2">
-          {etapaAtual < ETAPAS.length - 1 ? (
-            <Button onClick={avancar} type="button" variant="outline">
-              Proximo
-              <ChevronRight />
-            </Button>
-          ) : null}
-          <Button disabled={bloqueado} type="submit">
-            {modo === "editar" ? "Salvar casa" : "Criar casa"}
-          </Button>
-        </div>
+      <div className="flex justify-end border-t pt-4">
+        <ActionButton disabled={bloqueado} size="lg" type="submit" variant="add">
+          {modo === "editar" ? "Salvar casa" : "Criar casa"}
+        </ActionButton>
       </div>
     </form>
   );
@@ -350,6 +368,13 @@ function EtapaLocalizacao({
         <CampoTexto defaultValue={endereco?.complemento} disabled={disabled} label="Complemento" name="complemento" />
         <CampoTexto defaultValue={endereco?.referencia} disabled={disabled} label="Referencia" name="referencia" />
       </div>
+      <CampoTexto
+        defaultValue={endereco?.googleMapsLink}
+        disabled={disabled}
+        label="Link do Google Maps"
+        name="googleMapsLink"
+        placeholder="URL do Google Maps, link encurtado ou coordenadas futuramente."
+      />
     </div>
   );
 }
@@ -397,13 +422,91 @@ function EtapaValores({
   unidadeCasa?: PropriedadeComRelacionamentos["unidades"][number] | undefined;
   valores?: PropriedadeComRelacionamentos["valores"] | undefined;
 }) {
+  const [aceitaCartaoCredito, setAceitaCartaoCredito] = useState(
+    valores?.aceitaCartaoCredito ?? false,
+  );
+  const [maxParcelasCartao, setMaxParcelasCartao] = useState(
+    Math.min(valores?.maxParcelasCartao ?? 1, MAX_PARCELAS_CARTAO),
+  );
+  const jurosPorParcela = new Map(
+    (valores?.jurosParcelasCartao ?? []).map((item) => [
+      item.parcela,
+      item.jurosPercentual,
+    ]),
+  );
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <CampoMoeda defaultValue={valores?.valorDiaria ?? unidadeCasa?.base_price ?? 0} disabled={disabled} label="Valor da diaria" name="valorDiaria" />
-      <CampoMoeda defaultValue={valores?.taxaLimpeza ?? 0} disabled={disabled} label="Taxa de limpeza" name="taxaLimpeza" />
-      <CampoMoeda defaultValue={valores?.caucao ?? 0} disabled={disabled} label="Caucao" name="caucao" />
-      <CampoMoeda defaultValue={valores?.valorHospedeExtra ?? 0} disabled={disabled} label="Valor por hospede extra" name="valorHospedeExtra" />
-      <CampoNumero defaultValue={valores?.hospedesInclusos ?? 1} disabled={disabled} label="Hospedes inclusos no valor base" min={1} name="hospedesInclusos" />
+    <div className="grid gap-5">
+      <div className="grid gap-4 md:grid-cols-2">
+        <CampoMoeda defaultValue={valores?.valorDiaria ?? unidadeCasa?.base_price ?? 0} disabled={disabled} label="Valor da diaria" name="valorDiaria" />
+        <CampoMoeda defaultValue={valores?.taxaLimpeza ?? 0} disabled={disabled} label="Taxa de limpeza" name="taxaLimpeza" />
+        <CampoMoeda defaultValue={valores?.caucao ?? 0} disabled={disabled} label="Caucao" name="caucao" />
+        <CampoMoeda defaultValue={valores?.valorHospedeExtra ?? 0} disabled={disabled} label="Valor por hospede extra" name="valorHospedeExtra" />
+        <CampoNumero defaultValue={valores?.hospedesInclusos ?? 1} disabled={disabled} label="Hospedes inclusos no valor base" min={1} name="hospedesInclusos" />
+      </div>
+
+      <section className="rounded-xl border bg-background/45 p-4">
+        <div className="mb-4 flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200">
+            <CreditCard className="h-4 w-4" />
+          </span>
+          <div>
+            <h4 className="font-semibold">Cartao de credito</h4>
+            <p className="text-sm text-muted-foreground">
+              Estrutura preparada para pagamento futuro, sem gateway nesta etapa.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex items-center gap-2 rounded-xl border bg-background/55 px-3 py-2 text-sm">
+            <input
+              checked={aceitaCartaoCredito}
+              disabled={disabled}
+              name="aceitaCartaoCredito"
+              onChange={(evento) => setAceitaCartaoCredito(evento.currentTarget.checked)}
+              type="checkbox"
+            />
+            Aceita cartao de credito
+          </label>
+
+          <CampoNumero
+            disabled={disabled || !aceitaCartaoCredito}
+            label="Quantidade maxima de parcelas"
+            max={MAX_PARCELAS_CARTAO}
+            min={1}
+            name="maxParcelasCartao"
+            onChange={(evento) =>
+              setMaxParcelasCartao(
+                Math.min(
+                  Math.max(Number.parseInt(evento.currentTarget.value || "1", 10), 1),
+                  MAX_PARCELAS_CARTAO,
+                ),
+              )
+            }
+            value={maxParcelasCartao}
+          />
+        </div>
+
+        {aceitaCartaoCredito ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: maxParcelasCartao }, (_, indice) => {
+              const parcela = indice + 1;
+              return (
+                <CampoNumero
+                  defaultValue={jurosPorParcela.get(parcela) ?? (parcela === 1 ? 0 : "")}
+                  disabled={disabled}
+                  key={parcela}
+                  label={`${parcela}x - juros %`}
+                  min={0}
+                  name={`jurosParcela${parcela}`}
+                  step="0.01"
+                />
+              );
+            })}
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }
@@ -432,7 +535,9 @@ function EtapaRegras({
 }
 
 function EtapaImagens({
+  atualizarTituloGaleria,
   capaRef,
+  definirPrincipalGaleria,
   disabled,
   erroImagem,
   galeriaRef,
@@ -442,12 +547,14 @@ function EtapaImagens({
   selecionarCapa,
   selecionarGaleria,
 }: {
+  atualizarTituloGaleria: (indice: number, titulo: string) => void;
   capaRef: RefObject<HTMLInputElement | null>;
+  definirPrincipalGaleria: (indice: number) => void;
   disabled: boolean;
   erroImagem: string | null;
   galeriaRef: RefObject<HTMLInputElement | null>;
   previewCapa: string | null;
-  previewsGaleria: Array<{ nome: string; url: string }>;
+  previewsGaleria: PreviewGaleria[];
   removerGaleria: (indice: number) => void;
   selecionarCapa: (arquivo?: File) => void;
   selecionarGaleria: (arquivos: FileList | null) => void;
@@ -456,6 +563,7 @@ function EtapaImagens({
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
         <CampoArquivo
+          botaoLabel="Escolher arquivo"
           inputRef={capaRef}
           label="Imagem de capa"
           name="imagemCapaArquivo"
@@ -463,6 +571,7 @@ function EtapaImagens({
           disabled={disabled}
         />
         <CampoArquivo
+          botaoLabel="Adicionar foto"
           inputRef={galeriaRef}
           label="Galeria com multiplas fotos"
           multiple
@@ -476,28 +585,57 @@ function EtapaImagens({
           {erroImagem}
         </p>
       ) : null}
-      <div className="grid gap-3 md:grid-cols-2">
-        <PreviewImagem titulo="Imagem principal" url={previewCapa} />
+      <div className="grid gap-3">
+        {previewCapa ? <PreviewImagem titulo="Imagem principal" url={previewCapa} /> : null}
         <div className="rounded-xl border bg-background/45 p-3">
-          <p className="mb-3 text-sm font-semibold">Pre-visualizacao da galeria</p>
+          <p className="mb-3 text-sm font-semibold">Galeria</p>
           {previewsGaleria.length ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 lg:grid-cols-2">
               {previewsGaleria.map((preview, indice) => (
-                <div className="overflow-hidden rounded-lg border bg-background/55" key={`${preview.nome}-${preview.url}`}>
-                  <img alt={preview.nome} className="h-24 w-full object-cover" src={preview.url} />
-                  <div className="flex items-center justify-between gap-2 p-2">
-                    <span className="truncate text-xs text-muted-foreground">{preview.nome}</span>
-                    <Button onClick={() => removerGaleria(indice)} size="icon" type="button" variant="ghost">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                <div className="grid gap-3 overflow-hidden rounded-lg border bg-background/55 p-3" key={preview.id}>
+                  <input name="titulosGaleria" readOnly type="hidden" value={preview.titulo} />
+                  <input name="ordensGaleria" readOnly type="hidden" value={preview.ordem} />
+                  {preview.principal ? (
+                    <input name="imagemPrincipalGaleriaIndice" readOnly type="hidden" value={indice} />
+                  ) : null}
+
+                  <img alt={preview.titulo || preview.nome} className="h-28 w-full rounded-lg object-cover" src={preview.url} />
+                  <CampoTexto
+                    disabled={disabled}
+                    label="Nome/titulo da foto"
+                    name={`tituloGaleriaVisual${indice}`}
+                    onChange={(evento) => atualizarTituloGaleria(indice, evento.currentTarget.value)}
+                    value={preview.titulo}
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ActionButton
+                      disabled={disabled}
+                      icon={<Star className="h-4 w-4" />}
+                      onClick={() => definirPrincipalGaleria(indice)}
+                      size="sm"
+                      type="button"
+                      variant={preview.principal ? "status" : "settings"}
+                    >
+                      Principal
+                    </ActionButton>
+                    <ActionButton
+                      disabled={disabled}
+                      icon={<Trash2 className="h-4 w-4" />}
+                      onClick={() => removerGaleria(indice)}
+                      size="sm"
+                      type="button"
+                      variant="delete"
+                    >
+                      Remover foto
+                    </ActionButton>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-              Nenhuma imagem selecionada.
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Nenhuma foto selecionada. Use o botao Adicionar foto quando quiser montar a galeria.
+            </p>
           )}
         </div>
       </div>
@@ -514,18 +652,73 @@ function EtapaComodidades({
   disabled: boolean;
   selecionadas: Set<string>;
 }) {
+  const [novaComodidade, setNovaComodidade] = useState("");
+  const [personalizadas, setPersonalizadas] = useState<string[]>([]);
+
+  function adicionarComodidade() {
+    const nome = novaComodidade.trim();
+    if (!nome || personalizadas.includes(nome)) return;
+    setPersonalizadas((atuais) => [...atuais, nome]);
+    setNovaComodidade("");
+  }
+
+  function removerComodidade(nome: string) {
+    setPersonalizadas((atuais) => atuais.filter((item) => item !== nome));
+  }
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {comodidades.map((comodidade) => (
-        <CampoCheckbox
-          defaultChecked={selecionadas.has(comodidade.id)}
-          disabled={disabled}
-          key={comodidade.id}
-          label={comodidade.name}
-          name="comodidadeIds"
-          value={comodidade.id}
-        />
-      ))}
+    <div className="grid gap-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {comodidades.map((comodidade) => (
+          <CampoCheckbox
+            defaultChecked={selecionadas.has(comodidade.id)}
+            disabled={disabled}
+            key={comodidade.id}
+            label={comodidade.name}
+            name="comodidadeIds"
+            value={comodidade.id}
+          />
+        ))}
+      </div>
+
+      <div className="rounded-xl border bg-background/45 p-4">
+        <Label htmlFor="novaComodidade">Nome da nova comodidade</Label>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <Input
+            disabled={disabled}
+            id="novaComodidade"
+            maxLength={80}
+            onChange={(evento) => setNovaComodidade(evento.currentTarget.value)}
+            placeholder="Ex.: Vista para o rio"
+            value={novaComodidade}
+          />
+          <ActionButton disabled={disabled} icon={<Plus className="h-4 w-4" />} onClick={adicionarComodidade} type="button" variant="add">
+            Adicionar comodidade
+          </ActionButton>
+        </div>
+
+        {personalizadas.length ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {personalizadas.map((nome) => (
+              <span className="inline-flex items-center gap-2 rounded-xl border bg-background/60 px-2 py-1 text-sm" key={nome}>
+                <input name="comodidadesPersonalizadas" readOnly type="hidden" value={nome} />
+                {nome}
+                <ActionButton
+                  aria-label={`Remover ${nome}`}
+                  disabled={disabled}
+                  icon={<Trash2 className="h-4 w-4" />}
+                  onClick={() => removerComodidade(nome)}
+                  size="icon"
+                  type="button"
+                  variant="delete"
+                >
+                  Remover
+                </ActionButton>
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -619,17 +812,35 @@ function CampoCheckbox({
 }
 
 function CampoArquivo({
+  botaoLabel,
   inputRef,
   label,
   ...props
 }: {
+  botaoLabel: string;
   inputRef: RefObject<HTMLInputElement | null>;
   label: string;
 } & ComponentProps<typeof Input>) {
   return (
     <div className="grid gap-2">
       <Label htmlFor={props.name}>{label}</Label>
-      <Input accept="image/*" id={props.name} ref={inputRef} type="file" {...props} />
+      <Input
+        accept="image/*"
+        className="sr-only"
+        id={props.name}
+        ref={inputRef}
+        type="file"
+        {...props}
+      />
+      <ActionButton
+        disabled={props.disabled}
+        icon={<ImagePlus className="h-4 w-4" />}
+        onClick={() => inputRef.current?.click()}
+        type="button"
+        variant="add"
+      >
+        {botaoLabel}
+      </ActionButton>
     </div>
   );
 }

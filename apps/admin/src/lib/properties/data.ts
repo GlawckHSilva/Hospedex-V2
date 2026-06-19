@@ -198,6 +198,7 @@ export function normalizarEndereco(valor: JsonValue): EnderecoPropriedade {
     cep: obterTextoJson(endereco, "cep"),
     complemento: obterTextoJson(endereco, "complemento"),
     estado: obterTextoJson(endereco, "estado"),
+    googleMapsLink: obterTextoJson(endereco, "googleMapsLink"),
     linha1: obterTextoJson(endereco, "linha1"),
     numero: obterTextoJson(endereco, "numero"),
     referencia: obterTextoJson(endereco, "referencia")
@@ -249,12 +250,31 @@ function normalizarValores(valor: JsonValue): ValoresPropriedade {
   const valores = valorEhObjeto(valor) ? valor : {};
 
   return {
+    aceitaCartaoCredito: obterBooleanoJson(valores, "aceitaCartaoCredito"),
     caucao: obterNumeroJson(valores, "caucao"),
     hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
+    jurosParcelasCartao: normalizarJurosParcelas(valores.jurosParcelasCartao ?? null),
+    maxParcelasCartao: obterNumeroJson(valores, "maxParcelasCartao", 1),
     taxaLimpeza: obterNumeroJson(valores, "taxaLimpeza"),
     valorDiaria: obterNumeroJson(valores, "valorDiaria"),
     valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra")
   };
+}
+
+function normalizarJurosParcelas(valor: JsonValue) {
+  if (!Array.isArray(valor)) return [];
+
+  return valor
+    .map((item) => {
+      if (!valorEhObjeto(item)) return null;
+      return {
+        jurosPercentual: obterNumeroJson(item, "jurosPercentual"),
+        parcela: obterNumeroJson(item, "parcela")
+      };
+    })
+    .filter((item): item is { jurosPercentual: number; parcela: number } =>
+      Boolean(item && item.parcela > 0)
+    );
 }
 
 function criarRegrasPadrao(
