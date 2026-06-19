@@ -1,3 +1,6 @@
+"use client";
+
+import { motion } from "framer-motion";
 import {
   AlertTriangle,
   CalendarCheck2,
@@ -11,15 +14,29 @@ import {
   ShieldAlert
 } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
 
 import { FadeIn, GlassCard, GlassPanel, StatusBadge } from "@hospedex/ui";
 
-import {
-  obterPerfilMenuAdmin,
-  obterTituloPerfilAdmin
-} from "../../config/navigation";
+import { obterPerfilMenuAdmin, obterTituloPerfilAdmin } from "../../config/navigation";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
-import type { AlertaDashboard, DadosDashboardProprietario } from "../../lib/dashboard/data";
+import type {
+  AlertaDashboard,
+  CardDashboard,
+  DadosDashboardProprietario,
+  EventoReservaDashboard,
+  IconeCardDashboard,
+  ReceitaPeriodoDashboard,
+  ReservaStatusDashboard
+} from "../../lib/dashboard/data";
 
 export type AdminHomeProps = {
   contexto: ContextoAutenticacao;
@@ -27,10 +44,11 @@ export type AdminHomeProps = {
 };
 
 /**
- * Dashboard inicial do proprietário.
+ * Dashboard inicial do proprietario.
  *
- * Os indicadores são calculados pelo tenant atual. Isso evita misturar dados de
- * clientes diferentes e prepara a evolução para calendário, pagamentos e limpeza.
+ * A tela renderiza apenas dados calculados no servidor para o tenant atual.
+ * Graficos vazios exibem estado discreto em vez de barras falsas, preservando a
+ * confianca operacional do proprietario.
  */
 export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
   const perfil = obterPerfilMenuAdmin(contexto.role);
@@ -59,23 +77,12 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
         </div>
       </GlassPanel>
 
+      {dashboard.erros.length > 0 ? <PainelErros erros={dashboard.erros.map((erro) => erro.mensagem)} /> : null}
       {dashboard.estadoVazio ? <EstadoVazio /> : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {dashboard.cards.map((card, index) => (
-          <GlassCard className="overflow-hidden p-5" key={card.titulo}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">{card.titulo}</p>
-                  <p className="mt-2 text-2xl font-semibold">{card.valor}</p>
-                </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 dark:text-cyan-200">
-                  {obterIconeCard(index)}
-                </div>
-              </div>
-              <p className="mt-4 text-sm text-muted-foreground">{card.descricao}</p>
-              <MiniGrafico indice={index} />
-          </GlassCard>
+        {dashboard.cards.map((card) => (
+          <CartaoMetrica card={card} key={card.titulo} />
         ))}
       </section>
 
@@ -84,7 +91,52 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
           <AlertaOperacional alerta={alerta} key={alerta.titulo} />
         ))}
       </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
+        <GraficoReceitaPeriodo dados={dashboard.receitaPorPeriodo} />
+        <GraficoStatusReservas dados={dashboard.reservasPorStatus} />
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-2">
+        <ListaEventos
+          descricao="Entradas futuras confirmadas no tenant."
+          eventos={dashboard.proximosCheckIns}
+          icone={<LogIn />}
+          titulo="Próximos check-ins"
+        />
+        <ListaEventos
+          descricao="Saídas futuras previstas no tenant."
+          eventos={dashboard.proximosCheckOuts}
+          icone={<LogOut />}
+          titulo="Próximos check-outs"
+        />
+      </section>
     </FadeIn>
+  );
+}
+
+function CartaoMetrica({ card }: { card: CardDashboard }) {
+  return (
+    <motion.div
+      className="h-full"
+      style={{ transformStyle: "preserve-3d" }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      whileHover={{ rotateX: 1.2, rotateY: -1.2, scale: 1.01, y: -4 }}
+    >
+      <GlassCard className="group h-full overflow-hidden p-5 transition duration-200 hover:border-cyan-300/50 hover:shadow-xl hover:shadow-cyan-500/10">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">{card.titulo}</p>
+            <p className="mt-2 text-2xl font-semibold">{card.valor}</p>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 transition group-hover:bg-cyan-400/25 dark:text-cyan-200">
+            {obterIconeCard(card.icone)}
+          </div>
+        </div>
+        <p className="mt-4 text-sm text-muted-foreground">{card.descricao}</p>
+        <MiniGrafico estadoVazio={card.estadoVazioGrafico} serie={card.serie} />
+      </GlassCard>
+    </motion.div>
   );
 }
 
@@ -92,24 +144,45 @@ function EstadoErro({ mensagem }: { mensagem: string }) {
   return (
     <FadeIn>
       <GlassCard className="flex items-start gap-3 p-5">
-          <ShieldAlert className="mt-1 h-5 w-5 text-destructive" />
-          <div>
-            <h1 className="text-lg font-semibold">Dashboard indisponível</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{mensagem}</p>
-          </div>
+        <ShieldAlert className="mt-1 h-5 w-5 text-destructive" />
+        <div>
+          <h1 className="text-lg font-semibold">Dashboard indisponível</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{mensagem}</p>
+        </div>
       </GlassCard>
     </FadeIn>
+  );
+}
+
+function PainelErros({ erros }: { erros: string[] }) {
+  const mensagens = Array.from(new Set(erros));
+
+  return (
+    <GlassCard className="border-amber-300/40 bg-amber-500/10 p-4">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
+        <div>
+          <h2 className="text-sm font-semibold">Alguns dados não foram carregados</h2>
+          <div className="mt-1 space-y-1 text-sm text-muted-foreground">
+            {mensagens.map((mensagem) => (
+              <p key={mensagem}>{mensagem}</p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </GlassCard>
   );
 }
 
 function EstadoVazio() {
   return (
     <GlassCard className="p-5">
-        <StatusBadge tone="warning">Sem dados operacionais</StatusBadge>
-        <h2 className="mt-3 text-lg font-semibold">Cadastre propriedades para ativar o dashboard</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          As métricas passam a ganhar valor quando existirem propriedades, unidades e reservas no tenant.
-        </p>
+      <StatusBadge tone="warning">Sem dados operacionais</StatusBadge>
+      <h2 className="mt-3 text-lg font-semibold">Cadastre propriedades para ativar o dashboard</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        As métricas passam a ganhar valor quando existirem propriedades, unidades, reservas ou
+        lançamentos financeiros no tenant.
+      </p>
     </GlassCard>
   );
 }
@@ -118,53 +191,231 @@ function AlertaOperacional({ alerta }: { alerta: AlertaDashboard }) {
   const Icone = alerta.tipo === "warning" ? AlertTriangle : CheckCircle2;
 
   return (
-    <GlassCard className="p-5">
+    <motion.div
+      className="h-full"
+      style={{ transformStyle: "preserve-3d" }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      whileHover={{ rotateX: 1, rotateY: -1, scale: 1.01, y: -3 }}
+    >
+      <GlassCard className="h-full p-5 transition duration-200 hover:border-cyan-300/50 hover:shadow-lg hover:shadow-cyan-500/10">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <StatusBadge tone={alerta.tipo === "warning" ? "warning" : "success"}>
-              {alerta.valor}
-            </StatusBadge>
+            <StatusBadge tone={alerta.tipo}>{alerta.valor}</StatusBadge>
             <h2 className="mt-3 font-semibold">{alerta.titulo}</h2>
           </div>
           <Icone className="h-5 w-5 text-primary" />
         </div>
         <p className="mt-3 text-sm text-muted-foreground">{alerta.descricao}</p>
-    </GlassCard>
+      </GlassCard>
+    </motion.div>
   );
 }
 
-function MiniGrafico({ indice }: { indice: number }) {
-  const alturas = [
-    [42, 62, 48, 72, 58, 84],
-    [34, 46, 72, 64, 78, 88],
-    [58, 44, 66, 52, 74, 68],
-    [38, 52, 48, 70, 76, 64],
-    [46, 64, 82, 74, 88, 92],
-    [52, 68, 58, 76, 72, 86]
-  ][indice % 6] ?? [44, 62, 54, 70, 66, 82];
+function MiniGrafico({
+  estadoVazio,
+  serie
+}: {
+  estadoVazio: string;
+  serie: CardDashboard["serie"];
+}) {
+  const maiorValor = Math.max(...serie.map((ponto) => ponto.valor), 0);
+
+  if (maiorValor <= 0) {
+    return (
+      <div className="mt-5 rounded-lg border bg-background/45 px-3 py-4 text-xs text-muted-foreground">
+        {estadoVazio}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-5 flex h-16 items-end gap-1.5 rounded-lg border bg-background/45 px-3 py-2">
-      {alturas.map((altura, index) => (
+      {serie.map((ponto) => (
         <span
+          aria-label={`${ponto.rotulo}: ${ponto.valor}`}
           className="flex-1 rounded-t-sm bg-gradient-to-t from-cyan-500/35 to-cyan-300/80"
-          key={`${altura}-${index}`}
-          style={{ height: `${altura}%` }}
+          key={ponto.rotulo}
+          style={{ height: `${Math.max(12, (ponto.valor / maiorValor) * 100)}%` }}
+          title={`${ponto.rotulo}: ${formatarNumero(ponto.valor)}`}
         />
       ))}
     </div>
   );
 }
 
-function obterIconeCard(index: number): ReactNode {
-  const icones = [
-    <CalendarCheck2 key="reservas" />,
-    <CircleDollarSign key="receita" />,
-    <LogIn key="check-in" />,
-    <LogOut key="check-out" />,
-    <Percent key="ocupacao" />,
-    <Hotel key="propriedades" />
-  ];
+function GraficoReceitaPeriodo({ dados }: { dados: ReceitaPeriodoDashboard[] }) {
+  const possuiReceita = dados.some((ponto) => ponto.receita > 0);
 
-  return icones[index] ?? <Home />;
+  return (
+    <GlassCard className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Receita por período</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Transações pagas dos últimos 6 meses.</p>
+        </div>
+        <CircleDollarSign className="h-5 w-5 text-primary" />
+      </div>
+      <div className="mt-4 h-72">
+        {possuiReceita ? (
+          <ResponsiveContainer height="100%" width="100%">
+            <AreaChart data={dados}>
+              <defs>
+                <linearGradient id="dashboardReceita" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.38} />
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.22)" />
+              <XAxis dataKey="rotulo" tickLine={false} />
+              <YAxis tickFormatter={(valor) => formatarNumeroCurto(Number(valor))} width={72} />
+              <Tooltip formatter={(valor) => formatarMoeda(Number(valor))} />
+              <Area
+                dataKey="receita"
+                fill="url(#dashboardReceita)"
+                name="Receita"
+                stroke="#06b6d4"
+                strokeWidth={2}
+                type="monotone"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <EstadoVazioInterno mensagem="Sem receitas pagas no período." />
+        )}
+      </div>
+    </GlassCard>
+  );
+}
+
+function GraficoStatusReservas({ dados }: { dados: ReservaStatusDashboard[] }) {
+  const total = dados.reduce((soma, item) => soma + item.total, 0);
+
+  return (
+    <GlassCard className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">Reservas por status</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Distribuição das reservas do mês.</p>
+        </div>
+        <CalendarCheck2 className="h-5 w-5 text-primary" />
+      </div>
+
+      {total > 0 ? (
+        <div className="mt-5 space-y-3">
+          {dados.map((item) => (
+            <div key={item.status}>
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">{item.label}</span>
+                <span className="font-medium">{item.total}</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/70">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    backgroundColor: item.cor,
+                    width: `${Math.max(5, (item.total / total) * 100)}%`
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EstadoVazioInterno mensagem="Sem reservas no mês para montar o status." />
+      )}
+    </GlassCard>
+  );
+}
+
+function ListaEventos({
+  descricao,
+  eventos,
+  icone,
+  titulo
+}: {
+  descricao: string;
+  eventos: EventoReservaDashboard[];
+  icone: ReactNode;
+  titulo: string;
+}) {
+  return (
+    <GlassCard className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-base font-semibold">{titulo}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
+        </div>
+        <div className="text-primary [&_svg]:h-5 [&_svg]:w-5">{icone}</div>
+      </div>
+
+      {eventos.length > 0 ? (
+        <div className="mt-4 divide-y rounded-lg border bg-background/40">
+          {eventos.map((evento) => (
+            <div className="grid gap-2 p-3 text-sm sm:grid-cols-[auto_1fr_auto]" key={evento.id}>
+              <div className="font-medium">{formatarData(evento.data)}</div>
+              <div className="min-w-0">
+                <p className="truncate font-medium">{evento.hospede}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {evento.propriedade}
+                  {evento.unidade ? ` · ${evento.unidade}` : ""}
+                </p>
+              </div>
+              <StatusBadge className="justify-self-start sm:justify-self-end" tone="info">
+                {evento.codigo}
+              </StatusBadge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EstadoVazioInterno mensagem="Nenhuma reserva futura encontrada." />
+      )}
+    </GlassCard>
+  );
+}
+
+function EstadoVazioInterno({ mensagem }: { mensagem: string }) {
+  return (
+    <div className="mt-4 rounded-lg border bg-background/55 p-5 text-sm text-muted-foreground">
+      {mensagem}
+    </div>
+  );
+}
+
+function obterIconeCard(icone: IconeCardDashboard): ReactNode {
+  const icones: Record<IconeCardDashboard, ReactNode> = {
+    casas: <Hotel />,
+    check_in: <LogIn />,
+    check_out: <LogOut />,
+    ocupacao: <Percent />,
+    receita: <CircleDollarSign />,
+    reservas: <CalendarCheck2 />
+  };
+
+  return icones[icone] ?? <Home />;
+}
+
+function formatarMoeda(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency"
+  }).format(valor);
+}
+
+function formatarNumeroCurto(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 0,
+    notation: "compact"
+  }).format(valor);
+}
+
+function formatarNumero(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    maximumFractionDigits: 2
+  }).format(valor);
+}
+
+function formatarData(valor: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
+    new Date(`${valor}T00:00:00`)
+  );
 }

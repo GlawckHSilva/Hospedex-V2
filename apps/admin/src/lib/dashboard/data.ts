@@ -1,8 +1,12 @@
 import type {
+  CleaningTaskRow,
   LicenseRow,
+  PermissionCode,
   PropertyRow,
-  ReservationExtraServiceRow,
+  ReservationGuestRow,
   ReservationRow,
+  ReservationStatus,
+  TransactionRow,
   UnitRow
 } from "@hospedex/types";
 
@@ -10,266 +14,701 @@ import type { ContextoAutenticacao } from "../auth/types";
 import { criarClienteSupabaseServer } from "../supabase/server";
 
 /**
- * Carrega métricas iniciais do dashboard do proprietário.
+ * Carrega metricas reais do dashboard do proprietario.
  *
- * Todas as consultas usam o tenant autenticado para manter isolamento entre
- * clientes. A RLS do Supabase continua como a barreira final de autorização.
+ * Todo calculo parte do tenant autenticado e tambem filtra owner_id quando a
+ * tabela possui esse campo. A RLS do Supabase continua sendo a barreira final,
+ * mas manter esses filtros aqui evita misturar dados entre clientes por erro de
+ * consulta ou evolucao futura do modulo.
  */
+
+export type TipoAlertaDashboard = "info" | "warning" | "success";
 
 export type AlertaDashboard = {
   descricao: string;
   titulo: string;
-  tipo: "info" | "warning" | "success";
+  tipo: TipoAlertaDashboard;
   valor: string;
+};
+
+export type IconeCardDashboard =
+  | "reservas"
+  | "receita"
+  | "check_in"
+  | "check_out"
+  | "ocupacao"
+  | "casas";
+
+export type PontoSerieDashboard = {
+  rotulo: string;
+  valor: number;
 };
 
 export type CardDashboard = {
   descricao: string;
+  estadoVazioGrafico: string;
+  icone: IconeCardDashboard;
+  serie: PontoSerieDashboard[];
   titulo: string;
   valor: string;
+};
+
+export type ReceitaPeriodoDashboard = {
+  periodo: string;
+  receita: number;
+  reservas: number;
+  rotulo: string;
+};
+
+export type ReservaStatusDashboard = {
+  cor: string;
+  label: string;
+  status: ReservationStatus;
+  total: number;
+};
+
+export type EventoReservaDashboard = {
+  codigo: string;
+  data: string;
+  hospede: string;
+  id: string;
+  propriedade: string;
+  status: ReservationStatus;
+  unidade: string | null;
+};
+
+export type ErroDashboardModulo = {
+  mensagem: string;
+  modulo: "reservas" | "financeiro" | "limpeza" | "licencas" | "propriedades";
 };
 
 export type DadosDashboardProprietario = {
   alertas: AlertaDashboard[];
   cards: CardDashboard[];
   erro?: string;
+  erros: ErroDashboardModulo[];
   estadoVazio: boolean;
   periodo: string;
+  proximosCheckIns: EventoReservaDashboard[];
+  proximosCheckOuts: EventoReservaDashboard[];
+  receitaPorPeriodo: ReceitaPeriodoDashboard[];
+  reservasPorStatus: ReservaStatusDashboard[];
 };
 
 type DadosOperacionais = {
-  extras: ReservationExtraServiceRow[];
+  hospedes: ReservationGuestRow[];
   licencas: LicenseRow[];
+  licencasPermitidas: boolean;
+  limpezasPendentes: CleaningTaskRow[];
+  limpezaPermitida: boolean;
   propriedades: PropertyRow[];
+  propriedadesPermitidas: boolean;
   reservas: ReservationRow[];
+  reservasPendentes: ReservationRow[];
+  transacoesReceita: TransactionRow[];
   unidades: UnitRow[];
 };
 
-const STATUS_RESERVA_ATIVA = ["confirmed", "checked_in", "checked_out", "completed"];
+type PeriodoDashboard = {
+  fimMesExclusivo: string;
+  fimProximos: string;
+  hoje: string;
+  inicioGrafico: string;
+  inicioMes: string;
+  mesesGrafico: Date[];
+};
+
+type ResultadoConsulta<T> = {
+  data: T[] | null;
+  error: { message: string } | null;
+};
+
+const STATUS_RESERVA_ATIVA: ReservationStatus[] = [
+  "confirmed",
+  "checked_in",
+  "checked_out",
+  "completed"
+];
+const STATUS_RESERVA_PENDENTE: ReservationStatus[] = ["pending", "awaiting_payment"];
+const STATUS_RESERVA_DASHBOARD: ReservationStatus[] = [
+  "pending",
+  "awaiting_payment",
+  "confirmed",
+  "checked_in",
+  "checked_out",
+  "completed",
+  "cancelled"
+];
+const STATUS_LIMPEZA_PENDENTE = ["awaiting_cleaning", "in_cleaning"] as const;
+
+const LABEL_STATUS_RESERVA: Record<ReservationStatus, string> = {
+  awaiting_payment: "Aguardando pagamento",
+  cancelled: "Cancelada",
+  checked_in: "Hospedado",
+  checked_out: "Check-out feito",
+  completed: "Concluida",
+  confirmed: "Confirmada",
+  pending: "Pendente"
+};
+
+const COR_STATUS_RESERVA: Record<ReservationStatus, string> = {
+  awaiting_payment: "#f59e0b",
+  cancelled: "#ef4444",
+  checked_in: "#06b6d4",
+  checked_out: "#6366f1",
+  completed: "#22c55e",
+  confirmed: "#0ea5e9",
+  pending: "#f97316"
+};
 
 export async function carregarDadosDashboardProprietario(
   contexto: ContextoAutenticacao
 ): Promise<DadosDashboardProprietario> {
   const tenantId = contexto.tenant?.id;
+  const ownerId = contexto.tenant?.owner_id;
 
-  if (!tenantId) {
+  if (!tenantId || !ownerId) {
     return criarDashboardVazio("Tenant não encontrado.");
   }
 
-  const hoje = criarDataLocal();
-  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+  if (!podeLerDashboard(contexto)) {
+    return criarDashboardVazio("Você não tem permissão para visualizar o dashboard.");
+  }
+
+  const periodo = criarPeriodoDashboard();
 
   try {
-    const dados = await carregarDadosOperacionais(tenantId);
-    return montarDashboard(dados, contexto, hoje, inicioMes, fimMes);
+    const { dados, erros } = await carregarDadosOperacionais(contexto, tenantId, ownerId, periodo);
+    return montarDashboard(dados, contexto, periodo, erros);
   } catch (erro) {
     console.error("Erro ao carregar dashboard do proprietário.", erro);
     return criarDashboardVazio("Não foi possível carregar os indicadores.");
   }
 }
 
-async function carregarDadosOperacionais(tenantId: string): Promise<DadosOperacionais> {
+async function carregarDadosOperacionais(
+  contexto: ContextoAutenticacao,
+  tenantId: string,
+  ownerId: string,
+  periodo: PeriodoDashboard
+): Promise<{ dados: DadosOperacionais; erros: ErroDashboardModulo[] }> {
   const supabase = await criarClienteSupabaseServer();
-  const [propriedades, unidades, reservas, extras, licencas] = await Promise.all([
-    supabase
-      .from("properties")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .is("deleted_at", null)
-      .returns<PropertyRow[]>(),
-    supabase.from("units").select("*").eq("tenant_id", tenantId).returns<UnitRow[]>(),
-    supabase
-      .from("reservations")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("check_in", { ascending: true })
-      .returns<ReservationRow[]>(),
-    supabase
-      .from("reservation_extra_services")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .eq("status", "active")
-      .returns<ReservationExtraServiceRow[]>(),
-    supabase
-      .from("licenses")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("expires_at", { ascending: true })
-      .returns<LicenseRow[]>()
+  const erros: ErroDashboardModulo[] = [];
+  const podeVerPropriedades = podeLerModulo(contexto, "properties.read");
+  const podeVerReservas = podeLerModulo(contexto, "reservations.read");
+  const podeVerFinanceiro = podeLerModulo(contexto, "finance.read");
+  const podeVerLimpeza =
+    Boolean(contexto.featureFlags.cleaning) && podeLerModulo(contexto, "cleaning.read");
+  const podeVerLicencas =
+    contexto.role === "owner" ||
+    contexto.permissions.includes("settings.manage") ||
+    contexto.permissions.includes("tenants.manage");
+
+  const [
+    propriedadesResultado,
+    unidadesResultado,
+    reservasResultado,
+    reservasPendentesResultado,
+    transacoesResultado,
+    limpezasResultado,
+    licencasResultado
+  ] = await Promise.all([
+    podeVerPropriedades
+      ? supabase
+          .from("properties")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("owner_id", ownerId)
+          .is("deleted_at", null)
+          .order("name", { ascending: true })
+          .returns<PropertyRow[]>()
+      : consultaVazia<PropertyRow>(),
+    podeVerPropriedades
+      ? supabase
+          .from("units")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .order("name", { ascending: true })
+          .returns<UnitRow[]>()
+      : consultaVazia<UnitRow>(),
+    podeVerReservas
+      ? supabase
+          .from("reservations")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("owner_id", ownerId)
+          .gte("check_out", periodo.inicioGrafico)
+          .lte("check_in", periodo.fimProximos)
+          .order("check_in", { ascending: true })
+          .returns<ReservationRow[]>()
+      : consultaVazia<ReservationRow>(),
+    podeVerReservas
+      ? supabase
+          .from("reservations")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("owner_id", ownerId)
+          .in("status", STATUS_RESERVA_PENDENTE)
+          .order("check_in", { ascending: true })
+          .returns<ReservationRow[]>()
+      : consultaVazia<ReservationRow>(),
+    podeVerFinanceiro
+      ? supabase
+          .from("transactions")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("transaction_type", "income")
+          .eq("status", "paid")
+          .gte("paid_at", `${periodo.inicioGrafico}T00:00:00`)
+          .lt("paid_at", `${periodo.fimMesExclusivo}T00:00:00`)
+          .order("paid_at", { ascending: true })
+          .returns<TransactionRow[]>()
+      : consultaVazia<TransactionRow>(),
+    podeVerLimpeza
+      ? supabase
+          .from("cleaning_tasks")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("owner_id", ownerId)
+          .in("status", [...STATUS_LIMPEZA_PENDENTE])
+          .order("scheduled_for", { ascending: true, nullsFirst: false })
+          .returns<CleaningTaskRow[]>()
+      : consultaVazia<CleaningTaskRow>(),
+    podeVerLicencas
+      ? supabase
+          .from("licenses")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .eq("owner_id", ownerId)
+          .order("expires_at", { ascending: true, nullsFirst: false })
+          .returns<LicenseRow[]>()
+      : consultaVazia<LicenseRow>()
   ]);
 
-  lançarErroConsulta("propriedades", propriedades.error);
-  lançarErroConsulta("unidades", unidades.error);
-  lançarErroConsulta("reservas", reservas.error);
-  lançarErroConsulta("serviços extras", extras.error);
-  lançarErroConsulta("licenças", licencas.error);
+  registrarErroModulo(erros, "propriedades", propriedadesResultado.error);
+  registrarErroModulo(erros, "propriedades", unidadesResultado.error);
+  registrarErroModulo(erros, "reservas", reservasResultado.error);
+  registrarErroModulo(erros, "reservas", reservasPendentesResultado.error);
+  registrarErroModulo(erros, "financeiro", transacoesResultado.error);
+  registrarErroModulo(erros, "limpeza", limpezasResultado.error);
+  registrarErroModulo(erros, "licencas", licencasResultado.error);
+
+  const reservas = reservasResultado.data ?? [];
+  const hospedes = await carregarHospedesEventos(tenantId, reservas, periodo, erros);
 
   return {
-    extras: extras.data ?? [],
-    licencas: licencas.data ?? [],
-    propriedades: propriedades.data ?? [],
-    reservas: reservas.data ?? [],
-    unidades: unidades.data ?? []
+    dados: {
+      hospedes,
+      licencas: licencasResultado.data ?? [],
+      licencasPermitidas: podeVerLicencas,
+      limpezasPendentes: limpezasResultado.data ?? [],
+      limpezaPermitida: podeVerLimpeza,
+      propriedades: propriedadesResultado.data ?? [],
+      propriedadesPermitidas: podeVerPropriedades,
+      reservas,
+      reservasPendentes: reservasPendentesResultado.data ?? [],
+      transacoesReceita: transacoesResultado.data ?? [],
+      unidades: unidadesResultado.data ?? []
+    },
+    erros
   };
+}
+
+async function carregarHospedesEventos(
+  tenantId: string,
+  reservas: ReservationRow[],
+  periodo: PeriodoDashboard,
+  erros: ErroDashboardModulo[]
+) {
+  const reservaIds = obterReservasProximas(reservas, periodo, "check_in")
+    .concat(obterReservasProximas(reservas, periodo, "check_out"))
+    .map((reserva) => reserva.id);
+  const idsUnicos = Array.from(new Set(reservaIds));
+
+  if (idsUnicos.length === 0) return [];
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("reservation_guests")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("is_primary", true)
+    .in("reservation_id", idsUnicos)
+    .returns<ReservationGuestRow[]>();
+
+  registrarErroModulo(erros, "reservas", error);
+  return data ?? [];
 }
 
 function montarDashboard(
   dados: DadosOperacionais,
   contexto: ContextoAutenticacao,
-  hoje: Date,
-  inicioMes: Date,
-  fimMes: Date
+  periodo: PeriodoDashboard,
+  erros: ErroDashboardModulo[]
 ): DadosDashboardProprietario {
   const reservasMes = dados.reservas.filter((reserva) =>
-    dataEstaNoPeriodo(reserva.check_in, inicioMes, fimMes)
+    dataEstaNoPeriodo(reserva.check_in, periodo.inicioMes, periodo.fimMesExclusivo)
   );
-  const reservasReceita = reservasMes.filter((reserva) => reserva.status !== "cancelled");
-  const extrasPorReserva = somarExtrasPorReserva(dados.extras);
-  const receitaMes = reservasReceita.reduce(
-    (total, reserva) => total + Number(reserva.total_amount) + (extrasPorReserva.get(reserva.id) ?? 0),
-    0
+  const receitaPorPeriodo = montarReceitaPorPeriodo(dados, periodo);
+  const receitaMes =
+    receitaPorPeriodo.find((ponto) => ponto.periodo === periodo.inicioMes.slice(0, 7))?.receita ?? 0;
+  const checkInsHoje = contarReservasPorData(dados.reservas, "check_in", periodo.hoje);
+  const checkOutsHoje = contarReservasPorData(dados.reservas, "check_out", periodo.hoje);
+  const casasAtivas = dados.propriedades.filter((propriedade) => propriedade.status === "published");
+  const ocupacaoMes = calcularOcupacao(dados, periodo.inicioMes, periodo.fimMesExclusivo);
+  const proximosCheckIns = montarEventosReserva(
+    obterReservasProximas(dados.reservas, periodo, "check_in"),
+    dados,
+    "check_in"
   );
-  const checkInsHoje = dados.reservas.filter(
-    (reserva) => reserva.status !== "cancelled" && datasIguais(reserva.check_in, hoje)
-  ).length;
-  const checkOutsHoje = dados.reservas.filter(
-    (reserva) => reserva.status !== "cancelled" && datasIguais(reserva.check_out, hoje)
-  ).length;
-  const propriedadesAtivas = dados.propriedades.filter(
-    (propriedade) => propriedade.status === "published"
-  ).length;
+  const proximosCheckOuts = montarEventosReserva(
+    obterReservasProximas(dados.reservas, periodo, "check_out"),
+    dados,
+    "check_out"
+  );
 
   return {
-    alertas: montarAlertas(dados, contexto, hoje),
+    alertas: montarAlertas(dados, contexto, periodo),
     cards: [
       {
+        descricao: "Reservas com check-in neste mês.",
+        estadoVazioGrafico: "Sem reservas nos últimos meses.",
+        icone: "reservas",
+        serie: receitaPorPeriodo.map((ponto) => ({
+          rotulo: ponto.rotulo,
+          valor: ponto.reservas
+        })),
         titulo: "Reservas do mês",
-        valor: String(reservasMes.length),
-        descricao: "Reservas com check-in neste mês."
+        valor: String(reservasMes.length)
       },
       {
+        descricao: "Receitas pagas registradas no financeiro.",
+        estadoVazioGrafico: "Sem receitas pagas no período.",
+        icone: "receita",
+        serie: receitaPorPeriodo.map((ponto) => ({
+          rotulo: ponto.rotulo,
+          valor: ponto.receita
+        })),
         titulo: "Receita do mês",
-        valor: formatarMoeda(receitaMes),
-        descricao: "Reservas não canceladas e serviços extras."
+        valor: formatarMoeda(receitaMes)
       },
       {
+        descricao: "Entradas previstas para hoje.",
+        estadoVazioGrafico: "Sem check-ins futuros no período.",
+        icone: "check_in",
+        serie: montarSerieDiaria(dados.reservas, "check_in", periodo),
         titulo: "Check-ins de hoje",
-        valor: String(checkInsHoje),
-        descricao: "Entradas previstas para hoje."
+        valor: String(checkInsHoje)
       },
       {
+        descricao: "Saídas previstas para hoje.",
+        estadoVazioGrafico: "Sem check-outs futuros no período.",
+        icone: "check_out",
+        serie: montarSerieDiaria(dados.reservas, "check_out", periodo),
         titulo: "Check-outs de hoje",
-        valor: String(checkOutsHoje),
-        descricao: "Saídas previstas para hoje."
+        valor: String(checkOutsHoje)
       },
       {
+        descricao: "Noites ocupadas no mês atual.",
+        estadoVazioGrafico: "Sem ocupação real no período.",
+        icone: "ocupacao",
+        serie: montarSerieOcupacao(dados, periodo),
         titulo: "Ocupação",
-        valor: `${calcularOcupacao(dados, inicioMes, fimMes)}%`,
-        descricao: "Noites ocupadas no mês atual."
+        valor: `${ocupacaoMes}%`
       },
       {
-        titulo: "Propriedades ativas",
-        valor: String(propriedadesAtivas),
-        descricao: "Propriedades publicadas no tenant."
+        descricao: "Casas publicadas e visíveis no tenant.",
+        estadoVazioGrafico: "Sem casas cadastradas.",
+        icone: "casas",
+        serie: montarSeriePropriedades(dados.propriedades),
+        titulo: "Casas ativas",
+        valor: String(casasAtivas.length)
       }
     ],
-    estadoVazio: dados.propriedades.length === 0 && dados.reservas.length === 0,
-    periodo: new Intl.DateTimeFormat("pt-BR", {
-      month: "long",
-      year: "numeric"
-    }).format(hoje)
+    erros: errosUnicos(erros),
+    estadoVazio:
+      dados.propriedades.length === 0 &&
+      dados.reservas.length === 0 &&
+      dados.transacoesReceita.length === 0 &&
+      dados.limpezasPendentes.length === 0,
+    periodo: formatarMesAno(periodo.hoje),
+    proximosCheckIns,
+    proximosCheckOuts,
+    receitaPorPeriodo,
+    reservasPorStatus: montarReservasPorStatus(reservasMes)
   };
 }
 
 function montarAlertas(
   dados: DadosOperacionais,
   contexto: ContextoAutenticacao,
-  hoje: Date
+  periodo: PeriodoDashboard
 ): AlertaDashboard[] {
-  const reservasPendentes = dados.reservas.filter((reserva) =>
-    ["pending", "awaiting_payment"].includes(reserva.status)
-  ).length;
-  const licencaVencendo = dados.licencas.find((licenca) =>
-    licenca.expires_at ? diasEntre(hoje, new Date(`${licenca.expires_at}T00:00:00`)) <= 30 : false
-  );
+  const reservasPendentes = dados.reservasPendentes.length;
+  const limpezaAtiva = Boolean(contexto.featureFlags.cleaning);
+  const limpezasPendentes = limpezaAtiva && dados.limpezaPermitida ? dados.limpezasPendentes.length : 0;
+  const licencaVencendo = obterLicencaVencendo(dados.licencas, periodo.hoje);
 
   return [
     {
-      titulo: "Reservas pendentes",
-      valor: String(reservasPendentes),
       descricao:
         reservasPendentes > 0
-          ? "Há reservas aguardando ação."
+          ? "Há reservas aguardando aprovação ou pagamento."
           : "Nenhuma reserva pendente agora.",
-      tipo: reservasPendentes > 0 ? "warning" : "success"
+      tipo: reservasPendentes > 0 ? "warning" : "success",
+      titulo: "Reservas pendentes",
+      valor: String(reservasPendentes)
     },
     {
-      titulo: "Limpeza pendente",
-      valor: contexto.featureFlags.cleaning ? "0" : "flag off",
-      descricao: contexto.featureFlags.cleaning
-        ? "Nenhuma tarefa de limpeza registrada."
-        : "Feature flag de limpeza ainda desligada.",
-      tipo: contexto.featureFlags.cleaning ? "success" : "info"
+      descricao: limpezaAtiva
+        ? dados.limpezaPermitida
+          ? limpezasPendentes > 0
+          ? "Existem tarefas aguardando execução."
+          : "Nenhuma tarefa de limpeza pendente."
+          : "Seu perfil não possui permissão de limpeza."
+        : "Feature flag de limpeza desativada para este tenant.",
+      tipo: limpezaAtiva
+        ? dados.limpezaPermitida
+          ? limpezasPendentes > 0
+            ? "warning"
+            : "success"
+          : "info"
+        : "info",
+      titulo: "Limpezas pendentes",
+      valor: limpezaAtiva ? (dados.limpezaPermitida ? String(limpezasPendentes) : "Sem acesso") : "Off"
     },
     {
+      descricao: dados.licencasPermitidas
+        ? licencaVencendo
+          ? "A licença ativa expira nos próximos 30 dias."
+          : "Nenhuma licença próxima do vencimento."
+        : "Seu perfil não possui permissão para visualizar licenças.",
+      tipo: dados.licencasPermitidas ? (licencaVencendo ? "warning" : "success") : "info",
       titulo: "Licença vencendo",
-      valor: licencaVencendo?.expires_at ? formatarData(licencaVencendo.expires_at) : "OK",
-      descricao: licencaVencendo
-        ? "A licença ativa expira nos próximos 30 dias."
-        : "Nenhuma licença próxima do vencimento.",
-      tipo: licencaVencendo ? "warning" : "success"
+      valor: dados.licencasPermitidas
+        ? licencaVencendo?.expires_at
+          ? formatarData(licencaVencendo.expires_at)
+          : "OK"
+        : "Sem acesso"
     }
   ];
 }
 
-function calcularOcupacao(dados: DadosOperacionais, inicioMes: Date, fimMes: Date): number {
-  const capacidade = Math.max(
-    dados.unidades.length,
-    dados.propriedades.filter((propriedade) => propriedade.status === "published").length,
-    1
-  );
-  const diasMes = fimMes.getDate();
-  const noitesDisponiveis = capacidade * diasMes;
+function montarReceitaPorPeriodo(
+  dados: DadosOperacionais,
+  periodo: PeriodoDashboard
+): ReceitaPeriodoDashboard[] {
+  return periodo.mesesGrafico.map((mes) => {
+    const chaveMes = formatarMesChave(mes);
+    const inicioMes = `${chaveMes}-01`;
+    const fimMes = formatarDataIso(new Date(mes.getFullYear(), mes.getMonth() + 1, 1));
+    const transacoesMes = dados.transacoesReceita.filter((transacao) =>
+      (transacao.paid_at ?? "").startsWith(chaveMes)
+    );
+    const reservasMes = dados.reservas.filter((reserva) =>
+      dataEstaNoPeriodo(reserva.check_in, inicioMes, fimMes)
+    );
+
+    return {
+      periodo: chaveMes,
+      receita: transacoesMes.reduce((total, transacao) => total + Number(transacao.amount), 0),
+      reservas: reservasMes.length,
+      rotulo: new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(mes)
+    };
+  });
+}
+
+function montarReservasPorStatus(reservas: ReservationRow[]): ReservaStatusDashboard[] {
+  return STATUS_RESERVA_DASHBOARD.map((status) => ({
+    cor: COR_STATUS_RESERVA[status],
+    label: LABEL_STATUS_RESERVA[status],
+    status,
+    total: reservas.filter((reserva) => reserva.status === status).length
+  })).filter((item) => item.total > 0);
+}
+
+function montarEventosReserva(
+  reservas: ReservationRow[],
+  dados: DadosOperacionais,
+  campoData: "check_in" | "check_out"
+): EventoReservaDashboard[] {
+  return reservas.slice(0, 5).map((reserva) => {
+    const propriedade = dados.propriedades.find((item) => item.id === reserva.property_id);
+    const unidade = dados.unidades.find((item) => item.id === reserva.unit_id);
+    const hospede = dados.hospedes.find((item) => item.reservation_id === reserva.id);
+
+    return {
+      codigo: reserva.code,
+      data: reserva[campoData],
+      hospede: hospede?.full_name ?? "Hóspede não informado",
+      id: reserva.id,
+      propriedade: propriedade?.name ?? "Propriedade não encontrada",
+      status: reserva.status,
+      unidade: unidade?.name ?? null
+    };
+  });
+}
+
+function obterReservasProximas(
+  reservas: ReservationRow[],
+  periodo: PeriodoDashboard,
+  campoData: "check_in" | "check_out"
+) {
+  return reservas
+    .filter((reserva) => reserva.status !== "cancelled")
+    .filter((reserva) => reserva[campoData] >= periodo.hoje && reserva[campoData] <= periodo.fimProximos)
+    .sort((a, b) => a[campoData].localeCompare(b[campoData]));
+}
+
+function montarSerieDiaria(
+  reservas: ReservationRow[],
+  campoData: "check_in" | "check_out",
+  periodo: PeriodoDashboard
+): PontoSerieDashboard[] {
+  return Array.from({ length: 7 }, (_, indice) => {
+    const data = adicionarDias(periodo.hoje, indice);
+
+    return {
+      rotulo: new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(
+        new Date(`${data}T00:00:00`)
+      ),
+      valor: contarReservasPorData(reservas, campoData, data)
+    };
+  });
+}
+
+function montarSerieOcupacao(
+  dados: DadosOperacionais,
+  periodo: PeriodoDashboard
+): PontoSerieDashboard[] {
+  return periodo.mesesGrafico.map((mes) => {
+    const inicioMes = formatarDataIso(new Date(mes.getFullYear(), mes.getMonth(), 1));
+    const fimMes = formatarDataIso(new Date(mes.getFullYear(), mes.getMonth() + 1, 1));
+
+    return {
+      rotulo: new Intl.DateTimeFormat("pt-BR", { month: "short" }).format(mes),
+      valor: calcularOcupacao(dados, inicioMes, fimMes)
+    };
+  });
+}
+
+function montarSeriePropriedades(propriedades: PropertyRow[]): PontoSerieDashboard[] {
+  const status = [
+    ["Publicadas", "published"],
+    ["Pausadas", "paused"],
+    ["Rascunhos", "draft"]
+  ] as const;
+
+  return status.map(([rotulo, valorStatus]) => ({
+    rotulo,
+    valor: propriedades.filter((propriedade) => propriedade.status === valorStatus).length
+  }));
+}
+
+function calcularOcupacao(dados: DadosOperacionais, inicio: string, fimExclusivo: string): number {
+  const unidadesAtivas = dados.unidades.filter((unidade) => unidade.status === "active").length;
+  const casasPublicadas = dados.propriedades.filter(
+    (propriedade) => propriedade.status === "published"
+  ).length;
+  const capacidade = unidadesAtivas > 0 ? unidadesAtivas : casasPublicadas;
+
+  if (capacidade <= 0) return 0;
+
+  const noitesDisponiveis = capacidade * diferencaDias(inicio, fimExclusivo);
   const noitesOcupadas = dados.reservas
     .filter((reserva) => STATUS_RESERVA_ATIVA.includes(reserva.status))
-    .reduce((total, reserva) => total + contarNoitesNoPeriodo(reserva, inicioMes, fimMes), 0);
+    .reduce((total, reserva) => total + contarNoitesNoPeriodo(reserva, inicio, fimExclusivo), 0);
 
+  if (noitesDisponiveis <= 0) return 0;
   return Math.min(100, Math.round((noitesOcupadas / noitesDisponiveis) * 100));
 }
 
-function contarNoitesNoPeriodo(reserva: ReservationRow, inicioMes: Date, fimMes: Date): number {
-  const inicioReserva = new Date(`${reserva.check_in}T00:00:00`);
-  const fimReserva = new Date(`${reserva.check_out}T00:00:00`);
-  const inicio = new Date(Math.max(inicioReserva.getTime(), inicioMes.getTime()));
-  const fim = new Date(Math.min(fimReserva.getTime(), fimMes.getTime()));
+function contarNoitesNoPeriodo(reserva: ReservationRow, inicio: string, fimExclusivo: string): number {
+  const inicioReserva = criarData(reserva.check_in);
+  const fimReserva = criarData(reserva.check_out);
+  const inicioPeriodo = criarData(inicio);
+  const fimPeriodo = criarData(fimExclusivo);
+  const inicioCalculado = new Date(Math.max(inicioReserva.getTime(), inicioPeriodo.getTime()));
+  const fimCalculado = new Date(Math.min(fimReserva.getTime(), fimPeriodo.getTime()));
 
-  return Math.max(0, Math.ceil((fim.getTime() - inicio.getTime()) / 86400000));
+  return Math.max(0, Math.ceil((fimCalculado.getTime() - inicioCalculado.getTime()) / 86400000));
 }
 
-function somarExtrasPorReserva(extras: ReservationExtraServiceRow[]) {
-  const mapa = new Map<string, number>();
-  extras.forEach((extra) => {
-    mapa.set(extra.reservation_id, (mapa.get(extra.reservation_id) ?? 0) + Number(extra.total_amount));
+function contarReservasPorData(
+  reservas: ReservationRow[],
+  campoData: "check_in" | "check_out",
+  data: string
+) {
+  return reservas.filter((reserva) => reserva.status !== "cancelled" && reserva[campoData] === data)
+    .length;
+}
+
+function obterLicencaVencendo(licencas: LicenseRow[], hoje: string) {
+  return licencas
+    .filter((licenca) => ["trial", "active"].includes(licenca.status))
+    .find((licenca) => {
+      if (!licenca.expires_at) return false;
+      const dias = diferencaDias(hoje, licenca.expires_at);
+      return dias >= 0 && dias <= 30;
+    });
+}
+
+function dataEstaNoPeriodo(valor: string, inicio: string, fimExclusivo: string): boolean {
+  return valor >= inicio && valor < fimExclusivo;
+}
+
+function criarPeriodoDashboard(): PeriodoDashboard {
+  const hoje = obterHojeSaoPaulo();
+  const dataHoje = criarData(hoje);
+  const inicioMesAtual = new Date(dataHoje.getFullYear(), dataHoje.getMonth(), 1);
+  const inicioGrafico = new Date(dataHoje.getFullYear(), dataHoje.getMonth() - 5, 1);
+  const mesesGrafico = Array.from({ length: 6 }, (_, indice) => {
+    return new Date(inicioGrafico.getFullYear(), inicioGrafico.getMonth() + indice, 1);
   });
-  return mapa;
+
+  return {
+    fimMesExclusivo: formatarDataIso(new Date(dataHoje.getFullYear(), dataHoje.getMonth() + 1, 1)),
+    fimProximos: adicionarDias(hoje, 30),
+    hoje,
+    inicioGrafico: formatarDataIso(inicioGrafico),
+    inicioMes: formatarDataIso(inicioMesAtual),
+    mesesGrafico
+  };
 }
 
-function dataEstaNoPeriodo(valor: string, inicio: Date, fim: Date): boolean {
-  const data = new Date(`${valor}T00:00:00`);
-  return data >= inicio && data <= fim;
+function obterHojeSaoPaulo() {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "America/Sao_Paulo"
+  }).format(new Date());
 }
 
-function datasIguais(valor: string, data: Date): boolean {
-  return valor === data.toISOString().slice(0, 10);
+function adicionarDias(dataIso: string, dias: number) {
+  const data = criarData(dataIso);
+  data.setDate(data.getDate() + dias);
+  return formatarDataIso(data);
 }
 
-function diasEntre(inicio: Date, fim: Date): number {
-  return Math.ceil((fim.getTime() - inicio.getTime()) / 86400000);
+function criarData(dataIso: string) {
+  return new Date(`${dataIso}T00:00:00`);
 }
 
-function criarDataLocal(): Date {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+function formatarDataIso(data: Date) {
+  return new Intl.DateTimeFormat("sv-SE").format(data);
+}
+
+function formatarMesChave(data: Date) {
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function diferencaDias(inicio: string, fim: string): number {
+  return Math.ceil((criarData(fim).getTime() - criarData(inicio).getTime()) / 86400000);
+}
+
+function formatarMesAno(dataIso: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric"
+  }).format(criarData(dataIso));
 }
 
 function formatarMoeda(valor: number): string {
@@ -280,8 +719,25 @@ function formatarMoeda(valor: number): string {
 }
 
 function formatarData(valor: string): string {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
-    new Date(`${valor}T00:00:00`)
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(criarData(valor));
+}
+
+function consultaVazia<T>(): Promise<ResultadoConsulta<T>> {
+  return Promise.resolve({ data: [], error: null });
+}
+
+function podeLerDashboard(contexto: ContextoAutenticacao) {
+  return contexto.role === "owner" || contexto.permissions.includes("dashboard.read");
+}
+
+function podeLerModulo(contexto: ContextoAutenticacao, permissao: PermissionCode) {
+  return contexto.role === "owner" || contexto.permissions.includes(permissao);
+}
+
+function errosUnicos(erros: ErroDashboardModulo[]) {
+  return erros.filter(
+    (erro, indice, lista) =>
+      lista.findIndex((item) => item.modulo === erro.modulo && item.mensagem === erro.mensagem) === indice
   );
 }
 
@@ -289,15 +745,34 @@ function criarDashboardVazio(erro?: string): DadosDashboardProprietario {
   const dashboard: DadosDashboardProprietario = {
     alertas: [],
     cards: [],
+    erros: [],
     estadoVazio: true,
-    periodo: "mês atual"
+    periodo: "mês atual",
+    proximosCheckIns: [],
+    proximosCheckOuts: [],
+    receitaPorPeriodo: [],
+    reservasPorStatus: []
   };
 
   if (erro) dashboard.erro = erro;
   return dashboard;
 }
 
-function lançarErroConsulta(modulo: string, erro: { message: string } | null) {
+function registrarErroModulo(
+  erros: ErroDashboardModulo[],
+  modulo: ErroDashboardModulo["modulo"],
+  erro: { message: string } | null
+) {
   if (!erro) return;
-  throw new Error(`Erro ao carregar ${modulo}: ${erro.message}`);
+
+  const mensagens: Record<ErroDashboardModulo["modulo"], string> = {
+    financeiro: "Não foi possível carregar financeiro.",
+    licencas: "Não foi possível carregar licenças.",
+    limpeza: "Não foi possível carregar limpeza.",
+    propriedades: "Não foi possível carregar propriedades.",
+    reservas: "Não foi possível carregar reservas."
+  };
+
+  console.error(`${mensagens[modulo]} ${erro.message}`);
+  erros.push({ mensagem: mensagens[modulo], modulo });
 }
