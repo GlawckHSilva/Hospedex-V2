@@ -16,6 +16,167 @@
   background-attachment: fixed;
 }
 
+/*
+ * Login e loading oficiais da V2.
+ *
+ * O fundo escuro com grid e luz ciano cria a identidade Hospedex sem mexer na
+ * autenticacao real. As animacoes respeitam reducao de movimento do sistema.
+ */
+.auth-premium-bg {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(0, 213, 255, 0.18), transparent 28%),
+    radial-gradient(circle at 78% 72%, rgba(37, 99, 235, 0.16), transparent 30%),
+    linear-gradient(135deg, #020611 0%, #06101f 48%, #030712 100%);
+}
+
+.auth-premium-bg::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background:
+    linear-gradient(115deg, transparent 0%, rgba(0, 213, 255, 0.08) 42%, transparent 64%),
+    radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.08), transparent 38%);
+  opacity: 0.8;
+  animation: auth-glow-shift 14s ease-in-out infinite alternate;
+}
+
+.auth-grid-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 70px 70px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), transparent 94%);
+}
+
+.auth-login-card {
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  border-radius: 28px;
+  background: rgba(2, 8, 23, 0.68);
+  box-shadow:
+    0 32px 90px rgba(0, 0, 0, 0.36),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(26px);
+}
+
+.auth-visual-signal {
+  position: relative;
+  width: min(30rem, 55vw);
+  height: 8rem;
+  overflow: hidden;
+  opacity: 0.8;
+}
+
+.auth-visual-signal span {
+  position: absolute;
+  left: 0;
+  width: 110%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 213, 255, 0.7), transparent);
+  animation: auth-line-flow 5.5s linear infinite;
+}
+
+.auth-visual-signal span:nth-child(1) {
+  top: 1.25rem;
+}
+
+.auth-visual-signal span:nth-child(2) {
+  top: 3.75rem;
+  animation-delay: -1.7s;
+  opacity: 0.65;
+}
+
+.auth-visual-signal span:nth-child(3) {
+  top: 6.25rem;
+  animation-delay: -3.2s;
+  opacity: 0.45;
+}
+
+.auth-loading-mark {
+  display: grid;
+  place-items: center;
+  width: 7.5rem;
+  height: 7.5rem;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 0 60px rgba(0, 213, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px);
+}
+
+.auth-loading-progress {
+  position: relative;
+  height: 0.35rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.auth-loading-progress::after {
+  position: absolute;
+  inset: 0;
+  width: 44%;
+  content: "";
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), #22d3ee, rgba(59, 130, 246, 0.9));
+  box-shadow: 0 0 28px rgba(34, 211, 238, 0.38);
+  animation: auth-progress-flow 1.15s ease-in-out infinite;
+}
+
+.auth-premium-bg :is(a[href], button, label[for], input[type="checkbox"], input[type="submit"], [role="button"]) {
+  cursor: pointer;
+}
+
+.auth-premium-bg :is(button:disabled, input:disabled, [aria-disabled="true"]) {
+  cursor: not-allowed;
+}
+
+@keyframes auth-glow-shift {
+  from {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(1.5%, 1%, 0) scale(1.03);
+  }
+}
+
+@keyframes auth-line-flow {
+  from {
+    transform: translateX(-26%);
+  }
+  to {
+    transform: translateX(26%);
+  }
+}
+
+@keyframes auth-progress-flow {
+  0% {
+    transform: translateX(-110%);
+  }
+  50% {
+    transform: translateX(80%);
+  }
+  100% {
+    transform: translateX(230%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-premium-bg::after,
+  .auth-visual-signal span,
+  .auth-loading-progress::after {
+    animation: none;
+  }
+}
+
 .admin-glass-panel,
 .admin-glass-card {
   border: 1px solid color-mix(in oklch, var(--border) 72%, white 28%);

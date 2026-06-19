@@ -44,6 +44,7 @@ import {
 } from "../../config/navigation";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
 import type { ResumoNotificacoesGerenciamento } from "../../lib/notifications/types";
+import { HospedexBrand } from "../brand/hospedex-brand";
 import { InteractiveCardEffects } from "../management/interactive-card";
 import { NotificationBell } from "../notifications/notification-bell";
 
@@ -210,17 +211,27 @@ function TopbarAdmin({
             <Menu />
           </Button>
 
-          <div className="flex min-w-0 items-center gap-3">
-            {!gerenciamento ? (
+          {gerenciamento ? (
+            <div className="flex min-w-0 items-center gap-3">
+              <HospedexBrand href="/" size="sm" surface />
+              <div className="hidden min-w-0 sm:block">
+                <p className="truncate text-xs font-medium text-muted-foreground">{nomeTenant}</p>
+                <p className="truncate text-[11px] text-muted-foreground/75">
+                  Painel de gerenciamento
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 shadow-sm shadow-cyan-500/10 dark:text-cyan-200">
                 <ShieldCheck className="h-4 w-4" />
               </div>
-            ) : null}
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">Admin Hospedex</p>
-              <p className="truncate text-xs text-muted-foreground">{nomeTenant}</p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">Admin Hospedex</p>
+                <p className="truncate text-xs text-muted-foreground">{nomeTenant}</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="flex min-w-0 items-center gap-2">
@@ -375,7 +386,7 @@ function SidebarAdmin({
         <div className="shrink-0 px-2 pb-4">
           {gerenciamento ? (
             <>
-              <p className="truncate text-sm font-semibold">Admin Hospedex</p>
+              <HospedexBrand href="/" size="sm" surface />
               <p className="mt-1 truncate text-xs text-muted-foreground">{nomeTenant}</p>
             </>
           ) : (
@@ -435,7 +446,7 @@ function MenuMobileAdmin({
           <div>
             {gerenciamento ? (
               <>
-                <p className="text-sm font-semibold">Admin Hospedex</p>
+                <HospedexBrand href="/" size="sm" surface />
                 <p className="text-xs text-muted-foreground">{nomeTenant}</p>
               </>
             ) : (

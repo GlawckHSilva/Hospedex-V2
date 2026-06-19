@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Admin Hospedex",
-  description: "Painel administrativo do Hospedex."
+  title: "Hospedex",
+  description: "Painel administrativo premium do Hospedex."
 };
 
 export const viewport: Viewport = {
