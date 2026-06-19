@@ -47,17 +47,42 @@ const STATUS_UNIDADE: UnitStatus[] = ["active", "inactive", "maintenance"];
 const CATEGORIAS_UNIDADE = ["Standard", "Luxo", "Master"];
 
 type EntradaPropriedade = {
-  banheiros: number;
-  camas: number;
-  capacidade: number;
-  nome: string;
-  descricao: string | null;
-  tipo: PropertyType;
   endereco: EnderecoPropriedade;
-  status: PropertyStatus;
+  estrutura: {
+    areaExterna: boolean;
+    banheiros: number;
+    camas: number;
+    churrasqueira: boolean;
+    garagemVagas: number;
+    hospedesMaximos: number;
+    piscina: boolean;
+    quartos: number;
+  };
+  comodidadeIds: string[];
+  descricaoCompleta: string | null;
+  descricaoCurta: string | null;
+  destaqueMarketplace: boolean;
+  galeriaArquivos: File[];
   imagemCapaArquivo: File | null;
-  quartos: number;
-  valorBase: number;
+  nome: string;
+  publica: boolean;
+  regras: {
+    checkInTime: string | null;
+    checkOutTime: string | null;
+    permiteEventos: boolean;
+    permiteFumantes: boolean;
+    permitePets: boolean;
+    regrasAdicionais: string | null;
+  };
+  status: PropertyStatus;
+  tipo: PropertyType;
+  valores: {
+    caucao: number;
+    hospedesInclusos: number;
+    taxaLimpeza: number;
+    valorDiaria: number;
+    valorHospedeExtra: number;
+  };
 };
 
 type EntradaUnidade = {
@@ -95,9 +120,15 @@ export async function criarPropriedadeAction(formData: FormData) {
         slug: gerarIdentificadorUrl(entrada.nome),
         property_type: entrada.tipo,
         status: entrada.status,
-        headline: entrada.nome,
-        description: entrada.descricao,
+        headline: entrada.descricaoCurta ?? entrada.nome,
+        description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
+        short_description: entrada.descricaoCurta,
+        full_description: entrada.descricaoCompleta,
+        is_public: entrada.publica,
+        marketplace_featured: entrada.destaqueMarketplace,
         address: entrada.endereco,
+        structure_details: entrada.estrutura,
+        pricing_details: entrada.valores,
         timezone: "America/Sao_Paulo",
       })
       .select("*")
@@ -113,7 +144,10 @@ export async function criarPropriedadeAction(formData: FormData) {
       await salvarUnidadePadraoCasa(supabase, escopo.tenantId, propriedade, entrada);
     }
 
+    await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
+    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada.comodidadeIds);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
+    await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(
@@ -144,9 +178,15 @@ export async function atualizarPropriedadeAction(formData: FormData) {
         name: entrada.nome,
         property_type: entrada.tipo,
         status: entrada.status,
-        headline: entrada.nome,
-        description: entrada.descricao,
+        headline: entrada.descricaoCurta ?? entrada.nome,
+        description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
+        short_description: entrada.descricaoCurta,
+        full_description: entrada.descricaoCompleta,
+        is_public: entrada.publica,
+        marketplace_featured: entrada.destaqueMarketplace,
         address: entrada.endereco,
+        structure_details: entrada.estrutura,
+        pricing_details: entrada.valores,
       })
       .eq("id", propriedadeId)
       .eq("tenant_id", escopo.tenantId)
@@ -164,7 +204,10 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       await salvarUnidadePadraoCasa(supabase, escopo.tenantId, propriedade, entrada);
     }
 
+    await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
+    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada.comodidadeIds);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
+    await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(
@@ -585,26 +628,68 @@ export async function excluirUnidadeAction(formData: FormData) {
 }
 
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
+  const hospedesMaximos = numeroInteiro(
+    formData,
+    "hospedesMaximos",
+    "quantidade maxima de hospedes",
+    1,
+  );
+  const quartos = numeroInteiroOpcional(formData, "quartosCasa", 0, 0);
+  const camas = numeroInteiroOpcional(formData, "camasCasa", 1, 1);
+  const banheiros = numeroInteiroOpcional(formData, "banheirosCasa", 0, 0);
+  const valorDiaria = numeroMoedaOpcional(formData, "valorDiaria", 0);
+
   return {
-    banheiros: numeroInteiroOpcional(formData, "banheirosCasa", 0, 0),
-    camas: numeroInteiroOpcional(formData, "camasCasa", 1, 1),
-    capacidade: numeroInteiroOpcional(formData, "capacidadeCasa", 1, 1),
-    nome: textoObrigatorio(formData, "nome", "nome"),
-    descricao: textoOpcional(formData, "descricao"),
-    tipo: validarTipoPropriedade(textoObrigatorio(formData, "tipo", "tipo")),
     endereco: {
-      linha1: textoObrigatorio(formData, "endereco", "endereço"),
+      bairro: textoOpcional(formData, "bairro") ?? "",
+      cep: textoOpcional(formData, "cep") ?? "",
       cidade: textoObrigatorio(formData, "cidade", "cidade"),
+      complemento: textoOpcional(formData, "complemento") ?? "",
       estado: textoObrigatorio(formData, "estado", "estado"),
+      linha1: textoObrigatorio(formData, "endereco", "endereco"),
+      numero: textoOpcional(formData, "numero") ?? "",
+      referencia: textoOpcional(formData, "referencia") ?? "",
+    },
+    estrutura: {
+      areaExterna: checkboxAtivo(formData, "areaExterna"),
+      banheiros,
+      camas,
+      churrasqueira: checkboxAtivo(formData, "churrasqueira"),
+      garagemVagas: numeroInteiroOpcional(formData, "garagemVagas", 0, 0),
+      hospedesMaximos,
+      piscina: checkboxAtivo(formData, "piscina"),
+      quartos,
+    },
+    comodidadeIds: obterValoresMultiplos(formData, "comodidadeIds"),
+    descricaoCompleta: textoOpcional(formData, "descricaoCompleta"),
+    descricaoCurta: textoOpcional(formData, "descricaoCurta"),
+    destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
+    galeriaArquivos: obterArquivosImagem(formData, "imagensGaleriaArquivos"),
+    imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
+    nome: textoObrigatorio(formData, "nome", "nome"),
+    publica: checkboxAtivo(formData, "visibilidadePublica"),
+    regras: {
+      checkInTime: validarHoraOpcional(formData, "checkInTime"),
+      checkOutTime: validarHoraOpcional(formData, "checkOutTime"),
+      permiteEventos: checkboxAtivo(formData, "allowEvents"),
+      permiteFumantes: checkboxAtivo(formData, "allowSmoking"),
+      permitePets: checkboxAtivo(formData, "allowPets"),
+      regrasAdicionais: textoOpcional(formData, "additionalRules"),
     },
     status: validarStatusPropriedade(
       textoObrigatorio(formData, "status", "status"),
     ),
-    imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
-    quartos: numeroInteiroOpcional(formData, "quartosCasa", 0, 0),
-    valorBase: numeroMoedaOpcional(formData, "valorBaseCasa", 0),
+    tipo: validarTipoPropriedade(textoObrigatorio(formData, "tipo", "tipo")),
+    valores: {
+      caucao: numeroMoedaOpcional(formData, "caucao", 0),
+      hospedesInclusos: numeroInteiroOpcional(formData, "hospedesInclusos", 1, 1),
+      taxaLimpeza: numeroMoedaOpcional(formData, "taxaLimpeza", 0),
+      valorDiaria,
+      valorHospedeExtra: numeroMoedaOpcional(formData, "valorHospedeExtra", 0),
+    },
   };
 }
+
 
 function obterEntradaUnidade(formData: FormData): EntradaUnidade {
   return {
@@ -630,11 +715,11 @@ async function salvarUnidadePadraoCasa(
   entrada: EntradaPropriedade,
 ) {
   const dadosUnidade = {
-    base_price: entrada.valorBase,
-    bathrooms: entrada.banheiros,
-    bedrooms: entrada.quartos,
-    beds: entrada.camas,
-    capacity: entrada.capacidade,
+    base_price: entrada.valores.valorDiaria,
+    bathrooms: entrada.estrutura.banheiros,
+    bedrooms: entrada.estrutura.quartos,
+    beds: entrada.estrutura.camas,
+    capacity: entrada.estrutura.hospedesMaximos,
     name: "Casa inteira",
     status: "active" as UnitStatus,
   };
@@ -673,6 +758,76 @@ async function salvarUnidadePadraoCasa(
   });
 
   if (error) throw new Error(error.message);
+}
+
+async function salvarConfiguracoesDaCasa(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoGerenciamento,
+  propriedadeId: string,
+  entrada: EntradaPropriedade,
+) {
+  const { error } = await supabase.from("property_settings").upsert(
+    {
+      additional_rules: entrada.regras.regrasAdicionais,
+      allow_events: entrada.regras.permiteEventos,
+      allow_pets: entrada.regras.permitePets,
+      allow_smoking: entrada.regras.permiteFumantes,
+      check_in_time: entrada.regras.checkInTime,
+      check_out_time: entrada.regras.checkOutTime,
+      max_guests: entrada.estrutura.hospedesMaximos,
+      property_id: propriedadeId,
+      tenant_id: escopo.tenantId,
+    },
+    { onConflict: "property_id" },
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+async function salvarComodidadesDaCasa(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoGerenciamento,
+  propriedadeId: string,
+  comodidadeIds: string[],
+) {
+  const idsValidos = await obterComodidadesValidas(supabase, escopo.tenantId, comodidadeIds);
+
+  const { error: erroLimpeza } = await supabase
+    .from("property_amenities")
+    .delete()
+    .eq("tenant_id", escopo.tenantId)
+    .eq("property_id", propriedadeId);
+
+  if (erroLimpeza) throw new Error(erroLimpeza.message);
+  if (!idsValidos.length) return;
+
+  const { error } = await supabase.from("property_amenities").insert(
+    idsValidos.map((amenityId) => ({
+      amenity_id: amenityId,
+      property_id: propriedadeId,
+      tenant_id: escopo.tenantId,
+    })),
+  );
+
+  if (error) throw new Error(error.message);
+}
+
+async function obterComodidadesValidas(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  comodidadeIds: string[],
+) {
+  const idsUnicos = Array.from(new Set(comodidadeIds));
+  if (!idsUnicos.length) return [];
+
+  const { data, error } = await supabase
+    .from("amenities")
+    .select("id")
+    .in("id", idsUnicos)
+    .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((comodidade) => comodidade.id);
 }
 
 async function garantirLimitePropriedades(
@@ -890,18 +1045,20 @@ async function obterProximaOrdemMidia(
   supabase: ClienteSupabaseServer,
   tenantId: string,
   propriedadeId: string,
-  unidadeId: string,
+  unidadeId: string | null,
 ) {
-  const { data, error } = await supabase
+  let consulta = supabase
     .from("media_assets")
     .select("sort_order")
     .eq("tenant_id", tenantId)
     .eq("property_id", propriedadeId)
-    .eq("unit_id", unidadeId)
     .eq("status", "active")
     .order("sort_order", { ascending: false })
-    .limit(1)
-    .maybeSingle<{ sort_order: number }>();
+    .limit(1);
+
+  consulta = unidadeId ? consulta.eq("unit_id", unidadeId) : consulta.is("unit_id", null);
+
+  const { data, error } = await consulta.maybeSingle<{ sort_order: number }>();
 
   if (error) throw new Error(error.message);
   return (data?.sort_order ?? -1) + 1;
@@ -952,6 +1109,52 @@ async function salvarImagemCapa(
   if (error) throw new Error(error.message);
 }
 
+async function salvarGaleriaPropriedade(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedadeId: string,
+  entrada: EntradaPropriedade,
+) {
+  if (!entrada.galeriaArquivos.length) return;
+
+  const proximaOrdem = await obterProximaOrdemMidia(
+    supabase,
+    tenantId,
+    propriedadeId,
+    null,
+  );
+
+  await Promise.all(
+    entrada.galeriaArquivos.map(async (arquivo, indice) => {
+      const midia = await enviarImagemParaStorage(
+        supabase,
+        {
+          escopo: "galeria",
+          propertyId: propriedadeId,
+          tenantId,
+        },
+        arquivo,
+      );
+
+      const { error } = await supabase.from("media_assets").insert({
+        alt: arquivo.name,
+        is_cover: false,
+        media_type: "image",
+        property_id: propriedadeId,
+        sort_order: proximaOrdem + indice,
+        status: "active",
+        storage_bucket: midia.bucket,
+        storage_path: midia.path,
+        tenant_id: tenantId,
+        unit_id: null,
+        url: midia.url,
+      });
+
+      if (error) throw new Error(error.message);
+    }),
+  );
+}
+
 function textoObrigatorio(
   formData: FormData,
   chave: string,
@@ -965,6 +1168,13 @@ function textoObrigatorio(
 function textoOpcional(formData: FormData, chave: string): string | null {
   const valor = formData.get(chave)?.toString().trim();
   return valor ? valor : null;
+}
+
+function obterValoresMultiplos(formData: FormData, chave: string): string[] {
+  return formData
+    .getAll(chave)
+    .map((valor) => valor.toString().trim())
+    .filter(Boolean);
 }
 
 function numeroInteiroOpcional(

@@ -15,9 +15,33 @@ import type {
  */
 
 export type EnderecoPropriedade = {
-  linha1: string;
+  bairro: string;
   cidade: string;
+  cep: string;
+  complemento: string;
   estado: string;
+  linha1: string;
+  numero: string;
+  referencia: string;
+};
+
+export type EstruturaPropriedade = {
+  areaExterna: boolean;
+  banheiros: number;
+  camas: number;
+  churrasqueira: boolean;
+  garagemVagas: number;
+  hospedesMaximos: number;
+  piscina: boolean;
+  quartos: number;
+};
+
+export type ValoresPropriedade = {
+  caucao: number;
+  hospedesInclusos: number;
+  taxaLimpeza: number;
+  valorDiaria: number;
+  valorHospedeExtra: number;
 };
 
 export type UnidadeComCategoria = UnitRow & {
@@ -27,10 +51,12 @@ export type UnidadeComCategoria = UnitRow & {
 
 export type PropriedadeComRelacionamentos = PropertyRow & {
   enderecoFormatado: EnderecoPropriedade;
+  estrutura: EstruturaPropriedade;
   imagemCapa: MediaAssetRow | null;
   imagens: MediaAssetRow[];
   comodidades: AmenityRow[];
   regras: PropertySettingRow;
+  valores: ValoresPropriedade;
   unidades: UnidadeComCategoria[];
 };
 

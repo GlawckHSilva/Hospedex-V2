@@ -157,6 +157,7 @@ function VisaoPropriedades({
             triggerVariant="default"
           >
             <PropertyForm
+              comodidadesDisponiveis={comodidadesDisponiveis}
               modo="criar"
               multiUnidadesAtivo={multiUnidadesAtivo}
               podeGerenciar={podeGerenciar}

@@ -272,7 +272,13 @@ export type PropertyRow = {
   status: PropertyStatus;
   headline: string | null;
   description: string | null;
+  short_description: string | null;
+  full_description: string | null;
+  is_public: boolean;
+  marketplace_featured: boolean;
   address: JsonValue;
+  structure_details: JsonValue;
+  pricing_details: JsonValue;
   timezone: string;
   created_at: Timestamp;
   updated_at: Timestamp;

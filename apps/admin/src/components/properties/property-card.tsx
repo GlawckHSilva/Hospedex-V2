@@ -250,6 +250,7 @@ export function PropertyCard({
         >
           <div className="space-y-5">
             <PropertyForm
+              comodidadesDisponiveis={comodidadesDisponiveis}
               modo="editar"
               multiUnidadesAtivo={multiUnidadesAtivo}
               podeGerenciar={podeGerenciar}

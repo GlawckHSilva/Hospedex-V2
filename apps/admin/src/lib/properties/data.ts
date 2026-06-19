@@ -15,9 +15,11 @@ import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosModuloPropriedades,
   EnderecoPropriedade,
+  EstruturaPropriedade,
   LimitesPlanoPropriedades,
   PropriedadeComRelacionamentos,
-  UnidadeComCategoria
+  UnidadeComCategoria,
+  ValoresPropriedade
 } from "./types";
 
 /**
@@ -191,9 +193,14 @@ export function normalizarEndereco(valor: JsonValue): EnderecoPropriedade {
   const endereco = valorEhObjeto(valor) ? valor : {};
 
   return {
-    linha1: obterTextoJson(endereco, "linha1"),
+    bairro: obterTextoJson(endereco, "bairro"),
     cidade: obterTextoJson(endereco, "cidade"),
-    estado: obterTextoJson(endereco, "estado")
+    cep: obterTextoJson(endereco, "cep"),
+    complemento: obterTextoJson(endereco, "complemento"),
+    estado: obterTextoJson(endereco, "estado"),
+    linha1: obterTextoJson(endereco, "linha1"),
+    numero: obterTextoJson(endereco, "numero"),
+    referencia: obterTextoJson(endereco, "referencia")
   };
 }
 
@@ -209,6 +216,7 @@ function montarPropriedades(
   return propriedades.map((propriedade) => ({
     ...propriedade,
     enderecoFormatado: normalizarEndereco(propriedade.address),
+    estrutura: normalizarEstrutura(propriedade.structure_details),
     imagemCapa: obterImagemPrincipal(propriedade.id, null, imagens),
     imagens: imagens.filter(
       (imagem) => imagem.property_id === propriedade.id && !imagem.unit_id
@@ -217,8 +225,36 @@ function montarPropriedades(
     regras:
       configuracoes.find((configuracao) => configuracao.property_id === propriedade.id) ??
       criarRegrasPadrao(propriedade, unidades),
+    valores: normalizarValores(propriedade.pricing_details),
     unidades: montarUnidades(propriedade.id, unidades, categorias, imagens)
   }));
+}
+
+function normalizarEstrutura(valor: JsonValue): EstruturaPropriedade {
+  const estrutura = valorEhObjeto(valor) ? valor : {};
+
+  return {
+    areaExterna: obterBooleanoJson(estrutura, "areaExterna"),
+    banheiros: obterNumeroJson(estrutura, "banheiros"),
+    camas: obterNumeroJson(estrutura, "camas"),
+    churrasqueira: obterBooleanoJson(estrutura, "churrasqueira"),
+    garagemVagas: obterNumeroJson(estrutura, "garagemVagas"),
+    hospedesMaximos: obterNumeroJson(estrutura, "hospedesMaximos", 1),
+    piscina: obterBooleanoJson(estrutura, "piscina"),
+    quartos: obterNumeroJson(estrutura, "quartos")
+  };
+}
+
+function normalizarValores(valor: JsonValue): ValoresPropriedade {
+  const valores = valorEhObjeto(valor) ? valor : {};
+
+  return {
+    caucao: obterNumeroJson(valores, "caucao"),
+    hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
+    taxaLimpeza: obterNumeroJson(valores, "taxaLimpeza"),
+    valorDiaria: obterNumeroJson(valores, "valorDiaria"),
+    valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra")
+  };
 }
 
 function criarRegrasPadrao(
@@ -320,6 +356,19 @@ function criarLimitesPlanoPadrao() {
 function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string {
   const dado = valor[chave];
   return typeof dado === "string" ? dado : "";
+}
+
+function obterNumeroJson(
+  valor: Record<string, JsonValue>,
+  chave: string,
+  padrao = 0
+): number {
+  const dado = valor[chave];
+  return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
+}
+
+function obterBooleanoJson(valor: Record<string, JsonValue>, chave: string): boolean {
+  return valor[chave] === true;
 }
 
 function valorEhObjeto(valor: JsonValue): valor is Record<string, JsonValue> {
