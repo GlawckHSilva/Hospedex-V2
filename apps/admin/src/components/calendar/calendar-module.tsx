@@ -1,14 +1,4 @@
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Circle,
-  Clock3,
-  LockKeyhole,
-  Plus,
-  Sparkles,
-  Wrench
-} from "lucide-react";
+import { CalendarDays, LockKeyhole, Plus, Sparkles, Wrench } from "lucide-react";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
@@ -24,25 +14,19 @@ import {
   type LimpezaCalendario,
   type ManutencaoCalendario,
   type ReservaCalendario,
-  type SearchParamsCalendario,
-  type VisaoCalendario
+  type SearchParamsCalendario
 } from "../../lib/calendar/types";
 import { ModuleToast } from "../admin/module-toast";
 import { EntityModal } from "../management/entity-modal";
+import {
+  FullCalendarBoard,
+  type EventoFullCalendarHospedex
+} from "./full-calendar-board";
 
 export type CalendarModuleProps = DadosModuloCalendario &
   SearchParamsCalendario & {
     tenantNome: string;
   };
-
-type EventoCalendario = {
-  data: string;
-  detalhe: string;
-  hora: string;
-  id: string;
-  tipo: "reserva" | "checkin" | "checkout" | "bloqueio" | "manutencao" | "limpeza";
-  titulo: string;
-};
 
 const MENSAGENS_SUCESSO_CALENDARIO: Record<string, string> = {
   "bloqueio-criado": "Periodo bloqueado com sucesso.",
@@ -54,39 +38,16 @@ const campoClasse =
 const areaClasse =
   "min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
-const ESTILO_EVENTO: Record<EventoCalendario["tipo"], string> = {
-  bloqueio: "border-rose-400/35 bg-rose-400/12 text-rose-950 dark:text-rose-100",
-  checkin: "border-orange-400/35 bg-orange-400/12 text-orange-950 dark:text-orange-100",
-  checkout: "border-sky-400/35 bg-sky-400/12 text-sky-950 dark:text-sky-100",
-  limpeza: "border-cyan-400/35 bg-cyan-400/12 text-cyan-950 dark:text-cyan-100",
-  manutencao: "border-violet-400/35 bg-violet-400/12 text-violet-950 dark:text-violet-100",
-  reserva: "border-emerald-400/35 bg-emerald-400/12 text-emerald-950 dark:text-emerald-100"
-};
-
-const COR_LEGENDA: Record<EventoCalendario["tipo"], string> = {
-  bloqueio: "bg-rose-500",
-  checkin: "bg-orange-500",
-  checkout: "bg-sky-500",
-  limpeza: "bg-cyan-400",
-  manutencao: "bg-violet-500",
-  reserva: "bg-emerald-500"
-};
-
-const HORARIOS_SEMANA = ["06h", "08h", "10h", "12h", "14h", "16h", "18h", "20h"];
-
 /**
- * Calendario visual do Gerenciamento.
+ * Modulo de Calendario do Gerenciamento.
  *
- * A casa vem primeiro porque este e o modelo mental do proprietario. Mes,
- * semana e agenda apenas mudam a leitura da mesma propriedade selecionada.
+ * A experiencia usa FullCalendar para entregar interacao profissional e manter
+ * a arquitetura pronta para drag/drop, selecao por intervalo e sincronizacoes.
  */
 export function CalendarModule({
-  blocos,
   dias,
   erro,
   filtros,
-  limpezas,
-  manutencoes,
   podeGerenciar,
   propriedades,
   reservas,
@@ -99,9 +60,8 @@ export function CalendarModule({
     propriedades.find((propriedade) => propriedade.id === filtros.propriedadeId) ??
     propriedades[0] ??
     null;
-  const eventos = montarEventos(dias);
   const bloqueado = !podeGerenciar || !casaAtual || unidades.length === 0;
-  const periodoLabel = filtros.visao === "semanal" ? `Semana de ${formatarData(filtros.semana)}` : formatarMes(filtros.mes);
+  const eventos = montarEventosFullCalendar(dias);
 
   return (
     <FadeIn className="relative space-y-5 pb-24">
@@ -121,7 +81,7 @@ export function CalendarModule({
               Calendario e disponibilidade
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} - selecione uma casa e acompanhe a agenda operacional.
+              {tenantNome} - agenda visual por casa, reservas e operacao.
             </p>
           </div>
 
@@ -168,79 +128,34 @@ export function CalendarModule({
       {propriedades.length === 0 ? (
         <EstadoVazio mensagem="Cadastre uma casa antes de visualizar o calendario." />
       ) : (
-        <div className="grid gap-5 xl:grid-cols-[1fr_22rem]">
-          <section className="space-y-4">
-            <Card className="admin-glass-card">
-              <CardContent className="space-y-4 p-5">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      aria-label="Periodo anterior"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition hover:bg-accent hover:text-accent-foreground"
-                      href={montarHref(filtros, navegarPeriodo(filtros, -1))}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Link>
-                    <div>
-                      <h2 className="text-lg font-semibold capitalize">{periodoLabel}</h2>
-                      <p className="text-xs text-muted-foreground">
-                        {eventos.length} evento(s) nesta visao
-                      </p>
-                    </div>
-                    <Link
-                      aria-label="Proximo periodo"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-background text-sm shadow-sm transition hover:bg-accent hover:text-accent-foreground"
-                      href={montarHref(filtros, navegarPeriodo(filtros, 1))}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-
-                  <div className="flex rounded-full border bg-background/55 p-1">
-                    {(["mensal", "semanal", "agenda"] as VisaoCalendario[]).map((visao) => (
-                      <Link
-                        className={cn(
-                          "rounded-full px-4 py-2 text-sm font-medium transition",
-                          filtros.visao === visao
-                            ? "bg-cyan-500/15 text-cyan-800 dark:text-cyan-100"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                        href={montarHref(filtros, { visao })}
-                        key={visao}
-                      >
-                        {visao === "mensal" ? "Mes" : visao === "semanal" ? "Semana" : "Agenda"}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <Legenda />
-              </CardContent>
-            </Card>
-
-            {filtros.visao === "semanal" ? (
-              <VisaoSemanal dias={dias.slice(0, 7)} />
-            ) : filtros.visao === "agenda" ? (
-              <VisaoAgenda eventos={eventos} />
-            ) : (
-              <VisaoMensal dias={dias} />
-            )}
+        <>
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <ResumoCompacto label="Proximos check-ins" valor={String(resumo.checkInsProximos)} />
+            <ResumoCompacto label="Proximos check-outs" valor={String(resumo.checkOutsProximos)} />
+            <ResumoCompacto label="Limpezas pendentes" valor={String(resumo.limpezasPendentes)} />
+            <ResumoCompacto label="Bloqueios ativos" valor={String(resumo.bloqueiosAtivos)} />
+            <ResumoCompacto
+              label="Reservas futuras"
+              valor={String(reservas.filter((reserva) => reserva.check_in >= hojeIso()).length)}
+            />
           </section>
 
-          <PainelLateral
-            blocos={blocos}
-            limpezas={limpezas}
-            manutencoes={manutencoes}
-            reservas={reservas}
-            resumo={resumo}
+          <FullCalendarBoard
+            eventos={eventos}
+            filtros={filtros}
+            hrefHoje={montarHref(filtros, obterPeriodoHoje())}
+            hrefPeriodoAnterior={montarHref(filtros, navegarPeriodo(filtros, -1))}
+            hrefPeriodoProximo={montarHref(filtros, navegarPeriodo(filtros, 1))}
+            key={`${filtros.propriedadeId ?? "sem-casa"}-${filtros.visao}-${filtros.mes}-${filtros.semana}`}
           />
-        </div>
+        </>
       )}
 
       <EntityModal
         description="Crie bloqueio, manutencao ou indisponibilidade sem sair do calendario."
         disabled={bloqueado}
         eyebrow="Disponibilidade"
+        size="lg"
         title="Novo evento operacional"
         triggerClassName="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-xl shadow-cyan-950/25"
         triggerIcon={<Plus className="h-5 w-5" />}
@@ -260,11 +175,7 @@ export function CalendarModule({
               disabled={bloqueado}
               propriedades={propriedades}
             />
-            <CampoUnidade
-              defaultValue={unidades[0]?.id ?? ""}
-              disabled={bloqueado}
-              unidades={unidades}
-            />
+            <CampoUnidade defaultValue={unidades[0]?.id ?? ""} disabled={bloqueado} unidades={unidades} />
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -296,223 +207,99 @@ export function CalendarModule({
   );
 }
 
-function VisaoMensal({ dias }: { dias: DiaCalendario[] }) {
-  return (
-    <Card className="admin-glass-card">
-      <CardContent className="space-y-3 p-4">
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-muted-foreground">
-          {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((dia) => (
-            <span key={dia}>{dia}</span>
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
-          {dias.map((dia) => (
-            <div
-              className={cn(
-                "min-h-36 rounded-xl border bg-background/55 p-2 text-sm transition hover:border-cyan-300/45 hover:bg-cyan-500/5",
-                dia.foraDoMes && "bg-background/25 text-muted-foreground"
-              )}
-              key={dia.data}
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <span className="font-semibold">{dia.numero}</span>
-                {eventosDoDia(dia).length > 0 ? (
-                  <Badge variant="outline">{eventosDoDia(dia).length}</Badge>
-                ) : null}
-              </div>
-              <div className="space-y-1.5">
-                {eventosDoDia(dia)
-                  .slice(0, 5)
-                  .map((evento) => (
-                    <EventoCompacto evento={evento} key={evento.id} />
-                  ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+function montarEventosFullCalendar(dias: DiaCalendario[]): EventoFullCalendarHospedex[] {
+  const eventos = dias.flatMap((dia) => [
+    ...dia.reservas
+      .filter((reserva) => reserva.status !== "cancelled")
+      .map((reserva) => criarEventoReserva(reserva, dia.data)),
+    ...dia.checkIns.map((reserva) => criarEventoOperacional(reserva, "checkin")),
+    ...dia.checkOuts.map((reserva) => criarEventoOperacional(reserva, "checkout")),
+    ...dia.blocos.map((bloco) => criarEventoBloqueio(bloco, dia.data)),
+    ...dia.manutencoes.map((manutencao) => criarEventoManutencao(manutencao)),
+    ...dia.limpezas.map((limpeza) => criarEventoLimpeza(limpeza))
+  ]);
+
+  return eventos.filter(
+    (evento, indice, todos) => todos.findIndex((item) => item.id === evento.id) === indice
   );
 }
 
-function VisaoSemanal({ dias }: { dias: DiaCalendario[] }) {
-  return (
-    <Card className="admin-glass-card">
-      <CardContent className="overflow-x-auto p-4">
-        <div className="min-w-[860px]">
-          <div className="grid grid-cols-[4rem_repeat(7,1fr)] gap-2 border-b pb-3 text-xs font-semibold text-muted-foreground">
-            <span />
-            {dias.map((dia) => (
-              <div className="text-center" key={dia.data}>
-                <p>{formatarDiaSemana(dia.data)}</p>
-                <p className="text-base text-foreground">{dia.numero}</p>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-[4rem_repeat(7,1fr)] gap-2">
-            {HORARIOS_SEMANA.map((hora) => (
-              <TimeRow dias={dias} hora={hora} key={hora} />
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+function criarEventoReserva(reserva: ReservaCalendario, data: string): EventoFullCalendarHospedex {
+  const hospede = reserva.hospedePrincipal?.full_name ?? "Hospede nao informado";
+
+  return {
+    allDay: true,
+    color: "#10b981",
+    detalhe: hospede,
+    end: reserva.check_out,
+    horario: "Diaria",
+    id: `reserva-${reserva.id}-${data}`,
+    start: data,
+    tipo: "reserva",
+    title: hospede
+  };
 }
 
-function TimeRow({ dias, hora }: { dias: DiaCalendario[]; hora: string }) {
-  return (
-    <>
-      <div className="border-r py-4 pr-2 text-right text-xs text-muted-foreground">{hora}</div>
-      {dias.map((dia) => (
-        <div className="min-h-24 border-b py-2" key={`${dia.data}-${hora}`}>
-          {eventosDoDia(dia)
-            .filter((evento) => evento.hora === hora || (hora === "14h" && evento.tipo === "reserva"))
-            .slice(0, 4)
-            .map((evento) => (
-              <EventoCompacto evento={evento} key={evento.id} />
-            ))}
-        </div>
-      ))}
-    </>
-  );
+function criarEventoOperacional(
+  reserva: ReservaCalendario,
+  tipo: "checkin" | "checkout"
+): EventoFullCalendarHospedex {
+  const entrada = tipo === "checkin";
+  const data = entrada ? reserva.check_in : reserva.check_out;
+
+  return {
+    color: entrada ? "#f97316" : "#0ea5e9",
+    detalhe: reserva.hospedePrincipal?.full_name ?? "Hospede nao informado",
+    horario: entrada ? "14h" : "10h",
+    id: `${tipo}-${reserva.id}`,
+    start: `${data}T${entrada ? "14:00:00" : "10:00:00"}`,
+    tipo,
+    title: entrada ? "Check-in" : "Check-out"
+  };
 }
 
-function VisaoAgenda({ eventos }: { eventos: EventoCalendario[] }) {
-  const eventosPorData = eventos.reduce<Record<string, EventoCalendario[]>>((acc, evento) => {
-    acc[evento.data] = [...(acc[evento.data] ?? []), evento];
-    return acc;
-  }, {});
+function criarEventoBloqueio(bloco: BlocoCalendario, data: string): EventoFullCalendarHospedex {
+  const manutencao = bloco.reason?.toLowerCase().includes("manutenc");
 
-  return (
-    <Card className="admin-glass-card">
-      <CardContent className="space-y-4 p-5">
-        {Object.entries(eventosPorData).length > 0 ? (
-          Object.entries(eventosPorData).map(([data, itens]) => (
-            <div className="rounded-xl border bg-background/45 p-4" key={data}>
-              <h3 className="text-sm font-semibold">{formatarDataLonga(data)}</h3>
-              <div className="mt-3 space-y-2">
-                {itens.map((evento) => (
-                  <div className="flex items-center gap-3 rounded-lg border bg-background/55 p-3 text-sm" key={evento.id}>
-                    <span className={cn("h-2.5 w-2.5 rounded-full", COR_LEGENDA[evento.tipo])} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{evento.titulo}</p>
-                      <p className="truncate text-xs text-muted-foreground">{evento.detalhe}</p>
-                    </div>
-                    <span className="text-xs font-semibold text-muted-foreground">{evento.hora}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))
-        ) : (
-          <EstadoVazio mensagem="Nenhum evento encontrado para esta agenda." />
-        )}
-      </CardContent>
-    </Card>
-  );
+  return {
+    allDay: true,
+    color: manutencao ? "#8b5cf6" : "#ef4444",
+    detalhe: bloco.reason ?? "Bloqueio manual",
+    end: bloco.ends_on,
+    horario: "Dia todo",
+    id: `bloqueio-${bloco.id}-${data}`,
+    start: data,
+    tipo: manutencao ? "manutencao" : "bloqueio",
+    title: manutencao ? "Manutencao" : "Bloqueio"
+  };
 }
 
-function PainelLateral({
-  blocos,
-  limpezas,
-  manutencoes,
-  reservas,
-  resumo
-}: {
-  blocos: BlocoCalendario[];
-  limpezas: LimpezaCalendario[];
-  manutencoes: ManutencaoCalendario[];
-  reservas: ReservaCalendario[];
-  resumo: DadosModuloCalendario["resumo"];
-}) {
-  const hoje = new Date().toISOString().slice(0, 10);
+function criarEventoManutencao(manutencao: ManutencaoCalendario): EventoFullCalendarHospedex {
+  const data = manutencao.scheduled_for ?? hojeIso();
 
-  return (
-    <aside className="space-y-4">
-      <Card className="admin-glass-card">
-        <CardContent className="space-y-3 p-5">
-          <h2 className="text-sm font-semibold">Proximos movimentos</h2>
-          <ResumoLinha label="Check-ins" valor={String(resumo.checkInsProximos)} />
-          <ResumoLinha label="Check-outs" valor={String(resumo.checkOutsProximos)} />
-          <ResumoLinha label="Limpezas pendentes" valor={String(resumo.limpezasPendentes)} />
-          <ResumoLinha label="Bloqueios ativos" valor={String(resumo.bloqueiosAtivos)} />
-          <ResumoLinha label="Reservas futuras" valor={String(reservas.filter((reserva) => reserva.check_in >= hoje).length)} />
-        </CardContent>
-      </Card>
-
-      <ListaLateral
-        icon={<Clock3 />}
-        itens={reservas.filter((reserva) => reserva.check_in >= hoje).slice(0, 5).map((reserva) => ({
-          detalhe: reserva.hospedePrincipal?.full_name ?? "Hospede",
-          id: reserva.id,
-          titulo: `Check-in ${formatarData(reserva.check_in)}`
-        }))}
-        titulo="Proximos check-ins"
-      />
-      <ListaLateral
-        icon={<Sparkles />}
-        itens={limpezas.filter((limpeza) => limpeza.status !== "completed").slice(0, 5).map((limpeza) => ({
-          detalhe: limpeza.status,
-          id: limpeza.id,
-          titulo: limpeza.title
-        }))}
-        titulo="Limpezas pendentes"
-      />
-      <ListaLateral
-        icon={<LockKeyhole />}
-        itens={blocos.slice(0, 5).map((bloco) => ({
-          detalhe: formatarPeriodo(bloco.starts_on, bloco.ends_on),
-          id: bloco.id,
-          titulo: bloco.reason ?? "Bloqueio manual"
-        }))}
-        titulo="Bloqueios ativos"
-      />
-      <ListaLateral
-        icon={<Wrench />}
-        itens={manutencoes.filter((manutencao) => manutencao.status === "pending").slice(0, 5).map((manutencao) => ({
-          detalhe: manutencao.scheduled_for ? formatarData(manutencao.scheduled_for) : "Sem data",
-          id: manutencao.id,
-          titulo: manutencao.title
-        }))}
-        titulo="Manutencoes"
-      />
-    </aside>
-  );
+  return {
+    color: "#8b5cf6",
+    detalhe: manutencao.notes ?? manutencao.priority,
+    horario: "08h",
+    id: `manutencao-${manutencao.id}`,
+    start: `${data}T08:00:00`,
+    tipo: "manutencao",
+    title: manutencao.title
+  };
 }
 
-function EventoCompacto({ evento }: { evento: EventoCalendario }) {
-  return (
-    <div className={cn("rounded-lg border px-2 py-1 text-xs", ESTILO_EVENTO[evento.tipo])}>
-      <div className="flex items-center gap-1.5">
-        <span className={cn("h-2 w-2 shrink-0 rounded-full", COR_LEGENDA[evento.tipo])} />
-        <span className="truncate font-semibold">{evento.titulo}</span>
-      </div>
-      <p className="truncate opacity-80">{evento.hora} - {evento.detalhe}</p>
-    </div>
-  );
-}
+function criarEventoLimpeza(limpeza: LimpezaCalendario): EventoFullCalendarHospedex {
+  const data = limpeza.scheduled_for ?? hojeIso();
 
-function Legenda() {
-  const itens: Array<[EventoCalendario["tipo"], string]> = [
-    ["reserva", "Reserva confirmada"],
-    ["checkin", "Check-in"],
-    ["checkout", "Check-out"],
-    ["bloqueio", "Bloqueio"],
-    ["manutencao", "Manutencao"],
-    ["limpeza", "Limpeza"]
-  ];
-
-  return (
-    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-      {itens.map(([tipo, label]) => (
-        <span className="inline-flex items-center gap-1.5 rounded-full border bg-background/55 px-3 py-1" key={tipo}>
-          <Circle className={cn("h-2.5 w-2.5 fill-current", COR_LEGENDA[tipo])} />
-          {label}
-        </span>
-      ))}
-    </div>
-  );
+  return {
+    color: "#22d3ee",
+    detalhe: limpeza.status,
+    horario: "11h",
+    id: `limpeza-${limpeza.id}`,
+    start: `${data}T11:00:00`,
+    tipo: "limpeza",
+    title: limpeza.title
+  };
 }
 
 function CampoPropriedade({
@@ -605,41 +392,12 @@ function Resumo({ icon, label, valor }: { icon: ReactNode; label: string; valor:
   );
 }
 
-function ResumoLinha({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-lg border bg-background/45 px-3 py-2 text-sm">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold">{valor}</span>
-    </div>
-  );
-}
-
-function ListaLateral({
-  icon,
-  itens,
-  titulo
-}: {
-  icon: ReactNode;
-  itens: Array<{ detalhe: string; id: string; titulo: string }>;
-  titulo: string;
-}) {
+function ResumoCompacto({ label, valor }: { label: string; valor: string }) {
   return (
     <Card className="admin-glass-card">
-      <CardContent className="space-y-3 p-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <span className="text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
-          {titulo}
-        </h2>
-        {itens.length > 0 ? (
-          itens.map((item) => (
-            <div className="rounded-lg border bg-background/45 p-3 text-sm" key={item.id}>
-              <p className="font-medium">{item.titulo}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.detalhe}</p>
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground">Sem itens no periodo.</p>
-        )}
+      <CardContent className="p-4">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-xl font-semibold">{valor}</p>
       </CardContent>
     </Card>
   );
@@ -651,82 +409,6 @@ function EstadoVazio({ mensagem }: { mensagem: string }) {
       <CardContent className="p-5 text-sm text-muted-foreground">{mensagem}</CardContent>
     </Card>
   );
-}
-
-function eventosDoDia(dia: DiaCalendario): EventoCalendario[] {
-  return [
-    ...dia.reservas
-      .filter((reserva) => reserva.status !== "cancelled")
-      .map((reserva) => criarEventoReserva(reserva, dia.data)),
-    ...dia.checkIns.map((reserva) => criarEventoOperacional(reserva, "checkin")),
-    ...dia.checkOuts.map((reserva) => criarEventoOperacional(reserva, "checkout")),
-    ...dia.blocos.map((bloco) => criarEventoBloqueio(bloco, dia.data)),
-    ...dia.manutencoes.map((manutencao) => criarEventoManutencao(manutencao)),
-    ...dia.limpezas.map((limpeza) => criarEventoLimpeza(limpeza))
-  ].sort((a, b) => a.hora.localeCompare(b.hora));
-}
-
-function montarEventos(dias: DiaCalendario[]) {
-  return dias.flatMap(eventosDoDia).sort((a, b) => `${a.data}${a.hora}`.localeCompare(`${b.data}${b.hora}`));
-}
-
-function criarEventoReserva(reserva: ReservaCalendario, data: string): EventoCalendario {
-  return {
-    data,
-    detalhe: reserva.hospedePrincipal?.full_name ?? "Hospede nao informado",
-    hora: "14h",
-    id: `reserva-${reserva.id}-${data}`,
-    tipo: "reserva",
-    titulo: "Reserva confirmada"
-  };
-}
-
-function criarEventoOperacional(
-  reserva: ReservaCalendario,
-  tipo: "checkin" | "checkout"
-): EventoCalendario {
-  return {
-    data: tipo === "checkin" ? reserva.check_in : reserva.check_out,
-    detalhe: reserva.hospedePrincipal?.full_name ?? "Hospede nao informado",
-    hora: tipo === "checkin" ? "14h" : "10h",
-    id: `${tipo}-${reserva.id}`,
-    tipo,
-    titulo: tipo === "checkin" ? "Check-in" : "Check-out"
-  };
-}
-
-function criarEventoBloqueio(bloco: BlocoCalendario, data: string): EventoCalendario {
-  const manutencao = bloco.reason?.toLowerCase().includes("manutenc");
-  return {
-    data,
-    detalhe: bloco.reason ?? "Bloqueio manual",
-    hora: manutencao ? "08h" : "09h",
-    id: `bloqueio-${bloco.id}-${data}`,
-    tipo: manutencao ? "manutencao" : "bloqueio",
-    titulo: manutencao ? "Manutencao" : "Bloqueio manual"
-  };
-}
-
-function criarEventoManutencao(manutencao: ManutencaoCalendario): EventoCalendario {
-  return {
-    data: manutencao.scheduled_for ?? new Date().toISOString().slice(0, 10),
-    detalhe: manutencao.notes ?? manutencao.priority,
-    hora: "08h",
-    id: `manutencao-${manutencao.id}`,
-    tipo: "manutencao",
-    titulo: manutencao.title
-  };
-}
-
-function criarEventoLimpeza(limpeza: LimpezaCalendario): EventoCalendario {
-  return {
-    data: limpeza.scheduled_for ?? new Date().toISOString().slice(0, 10),
-    detalhe: limpeza.status,
-    hora: "11h",
-    id: `limpeza-${limpeza.id}`,
-    tipo: "limpeza",
-    titulo: limpeza.title
-  };
 }
 
 function montarHref(
@@ -757,6 +439,18 @@ function navegarPeriodo(
   return { mes: proximoMes, semana: `${proximoMes}-01` };
 }
 
+function obterPeriodoHoje(): Partial<DadosModuloCalendario["filtros"]> {
+  const hoje = hojeIso();
+  return {
+    mes: hoje.slice(0, 7),
+    semana: hoje
+  };
+}
+
+function hojeIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function parseDate(data: string) {
   const [ano = 1970, mes = 1, dia = 1] = data.split("-").map(Number);
   return new Date(Date.UTC(ano, mes - 1, dia));
@@ -768,39 +462,4 @@ function addDays(data: Date, dias: number) {
 
 function formatDate(data: Date) {
   return data.toISOString().slice(0, 10);
-}
-
-function formatarPeriodo(inicio: string, fim: string) {
-  return `${formatarData(inicio)} - ${formatarData(fim)}`;
-}
-
-function formatarData(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeZone: "UTC"
-  }).format(new Date(`${valor}T00:00:00Z`));
-}
-
-function formatarDataLonga(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    timeZone: "UTC"
-  }).format(new Date(`${valor}T00:00:00Z`));
-}
-
-function formatarDiaSemana(valor: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    weekday: "short",
-    timeZone: "UTC"
-  }).format(new Date(`${valor}T00:00:00Z`));
-}
-
-function formatarMes(mes: string) {
-  const [ano = "2026", numeroMes = "01"] = mes.split("-");
-  return new Intl.DateTimeFormat("pt-BR", {
-    month: "long",
-    timeZone: "UTC",
-    year: "numeric"
-  }).format(new Date(Date.UTC(Number(ano), Number(numeroMes) - 1, 1)));
 }
