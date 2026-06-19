@@ -27,7 +27,7 @@ export function ReservationGrid({
   }
 
   return (
-    <EntityGrid>
+    <EntityGrid className="lg:grid-cols-3">
       {reservas.map((reserva) => (
         <ReservationCard
           key={reserva.id}
