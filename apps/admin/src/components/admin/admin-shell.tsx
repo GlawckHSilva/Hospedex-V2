@@ -300,7 +300,7 @@ function PerfilUsuarioMenu({
             <div className="my-1 h-px bg-border/70" />
             <Link
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-cyan-500/10 hover:text-foreground"
-              href="/configuracoes"
+              href="/configuracoes#configuracoes-gerais"
               onClick={() => setAberto(false)}
               role="menuitem"
             >

@@ -21,6 +21,7 @@ import {
 import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import { EntityGrid } from "../management/entity-card";
 import { sairAction } from "../../lib/auth/actions";
+import { LogoUploadField } from "./logo-upload-field";
 import {
   alterarSenhaConfiguracoesAction,
   alternarModuloGerenciamentoAction,
@@ -111,7 +112,7 @@ export function SettingsModule({
       </section>
 
       <EntityGrid>
-        <Card className="admin-glass-card">
+        <Card className="admin-glass-card scroll-mt-24" id="configuracoes-gerais">
           <CardContent className="p-5">
             <CabecalhoCard icon={<Building2 />} titulo="Configuracoes gerais" />
             <p className="mt-3 text-sm text-muted-foreground">
@@ -129,6 +130,7 @@ export function SettingsModule({
               <form
                 action={atualizarConfiguracoesGeraisAction}
                 className="grid gap-4"
+                encType="multipart/form-data"
               >
                 <CampoTexto
                   defaultValue={configuracoes.tenantName}
@@ -138,13 +140,9 @@ export function SettingsModule({
                   required
                 />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <CampoTexto
-                    defaultValue={configuracoes.logo_url ?? ""}
+                  <LogoUploadField
                     disabled={!podeGerenciarConfiguracoes}
-                    label="Logo"
-                    name="logoUrl"
-                    placeholder="https://..."
-                    type="url"
+                    logoUrl={configuracoes.logo_url}
                   />
                   <CampoTexto
                     defaultValue={configuracoes.primary_color}

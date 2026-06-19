@@ -6,6 +6,11 @@ import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
+import {
+  enviarLogoTenantParaStorage,
+  obterArquivoImagem,
+  removerLogoTenantDoStorage
+} from "../properties/media-storage";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   podeGerenciarConfiguracoes,
@@ -39,7 +44,7 @@ export async function atualizarConfiguracoesGeraisAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
-    const entrada = obterEntradaGeral(formData);
+    const entrada = await obterEntradaGeral(formData, supabase, escopo);
 
     const { error: erroTenant } = await supabase
       .from("tenants")
@@ -195,11 +200,43 @@ async function carregarEscopoModulos(): Promise<EscopoConfiguracoes> {
   };
 }
 
-function obterEntradaGeral(formData: FormData) {
+async function obterEntradaGeral(
+  formData: FormData,
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfiguracoes
+) {
+  const logoAtual = textoOpcional(formData, "logoUrlAtual");
+  const removerLogo = formData.get("removerLogo") === "on";
+  const arquivoLogo = obterArquivoImagem(formData, "logoFile");
+  let logoUrl = logoAtual;
+
+  if (removerLogo) {
+    // Remover a logo limpa a referencia do tenant e apaga o arquivo apenas quando
+    // ele pertence ao path seguro do proprio tenant no Storage.
+    await removerLogoTenantDoStorage(supabase, { tenantId: escopo.tenantId }, logoAtual);
+    logoUrl = null;
+  }
+
+  if (arquivoLogo) {
+    // O upload fica no servidor para validar permissoes antes de gravar arquivo
+    // em path isolado por tenant_id no Supabase Storage.
+    const logoEnviada = await enviarLogoTenantParaStorage(
+      supabase,
+      { tenantId: escopo.tenantId },
+      arquivoLogo
+    );
+
+    if (logoAtual && logoAtual !== logoEnviada.url) {
+      await removerLogoTenantDoStorage(supabase, { tenantId: escopo.tenantId }, logoAtual);
+    }
+
+    logoUrl = logoEnviada.url;
+  }
+
   return {
     city: textoOpcional(formData, "city"),
     email: textoOpcional(formData, "email"),
-    logoUrl: textoOpcional(formData, "logoUrl"),
+    logoUrl,
     phone: textoOpcional(formData, "phone"),
     primaryColor: validarCor(textoObrigatorio(formData, "primaryColor", "cor principal")),
     shortDescription: textoOpcional(formData, "shortDescription"),

@@ -217,3 +217,45 @@ body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover::-webkit-scroll
 body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--primary) 68%, transparent);
 }
+
+/*
+ * Cursor de acao no Gerenciamento.
+ *
+ * O escopo evita alterar Marketplace/Super Admin e mantém inputs de texto com
+ * cursor de edição. Apenas elementos que executam ação ao clique recebem mão.
+ */
+body:has(.admin-management-shell)
+  :is(
+    a[href],
+    button,
+    summary,
+    label[for],
+    input[type="button"],
+    input[type="checkbox"],
+    input[type="color"],
+    input[type="file"],
+    input[type="radio"],
+    input[type="reset"],
+    input[type="submit"],
+    select,
+    [role="button"],
+    [role="menuitem"],
+    [role="option"],
+    [role="switch"],
+    [role="tab"],
+    [data-clickable="true"]
+  ) {
+  cursor: pointer;
+}
+
+body:has(.admin-management-shell)
+  :is(
+    button:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled,
+    [aria-disabled="true"],
+    [data-disabled="true"]
+  ) {
+  cursor: not-allowed;
+}

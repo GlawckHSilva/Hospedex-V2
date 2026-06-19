@@ -50,7 +50,7 @@ function AcaoSair({ variante }: { variante: "header" | "menu" | "sidebar" }) {
 
   const classes =
     variante === "sidebar"
-      ? "flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition duration-200 hover:translate-x-0.5 hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-200"
+      ? "flex h-10 w-full items-center gap-2 rounded-lg border border-transparent px-3 text-sm font-medium text-muted-foreground transition duration-200 hover:border-rose-400/20 hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-200"
       : "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-200";
 
   return (

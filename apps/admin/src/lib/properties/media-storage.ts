@@ -15,12 +15,22 @@ import type { ClienteSupabaseServer } from "./permissions";
  */
 
 export const BUCKET_MIDIA_PROPRIEDADES = "hospedex-property-media";
+const TIPOS_LOGO_TENANT_PERMITIDOS = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/svg+xml"
+] as const;
 
 export type DestinoMidia = {
   tenantId: string;
   propertyId: string;
   unitId?: string;
   escopo: "capa" | "galeria" | "unidade";
+};
+
+export type DestinoLogoTenant = {
+  tenantId: string;
 };
 
 export function obterArquivosImagem(formData: FormData, chave: string): File[] {
@@ -74,6 +84,50 @@ export async function removerImagemDoStorage(
   if (error) throw new Error(`Erro ao remover imagem do Storage: ${error.message}`);
 }
 
+export async function enviarLogoTenantParaStorage(
+  supabase: ClienteSupabaseServer,
+  destino: DestinoLogoTenant,
+  arquivo: File
+) {
+  validarLogoTenant(arquivo);
+
+  const caminho = montarCaminhoLogoTenant(destino, arquivo);
+  const { error } = await supabase.storage
+    .from(BUCKET_MIDIA_PROPRIEDADES)
+    .upload(caminho, arquivo, {
+      contentType: arquivo.type,
+      upsert: false
+    });
+
+  if (error) throw new Error(`Erro ao enviar logo para o Storage: ${error.message}`);
+
+  const { data } = supabase.storage
+    .from(BUCKET_MIDIA_PROPRIEDADES)
+    .getPublicUrl(caminho);
+
+  return {
+    bucket: BUCKET_MIDIA_PROPRIEDADES,
+    path: caminho,
+    url: data.publicUrl
+  };
+}
+
+export async function removerLogoTenantDoStorage(
+  supabase: ClienteSupabaseServer,
+  destino: DestinoLogoTenant,
+  logoUrl: string | null
+) {
+  const caminho = extrairCaminhoLogoTenant(logoUrl, destino.tenantId);
+
+  if (!caminho) return;
+
+  const { error } = await supabase.storage
+    .from(BUCKET_MIDIA_PROPRIEDADES)
+    .remove([caminho]);
+
+  if (error) throw new Error(`Erro ao remover logo do Storage: ${error.message}`);
+}
+
 function validarImagem(arquivo: File) {
   if (!tipoImagemPropriedadePermitido(arquivo.type)) {
     throw new Error("Formato de imagem inválido. Use JPG, PNG, WebP ou GIF.");
@@ -84,6 +138,16 @@ function validarImagem(arquivo: File) {
   }
 }
 
+function validarLogoTenant(arquivo: File) {
+  if (!(TIPOS_LOGO_TENANT_PERMITIDOS as readonly string[]).includes(arquivo.type)) {
+    throw new Error("Formato de logo invalido. Use JPG, PNG, WebP ou SVG.");
+  }
+
+  if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
+    throw new Error(`Logo acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+  }
+}
+
 function montarCaminhoStorage(destino: DestinoMidia, arquivo: File): string {
   const nomeSeguro = normalizarNomeArquivo(arquivo.name);
   const pastaEntidade = destino.unitId
@@ -91,6 +155,32 @@ function montarCaminhoStorage(destino: DestinoMidia, arquivo: File): string {
     : `properties/${destino.propertyId}`;
 
   return `${destino.tenantId}/${pastaEntidade}/${destino.escopo}/${Date.now()}-${nomeSeguro}`;
+}
+
+function montarCaminhoLogoTenant(destino: DestinoLogoTenant, arquivo: File): string {
+  const nomeSeguro = normalizarNomeArquivo(arquivo.name);
+
+  // O tenant_id fica no inicio do path para preservar isolamento multi-tenant no Storage.
+  return `${destino.tenantId}/tenant/logo/${Date.now()}-${nomeSeguro}`;
+}
+
+function extrairCaminhoLogoTenant(logoUrl: string | null, tenantId: string): string | null {
+  if (!logoUrl) return null;
+
+  try {
+    const url = new URL(logoUrl);
+    const marcador = `/object/public/${BUCKET_MIDIA_PROPRIEDADES}/`;
+    const indice = url.pathname.indexOf(marcador);
+
+    if (indice === -1) return null;
+
+    const caminho = decodeURIComponent(url.pathname.slice(indice + marcador.length));
+    const prefixoSeguro = `${tenantId}/tenant/logo/`;
+
+    return caminho.startsWith(prefixoSeguro) ? caminho : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizarNomeArquivo(nome: string): string {

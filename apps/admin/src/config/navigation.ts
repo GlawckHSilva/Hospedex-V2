@@ -157,13 +157,6 @@ const MENU_PROPRIETARIO = [
     icone: "funcionarios",
     featureFlag: "staff",
     permissoes: ["members.manage", "roles.manage"]
-  },
-  {
-    titulo: "Configuracoes",
-    href: "/configuracoes",
-    descricao: "Tenant, membros, permissoes e preferencias.",
-    icone: "configuracoes",
-    permissoes: ["settings.manage", "tenants.manage", "members.manage", "roles.manage"]
   }
 ] as const satisfies readonly ItemMenuAdmin[];
 
