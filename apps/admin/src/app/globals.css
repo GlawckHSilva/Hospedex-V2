@@ -47,3 +47,106 @@
   background: color-mix(in oklch, var(--card) 76%, transparent);
   box-shadow: 0 18px 45px color-mix(in oklch, black 34%, transparent);
 }
+
+/*
+ * Scrollbars premium do Gerenciamento.
+ *
+ * O escopo usa .admin-management-shell para nao alterar Marketplace, Gestao
+ * ou a experiencia global do Super Admin. A rolagem continua ativa; apenas
+ * reduzimos o peso visual das barras nativas em paginas, modais e listas.
+ */
+html:has(.admin-management-shell),
+body:has(.admin-management-shell) {
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 42%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+html:has(.admin-management-shell)::-webkit-scrollbar,
+body:has(.admin-management-shell)::-webkit-scrollbar {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+html:has(.admin-management-shell)::-webkit-scrollbar-track,
+body:has(.admin-management-shell)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+html:has(.admin-management-shell)::-webkit-scrollbar-thumb,
+body:has(.admin-management-shell)::-webkit-scrollbar-thumb {
+  border: 0.125rem solid transparent;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--premium-cyan) 44%, transparent);
+  background-clip: padding-box;
+}
+
+html:has(.admin-management-shell)::-webkit-scrollbar-thumb:hover,
+body:has(.admin-management-shell)::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 64%, transparent);
+  background-clip: padding-box;
+}
+
+body:has(.admin-management-shell) :is(*, .fc-scroller) {
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 34%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar {
+  width: 0.45rem;
+  height: 0.45rem;
+}
+
+body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--premium-cyan) 34%, transparent);
+}
+
+body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 58%, transparent);
+}
+
+body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/*
+ * A sidebar deve parecer limpa em repouso, mas continuar rolando normalmente.
+ * Em hover/foco, exibimos um trilho minimo para orientar listas longas.
+ */
+body:has(.admin-management-shell) .admin-sidebar-scrollbar {
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 8%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+body:has(.admin-management-shell) .admin-sidebar-scrollbar::-webkit-scrollbar {
+  width: 0.25rem;
+  height: 0.25rem;
+}
+
+body:has(.admin-management-shell) .admin-sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body:has(.admin-management-shell) .admin-sidebar-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--premium-cyan) 8%, transparent);
+}
+
+body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover,
+body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within {
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 46%, transparent) transparent;
+}
+
+body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover::-webkit-scrollbar-thumb,
+body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb {
+  background: color-mix(in oklch, var(--premium-cyan) 46%, transparent);
+}
+
+body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover::-webkit-scrollbar-thumb:hover,
+body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklch, var(--primary) 68%, transparent);
+}

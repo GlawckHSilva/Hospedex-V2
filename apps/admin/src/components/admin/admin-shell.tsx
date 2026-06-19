@@ -90,7 +90,14 @@ export function AdminShell({ acaoSair, children, contexto, notificacoes }: Admin
   const nomeTenant = perfil === "super_admin" ? "Plataforma" : contexto.tenant?.name ?? "Sem tenant";
 
   return (
-    <div className="admin-shell-bg premium-grid-bg min-h-screen text-foreground">
+    <div
+      className={cn(
+        "admin-shell-bg premium-grid-bg min-h-screen text-foreground",
+        // O ajuste visual de scrollbar pertence ao Gerenciamento, sem alterar a experiencia do Super Admin.
+        perfil !== "super_admin" && "admin-management-shell",
+      )}
+      data-admin-perfil={perfil}
+    >
       <TopbarAdmin
         acaoSair={acaoSair}
         nomeTenant={nomeTenant}
@@ -203,7 +210,7 @@ function SidebarAdmin({ itens, pathname, tituloPerfil }: SidebarAdminProps) {
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Navegação por perfil</p>
         </div>
-        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-track]:bg-transparent">
+        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} pathname={pathname} />
           ))}
@@ -242,7 +249,7 @@ function MenuMobileAdmin({ itens, onFechar, pathname, tituloPerfil }: MenuMobile
           </Button>
         </div>
 
-        <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1 [scrollbar-color:hsl(var(--border))_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/70 [&::-webkit-scrollbar-track]:bg-transparent">
+        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} onNavigate={onFechar} pathname={pathname} />
           ))}
