@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
 
 import { Button } from "@hospedex/ui";
+import type { TenantSettingRow } from "@hospedex/types";
 import { LogOut } from "lucide-react";
 
 import { sairAction } from "../../lib/auth/actions";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
 import { carregarResumoNotificacoesGerenciamento } from "../../lib/notifications/data";
+import { criarClienteSupabaseServer } from "../../lib/supabase/server";
 import { AdminShell } from "./admin-shell";
 
 export type AdminLayoutBaseProps = {
@@ -20,7 +22,10 @@ export type AdminLayoutBaseProps = {
  * role, permissões e feature flags sem recalcular autorização no cliente.
  */
 export async function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
-  const notificacoes = await carregarResumoNotificacoesGerenciamento(contexto);
+  const [notificacoes, logoConfiguracoesUrl] = await Promise.all([
+    carregarResumoNotificacoesGerenciamento(contexto),
+    carregarLogoConfiguracoesGerenciamento(contexto)
+  ]);
 
   return (
     <AdminShell
@@ -29,11 +34,34 @@ export async function AdminLayoutBase({ children, contexto }: AdminLayoutBasePro
       acaoSairMobile={<AcaoSair variante="sidebar" />}
       acaoSairSidebar={<AcaoSair variante="sidebar" />}
       contexto={contexto}
+      logoConfiguracoesUrl={logoConfiguracoesUrl}
       notificacoes={notificacoes}
     >
       {children}
     </AdminShell>
   );
+}
+
+async function carregarLogoConfiguracoesGerenciamento(contexto: ContextoAutenticacao) {
+  // A logo das configuracoes e usada apenas como identidade visual do tenant.
+  // A autorizacao continua vindo do contexto autenticado para preservar o isolamento multi-tenant.
+  if (contexto.role === "super_admin" || !contexto.tenant) {
+    return null;
+  }
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("tenant_settings")
+    .select("logo_url")
+    .eq("tenant_id", contexto.tenant.id)
+    .maybeSingle<Pick<TenantSettingRow, "logo_url">>();
+
+  if (error) {
+    console.error("Nao foi possivel carregar a logo das configuracoes do tenant.", error.message);
+    return null;
+  }
+
+  return data?.logo_url ?? null;
 }
 
 function AcaoSair({ variante }: { variante: "header" | "menu" | "sidebar" }) {

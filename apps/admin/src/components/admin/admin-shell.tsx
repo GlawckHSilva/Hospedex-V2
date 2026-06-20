@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BarChart3,
@@ -79,6 +79,7 @@ export type AdminShellProps = {
   acaoSairSidebar: ReactNode;
   children: ReactNode;
   contexto: ContextoAutenticacao;
+  logoConfiguracoesUrl: string | null;
   notificacoes: ResumoNotificacoesGerenciamento;
 };
 
@@ -95,6 +96,7 @@ export function AdminShell({
   acaoSairSidebar,
   children,
   contexto,
+  logoConfiguracoesUrl,
   notificacoes
 }: AdminShellProps) {
   const pathname = usePathname();
@@ -106,6 +108,9 @@ export function AdminShell({
   const nomeTenant = perfil === "super_admin" ? "Plataforma" : contexto.tenant?.name ?? "Sem tenant";
   const iniciaisUsuario = obterIniciaisUsuario(nomeUsuario, contexto.profile.email);
   const gerenciamento = perfil !== "super_admin";
+  const avatarVisualUrl = gerenciamento
+    ? logoConfiguracoesUrl ?? contexto.profile.avatar_url
+    : contexto.profile.avatar_url;
 
   return (
     <div
@@ -121,7 +126,7 @@ export function AdminShell({
       <TopbarAdmin
         acaoSairHeader={acaoSairHeader}
         acaoSairMenu={acaoSairMenu}
-        avatarUrl={contexto.profile.avatar_url}
+        avatarUrl={avatarVisualUrl}
         emailUsuario={contexto.profile.email}
         gerenciamento={gerenciamento}
         iniciaisUsuario={iniciaisUsuario}
@@ -137,7 +142,6 @@ export function AdminShell({
           acaoSairSidebar={acaoSairSidebar}
           gerenciamento={gerenciamento}
           itens={itensMenu}
-          nomeTenant={nomeTenant}
           pathname={pathname}
           tituloPerfil={tituloPerfil}
         />
@@ -158,7 +162,6 @@ export function AdminShell({
             acaoSairMobile={acaoSairMobile}
             gerenciamento={gerenciamento}
             itens={itensMenu}
-            nomeTenant={nomeTenant}
             onFechar={() => setMenuAberto(false)}
             pathname={pathname}
             tituloPerfil={tituloPerfil}
@@ -212,15 +215,7 @@ function TopbarAdmin({
           </Button>
 
           {gerenciamento ? (
-            <div className="flex min-w-0 items-center gap-3">
-              <HospedexBrand href="/" size="sm" surface />
-              <div className="hidden min-w-0 sm:block">
-                <p className="truncate text-xs font-medium text-muted-foreground">{nomeTenant}</p>
-                <p className="truncate text-[11px] text-muted-foreground/75">
-                  Painel de gerenciamento
-                </p>
-              </div>
-            </div>
+            <HospedexBrand href="/" size="sm" surface />
           ) : (
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 shadow-sm shadow-cyan-500/10 dark:text-cyan-200">
@@ -280,19 +275,22 @@ function PerfilUsuarioMenu({
 
   return (
     <div className="relative">
-      <Button
+      <button
         aria-expanded={aberto}
         aria-haspopup="menu"
         aria-label="Abrir menu do perfil"
-        className="gap-2 rounded-full border border-border/70 bg-background/70 px-1.5 shadow-sm hover:bg-cyan-500/10"
+        className="group flex h-10 items-center gap-1.5 rounded-full border border-border/70 bg-background/70 py-1 pl-1 pr-2 shadow-sm transition hover:border-cyan-300/55 hover:bg-cyan-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         onClick={() => setAberto((valorAtual) => !valorAtual)}
-        size="sm"
         type="button"
-        variant="ghost"
       >
         <AvatarUsuario avatarUrl={avatarUrl} iniciaisUsuario={iniciaisUsuario} nomeUsuario={nomeUsuario} />
-        <ChevronDown className={cn("h-3.5 w-3.5 transition", aberto && "rotate-180")} />
-      </Button>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 text-muted-foreground transition group-hover:text-cyan-700 dark:group-hover:text-cyan-200",
+            aberto && "rotate-180"
+          )}
+        />
+      </button>
 
       <AnimatePresence>
         {aberto ? (
@@ -345,13 +343,21 @@ function AvatarUsuario({
   iniciaisUsuario: string;
   nomeUsuario: string;
 }) {
+  const [imagemFalhou, setImagemFalhou] = useState(false);
+  const mostrarImagem = Boolean(avatarUrl && !imagemFalhou);
+
+  useEffect(() => {
+    setImagemFalhou(false);
+  }, [avatarUrl]);
+
   return (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/40 bg-cyan-500/15 text-xs font-semibold text-cyan-800 dark:text-cyan-100">
-      {avatarUrl ? (
+      {mostrarImagem && avatarUrl ? (
         <Image
           alt={nomeUsuario}
           className="h-full w-full object-cover"
           height={32}
+          onError={() => setImagemFalhou(true)}
           src={avatarUrl}
           unoptimized
           width={32}
@@ -367,7 +373,6 @@ type SidebarAdminProps = {
   acaoSairSidebar: ReactNode;
   gerenciamento: boolean;
   itens: ItemMenuAdminResolvido[];
-  nomeTenant: string;
   pathname: string;
   tituloPerfil: string;
 };
@@ -376,7 +381,6 @@ function SidebarAdmin({
   acaoSairSidebar,
   gerenciamento,
   itens,
-  nomeTenant,
   pathname,
   tituloPerfil
 }: SidebarAdminProps) {
@@ -386,8 +390,10 @@ function SidebarAdmin({
         <div className="shrink-0 px-2 pb-4">
           {gerenciamento ? (
             <>
-              <HospedexBrand href="/" size="sm" surface />
-              <p className="mt-1 truncate text-xs text-muted-foreground">{nomeTenant}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
+                {tituloPerfil}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">NavegaÃ§Ã£o por perfil</p>
             </>
           ) : (
             <>
@@ -413,7 +419,6 @@ type MenuMobileAdminProps = {
   acaoSairMobile: ReactNode;
   gerenciamento: boolean;
   itens: ItemMenuAdminResolvido[];
-  nomeTenant: string;
   onFechar: () => void;
   pathname: string;
   tituloPerfil: string;
@@ -423,7 +428,6 @@ function MenuMobileAdmin({
   acaoSairMobile,
   gerenciamento,
   itens,
-  nomeTenant,
   onFechar,
   pathname,
   tituloPerfil
@@ -446,8 +450,10 @@ function MenuMobileAdmin({
           <div>
             {gerenciamento ? (
               <>
-                <HospedexBrand href="/" size="sm" surface />
-                <p className="text-xs text-muted-foreground">{nomeTenant}</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
+                  {tituloPerfil}
+                </p>
+                <p className="text-xs text-muted-foreground">NavegaÃ§Ã£o por perfil</p>
               </>
             ) : (
               <>
