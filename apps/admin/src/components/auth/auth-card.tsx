@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { HospedexBrand } from "../brand/hospedex-brand";
+import { AnimatedLoginBackground } from "./animated-login-background";
 
 export type AuthCardProps = {
   title: string;
@@ -24,7 +25,7 @@ export function AuthCard({
 }: AuthCardProps) {
   return (
     <main className="auth-premium-bg min-h-screen overflow-hidden text-white">
-      <div className="auth-grid-layer" aria-hidden="true" />
+      <AnimatedLoginBackground />
       <div className="relative z-10 grid min-h-screen lg:grid-cols-[1.08fr_0.92fr]">
         <section className="hidden min-h-screen flex-col justify-between border-r border-cyan-300/10 px-10 py-10 lg:flex xl:px-14">
           <HospedexBrand priority size="md" />

@@ -26,33 +26,134 @@
   position: relative;
   isolation: isolate;
   background:
-    radial-gradient(circle at 18% 18%, rgba(0, 213, 255, 0.18), transparent 28%),
-    radial-gradient(circle at 78% 72%, rgba(37, 99, 235, 0.16), transparent 30%),
     linear-gradient(135deg, #020611 0%, #06101f 48%, #030712 100%);
 }
 
-.auth-premium-bg::after {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  content: "";
-  background:
-    linear-gradient(115deg, transparent 0%, rgba(0, 213, 255, 0.08) 42%, transparent 64%),
-    radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.08), transparent 38%);
-  opacity: 0.8;
-  animation: auth-glow-shift 14s ease-in-out infinite alternate;
-}
-
-.auth-grid-layer {
+.animated-login-background {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
   pointer-events: none;
+}
+
+.animated-login-background::before {
+  position: absolute;
+  inset: -18%;
+  content: "";
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
-  background-size: 70px 70px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), transparent 94%);
+    linear-gradient(rgba(148, 163, 184, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.075) 1px, transparent 1px);
+  background-position: center;
+  background-size: 68px 68px;
+  mask-image: radial-gradient(circle at center, black 0%, black 52%, transparent 88%);
+  opacity: 0.58;
+  transform: rotate(-0.35deg);
+  animation: auth-grid-drift 28s linear infinite;
+}
+
+.animated-login-background::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    radial-gradient(circle at 52% 48%, rgba(34, 211, 238, 0.12), transparent 32%),
+    linear-gradient(115deg, transparent 0%, rgba(0, 213, 255, 0.07) 42%, transparent 64%);
+  opacity: 0.72;
+  animation: auth-background-breathe 12s ease-in-out infinite alternate;
+}
+
+.auth-ambient-glow,
+.auth-particle-field,
+.auth-light-beam,
+.auth-cyan-pulse {
+  position: absolute;
+  display: block;
+}
+
+.auth-ambient-glow {
+  width: 42rem;
+  height: 42rem;
+  border-radius: 999px;
+  filter: blur(12px);
+  mix-blend-mode: screen;
+  opacity: 0.52;
+  will-change: transform;
+  animation: auth-floating-glow 18s ease-in-out infinite alternate;
+}
+
+.auth-ambient-glow--primary {
+  top: -13rem;
+  left: -10rem;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.24), rgba(14, 165, 233, 0.08) 42%, transparent 70%);
+}
+
+.auth-ambient-glow--secondary {
+  right: -12rem;
+  bottom: -14rem;
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.22), rgba(8, 145, 178, 0.08) 45%, transparent 72%);
+  animation-delay: -7s;
+}
+
+.auth-ambient-glow--deep {
+  top: 24%;
+  left: 42%;
+  width: 30rem;
+  height: 30rem;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.16), transparent 68%);
+  opacity: 0.36;
+  animation-duration: 22s;
+  animation-delay: -3s;
+}
+
+.auth-particle-field {
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(125, 211, 252, 0.32) 0 1px, transparent 1.6px),
+    radial-gradient(circle, rgba(59, 130, 246, 0.28) 0 1px, transparent 1.5px);
+  background-position:
+    0 0,
+    46px 72px;
+  background-size:
+    132px 132px,
+    212px 212px;
+  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 78%, transparent 100%);
+  opacity: 0.34;
+  animation: auth-particles-drift 34s linear infinite;
+}
+
+.auth-light-beam {
+  left: -18%;
+  width: 136%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.44), rgba(96, 165, 250, 0.18), transparent);
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.2);
+  opacity: 0.48;
+  transform: rotate(-8deg);
+  animation: auth-beam-flow 13s linear infinite;
+}
+
+.auth-light-beam--one {
+  top: 23%;
+}
+
+.auth-light-beam--two {
+  top: 68%;
+  opacity: 0.28;
+  transform: rotate(7deg);
+  animation-delay: -6s;
+}
+
+.auth-cyan-pulse {
+  top: 50%;
+  left: 64%;
+  width: min(34rem, 64vw);
+  height: min(34rem, 64vw);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.14), rgba(14, 165, 233, 0.04) 48%, transparent 72%);
+  filter: blur(10px);
+  transform: translate(-50%, -50%);
+  animation: auth-cyan-pulse 6s ease-in-out infinite;
 }
 
 .auth-login-card {
@@ -139,12 +240,70 @@
   cursor: not-allowed;
 }
 
-@keyframes auth-glow-shift {
+@keyframes auth-grid-drift {
   from {
-    transform: translate3d(-1.5%, -1%, 0) scale(1);
+    background-position:
+      0 0,
+      0 0;
   }
   to {
-    transform: translate3d(1.5%, 1%, 0) scale(1.03);
+    background-position:
+      68px 68px,
+      68px 68px;
+  }
+}
+
+@keyframes auth-background-breathe {
+  from {
+    transform: translate3d(-1%, -0.5%, 0) scale(1);
+    opacity: 0.58;
+  }
+  to {
+    transform: translate3d(1%, 0.8%, 0) scale(1.03);
+    opacity: 0.82;
+  }
+}
+
+@keyframes auth-floating-glow {
+  from {
+    transform: translate3d(-2%, -1%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.06);
+  }
+}
+
+@keyframes auth-particles-drift {
+  from {
+    background-position:
+      0 0,
+      46px 72px;
+  }
+  to {
+    background-position:
+      132px 132px,
+      258px 284px;
+  }
+}
+
+@keyframes auth-beam-flow {
+  from {
+    translate: -16% 0;
+  }
+  to {
+    translate: 16% 0;
+  }
+}
+
+@keyframes auth-cyan-pulse {
+  0%,
+  100% {
+    opacity: 0.42;
+    scale: 0.96;
+  }
+  50% {
+    opacity: 0.68;
+    scale: 1.04;
   }
 }
 
@@ -170,10 +329,46 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-premium-bg::after,
+  .animated-login-background::before,
+  .animated-login-background::after,
+  .auth-ambient-glow,
+  .auth-particle-field,
+  .auth-light-beam,
+  .auth-cyan-pulse,
   .auth-visual-signal span,
   .auth-loading-progress::after {
     animation: none;
+  }
+
+  .auth-particle-field,
+  .auth-light-beam--two {
+    opacity: 0.16;
+  }
+}
+
+@media (max-width: 640px) {
+  .animated-login-background::before {
+    background-size: 86px 86px;
+    opacity: 0.38;
+  }
+
+  .auth-ambient-glow--secondary,
+  .auth-light-beam--two {
+    display: none;
+  }
+
+  .auth-particle-field {
+    background-size:
+      180px 180px,
+      260px 260px;
+    opacity: 0.2;
+  }
+
+  .auth-cyan-pulse {
+    left: 50%;
+    width: 28rem;
+    height: 28rem;
+    opacity: 0.5;
   }
 }
 

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 
 import { Button, cn } from "@hospedex/ui";
 
+import { AnimatedLoginBackground } from "../auth/animated-login-background";
 import { HospedexBrand } from "./hospedex-brand";
 
 const TEXTOS_CARREGAMENTO = [
@@ -33,7 +34,7 @@ export function HospedexLoadingScreen({
 
   return (
     <div className={cn("auth-premium-bg flex min-h-screen items-center justify-center px-6", className)}>
-      <div className="auth-grid-layer" aria-hidden="true" />
+      <AnimatedLoginBackground />
       <motion.div
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="relative z-10 flex w-full max-w-sm flex-col items-center text-center"
