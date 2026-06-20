@@ -232,6 +232,25 @@
   animation: auth-progress-flow 1.15s ease-in-out infinite;
 }
 
+.auth-login-inline-progress {
+  position: relative;
+  height: 0.2rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.auth-login-inline-progress::after {
+  position: absolute;
+  inset: 0;
+  width: 38%;
+  content: "";
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.85));
+  box-shadow: 0 0 20px rgba(34, 211, 238, 0.32);
+  animation: auth-progress-flow 1.05s ease-in-out infinite;
+}
+
 .auth-premium-bg :is(a[href], button, label[for], input[type="checkbox"], input[type="submit"], [role="button"]) {
   cursor: pointer;
 }
@@ -336,6 +355,7 @@
   .auth-light-beam,
   .auth-cyan-pulse,
   .auth-visual-signal span,
+  .auth-login-inline-progress::after,
   .auth-loading-progress::after {
     animation: none;
   }

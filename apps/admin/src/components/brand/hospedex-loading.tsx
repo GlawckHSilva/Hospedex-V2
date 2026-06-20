@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { Button, cn } from "@hospedex/ui";
 
@@ -70,24 +70,6 @@ export function HospedexLoadingScreen({
         ) : null}
       </motion.div>
     </div>
-  );
-}
-
-export function HospedexLoadingOverlay({ aberto }: { aberto: boolean }) {
-  return (
-    <AnimatePresence>
-      {aberto ? (
-        <motion.div
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[100] bg-slate-950"
-          exit={{ opacity: 0 }}
-          initial={{ opacity: 0 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-        >
-          <HospedexLoadingScreen permitirNovaTentativa />
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
   );
 }
 
