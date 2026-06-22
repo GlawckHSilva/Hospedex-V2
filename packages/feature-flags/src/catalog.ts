@@ -81,6 +81,12 @@ export const featureFlagCatalog = [
     ownerConfigurable: true
   },
   {
+    key: "integrations",
+    module: "integrations",
+    defaultEnabled: true,
+    ownerConfigurable: false
+  },
+  {
     key: "staff",
     module: "staff",
     defaultEnabled: false,

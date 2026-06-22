@@ -17,6 +17,7 @@ export type IconeMenuAdmin =
   | "guiaRegiao"
   | "hospedes"
   | "inventario"
+  | "integracoes"
   | "licencas"
   | "limpeza"
   | "planos"
@@ -157,6 +158,14 @@ const MENU_PROPRIETARIO = [
     icone: "funcionarios",
     featureFlag: "staff",
     permissoes: ["members.manage", "roles.manage"]
+  },
+  {
+    titulo: "Integracoes",
+    href: "/integracoes",
+    descricao: "Conexoes externas e sincronizacoes do tenant.",
+    icone: "integracoes",
+    featureFlag: "integrations",
+    permissoes: ["integrations.read", "integrations.manage"]
   }
 ] as const satisfies readonly ItemMenuAdmin[];
 

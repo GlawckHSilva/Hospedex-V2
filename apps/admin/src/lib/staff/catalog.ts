@@ -29,6 +29,8 @@ export const CARGOS_INICIAIS: CargoInicial[] = [
       "cleaning.manage",
       "inventory.read",
       "inventory.manage",
+      "integrations.read",
+      "integrations.manage",
       "reports.read",
       "settings.manage"
     ]
@@ -91,6 +93,12 @@ export const PERMISSOES_MODULO: Array<{
   { code: "cleaning.manage", label: "Gerenciar limpeza", modulo: "Limpeza" },
   { code: "inventory.read", label: "Ver inventario", modulo: "Inventario" },
   { code: "inventory.manage", label: "Gerenciar inventario", modulo: "Inventario" },
+  { code: "integrations.read", label: "Ver integracoes", modulo: "Integracoes" },
+  {
+    code: "integrations.manage",
+    label: "Gerenciar integracoes",
+    modulo: "Integracoes"
+  },
   { code: "reports.read", label: "Relatorios", modulo: "Relatorios" },
   { code: "settings.manage", label: "Configuracoes", modulo: "Configuracoes" }
 ];

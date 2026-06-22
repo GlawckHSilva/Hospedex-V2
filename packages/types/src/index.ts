@@ -36,6 +36,8 @@ export type {
   InventoryConservationState,
   InventoryItemCategory,
   InventoryItemRow,
+  IntegrationProvider,
+  IntegrationStatus,
   MaintenanceTaskPriority,
   MaintenanceTaskRow,
   MaintenanceTaskStatus,
@@ -68,6 +70,7 @@ export type {
   StaffInviteStatus,
   SubscriptionRow,
   TenantFeatureRow,
+  TenantIntegrationRow,
   TenantCleaningPolicy,
   TenantMemberRole,
   TenantMemberRow,
@@ -90,6 +93,7 @@ export type ModuleKey =
   | "finance"
   | "crm"
   | "inventory"
+  | "integrations"
   | "cleaning"
   | "staff"
   | "reports"
@@ -117,6 +121,7 @@ export type FeatureFlagKey =
   | "ics_sync"
   | "cleaning"
   | "inventory"
+  | "integrations"
   | "staff"
   | "crm"
   | "automations"

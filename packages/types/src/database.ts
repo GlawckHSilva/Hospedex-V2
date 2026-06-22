@@ -59,6 +59,21 @@ export type ManagementNotificationType =
   | "payment_awaiting_confirmation"
   | "payment_confirmed"
   | "license_expiring";
+export type IntegrationProvider =
+  | "whatsapp"
+  | "google_maps"
+  | "weather"
+  | "payments"
+  | "email"
+  | "ical"
+  | "airbnb"
+  | "booking";
+export type IntegrationStatus =
+  | "disabled"
+  | "not_configured"
+  | "pending_backend"
+  | "connected"
+  | "error";
 
 export type ProfileRow = {
   id: UUID;
@@ -127,6 +142,8 @@ export type PermissionCode =
   | "inventory.read"
   | "inventory.manage"
   | "reports.read"
+  | "integrations.read"
+  | "integrations.manage"
   | "settings.manage"
   | "audit.read";
 
@@ -686,6 +703,20 @@ export type ManagementNotificationStateRow = {
   notification_key: string;
   read_at: Timestamp | null;
   deleted_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type TenantIntegrationRow = {
+  id: UUID;
+  tenant_id: UUID;
+  provider: IntegrationProvider;
+  enabled: boolean;
+  status: IntegrationStatus;
+  public_settings: JsonValue;
+  configured_at: Timestamp | null;
+  configured_by: UUID | null;
+  last_synced_at: Timestamp | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 };

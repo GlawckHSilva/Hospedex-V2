@@ -22,6 +22,13 @@ export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
     ownerConfigurable: true
   },
   {
+    descricao: "Central de integracoes externas por tenant.",
+    key: "integrations",
+    label: "Integracoes",
+    module: "integrations",
+    ownerConfigurable: false
+  },
+  {
     descricao: "Operacao de limpeza e tarefas.",
     key: "cleaning",
     label: "Limpeza",
