@@ -1,31 +1,39 @@
-import { Building2, Filter, Plus, Search, ShieldCheck, UserRound } from "lucide-react";
-
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  FadeIn,
-  Input,
-  Label,
-  PremiumEmptyState,
-  StatusBadge
-} from "@hospedex/ui";
+  Building2,
+  Eye,
+  Filter,
+  Pencil,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserRound
+} from "lucide-react";
 
-import { ModuleToast } from "../../admin/module-toast";
-import { alterarStatusProprietarioAction } from "../../../lib/super-admin/proprietarios/actions";
+import { Badge, FadeIn, Input, Label, StatusBadge } from "@hospedex/ui";
+
 import type {
   DadosModuloProprietarios,
   ProprietarioCompleto,
   StatusFiltroProprietario
 } from "../../../lib/super-admin/proprietarios/types";
+import { ModuleToast } from "../../admin/module-toast";
+import { ActionButton } from "../../management/action-button";
+import {
+  EmptyState,
+  EntityCard,
+  EntityCardActions,
+  EntityCardHeader,
+  EntityGrid
+} from "../../management/entity-card";
+import { EntityModal, EntityViewModal } from "../../management/entity-modal";
+import { ProprietarioDetails } from "./proprietario-details";
 import { ProprietarioForm } from "./proprietario-form";
 
 /**
- * Tela dedicada de Proprietarios do Super Admin.
+ * Tela de proprietarios do Super Admin.
  *
- * Mostra dados reais da plataforma e mantem criacao/edicao em server actions,
- * evitando qualquer uso de service role no frontend.
+ * Criacao, visualizacao e edicao usam modais reais. As operacoes de Auth,
+ * tenant, licenca e flags permanecem nas Server Actions protegidas.
  */
 
 export type ProprietariosModuleProps = DadosModuloProprietarios & {
@@ -34,6 +42,8 @@ export type ProprietariosModuleProps = DadosModuloProprietarios & {
 };
 
 const MENSAGENS_SUCESSO: Record<string, string> = {
+  "integracao-proprietario": "Integracao do proprietario atualizada.",
+  "modulo-proprietario": "Modulo do proprietario atualizado.",
   "proprietario-atualizado": "Proprietario atualizado com sucesso.",
   "proprietario-criado": "Proprietario criado com sucesso.",
   "status-proprietario": "Status do proprietario atualizado."
@@ -49,7 +59,7 @@ const STATUS_FILTRO: Array<{ label: string; valor: StatusFiltroProprietario }> =
 ];
 
 const campoClasse =
-  "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+  "flex h-10 w-full cursor-pointer rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function ProprietariosModule({
   erro,
@@ -66,12 +76,12 @@ export function ProprietariosModule({
       <ModuleToast erro={erro} mensagensSucesso={MENSAGENS_SUCESSO} sucesso={sucesso} />
 
       <section className="admin-glass-panel p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-2xl">
             <Badge variant="info">Super Admin</Badge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">Proprietarios</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Criacao segura de usuario Auth, tenant, owner, plano, licenca e feature flags.
+            <p className="mt-2 text-sm text-muted-foreground">
+              Controle central de clientes, licencas, modulos, integracoes e acesso.
             </p>
           </div>
 
@@ -83,64 +93,54 @@ export function ProprietariosModule({
         </div>
       </section>
 
-      <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <form className="grid gap-4 md:grid-cols-[1fr_220px_auto]">
-            <div className="grid gap-2">
-              <Label htmlFor="busca">Busca</Label>
-              <Input
-                defaultValue={filtros.busca}
-                id="busca"
-                name="busca"
-                placeholder="Nome, email ou plano"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <select
-                className={campoClasse}
-                defaultValue={filtros.status}
-                id="status"
-                name="status"
-              >
-                {STATUS_FILTRO.map((status) => (
-                  <option key={status.valor} value={status.valor}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <Button className="w-full" type="submit" variant="outline">
-                <Search />
-                Filtrar
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <section className="admin-glass-card grid gap-4 p-5 lg:grid-cols-[1fr_220px_auto_auto] lg:items-end">
+        <form className="contents">
+          <div className="grid gap-2">
+            <Label htmlFor="busca">Busca</Label>
+            <Input
+              defaultValue={filtros.busca}
+              id="busca"
+              name="busca"
+              placeholder="Nome, e-mail ou plano"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="status">Status</Label>
+            <select className={campoClasse} defaultValue={filtros.status} id="status" name="status">
+              {STATUS_FILTRO.map((status) => (
+                <option key={status.valor} value={status.valor}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <ActionButton icon={<Search />} type="submit" variant="settings">
+            Filtrar
+          </ActionButton>
+        </form>
 
-      <Card className="admin-glass-card">
-        <CardContent className="p-5">
-          <details open={proprietarios.length === 0}>
-            <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-              <Plus className="h-4 w-4" />
-              Criar proprietario
-            </summary>
-            <div className="mt-5">
-              <ProprietarioForm
-                featureFlags={featureFlags}
-                modo="criar"
-                planFeatures={planFeatures}
-                planos={planos}
-              />
-            </div>
-          </details>
-        </CardContent>
-      </Card>
+        <EntityModal
+          description="Crie o usuario Auth e vincule tenant, plano, licenca e modulos iniciais."
+          eyebrow="Super Admin"
+          size="xl"
+          title="Novo proprietario"
+          triggerAction="add"
+          triggerClassName="w-full"
+          triggerIcon={<Plus />}
+          triggerLabel="Novo proprietario"
+          triggerSize="md"
+        >
+          <ProprietarioForm
+            featureFlags={featureFlags}
+            modo="criar"
+            planFeatures={planFeatures}
+            planos={planos}
+          />
+        </EntityModal>
+      </section>
 
       {proprietarios.length ? (
-        <section className="grid gap-5">
+        <EntityGrid>
           {proprietarios.map((proprietario) => (
             <ProprietarioCard
               featureFlags={featureFlags}
@@ -150,12 +150,12 @@ export function ProprietariosModule({
               proprietario={proprietario}
             />
           ))}
-        </section>
+        </EntityGrid>
       ) : (
-        <PremiumEmptyState
+        <EmptyState
           description="Nenhum proprietario encontrado para os filtros atuais."
-          icon={<Filter className="h-5 w-5" />}
-          title="Sem proprietarios"
+          icon={<Filter />}
+          title="Nenhum proprietario encontrado"
         />
       )}
     </FadeIn>
@@ -173,72 +173,73 @@ function ProprietarioCard({
   planos: DadosModuloProprietarios["planos"];
   proprietario: ProprietarioCompleto;
 }) {
-  const statusBloqueado = ["suspended", "cancelled"].includes(proprietario.tenant.status);
-  const acao = statusBloqueado ? "ativar" : "bloquear";
-
   return (
-    <Card className="admin-glass-card">
-      <CardContent className="space-y-5 p-5">
-        <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge tone={toneTenant(proprietario.tenant.status)}>
-                {labelTenant(proprietario.tenant.status)}
-              </StatusBadge>
-              <StatusBadge tone={proprietario.license ? "info" : "warning"}>
-                {proprietario.license ? "licenca vinculada" : "sem licenca"}
-              </StatusBadge>
-            </div>
-            <h2 className="mt-3 truncate text-xl font-semibold">{proprietario.tenant.name}</h2>
-            <p className="mt-1 truncate text-sm text-muted-foreground">
-              {proprietario.profile?.full_name ?? "Sem nome"} - {proprietario.profile?.email ?? "sem email"}
-            </p>
-          </div>
+    <EntityCard>
+      <EntityCardHeader
+        badges={
+          <>
+            <StatusBadge tone={toneTenant(proprietario.tenant.status)}>
+              {labelTenant(proprietario.tenant.status)}
+            </StatusBadge>
+            <StatusBadge tone={proprietario.license ? "info" : "warning"}>
+              {proprietario.license ? "Licenca vinculada" : "Sem licenca"}
+            </StatusBadge>
+          </>
+        }
+        icon={<Building2 />}
+        subtitle={proprietario.profile?.email ?? "E-mail nao informado"}
+        title={proprietario.tenant.name}
+      />
 
-          <form action={alterarStatusProprietarioAction}>
-            <input name="tenantId" type="hidden" value={proprietario.tenant.id} />
-            <input name="ownerId" type="hidden" value={proprietario.tenant.owner_id} />
-            <input name="acao" type="hidden" value={acao} />
-            <Button variant={statusBloqueado ? "default" : "destructive"} type="submit">
-              {statusBloqueado ? "Ativar" : "Bloquear"}
-            </Button>
-          </form>
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Info icon={<UserRound />} label="Proprietario" valor={proprietario.profile?.full_name ?? "Sem nome"} />
+        <Info icon={<Building2 />} label="Plano" valor={proprietario.plan?.name ?? "Sem plano"} />
+        <Info
+          icon={<ShieldCheck />}
+          label="Licenca"
+          valor={proprietario.license ? labelLicenca(proprietario.license.status) : "Nao vinculada"}
+        />
+        <Info label="Modulos liberados" valor={String(proprietario.featureFlagsHabilitadas.length)} />
+      </div>
 
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Info icon={<UserRound />} label="Owner ID" valor={proprietario.tenant.owner_id} />
-          <Info icon={<Building2 />} label="Plano" valor={proprietario.plan?.name ?? "Sem plano"} />
-          <Info
-            icon={<ShieldCheck />}
-            label="Licenca"
-            valor={proprietario.license?.status ?? "sem licenca"}
+      <EntityCardActions>
+        <EntityViewModal
+          description="Perfil, licenca, modulos, integracoes, financeiro e logs do tenant."
+          title={proprietario.tenant.name}
+          triggerIcon={<Eye />}
+          triggerLabel="Visualizar"
+        >
+          <ProprietarioDetails
+            featureFlags={featureFlags}
+            planFeatures={planFeatures}
+            proprietario={proprietario}
           />
-          <Info
-            label="Flags ativas"
-            valor={String(proprietario.featureFlagsHabilitadas.length)}
+        </EntityViewModal>
+        <EntityModal
+          description="Atualize dados, plano, limites, vencimento e feature flags do tenant."
+          eyebrow="Edicao administrativa"
+          size="xl"
+          title={`Editar ${proprietario.tenant.name}`}
+          triggerAction="edit"
+          triggerIcon={<Pencil />}
+          triggerLabel="Editar"
+        >
+          <ProprietarioForm
+            featureFlags={featureFlags}
+            modo="editar"
+            planFeatures={planFeatures}
+            planos={planos}
+            proprietario={proprietario}
           />
-        </div>
-
-        <details>
-          <summary className="cursor-pointer text-sm font-semibold">Editar dados, plano e flags</summary>
-          <div className="mt-5">
-            <ProprietarioForm
-              featureFlags={featureFlags}
-              modo="editar"
-              planFeatures={planFeatures}
-              planos={planos}
-              proprietario={proprietario}
-            />
-          </div>
-        </details>
-      </CardContent>
-    </Card>
+        </EntityModal>
+      </EntityCardActions>
+    </EntityCard>
   );
 }
 
 function Resumo({ detalhe, label, tone, valor }: DadosModuloProprietarios["metricas"][number]) {
   return (
-    <div className="min-w-36 rounded-lg border bg-background/55 p-3 text-sm">
+    <div className="min-w-36 rounded-xl border bg-background/55 p-3 text-sm">
       <StatusBadge tone={tone}>{label}</StatusBadge>
       <p className="mt-3 text-2xl font-semibold">{valor}</p>
       <p className="mt-1 text-xs text-muted-foreground">{detalhe}</p>
@@ -256,7 +257,7 @@ function Info({
   valor: string;
 }) {
   return (
-    <div className="min-w-0 rounded-lg border bg-background/55 p-3 text-sm">
+    <div className="min-w-0 rounded-xl border bg-background/45 p-3 text-sm">
       {icon ? <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div> : null}
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-semibold">{valor}</p>
@@ -272,13 +273,21 @@ function toneTenant(status: ProprietarioCompleto["tenant"]["status"]) {
 }
 
 function labelTenant(status: ProprietarioCompleto["tenant"]["status"]) {
-  const labels: Record<ProprietarioCompleto["tenant"]["status"], string> = {
+  return {
     active: "Ativo",
     cancelled: "Cancelado",
     past_due: "Pendente",
     suspended: "Bloqueado",
     trial: "Trial"
-  };
+  }[status];
+}
 
-  return labels[status];
+function labelLicenca(status: NonNullable<ProprietarioCompleto["license"]>["status"]) {
+  return {
+    active: "Ativa",
+    cancelled: "Cancelada",
+    expired: "Vencida",
+    suspended: "Bloqueada",
+    trial: "Trial"
+  }[status];
 }

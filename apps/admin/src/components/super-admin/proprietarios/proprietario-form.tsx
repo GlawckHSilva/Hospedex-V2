@@ -1,13 +1,14 @@
 import type { FeatureFlagRow, PlanFeatureRow, PlanRow } from "@hospedex/types";
 import type { ComponentProps } from "react";
 
-import { Button, Input, Label } from "@hospedex/ui";
+import { Input, Label } from "@hospedex/ui";
 
 import {
   atualizarProprietarioAction,
   criarProprietarioAction
 } from "../../../lib/super-admin/proprietarios/actions";
 import type { ProprietarioCompleto } from "../../../lib/super-admin/proprietarios/types";
+import { ActionButton } from "../../management/action-button";
 
 /**
  * Formulario de criacao/edicao de proprietario.
@@ -45,11 +46,7 @@ export function ProprietarioForm({
   const action = modo === "criar" ? criarProprietarioAction : atualizarProprietarioAction;
   const planoPadrao = obterPlanoPadrao(planos, proprietario);
   const bloqueado = planos.length === 0;
-  const flagsAtivas = new Set(
-    proprietario
-      ? proprietario.featureFlagsHabilitadas
-      : obterFlagsDoPlano(planFeatures, planoPadrao?.id)
-  );
+  const flagsAtivasDoPlano = new Set(obterFlagsDoPlano(planFeatures, planoPadrao?.id));
 
   return (
     <form action={action} className="grid gap-4">
@@ -155,7 +152,7 @@ export function ProprietarioForm({
             >
               <input
                 className="mt-1"
-                defaultChecked={flagsAtivas.has(flag.id) || flag.default_enabled}
+                defaultChecked={flagEstaAtiva(flag.id, flag.default_enabled)}
                 disabled={bloqueado}
                 name="featureFlags"
                 type="checkbox"
@@ -177,12 +174,23 @@ export function ProprietarioForm({
       ) : null}
 
       <div className="flex justify-end">
-        <Button disabled={bloqueado} type="submit">
+        <ActionButton disabled={bloqueado} size="md" type="submit" variant={modo === "criar" ? "add" : "edit"}>
           {modo === "criar" ? "Criar proprietario" : "Salvar proprietario"}
-        </Button>
+        </ActionButton>
       </div>
     </form>
   );
+
+  function flagEstaAtiva(flagId: string, ativaPorPadrao: boolean) {
+    const override = proprietario?.tenantFeatures.find(
+      (feature) => feature.feature_flag_id === flagId
+    );
+
+    // Um override false precisa prevalecer sobre o default global. Sem esta
+    // verificacao, o Super Admin nao conseguiria bloquear uma flag default true.
+    if (override) return override.enabled;
+    return flagsAtivasDoPlano.has(flagId) || ativaPorPadrao;
+  }
 }
 
 function CampoTexto({

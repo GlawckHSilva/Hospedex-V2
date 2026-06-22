@@ -1,12 +1,13 @@
 import type { ComponentProps } from "react";
 
-import { Button, Input, Label } from "@hospedex/ui";
+import { Input, Label } from "@hospedex/ui";
 
 import {
   atualizarPlanoAction,
   criarPlanoAction
 } from "../../../lib/super-admin/planos/actions";
 import type { DadosModuloPlanos, PlanoCompleto } from "../../../lib/super-admin/planos/types";
+import { ActionButton } from "../../management/action-button";
 
 export type PlanoFormProps = {
   featureFlags: DadosModuloPlanos["featureFlags"];
@@ -131,7 +132,9 @@ export function PlanoForm({ featureFlags, modo, plano }: PlanoFormProps) {
       </fieldset>
 
       <div className="flex justify-end">
-        <Button type="submit">{modo === "criar" ? "Criar plano" : "Salvar plano"}</Button>
+        <ActionButton size="md" type="submit" variant={modo === "criar" ? "add" : "edit"}>
+          {modo === "criar" ? "Criar plano" : "Salvar plano"}
+        </ActionButton>
       </div>
     </form>
   );

@@ -1,8 +1,9 @@
-import { CreditCard, Layers3, PackagePlus, Plus } from "lucide-react";
+import { CreditCard, Layers3, PackagePlus, Pencil, Plus } from "lucide-react";
 
 import { Badge, FadeIn, GlassCard, GlassPanel, PremiumEmptyState, StatusBadge } from "@hospedex/ui";
 
 import { ModuleToast } from "../../admin/module-toast";
+import { EntityModal } from "../../management/entity-modal";
 import type { DadosModuloPlanos, PlanoCompleto } from "../../../lib/super-admin/planos/types";
 import { PlanoForm } from "./plano-form";
 
@@ -50,17 +51,20 @@ export function PlanosModule({
         </div>
       </GlassPanel>
 
-      <GlassCard className="p-5">
-        <details open={planos.length === 0}>
-          <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-            <Plus className="h-4 w-4" />
-            Criar plano
-          </summary>
-          <div className="mt-5">
-            <PlanoForm featureFlags={featureFlags} modo="criar" />
-          </div>
-        </details>
-      </GlassCard>
+      <div className="flex justify-end">
+        <EntityModal
+          description="Defina valores, limites e recursos disponiveis para os tenants."
+          eyebrow="Catalogo global"
+          size="xl"
+          title="Novo plano"
+          triggerAction="add"
+          triggerIcon={<Plus />}
+          triggerLabel="Criar plano"
+          triggerSize="md"
+        >
+          <PlanoForm featureFlags={featureFlags} modo="criar" />
+        </EntityModal>
+      </div>
 
       {planos.length ? (
         <section className="grid gap-5">
@@ -128,12 +132,19 @@ function PlanoCard({
         )}
       </div>
 
-      <details>
-        <summary className="cursor-pointer text-sm font-semibold">Editar plano</summary>
-        <div className="mt-5">
+      <div className="flex justify-end">
+        <EntityModal
+          description="Atualize limites, valores e feature flags incluidas no plano."
+          eyebrow="Edicao administrativa"
+          size="xl"
+          title={`Editar ${plano.plan.name}`}
+          triggerAction="edit"
+          triggerIcon={<Pencil />}
+          triggerLabel="Editar plano"
+        >
           <PlanoForm featureFlags={featureFlags} modo="editar" plano={plano} />
-        </div>
-      </details>
+        </EntityModal>
+      </div>
     </GlassCard>
   );
 }

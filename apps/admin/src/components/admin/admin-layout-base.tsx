@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { Button } from "@hospedex/ui";
 import type { TenantSettingRow } from "@hospedex/types";
 import { LogOut } from "lucide-react";
 
@@ -29,7 +28,6 @@ export async function AdminLayoutBase({ children, contexto }: AdminLayoutBasePro
 
   return (
     <AdminShell
-      acaoSairHeader={<AcaoSair variante="header" />}
       acaoSairMenu={<AcaoSair variante="menu" />}
       acaoSairMobile={<AcaoSair variante="sidebar" />}
       acaoSairSidebar={<AcaoSair variante="sidebar" />}
@@ -64,18 +62,7 @@ async function carregarLogoConfiguracoesGerenciamento(contexto: ContextoAutentic
   return data?.logo_url ?? null;
 }
 
-function AcaoSair({ variante }: { variante: "header" | "menu" | "sidebar" }) {
-  if (variante === "header") {
-    return (
-      <form action={sairAction}>
-        {/* O Super Admin preserva o logout direto do layout antigo para evitar mudança fora do Gerenciamento. */}
-        <Button size="sm" type="submit" variant="outline">
-          Sair
-        </Button>
-      </form>
-    );
-  }
-
+function AcaoSair({ variante }: { variante: "menu" | "sidebar" }) {
   const classes =
     variante === "sidebar"
       ? "flex h-10 w-full items-center gap-2 rounded-lg border border-transparent px-3 text-sm font-medium text-muted-foreground transition duration-200 hover:border-rose-400/20 hover:bg-rose-500/10 hover:text-rose-700 dark:hover:text-rose-200"

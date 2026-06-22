@@ -1,8 +1,10 @@
 import { CalendarClock, Filter, KeyRound, RefreshCcw, ShieldAlert } from "lucide-react";
 
-import { Badge, Button, FadeIn, GlassCard, GlassPanel, Input, Label, PremiumEmptyState, StatusBadge } from "@hospedex/ui";
+import { Badge, FadeIn, GlassCard, GlassPanel, Input, Label, PremiumEmptyState, StatusBadge } from "@hospedex/ui";
 
 import { ModuleToast } from "../../admin/module-toast";
+import { ActionButton } from "../../management/action-button";
+import { ConfirmDialog, EntityModal } from "../../management/entity-modal";
 import {
   bloquearInadimplenciaAction,
   reativarLicencaAction,
@@ -83,10 +85,9 @@ export function LicencasModule({
             </select>
           </div>
           <div className="flex items-end">
-            <Button type="submit" variant="outline">
-              <Filter />
+            <ActionButton icon={<Filter />} type="submit" variant="settings">
               Filtrar
-            </Button>
+            </ActionButton>
           </div>
         </form>
       </GlassCard>
@@ -142,45 +143,71 @@ function LicencaCard({ licenca }: { licenca: LicencaCompleta }) {
         <Info label="Assinatura" valor={licenca.subscription?.status ?? "sem assinatura"} />
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <form action={renovarLicencaAction} className="grid gap-2 sm:grid-cols-[150px_auto]">
-          <input name="licencaId" type="hidden" value={licenca.licenca.id} />
-          <div className="grid gap-2">
-            <Label htmlFor={`meses-${licenca.licenca.id}`}>Meses</Label>
-            <Input
-              defaultValue="1"
-              id={`meses-${licenca.licenca.id}`}
-              max={36}
-              min={1}
-              name="meses"
-              type="number"
-            />
-          </div>
-          <div className="flex items-end">
-            <Button type="submit">
-              <RefreshCcw />
-              Renovar
-            </Button>
-          </div>
-        </form>
-
-        <div className="flex flex-wrap gap-2">
-          {bloqueada ? (
-            <form action={reativarLicencaAction}>
-              <input name="licencaId" type="hidden" value={licenca.licenca.id} />
-              <Button type="submit" variant="outline">
-                Reativar
-              </Button>
-            </form>
-          ) : null}
-          <form action={bloquearInadimplenciaAction}>
+      <div className="flex flex-wrap justify-end gap-2">
+        <EntityModal
+          description="A renovacao estende a validade atual sem alterar o plano ou os limites."
+          eyebrow="Licenca"
+          size="sm"
+          title="Renovar licenca"
+          triggerAction="edit"
+          triggerIcon={<RefreshCcw />}
+          triggerLabel="Renovar"
+        >
+          <form action={renovarLicencaAction} className="grid gap-4">
             <input name="licencaId" type="hidden" value={licenca.licenca.id} />
-            <Button type="submit" variant="destructive">
-              <ShieldAlert />
-              Bloquear inadimplencia
-            </Button>
+            <div className="grid gap-2">
+              <Label htmlFor={`meses-${licenca.licenca.id}`}>Meses</Label>
+              <Input
+                defaultValue="1"
+                id={`meses-${licenca.licenca.id}`}
+                max={36}
+                min={1}
+                name="meses"
+                type="number"
+              />
+            </div>
+            <ActionButton icon={<RefreshCcw />} size="md" type="submit" variant="edit">
+              Confirmar renovacao
+            </ActionButton>
           </form>
-        </div>
+        </EntityModal>
+
+        {bloqueada ? (
+          <ConfirmDialog
+            description="O tenant voltara a operar conforme o plano e a validade atuais."
+            title="Reativar licenca"
+            triggerAction="status"
+            triggerLabel="Reativar"
+          >
+            <form action={reativarLicencaAction} className="space-y-4">
+              <input name="licencaId" type="hidden" value={licenca.licenca.id} />
+              <p className="text-sm text-muted-foreground">
+                Confirme a liberacao desta licenca e do tenant vinculado.
+              </p>
+              <ActionButton className="w-full" type="submit" variant="status">
+                Confirmar reativacao
+              </ActionButton>
+            </form>
+          </ConfirmDialog>
+        ) : (
+          <ConfirmDialog
+            description="O tenant sera suspenso por inadimplencia sem apagar dados ou historico."
+            title="Bloquear por inadimplencia"
+            triggerAction="delete"
+            triggerIcon={<ShieldAlert />}
+            triggerLabel="Bloquear"
+          >
+            <form action={bloquearInadimplenciaAction} className="space-y-4">
+              <input name="licencaId" type="hidden" value={licenca.licenca.id} />
+              <p className="text-sm text-muted-foreground">
+                Confirme o bloqueio administrativo da licenca.
+              </p>
+              <ActionButton className="w-full" icon={<ShieldAlert />} type="submit" variant="delete">
+                Confirmar bloqueio
+              </ActionButton>
+            </form>
+          </ConfirmDialog>
+        )}
       </div>
     </GlassCard>
   );

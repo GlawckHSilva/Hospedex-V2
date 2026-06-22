@@ -25,7 +25,6 @@ import {
   PlugZap,
   ReceiptText,
   Settings,
-  ShieldCheck,
   Sparkles,
   Star,
   UserRound,
@@ -75,7 +74,6 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
 };
 
 export type AdminShellProps = {
-  acaoSairHeader: ReactNode;
   acaoSairMenu: ReactNode;
   acaoSairMobile: ReactNode;
   acaoSairSidebar: ReactNode;
@@ -92,7 +90,6 @@ export type AdminShellProps = {
  * garantindo que funcionário, proprietário e super admin vejam estruturas distintas.
  */
 export function AdminShell({
-  acaoSairHeader,
   acaoSairMenu,
   acaoSairMobile,
   acaoSairSidebar,
@@ -107,35 +104,34 @@ export function AdminShell({
   const perfil = obterPerfilMenuAdmin(contexto.role);
   const tituloPerfil = obterTituloPerfilAdmin(perfil);
   const nomeUsuario = contexto.profile.full_name ?? contexto.profile.email;
-  const nomeTenant = perfil === "super_admin" ? "Plataforma" : contexto.tenant?.name ?? "Sem tenant";
   const iniciaisUsuario = obterIniciaisUsuario(nomeUsuario, contexto.profile.email);
   const gerenciamento = perfil !== "super_admin";
   const avatarVisualUrl = gerenciamento
     ? logoConfiguracoesUrl ?? contexto.profile.avatar_url
     : contexto.profile.avatar_url;
+  const configuracoesHref = gerenciamento ? "/configuracoes" : "/super-admin/configuracoes";
 
   return (
     <div
       className={cn(
         "admin-shell-bg premium-grid-bg min-h-screen text-foreground",
         // O ajuste visual de scrollbar pertence ao Gerenciamento, sem alterar a experiencia do Super Admin.
-        perfil !== "super_admin" && "admin-management-shell",
+        "admin-management-shell",
       )}
       data-admin-perfil={perfil}
     >
-      {gerenciamento ? <InteractiveCardEffects /> : null}
+      <InteractiveCardEffects />
 
       <TopbarAdmin
-        acaoSairHeader={acaoSairHeader}
         acaoSairMenu={acaoSairMenu}
         avatarUrl={avatarVisualUrl}
         emailUsuario={contexto.profile.email}
         gerenciamento={gerenciamento}
         iniciaisUsuario={iniciaisUsuario}
-        nomeTenant={nomeTenant}
         nomeUsuario={nomeUsuario}
         notificacoes={notificacoes}
         onAbrirMenu={() => setMenuAberto(true)}
+        configuracoesHref={configuracoesHref}
         tituloPerfil={tituloPerfil}
       />
 
@@ -175,30 +171,28 @@ export function AdminShell({
 }
 
 type TopbarAdminProps = {
-  acaoSairHeader: ReactNode;
   acaoSairMenu: ReactNode;
   avatarUrl: string | null;
   emailUsuario: string;
   gerenciamento: boolean;
   iniciaisUsuario: string;
-  nomeTenant: string;
   nomeUsuario: string;
   notificacoes: ResumoNotificacoesGerenciamento;
   onAbrirMenu: () => void;
+  configuracoesHref: string;
   tituloPerfil: string;
 };
 
 function TopbarAdmin({
-  acaoSairHeader,
   acaoSairMenu,
   avatarUrl,
   emailUsuario,
   gerenciamento,
   iniciaisUsuario,
-  nomeTenant,
   nomeUsuario,
   notificacoes,
   onAbrirMenu,
+  configuracoesHref,
   tituloPerfil
 }: TopbarAdminProps) {
   return (
@@ -216,19 +210,7 @@ function TopbarAdmin({
             <Menu />
           </Button>
 
-          {gerenciamento ? (
-            <HospedexBrand href="/" size="sm" surface />
-          ) : (
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 shadow-sm shadow-cyan-500/10 dark:text-cyan-200">
-                <ShieldCheck className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">Admin Hospedex</p>
-                <p className="truncate text-xs text-muted-foreground">{nomeTenant}</p>
-              </div>
-            </div>
-          )}
+          <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" surface />
         </div>
 
         <div className="flex min-w-0 items-center gap-2">
@@ -241,17 +223,14 @@ function TopbarAdmin({
           </div>
           <ThemeToggle />
           {tituloPerfil !== "Super Admin" ? <NotificationBell resumo={notificacoes} /> : null}
-          {gerenciamento ? (
-            <PerfilUsuarioMenu
-              acaoSairMenu={acaoSairMenu}
-              avatarUrl={avatarUrl}
-              emailUsuario={emailUsuario}
-              iniciaisUsuario={iniciaisUsuario}
-              nomeUsuario={nomeUsuario}
-            />
-          ) : (
-            acaoSairHeader
-          )}
+          <PerfilUsuarioMenu
+            acaoSairMenu={acaoSairMenu}
+            avatarUrl={avatarUrl}
+            configuracoesHref={configuracoesHref}
+            emailUsuario={emailUsuario}
+            iniciaisUsuario={iniciaisUsuario}
+            nomeUsuario={nomeUsuario}
+          />
         </div>
       </div>
     </header>
@@ -261,6 +240,7 @@ function TopbarAdmin({
 type PerfilUsuarioMenuProps = {
   acaoSairMenu: ReactNode;
   avatarUrl: string | null;
+  configuracoesHref: string;
   emailUsuario: string;
   iniciaisUsuario: string;
   nomeUsuario: string;
@@ -269,6 +249,7 @@ type PerfilUsuarioMenuProps = {
 function PerfilUsuarioMenu({
   acaoSairMenu,
   avatarUrl,
+  configuracoesHref,
   emailUsuario,
   iniciaisUsuario,
   nomeUsuario
@@ -311,7 +292,7 @@ function PerfilUsuarioMenu({
             <div className="my-1 h-px bg-border/70" />
             <Link
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-cyan-500/10 hover:text-foreground"
-              href="/configuracoes#configuracoes-gerais"
+              href={`${configuracoesHref}#configuracoes-gerais`}
               onClick={() => setAberto(false)}
               role="menuitem"
             >
@@ -320,7 +301,7 @@ function PerfilUsuarioMenu({
             </Link>
             <Link
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition hover:bg-cyan-500/10 hover:text-foreground"
-              href="/configuracoes"
+              href={configuracoesHref}
               onClick={() => setAberto(false)}
               role="menuitem"
             >
@@ -410,7 +391,7 @@ function SidebarAdmin({
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} pathname={pathname} />
           ))}
-          {gerenciamento ? <div className="pt-1">{acaoSairSidebar}</div> : null}
+          <div className="pt-1">{acaoSairSidebar}</div>
         </nav>
       </div>
     </aside>
@@ -473,7 +454,7 @@ function MenuMobileAdmin({
           {itens.map((item) => (
             <ItemMenu key={item.href} item={item} onNavigate={onFechar} pathname={pathname} />
           ))}
-          {gerenciamento ? <div className="pt-1">{acaoSairMobile}</div> : null}
+          <div className="pt-1">{acaoSairMobile}</div>
         </nav>
       </motion.aside>
     </motion.div>

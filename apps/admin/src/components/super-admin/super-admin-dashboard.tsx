@@ -66,8 +66,8 @@ export function SuperAdminDashboard({
       </GlassPanel>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {destaques.map((metrica, index) => (
-          <MetricaCard index={index} key={metrica.label} metrica={metrica} />
+        {destaques.map((metrica) => (
+          <MetricaCard key={metrica.label} metrica={metrica} />
         ))}
       </section>
 
@@ -105,17 +105,11 @@ export function SuperAdminDashboard({
             <Building2 className="h-5 w-5 text-cyan-500" />
           </div>
           <div className="space-y-3">
-            {operacao.map((metrica, index) => (
+            {operacao.map((metrica) => (
               <div className="rounded-lg border bg-background/45 p-3" key={metrica.label}>
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium">{metrica.label}</p>
                   <StatusBadge tone={metrica.tone}>{metrica.valor}</StatusBadge>
-                </div>
-                <div className="mt-3 h-1.5 rounded-full bg-secondary">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-400"
-                    style={{ width: `${Math.min(92, 34 + index * 11)}%` }}
-                  />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">{metrica.detalhe}</p>
               </div>
@@ -127,9 +121,9 @@ export function SuperAdminDashboard({
   );
 }
 
-function MetricaCard({ index, metrica }: { index: number; metrica: SuperAdminMetrica }) {
+function MetricaCard({ metrica }: { metrica: SuperAdminMetrica }) {
   return (
-    <GlassCard className="group p-4 transition duration-200 hover:-translate-y-1">
+    <GlassCard className="admin-glass-card p-4 transition duration-200">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
@@ -140,12 +134,6 @@ function MetricaCard({ index, metrica }: { index: number; metrica: SuperAdminMet
         <StatusBadge tone={metrica.tone}>global</StatusBadge>
       </div>
       <p className="mt-3 min-h-10 text-sm leading-5 text-muted-foreground">{metrica.detalhe}</p>
-      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-violet-400 transition-all duration-500 group-hover:w-full"
-          style={{ width: `${Math.min(88, 45 + index * 9)}%` }}
-        />
-      </div>
     </GlassCard>
   );
 }

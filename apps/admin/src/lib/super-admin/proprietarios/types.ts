@@ -1,13 +1,16 @@
 import type {
+  AuditLogRow,
   FeatureFlagRow,
   LicenseRow,
   PlanFeatureRow,
   PlanRow,
   ProfileRow,
   SubscriptionRow,
+  TenantIntegrationRow,
   TenantFeatureRow,
   TenantRow,
-  TenantStatus
+  TenantStatus,
+  TransactionRow
 } from "@hospedex/types";
 
 /**
@@ -32,13 +35,16 @@ export type MetricaProprietarios = {
 };
 
 export type ProprietarioCompleto = {
+  auditLogs: AuditLogRow[];
   featureFlagsHabilitadas: string[];
+  integrations: TenantIntegrationRow[];
   license: LicenseRow | null;
   plan: PlanRow | null;
   profile: ProfileRow | null;
   subscription: SubscriptionRow | null;
   tenant: TenantRow;
   tenantFeatures: TenantFeatureRow[];
+  transactions: TransactionRow[];
 };
 
 export type DadosModuloProprietarios = {

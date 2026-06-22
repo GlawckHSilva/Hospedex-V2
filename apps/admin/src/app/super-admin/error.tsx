@@ -1,13 +1,15 @@
 "use client";
 
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@hospedex/ui";
+import { RefreshCcw } from "lucide-react";
+
+import { ActionButton } from "../../components/management/action-button";
 
 /**
  * Diagnostico visual do Super Admin.
@@ -36,9 +38,9 @@ export default function SuperAdminError({
           <p className="rounded-md border bg-secondary px-3 py-2 text-sm text-muted-foreground">
             {error.message || "Erro desconhecido ao carregar painel global."}
           </p>
-          <Button onClick={reset} type="button">
+          <ActionButton icon={<RefreshCcw />} onClick={reset} type="button" variant="status">
             Tentar novamente
-          </Button>
+          </ActionButton>
         </CardContent>
       </Card>
     </main>

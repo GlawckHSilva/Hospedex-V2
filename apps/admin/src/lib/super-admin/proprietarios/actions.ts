@@ -1,6 +1,7 @@
 "use server";
 
 import type {
+  IntegrationProvider,
   LicenseRow,
   PlanRow,
   SubscriptionRow,
@@ -11,6 +12,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { exigirSuperAdmin } from "../../auth/context";
+import {
+  obterDefinicaoIntegracao,
+  providerIntegracaoValido
+} from "../../integrations/catalog";
 import { criarClienteSupabaseAdmin } from "../../supabase/admin";
 
 /**
@@ -153,6 +158,92 @@ export async function alterarStatusProprietarioAction(formData: FormData) {
   }
 
   redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=status-proprietario`);
+}
+
+export async function alternarModuloProprietarioAction(formData: FormData) {
+  const contexto = await exigirSuperAdmin();
+  const supabase = criarClienteSupabaseAdmin();
+  const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
+  const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
+  const featureFlagId = textoObrigatorio(formData, "featureFlagId", "modulo");
+  const habilitar = textoObrigatorio(formData, "habilitar", "estado") === "true";
+
+  try {
+    await carregarTenantDoOwner(supabase, tenantId, ownerId);
+    await validarFeatureFlags(supabase, [featureFlagId]);
+
+    // Somente o Super Admin altera a liberacao efetiva por tenant. O owner
+    // continua limitado ao plano, a licenca e a este override administrativo.
+    const { error } = await supabase.from("tenant_features").upsert(
+      {
+        configured_by: contexto.userId,
+        enabled: habilitar,
+        feature_flag_id: featureFlagId,
+        tenant_id: tenantId
+      },
+      { onConflict: "tenant_id,feature_flag_id" }
+    );
+    if (error) throw new Error(error.message);
+
+    await registrarAuditoria(
+      supabase,
+      contexto.userId,
+      tenantId,
+      habilitar ? "super_admin.module.enabled" : "super_admin.module.disabled"
+    );
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao alterar modulo do proprietario.");
+  }
+
+  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=modulo-proprietario`);
+}
+
+export async function alternarIntegracaoProprietarioAction(formData: FormData) {
+  const contexto = await exigirSuperAdmin();
+  const supabase = criarClienteSupabaseAdmin();
+  const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
+  const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
+  const providerRecebido = textoObrigatorio(formData, "provider", "integracao");
+  const habilitar = textoObrigatorio(formData, "habilitar", "estado") === "true";
+
+  try {
+    await carregarTenantDoOwner(supabase, tenantId, ownerId);
+    if (!providerIntegracaoValido(providerRecebido)) {
+      throw new ErroRegraProprietario("Integracao invalida para este tenant.");
+    }
+
+    const provider: IntegrationProvider = providerRecebido;
+    if (obterDefinicaoIntegracao(provider).futura) {
+      throw new ErroRegraProprietario("Esta integracao permanece reservada para uma etapa futura.");
+    }
+
+    // Nenhuma credencial e gravada nesta etapa. O Super Admin controla apenas
+    // a disponibilidade estrutural; secrets permanecem no backend/ambiente.
+    const { error } = await supabase.from("tenant_integrations").upsert(
+      {
+        configured_by: contexto.userId,
+        enabled: habilitar,
+        provider,
+        status: habilitar ? "pending_backend" : "disabled",
+        tenant_id: tenantId
+      },
+      { onConflict: "tenant_id,provider" }
+    );
+    if (error) throw new Error(error.message);
+
+    await registrarAuditoria(
+      supabase,
+      contexto.userId,
+      tenantId,
+      habilitar ? "super_admin.integration.enabled" : "super_admin.integration.disabled"
+    );
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao alterar integracao do proprietario.");
+  }
+
+  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=integracao-proprietario`);
 }
 
 async function criarProfileProprietario(

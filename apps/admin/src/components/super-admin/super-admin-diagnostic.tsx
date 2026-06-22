@@ -1,8 +1,9 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, LogOut } from "lucide-react";
 
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hospedex/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hospedex/ui";
 
 import { sairAction } from "../../lib/auth/actions";
+import { ActionButton } from "../management/action-button";
 
 export type SuperAdminDiagnosticProps = {
   detalhe?: string;
@@ -34,9 +35,9 @@ export function SuperAdminDiagnostic({ detalhe, titulo }: SuperAdminDiagnosticPr
             {detalhe ?? "Erro ao carregar dados do Super Admin."}
           </p>
           <form action={sairAction}>
-            <Button className="w-full" type="submit" variant="outline">
+            <ActionButton className="w-full" icon={<LogOut />} type="submit" variant="cancel">
               Sair e entrar novamente
-            </Button>
+            </ActionButton>
           </form>
         </CardContent>
       </Card>

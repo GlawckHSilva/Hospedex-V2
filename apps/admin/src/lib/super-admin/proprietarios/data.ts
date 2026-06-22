@@ -1,12 +1,15 @@
 import type {
+  AuditLogRow,
   FeatureFlagRow,
   LicenseRow,
   PlanFeatureRow,
   PlanRow,
   ProfileRow,
   SubscriptionRow,
+  TenantIntegrationRow,
   TenantFeatureRow,
-  TenantRow
+  TenantRow,
+  TransactionRow
 } from "@hospedex/types";
 
 import { criarClienteSupabaseServer } from "../../supabase/server";
@@ -75,11 +78,26 @@ export async function carregarDadosProprietarios(
   ]);
 
   const tenants = tenantsResultado.data ?? [];
-  const [profiles, assinaturas, licencas, tenantFeatures] = await Promise.all([
+  if (tenantsResultado.error) {
+    throw new Error("Nao foi possivel carregar os proprietarios.");
+  }
+
+  const [
+    profiles,
+    assinaturas,
+    licencas,
+    tenantFeatures,
+    integracoes,
+    transacoes,
+    auditoria
+  ] = await Promise.all([
     carregarProfiles(tenants.map((tenant) => tenant.owner_id)),
     carregarAssinaturas(tenants.map((tenant) => tenant.id)),
     carregarLicencas(tenants.map((tenant) => tenant.id)),
-    carregarTenantFeatures(tenants.map((tenant) => tenant.id))
+    carregarTenantFeatures(tenants.map((tenant) => tenant.id)),
+    carregarIntegracoes(tenants.map((tenant) => tenant.id)),
+    carregarTransacoes(tenants.map((tenant) => tenant.id)),
+    carregarAuditoria(tenants.map((tenant) => tenant.id))
   ]);
 
   const planos = planosResultado.data ?? [];
@@ -92,6 +110,9 @@ export async function carregarDadosProprietarios(
         assinaturas,
         licencas,
         tenantFeatures,
+        integracoes,
+        transacoes,
+        auditoria,
         planPorId
       )
     )
@@ -118,21 +139,27 @@ function montarProprietario(
   assinaturas: Map<string, SubscriptionRow>,
   licencas: Map<string, LicenseRow>,
   tenantFeatures: Map<string, TenantFeatureRow[]>,
+  integracoes: Map<string, TenantIntegrationRow[]>,
+  transacoes: Map<string, TransactionRow[]>,
+  auditoria: Map<string, AuditLogRow[]>,
   planPorId: Map<string, PlanRow>
 ): ProprietarioCompleto {
   const subscription = assinaturas.get(tenant.id) ?? null;
   const features = tenantFeatures.get(tenant.id) ?? [];
 
   return {
+    auditLogs: auditoria.get(tenant.id) ?? [],
     featureFlagsHabilitadas: features
       .filter((feature) => feature.enabled)
       .map((feature) => feature.feature_flag_id),
+    integrations: integracoes.get(tenant.id) ?? [],
     license: licencas.get(tenant.id) ?? null,
     plan: subscription ? planPorId.get(subscription.plan_id) ?? null : null,
     profile: profiles.get(tenant.owner_id) ?? null,
     subscription,
     tenant,
-    tenantFeatures: features
+    tenantFeatures: features,
+    transactions: transacoes.get(tenant.id) ?? []
   };
 }
 
@@ -237,6 +264,66 @@ async function carregarTenantFeatures(idsTenant: string[]) {
     mapa.set(feature.tenant_id, lista);
     return mapa;
   }, new Map<string, TenantFeatureRow[]>());
+}
+
+async function carregarIntegracoes(idsTenant: string[]) {
+  const unicos = normalizarIds(idsTenant);
+  if (!unicos.length) return new Map<string, TenantIntegrationRow[]>();
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("tenant_integrations")
+    .select("*")
+    .in("tenant_id", unicos)
+    .order("provider", { ascending: true })
+    .returns<TenantIntegrationRow[]>();
+
+  registrarErroLeitura("integracoes dos proprietarios", error);
+  return agruparPorTenant<TenantIntegrationRow>(data ?? []);
+}
+
+async function carregarTransacoes(idsTenant: string[]) {
+  const unicos = normalizarIds(idsTenant);
+  if (!unicos.length) return new Map<string, TransactionRow[]>();
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .in("tenant_id", unicos)
+    .order("created_at", { ascending: false })
+    .limit(1000)
+    .returns<TransactionRow[]>();
+
+  registrarErroLeitura("financeiro dos proprietarios", error);
+  return agruparPorTenant<TransactionRow>(data ?? []);
+}
+
+async function carregarAuditoria(idsTenant: string[]) {
+  const unicos = normalizarIds(idsTenant);
+  if (!unicos.length) return new Map<string, AuditLogRow[]>();
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select("*")
+    .in("tenant_id", unicos)
+    .order("created_at", { ascending: false })
+    .limit(500)
+    .returns<AuditLogRow[]>();
+
+  registrarErroLeitura("logs administrativos dos proprietarios", error);
+  return agruparPorTenant<AuditLogRow>(data ?? []);
+}
+
+function agruparPorTenant<T extends { tenant_id: string | null }>(linhas: T[]) {
+  return linhas.reduce((mapa, linha) => {
+    if (!linha.tenant_id) return mapa;
+    const lista = mapa.get(linha.tenant_id) ?? [];
+    lista.push(linha);
+    mapa.set(linha.tenant_id, lista);
+    return mapa;
+  }, new Map<string, T[]>());
 }
 
 function mapearUltimoPorTenant<T extends { tenant_id: string }>(linhas: T[]) {

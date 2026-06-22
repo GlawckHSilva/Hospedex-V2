@@ -1,8 +1,10 @@
 import { Flag, Power, SlidersHorizontal } from "lucide-react";
 
-import { Badge, Button, FadeIn, GlassCard, GlassPanel, PremiumEmptyState, StatusBadge } from "@hospedex/ui";
+import { Badge, FadeIn, GlassCard, GlassPanel, PremiumEmptyState, StatusBadge } from "@hospedex/ui";
 
 import { ModuleToast } from "../../admin/module-toast";
+import { ActionButton } from "../../management/action-button";
+import { ConfirmDialog } from "../../management/entity-modal";
 import { alternarFeatureFlagAction } from "../../../lib/super-admin/feature-flags/actions";
 import type {
   DadosModuloFeatureFlags,
@@ -95,14 +97,26 @@ function FeatureFlagCard({ flag }: { flag: FeatureFlagControlada }) {
         <Info label="Overrides" valor={String(flag.overrides.length)} />
       </div>
 
-      <form action={alternarFeatureFlagAction} className="flex justify-end">
-        <input name="key" type="hidden" value={flag.key} />
-        <input name="ativa" type="hidden" value={flag.ativaPorPadrao ? "false" : "true"} />
-        <Button type="submit" variant={flag.ativaPorPadrao ? "outline" : "default"}>
-          <Power />
-          {flag.ativaPorPadrao ? "Desativar" : "Ativar"}
-        </Button>
-      </form>
+      <div className="flex justify-end">
+        <ConfirmDialog
+          description="A alteracao afeta apenas o padrao global. Overrides ja definidos por tenant permanecem preservados."
+          title={flag.ativaPorPadrao ? "Desativar feature flag" : "Ativar feature flag"}
+          triggerAction="status"
+          triggerIcon={<Power />}
+          triggerLabel={flag.ativaPorPadrao ? "Desativar" : "Ativar"}
+        >
+          <form action={alternarFeatureFlagAction} className="space-y-4">
+            <input name="key" type="hidden" value={flag.key} />
+            <input name="ativa" type="hidden" value={flag.ativaPorPadrao ? "false" : "true"} />
+            <p className="text-sm text-muted-foreground">
+              Confirme a mudanca do comportamento padrao para {flag.label}.
+            </p>
+            <ActionButton className="w-full" icon={<Power />} type="submit" variant="status">
+              Confirmar alteracao
+            </ActionButton>
+          </form>
+        </ConfirmDialog>
+      </div>
     </GlassCard>
   );
 }
