@@ -351,37 +351,6 @@ function FuncionarioCard({
           </div>
         </EntityModal>
 
-        <div className="hidden">
-          <ConfirmDialog
-          description="A exclusão remove o vínculo ou convite deste funcionário."
-          title="Excluir funcionário"
-          triggerLabel="Excluir"
-        >
-          <form action={excluirFuncionarioAction} className="grid gap-3">
-            {funcionario.member ? (
-              <input
-                name="memberId"
-                type="hidden"
-                value={funcionario.member.id}
-              />
-            ) : null}
-            {funcionario.convite ? (
-              <input
-                name="conviteId"
-                type="hidden"
-                value={funcionario.convite.id}
-              />
-            ) : null}
-            <label className="flex items-center gap-2 text-sm">
-              <input name="confirmar" type="checkbox" />
-              Confirmo a exclusao do vinculo/convite.
-            </label>
-            <Button type="submit" variant="destructive">
-              Excluir funcionario
-            </Button>
-          </form>
-          </ConfirmDialog>
-        </div>
       </EntityCardActions>
     </GlassCard>
   );

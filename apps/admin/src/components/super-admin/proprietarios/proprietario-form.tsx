@@ -54,6 +54,9 @@ export function ProprietarioForm({
         <>
           <input name="tenantId" type="hidden" value={proprietario.tenant.id} />
           <input name="ownerId" type="hidden" value={proprietario.tenant.owner_id} />
+          {/* Campos disabled nao participam do FormData. O e-mail oculto preserva
+              a identidade atual sem permitir alteracao acidental nesta tela. */}
+          <input name="email" type="hidden" value={proprietario.profile?.email ?? ""} />
         </>
       ) : null}
 

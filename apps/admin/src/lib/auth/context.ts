@@ -118,8 +118,9 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
           )
         : { data: tenantProprioOperacional };
 
-    // Tenant suspenso ou cancelado nao gera contexto operacional.
-    // Isso permite bloquear o proprietario sem apagar usuario, historico ou licenca.
+    // Tenant suspenso, cancelado ou sem licenca valida nao gera contexto operacional.
+    // A validade da licenca e aplicada pela RLS nas funcoes centrais de tenant,
+    // mantendo a mesma regra para UI, Data API e acessos diretos ao Supabase.
     const tenantOperacional = tenantEstaOperacional(tenant) ? tenant : null;
     const roleResolvida = resolverRole(
       profile,
