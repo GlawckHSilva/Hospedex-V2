@@ -6,8 +6,7 @@ import type {
   PropertyRow,
   ReservationGuestRow,
   ReservationRow,
-  ReservationStatus,
-  UnitRow
+  ReservationStatus
 } from "@hospedex/types";
 
 /**
@@ -22,7 +21,6 @@ export type FiltrosCalendario = {
   semana: string;
   visao: VisaoCalendario;
   propriedadeId?: string;
-  unidadeId?: string;
 };
 
 export type VisaoCalendario = "mensal" | "semanal" | "agenda";
@@ -52,7 +50,6 @@ export type DadosModuloCalendario = {
   dias: DiaCalendario[];
   podeGerenciar: boolean;
   propriedades: PropertyRow[];
-  unidades: UnitRow[];
   blocos: BlocoCalendario[];
   limpezas: LimpezaCalendario[];
   manutencoes: ManutencaoCalendario[];
@@ -64,8 +61,6 @@ export type DadosModuloCalendario = {
     limpezasPendentes: number;
     manutencoesPendentes: number;
     reservasAtivas: number;
-    unidadesDisponiveis: number;
-    conflitosPermitidos: number;
   };
 };
 
@@ -81,6 +76,7 @@ export const STATUS_BLOQUEIO_CALENDARIO: CalendarAvailabilityStatus[] = [
 
 export type MotivoBloqueioCalendario =
   | "maintenance"
+  | "interdicted"
   | "owner_use"
   | "unavailable"
   | "cleaning"
@@ -88,6 +84,7 @@ export type MotivoBloqueioCalendario =
 
 export const MOTIVOS_BLOQUEIO_CALENDARIO: MotivoBloqueioCalendario[] = [
   "maintenance",
+  "interdicted",
   "owner_use",
   "unavailable",
   "cleaning",
@@ -96,6 +93,7 @@ export const MOTIVOS_BLOQUEIO_CALENDARIO: MotivoBloqueioCalendario[] = [
 
 export const LABEL_MOTIVO_BLOQUEIO: Record<MotivoBloqueioCalendario, string> = {
   maintenance: "Manutencao",
+  interdicted: "Interditado",
   owner_use: "Uso proprio",
   unavailable: "Indisponivel",
   cleaning: "Limpeza",
@@ -105,13 +103,23 @@ export const LABEL_MOTIVO_BLOQUEIO: Record<MotivoBloqueioCalendario, string> = {
 export const LABEL_STATUS_BLOQUEIO: Record<CalendarAvailabilityStatus, string> = {
   available: "Disponível",
   blocked: "Bloqueado",
+  interdicted: "Interditado",
+  maintenance: "Manutenção",
+  cleaning: "Limpeza",
   unavailable: "Indisponível",
   reserved: "Reservado",
   released: "Liberado"
 };
 
 export function statusBloqueiaDisponibilidade(status: CalendarAvailabilityStatus) {
-  return ["blocked", "unavailable", "reserved"].includes(status);
+  return [
+    "blocked",
+    "interdicted",
+    "maintenance",
+    "cleaning",
+    "unavailable",
+    "reserved"
+  ].includes(status);
 }
 
 export const LABEL_STATUS_RESERVA_CALENDARIO: Record<ReservationStatus, string> = {

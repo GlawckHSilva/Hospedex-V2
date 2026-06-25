@@ -4,8 +4,7 @@ import type {
   MaintenanceTaskRow,
   PropertyRow,
   ReservationGuestRow,
-  ReservationRow,
-  UnitRow
+  ReservationRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -54,25 +53,16 @@ export async function carregarDadosModuloCalendario(
 
   const periodo = obterPeriodoCalendario(filtros);
   const supabase = await criarClienteSupabaseServer();
-  const [propriedadesResultado, unidadesResultado] = await Promise.all([
-    supabase
-      .from("properties")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .eq("owner_id", ownerId)
-      .is("deleted_at", null)
-      .order("name", { ascending: true })
-      .returns<PropertyRow[]>(),
-    supabase
-      .from("units")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("name", { ascending: true })
-      .returns<UnitRow[]>()
-  ]);
+  const propriedadesResultado = await supabase
+    .from("properties")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("owner_id", ownerId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+    .returns<PropertyRow[]>();
 
   registrarErroLeitura("propriedades do calendario", propriedadesResultado.error);
-  registrarErroLeitura("unidades do calendario", unidadesResultado.error);
 
   const propriedades = propriedadesResultado.data ?? [];
   const propriedadeSelecionada =
@@ -83,11 +73,6 @@ export async function carregarDadosModuloCalendario(
     ...filtros,
     ...(propriedadeSelecionada ? { propriedadeId: propriedadeSelecionada.id } : {})
   };
-  const unidades = filtrarUnidadesPorPropriedade(
-    unidadesResultado.data ?? [],
-    propriedadeSelecionada?.id
-  );
-
   const [blocosResultado, reservasResultado, limpezasResultado, manutencoesResultado] =
     propriedadeSelecionada
       ? await Promise.all([
@@ -132,20 +117,20 @@ export async function carregarDadosModuloCalendario(
     ),
     podeGerenciar: podeGerenciarCalendario(contexto),
     propriedades,
-    unidades,
     blocos,
     limpezas,
     manutencoes,
     reservas,
     resumo: {
-      bloqueiosAtivos: blocos.filter((bloco) => statusBloqueiaDisponibilidade(bloco.status)).length,
+      bloqueiosAtivos: blocos.filter(
+        (bloco) =>
+          bloco.blocks_availability && statusBloqueiaDisponibilidade(bloco.status)
+      ).length,
       checkInsProximos: reservas.filter((reserva) => reserva.check_in >= hoje).length,
       checkOutsProximos: reservas.filter((reserva) => reserva.check_out >= hoje).length,
-      conflitosPermitidos: unidades.filter((unidade) => unidade.allow_overbooking).length,
       limpezasPendentes: limpezas.filter((limpeza) => limpeza.status !== "completed").length,
       manutencoesPendentes: manutencoes.filter((manutencao) => manutencao.status === "pending").length,
-      reservasAtivas: reservas.length,
-      unidadesDisponiveis: unidades.filter((unidade) => unidade.status === "active").length
+      reservasAtivas: reservas.length
     }
   };
 }
@@ -165,7 +150,6 @@ async function criarConsultaBlocos(
     .order("starts_on", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
 
   return consulta.returns<CalendarAvailabilityBlockRow[]>();
 }
@@ -187,7 +171,6 @@ async function criarConsultaReservas(
     .order("check_in", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
 
   return consulta.returns<ReservationRow[]>();
 }
@@ -207,7 +190,6 @@ async function criarConsultaLimpezas(
     .order("scheduled_for", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
 
   return consulta.returns<CleaningTaskRow[]>();
 }
@@ -229,7 +211,6 @@ async function criarConsultaManutencoes(
     .order("scheduled_for", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
 
   return consulta.returns<MaintenanceTaskRow[]>();
 }
@@ -293,11 +274,6 @@ function montarDiasCalendario(
   }
 
   return dias;
-}
-
-function filtrarUnidadesPorPropriedade(unidades: UnitRow[], propriedadeId?: string) {
-  if (!propriedadeId) return [];
-  return unidades.filter((unidade) => unidade.property_id === propriedadeId);
 }
 
 export function normalizarMesCalendario(valor: string | undefined) {
@@ -375,7 +351,6 @@ function criarDadosVazios(filtros: FiltrosCalendario): DadosModuloCalendario {
     dias: [],
     podeGerenciar: false,
     propriedades: [],
-    unidades: [],
     blocos: [],
     limpezas: [],
     manutencoes: [],
@@ -384,11 +359,9 @@ function criarDadosVazios(filtros: FiltrosCalendario): DadosModuloCalendario {
       bloqueiosAtivos: 0,
       checkInsProximos: 0,
       checkOutsProximos: 0,
-      conflitosPermitidos: 0,
       limpezasPendentes: 0,
       manutencoesPendentes: 0,
-      reservasAtivas: 0,
-      unidadesDisponiveis: 0
+      reservasAtivas: 0
     }
   };
 }

@@ -1,4 +1,4 @@
-import type { CalendarAvailabilityBlockRow, PropertyRow, UnitRow } from "@hospedex/types";
+import type { CalendarAvailabilityBlockRow, PropertyRow } from "@hospedex/types";
 import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
@@ -63,27 +63,6 @@ export async function carregarPropriedadeDoCalendario(
 
   if (error || !data) {
     throw new ErroRegraCalendario("Propriedade nao encontrada para este tenant.");
-  }
-
-  return data;
-}
-
-export async function carregarUnidadeDoCalendario(
-  supabase: ClienteSupabaseServer,
-  escopo: EscopoCalendario,
-  unidadeId: string,
-  propriedadeId: string
-) {
-  const { data, error } = await supabase
-    .from("units")
-    .select("*")
-    .eq("id", unidadeId)
-    .eq("tenant_id", escopo.tenantId)
-    .eq("property_id", propriedadeId)
-    .maybeSingle<UnitRow>();
-
-  if (error || !data) {
-    throw new ErroRegraCalendario("Unidade nao encontrada para a propriedade selecionada.");
   }
 
   return data;

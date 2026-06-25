@@ -53,14 +53,13 @@ export function CalendarModule({
   reservas,
   resumo,
   sucesso,
-  tenantNome,
-  unidades
+  tenantNome
 }: CalendarModuleProps) {
   const casaAtual =
     propriedades.find((propriedade) => propriedade.id === filtros.propriedadeId) ??
     propriedades[0] ??
     null;
-  const bloqueado = !podeGerenciar || !casaAtual || unidades.length === 0;
+  const bloqueado = !podeGerenciar || !casaAtual;
   const eventos = montarEventosFullCalendar(dias);
 
   return (
@@ -169,14 +168,11 @@ export function CalendarModule({
           <input name="visao" type="hidden" value={filtros.visao} />
           <input name="filtroPropriedadeId" type="hidden" value={filtros.propriedadeId ?? ""} />
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <CampoPropriedade
-              defaultValue={filtros.propriedadeId ?? casaAtual?.id ?? ""}
-              disabled={bloqueado}
-              propriedades={propriedades}
-            />
-            <CampoUnidade defaultValue={unidades[0]?.id ?? ""} disabled={bloqueado} unidades={unidades} />
-          </div>
+          <CampoPropriedade
+            defaultValue={filtros.propriedadeId ?? casaAtual?.id ?? ""}
+            disabled={bloqueado}
+            propriedades={propriedades}
+          />
 
           <div className="grid gap-4 md:grid-cols-2">
             <CampoTexto disabled={bloqueado} label="Inicio" name="inicio" required type="date" />
@@ -193,7 +189,16 @@ export function CalendarModule({
             />
           </div>
 
-          <CampoArea disabled={bloqueado} label="Observacoes" name="observacoes" />
+          <CampoArea disabled={bloqueado} label="Observacoes internas" name="observacoes" />
+          <label className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm">
+            <input
+              defaultChecked
+              disabled={bloqueado}
+              name="bloqueiaDisponibilidade"
+              type="checkbox"
+            />
+            Bloquear disponibilidade da casa
+          </label>
 
           <div className="flex justify-end">
             <Button disabled={bloqueado} type="submit">
@@ -259,18 +264,28 @@ function criarEventoOperacional(
 }
 
 function criarEventoBloqueio(bloco: BlocoCalendario, data: string): EventoFullCalendarHospedex {
-  const manutencao = bloco.reason?.toLowerCase().includes("manutenc");
+  const configuracao = {
+    cleaning: { color: "#22d3ee", tipo: "limpeza" as const, title: "Limpeza" },
+    maintenance: { color: "#8b5cf6", tipo: "manutencao" as const, title: "Manutencao" },
+    default: { color: "#ef4444", tipo: "bloqueio" as const, title: "Bloqueio" }
+  };
+  const visual =
+    bloco.block_type === "maintenance"
+      ? configuracao.maintenance
+      : bloco.block_type === "cleaning"
+        ? configuracao.cleaning
+        : configuracao.default;
 
   return {
     allDay: true,
-    color: manutencao ? "#8b5cf6" : "#ef4444",
+    color: visual.color,
     detalhe: bloco.reason ?? "Bloqueio manual",
     end: bloco.ends_on,
     horario: "Dia todo",
     id: `bloqueio-${bloco.id}-${data}`,
     start: data,
-    tipo: manutencao ? "manutencao" : "bloqueio",
-    title: manutencao ? "Manutencao" : "Bloqueio"
+    tipo: visual.tipo,
+    title: visual.title
   };
 }
 
@@ -317,27 +332,6 @@ function CampoPropriedade({
       <select className={campoClasse} defaultValue={defaultValue} disabled={disabled} id="propriedadeId" name="propriedadeId">
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>{propriedade.name}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CampoUnidade({
-  defaultValue,
-  disabled,
-  unidades
-}: {
-  defaultValue: string;
-  disabled?: boolean;
-  unidades: Array<{ id: string; name: string }>;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor="unidadeId">Unidade</Label>
-      <select className={campoClasse} defaultValue={defaultValue} disabled={disabled} id="unidadeId" name="unidadeId">
-        {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>{unidade.name}</option>
         ))}
       </select>
     </div>

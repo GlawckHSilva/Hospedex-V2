@@ -1,5 +1,5 @@
 import type { MediaAssetRow } from "@hospedex/types";
-import { ArrowDown, ArrowUp, Star, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowUp, ImagePlus, Star, Trash2, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Button, Input, Label } from "@hospedex/ui";
@@ -155,8 +155,16 @@ export function MediaGallery({
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
-          Nenhuma imagem cadastrada.
+        <div className="grid min-h-36 place-items-center rounded-xl border border-dashed bg-background/45 p-5 text-center">
+          <div>
+            <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-cyan-500/10 text-cyan-700 dark:text-cyan-200">
+              <ImagePlus className="h-5 w-5" />
+            </span>
+            <p className="mt-3 text-sm font-semibold">Sua casa ainda nao possui fotos</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Adicione uma capa e imagens da galeria para preparar a apresentacao publica.
+            </p>
+          </div>
         </div>
       )}
     </section>

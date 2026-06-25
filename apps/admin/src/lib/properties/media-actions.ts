@@ -189,21 +189,62 @@ export async function alterarOrdemImagemAction(formData: FormData) {
     const direcao = textoObrigatorio(formData, "direcao", "direção");
     const supabase = await criarClienteSupabaseServer();
     const imagem = await carregarImagemGerenciavel(supabase, escopo.tenantId, imagemId);
-    const delta = direcao === "subir" ? -1 : 1;
+    const imagemVizinha = await carregarImagemVizinha(
+      supabase,
+      imagem,
+      direcao === "subir" ? "subir" : "descer",
+    );
 
-    const { error } = await supabase
-      .from("media_assets")
-      .update({ sort_order: Math.max(0, imagem.sort_order + delta) })
-      .eq("id", imagem.id)
-      .eq("tenant_id", escopo.tenantId);
+    if (imagemVizinha) {
+      const { error: erroVizinha } = await supabase
+        .from("media_assets")
+        .update({ sort_order: imagem.sort_order })
+        .eq("id", imagemVizinha.id)
+        .eq("tenant_id", escopo.tenantId);
 
-    if (error) throw new Error(error.message);
+      if (erroVizinha) throw new Error(erroVizinha.message);
+
+      const { error } = await supabase
+        .from("media_assets")
+        .update({ sort_order: imagemVizinha.sort_order })
+        .eq("id", imagem.id)
+        .eq("tenant_id", escopo.tenantId);
+
+      if (error) throw new Error(error.message);
+    }
     revalidarModuloPropriedades();
   } catch (erro) {
     redirecionarComErro(caminhoRetorno, erro, "Erro ao alterar ordem da imagem.");
   }
 
   redirect(`${caminhoRetorno}?sucesso=galeria-atualizada`);
+}
+
+async function carregarImagemVizinha(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  imagem: MediaAssetRow,
+  direcao: "subir" | "descer",
+) {
+  let consulta = supabase
+    .from("media_assets")
+    .select("*")
+    .eq("tenant_id", imagem.tenant_id)
+    .eq("property_id", imagem.property_id)
+    .eq("status", "active")
+    .order("sort_order", { ascending: direcao === "descer" })
+    .limit(1);
+
+  consulta = imagem.unit_id
+    ? consulta.eq("unit_id", imagem.unit_id)
+    : consulta.is("unit_id", null);
+  consulta =
+    direcao === "subir"
+      ? consulta.lt("sort_order", imagem.sort_order)
+      : consulta.gt("sort_order", imagem.sort_order);
+
+  const { data, error } = await consulta.maybeSingle<MediaAssetRow>();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 type NovaMidia = {

@@ -21,9 +21,18 @@ export type EnderecoPropriedade = {
   complemento: string;
   estado: string;
   googleMapsLink: string;
+  latitude: number | null;
   linha1: string;
+  longitude: number | null;
   numero: string;
   referencia: string;
+};
+
+export type DetalhesPublicosPropriedade = {
+  descricaoPublica: string;
+  imagemCompartilhamento: string;
+  nomeExibicao: string;
+  tituloPublico: string;
 };
 
 export type EstruturaPropriedade = {
@@ -40,6 +49,7 @@ export type EstruturaPropriedade = {
 export type ValoresPropriedade = {
   aceitaCartaoCredito: boolean;
   caucao: number;
+  cobraHospedeExtra: boolean;
   hospedesInclusos: number;
   jurosParcelasCartao: Array<{
     jurosPercentual: number;
@@ -57,6 +67,7 @@ export type UnidadeComCategoria = UnitRow & {
 };
 
 export type PropriedadeComRelacionamentos = PropertyRow & {
+  detalhesPublicos: DetalhesPublicosPropriedade;
   enderecoFormatado: EnderecoPropriedade;
   estrutura: EstruturaPropriedade;
   imagemCapa: MediaAssetRow | null;

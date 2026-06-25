@@ -1,6 +1,9 @@
 "use server";
 
-import type { CalendarAvailabilityStatus } from "@hospedex/types";
+import type {
+  CalendarAvailabilityBlockRow,
+  CalendarAvailabilityStatus
+} from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -9,7 +12,6 @@ import {
   carregarBloqueioGerenciavel,
   carregarEscopoCalendario,
   carregarPropriedadeDoCalendario,
-  carregarUnidadeDoCalendario,
   ErroRegraCalendario,
   type ClienteSupabaseServer,
   type EscopoCalendario
@@ -30,8 +32,9 @@ import {
 const CAMINHO_CALENDARIO = "/calendario";
 
 type EntradaBloqueio = {
+  bloqueiaDisponibilidade: boolean;
+  blocoTipo: CalendarAvailabilityBlockRow["block_type"];
   propriedadeId: string;
-  unidadeId: string;
   inicio: string;
   fim: string;
   status: CalendarAvailabilityStatus;
@@ -52,9 +55,11 @@ export async function bloquearPeriodoCalendarioAction(formData: FormData) {
       tenant_id: escopo.tenantId,
       owner_id: escopo.ownerId,
       property_id: entrada.propriedadeId,
-      unit_id: entrada.unidadeId,
+      unit_id: null,
       source: "manual",
       status: entrada.status,
+      block_type: entrada.blocoTipo,
+      blocks_availability: entrada.bloqueiaDisponibilidade,
       starts_on: entrada.inicio,
       ends_on: entrada.fim,
       reason: entrada.motivo,
@@ -115,7 +120,6 @@ async function obterEntradaBloqueio(
   formData: FormData
 ): Promise<EntradaBloqueio> {
   const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
-  const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
   const inicio = dataObrigatoria(formData, "inicio", "data inicial");
   const fim = dataObrigatoria(formData, "fim", "data final");
   const motivoCodigo = validarMotivoBloqueio(
@@ -124,7 +128,6 @@ async function obterEntradaBloqueio(
   const motivoDetalhe = textoOpcional(formData, "motivoDetalhe");
 
   await carregarPropriedadeDoCalendario(supabase, escopo, propriedadeId);
-  await carregarUnidadeDoCalendario(supabase, escopo, unidadeId, propriedadeId);
 
   // O calendario usa intervalo [inicio, fim), igual ao modelo de check-in/check-out.
   if (new Date(`${fim}T00:00:00`) <= new Date(`${inicio}T00:00:00`)) {
@@ -132,15 +135,37 @@ async function obterEntradaBloqueio(
   }
 
   return {
+    bloqueiaDisponibilidade:
+      motivoCodigo !== "maintenance" || checkboxAtivo(formData, "bloqueiaDisponibilidade"),
+    blocoTipo: obterTipoBloco(motivoCodigo),
     propriedadeId,
-    unidadeId,
     inicio,
     fim,
-    status: motivoCodigo === "unavailable" ? "unavailable" : "blocked",
+    status: obterStatusBloco(motivoCodigo),
     motivoCodigo,
     motivo: montarMotivoBloqueio(motivoCodigo, motivoDetalhe),
     observacoes: textoOpcional(formData, "observacoes")
   };
+}
+
+function obterTipoBloco(
+  motivo: MotivoBloqueioCalendario
+): CalendarAvailabilityBlockRow["block_type"] {
+  if (motivo === "maintenance") return "maintenance";
+  if (motivo === "interdicted") return "interdicted";
+  if (motivo === "cleaning") return "cleaning";
+  if (motivo === "unavailable") return "temporary_unavailable";
+  return "manual";
+}
+
+function obterStatusBloco(
+  motivo: MotivoBloqueioCalendario
+): CalendarAvailabilityStatus {
+  if (motivo === "maintenance") return "maintenance";
+  if (motivo === "interdicted") return "interdicted";
+  if (motivo === "cleaning") return "cleaning";
+  if (motivo === "unavailable") return "unavailable";
+  return "blocked";
 }
 
 function validarMotivoBloqueio(valor: string): MotivoBloqueioCalendario {
@@ -182,19 +207,21 @@ function textoOpcional(formData: FormData, chave: string): string | null {
   return valor ? valor : null;
 }
 
+function checkboxAtivo(formData: FormData, chave: string): boolean {
+  return formData.get(chave) === "on";
+}
+
 function montarRetornoCalendario(formData: FormData) {
   const params = new URLSearchParams();
   const mes = textoOpcional(formData, "mes");
   const semana = textoOpcional(formData, "semana");
   const visao = textoOpcional(formData, "visao");
   const propriedadeId = textoOpcional(formData, "filtroPropriedadeId");
-  const unidadeId = textoOpcional(formData, "filtroUnidadeId");
 
   if (mes) params.set("mes", mes);
   if (semana) params.set("semana", semana);
   if (visao) params.set("visao", visao);
   if (propriedadeId) params.set("propriedadeId", propriedadeId);
-  if (unidadeId) params.set("unidadeId", unidadeId);
 
   const query = params.toString();
   return query ? `${CAMINHO_CALENDARIO}?${query}` : `${CAMINHO_CALENDARIO}?`;

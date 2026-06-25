@@ -14,6 +14,7 @@ import type { ContextoAutenticacao } from "../auth/types";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosModuloPropriedades,
+  DetalhesPublicosPropriedade,
   EnderecoPropriedade,
   EstruturaPropriedade,
   LimitesPlanoPropriedades,
@@ -49,9 +50,11 @@ export function podeGerenciarPropriedades(contexto: ContextoAutenticacao): boole
 }
 
 export async function carregarDadosModuloPropriedades(
-  contexto: ContextoAutenticacao
+  contexto: ContextoAutenticacao,
+  opcoes: { incluirUnidades?: boolean } = {}
 ): Promise<DadosModuloPropriedades> {
   const tenantId = contexto.tenant?.id;
+  const incluirUnidades = opcoes.incluirUnidades ?? false;
 
   if (!tenantId) {
     return {
@@ -64,6 +67,21 @@ export async function carregarDadosModuloPropriedades(
   }
 
   const supabase = await criarClienteSupabaseServer();
+  const unidadesConsulta = incluirUnidades
+    ? supabase
+        .from("units")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false })
+        .returns<UnitRow[]>()
+    : Promise.resolve({ data: [] as UnitRow[], error: null });
+  const categoriasConsulta = incluirUnidades
+    ? supabase
+        .from("unit_categories")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .returns<UnitCategoryRow[]>()
+    : Promise.resolve({ data: [] as UnitCategoryRow[], error: null });
   const [
     propriedadesResultado,
     unidadesResultado,
@@ -81,17 +99,8 @@ export async function carregarDadosModuloPropriedades(
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .returns<PropertyRow[]>(),
-    supabase
-      .from("units")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false })
-      .returns<UnitRow[]>(),
-    supabase
-      .from("unit_categories")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .returns<UnitCategoryRow[]>(),
+    unidadesConsulta,
+    categoriasConsulta,
     supabase
       .from("property_settings")
       .select("*")
@@ -199,7 +208,9 @@ export function normalizarEndereco(valor: JsonValue): EnderecoPropriedade {
     complemento: obterTextoJson(endereco, "complemento"),
     estado: obterTextoJson(endereco, "estado"),
     googleMapsLink: obterTextoJson(endereco, "googleMapsLink"),
+    latitude: obterNumeroJsonOuNulo(endereco, "latitude"),
     linha1: obterTextoJson(endereco, "linha1"),
+    longitude: obterNumeroJsonOuNulo(endereco, "longitude"),
     numero: obterTextoJson(endereco, "numero"),
     referencia: obterTextoJson(endereco, "referencia")
   };
@@ -216,6 +227,7 @@ function montarPropriedades(
 ): PropriedadeComRelacionamentos[] {
   return propriedades.map((propriedade) => ({
     ...propriedade,
+    detalhesPublicos: normalizarDetalhesPublicos(propriedade.public_details),
     enderecoFormatado: normalizarEndereco(propriedade.address),
     estrutura: normalizarEstrutura(propriedade.structure_details),
     imagemCapa: obterImagemPrincipal(propriedade.id, null, imagens),
@@ -225,7 +237,7 @@ function montarPropriedades(
     comodidades: montarComodidades(propriedade.id, comodidades, vinculosComodidades),
     regras:
       configuracoes.find((configuracao) => configuracao.property_id === propriedade.id) ??
-      criarRegrasPadrao(propriedade, unidades),
+      criarRegrasPadrao(propriedade),
     valores: normalizarValores(propriedade.pricing_details),
     unidades: montarUnidades(propriedade.id, unidades, categorias, imagens)
   }));
@@ -252,6 +264,7 @@ function normalizarValores(valor: JsonValue): ValoresPropriedade {
   return {
     aceitaCartaoCredito: obterBooleanoJson(valores, "aceitaCartaoCredito"),
     caucao: obterNumeroJson(valores, "caucao"),
+    cobraHospedeExtra: obterBooleanoJson(valores, "cobraHospedeExtra"),
     hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
     jurosParcelasCartao: normalizarJurosParcelas(valores.jurosParcelasCartao ?? null),
     maxParcelasCartao: obterNumeroJson(valores, "maxParcelasCartao", 1),
@@ -277,19 +290,23 @@ function normalizarJurosParcelas(valor: JsonValue) {
     );
 }
 
-function criarRegrasPadrao(
-  propriedade: PropertyRow,
-  unidades: UnitRow[]
-): PropertySettingRow {
-  const capacidade = Math.max(
-    ...unidades
-      .filter((unidade) => unidade.property_id === propriedade.id)
-      .map((unidade) => unidade.capacity),
-    1
-  );
+function normalizarDetalhesPublicos(valor: JsonValue): DetalhesPublicosPropriedade {
+  const detalhes = valorEhObjeto(valor) ? valor : {};
+
+  return {
+    descricaoPublica: obterTextoJson(detalhes, "publicDescription"),
+    imagemCompartilhamento: obterTextoJson(detalhes, "shareImageUrl"),
+    nomeExibicao: obterTextoJson(detalhes, "displayName"),
+    tituloPublico: obterTextoJson(detalhes, "publicTitle")
+  };
+}
+
+function criarRegrasPadrao(propriedade: PropertyRow): PropertySettingRow {
+  const capacidade = normalizarEstrutura(propriedade.structure_details).hospedesMaximos;
 
   return {
     additional_rules: null,
+    allow_children: true,
     allow_events: false,
     allow_pets: false,
     allow_smoking: false,
@@ -304,6 +321,7 @@ function criarRegrasPadrao(
     check_out_time: null,
     created_at: propriedade.created_at,
     id: `padrao-${propriedade.id}`,
+    internal_notes: null,
     max_advance_days: null,
     max_guests: capacidade,
     max_nights: null,
@@ -312,6 +330,7 @@ function criarRegrasPadrao(
     min_responsible_age: 18,
     property_id: propriedade.id,
     settings: {},
+    special_instructions: null,
     tenant_id: propriedade.tenant_id,
     updated_at: propriedade.updated_at
   };
@@ -385,6 +404,14 @@ function obterNumeroJson(
 ): number {
   const dado = valor[chave];
   return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
+}
+
+function obterNumeroJsonOuNulo(
+  valor: Record<string, JsonValue>,
+  chave: string
+): number | null {
+  const dado = valor[chave];
+  return typeof dado === "number" && Number.isFinite(dado) ? dado : null;
 }
 
 function obterBooleanoJson(valor: Record<string, JsonValue>, chave: string): boolean {

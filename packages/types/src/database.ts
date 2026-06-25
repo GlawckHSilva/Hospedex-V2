@@ -293,6 +293,7 @@ export type PropertyRow = {
   full_description: string | null;
   is_public: boolean;
   marketplace_featured: boolean;
+  public_details: JsonValue;
   address: JsonValue;
   structure_details: JsonValue;
   pricing_details: JsonValue;
@@ -312,12 +313,15 @@ export type PropertySettingRow = {
   min_nights: number;
   max_nights: number | null;
   settings: JsonValue;
+  allow_children: boolean;
   allow_pets: boolean;
   allow_smoking: boolean;
   allow_events: boolean;
   max_guests: number;
   min_responsible_age: number;
   additional_rules: string | null;
+  special_instructions: string | null;
+  internal_notes: string | null;
   cancellation_refund_until_days: number;
   cancellation_refund_until_percentage: number;
   cancellation_late_until_days: number;
@@ -551,6 +555,9 @@ export type CalendarAvailabilitySource =
 export type CalendarAvailabilityStatus =
   | "available"
   | "blocked"
+  | "interdicted"
+  | "maintenance"
+  | "cleaning"
   | "unavailable"
   | "reserved"
   | "released";
@@ -597,11 +604,19 @@ export type CalendarAvailabilityBlockRow = {
   id: UUID;
   tenant_id: UUID;
   property_id: UUID;
-  unit_id: UUID;
+  unit_id: UUID | null;
   owner_id: UUID;
   reservation_id: UUID | null;
   source: CalendarAvailabilitySource;
   status: CalendarAvailabilityStatus;
+  block_type:
+    | "manual"
+    | "interdicted"
+    | "maintenance"
+    | "temporary_unavailable"
+    | "cleaning"
+    | "reservation";
+  blocks_availability: boolean;
   starts_on: string;
   ends_on: string;
   reason: string | null;

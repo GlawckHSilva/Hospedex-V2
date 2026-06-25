@@ -5,7 +5,6 @@ import {
   PauseCircle,
   Pencil,
   PlayCircle,
-  Plus,
   Settings2,
   Trash2,
 } from "lucide-react";
@@ -32,8 +31,6 @@ import { AmenitiesForm } from "./amenities-form";
 import { MediaGallery } from "./media-gallery";
 import { PropertyForm } from "./property-form";
 import { PropertyRulesPanel } from "./property-rules-panel";
-import { UnitCard } from "./unit-card";
-import { UnitForm } from "./unit-form";
 
 /**
  * Card compacto de casa.
@@ -43,18 +40,14 @@ import { UnitForm } from "./unit-form";
  */
 export type PropertyCardProps = {
   comodidadesDisponiveis: PropriedadeComRelacionamentos["comodidades"];
-  multiUnidadesAtivo: boolean;
   podeGerenciar: boolean;
   propriedade: PropriedadeComRelacionamentos;
-  propriedades: PropriedadeComRelacionamentos[];
 };
 
 export function PropertyCard({
   comodidadesDisponiveis,
-  multiUnidadesAtivo,
   podeGerenciar,
   propriedade,
-  propriedades,
 }: PropertyCardProps) {
   const estaPausada = propriedade.status === "paused";
   const cidadeEstado = `${propriedade.enderecoFormatado.cidade} - ${propriedade.enderecoFormatado.estado}`;
@@ -119,10 +112,6 @@ export function PropertyCard({
               label="Endereco"
               valor={propriedade.enderecoFormatado.linha1}
             />
-            <InfoModal
-              label="Unidades"
-              valor={String(propriedade.unidades.length)}
-            />
           </div>
 
           {propriedade.description ? (
@@ -132,9 +121,6 @@ export function PropertyCard({
           ) : null}
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <Badge variant={multiUnidadesAtivo ? "info" : "warning"}>
-              {multiUnidadesAtivo ? "Multiunidades ativo" : "Unidade unica"}
-            </Badge>
             {propriedade.comodidades.map((comodidade) => (
               <Badge key={comodidade.id} variant="outline">
                 {comodidade.name}
@@ -165,25 +151,6 @@ export function PropertyCard({
               />
             </EntityModal>
 
-            {multiUnidadesAtivo ? (
-              <EntityModal
-                description="Crie uma unidade vinculada a esta casa."
-                disabled={!podeGerenciar}
-                eyebrow="Cadastro"
-                title="Nova unidade"
-                triggerIcon={<Plus className="h-4 w-4" />}
-                triggerLabel="Nova unidade"
-              >
-                <UnitForm
-                  modo="criar"
-                  podeGerenciar={podeGerenciar}
-                  propriedadeInicialId={propriedade.id}
-                  propriedades={propriedades}
-                  retorno="/propriedades"
-                />
-              </EntityModal>
-            ) : null}
-
             <EntityModal
               description="Ajuste regras da casa, reserva e cancelamento."
               disabled={!podeGerenciar}
@@ -211,34 +178,6 @@ export function PropertyCard({
             />
           </div>
 
-          {multiUnidadesAtivo ? (
-            <section className="mt-5 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="font-semibold">Unidades</h3>
-                <span className="text-sm text-muted-foreground">
-                  {propriedade.unidades.length} cadastrada(s)
-                </span>
-              </div>
-
-              {propriedade.unidades.length > 0 ? (
-                <div className="grid gap-3">
-                  {propriedade.unidades.map((unidade) => (
-                    <UnitCard
-                      key={unidade.id}
-                      podeGerenciar={podeGerenciar}
-                      propriedades={propriedades}
-                      retorno="/propriedades"
-                      unidade={unidade}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
-                  Nenhuma unidade cadastrada para esta casa.
-                </div>
-              )}
-            </section>
-          ) : null}
         </EntityViewModal>
 
         <EntityModal
@@ -255,7 +194,6 @@ export function PropertyCard({
             <PropertyForm
               comodidadesDisponiveis={comodidadesDisponiveis}
               modo="editar"
-              multiUnidadesAtivo={multiUnidadesAtivo}
               podeGerenciar={podeGerenciar}
               propriedade={propriedade}
             />

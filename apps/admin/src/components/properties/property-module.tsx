@@ -87,7 +87,7 @@ export function PropertyModule({
               label="Casas"
               valor={`${limitesPlano.propriedadesUsadas}/${limitesPlano.maxPropriedades}`}
             />
-            {multiUnidadesAtivo ? (
+            {modo === "unidades" && multiUnidadesAtivo ? (
               <ResumoModulo
                 icon={<Home />}
                 label="Unidades"
@@ -99,11 +99,13 @@ export function PropertyModule({
               label="Plano"
               valor={limitesPlano.nomePlano}
             />
-            <ResumoModulo
-              icon={<Flag />}
-              label="Multiunidades"
-              valor={multiUnidadesAtivo ? "Ativo" : "Desligado"}
-            />
+            {modo === "unidades" ? (
+              <ResumoModulo
+                icon={<Flag />}
+                label="Multiunidades"
+                valor={multiUnidadesAtivo ? "Ativo" : "Desligado"}
+              />
+            ) : null}
           </div>
         </div>
       </section>
@@ -111,7 +113,6 @@ export function PropertyModule({
       {modo === "propriedades" ? (
         <VisaoPropriedades
           comodidadesDisponiveis={comodidadesDisponiveis}
-          multiUnidadesAtivo={multiUnidadesAtivo}
           podeGerenciar={podeGerenciar}
           propriedades={propriedades}
         />
@@ -127,13 +128,11 @@ export function PropertyModule({
 
 function VisaoPropriedades({
   comodidadesDisponiveis,
-  multiUnidadesAtivo,
   podeGerenciar,
   propriedades,
 }: Pick<
   PropertyModuleProps,
   | "comodidadesDisponiveis"
-  | "multiUnidadesAtivo"
   | "podeGerenciar"
   | "propriedades"
 >) {
@@ -159,7 +158,6 @@ function VisaoPropriedades({
             <PropertyForm
               comodidadesDisponiveis={comodidadesDisponiveis}
               modo="criar"
-              multiUnidadesAtivo={multiUnidadesAtivo}
               podeGerenciar={podeGerenciar}
             />
           </EntityModal>
@@ -172,10 +170,8 @@ function VisaoPropriedades({
             <PropertyCard
               key={propriedade.id}
               comodidadesDisponiveis={comodidadesDisponiveis}
-              multiUnidadesAtivo={multiUnidadesAtivo}
               podeGerenciar={podeGerenciar}
               propriedade={propriedade}
-              propriedades={propriedades}
             />
           ))}
         </EntityGrid>

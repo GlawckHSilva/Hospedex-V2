@@ -48,6 +48,12 @@ const CATEGORIAS_UNIDADE = ["Standard", "Luxo", "Master"];
 const MAX_PARCELAS_CARTAO = 12;
 
 type EntradaPropriedade = {
+  detalhesPublicos: {
+    descricaoPublica: string | null;
+    imagemCompartilhamento: string | null;
+    nomeExibicao: string | null;
+    tituloPublico: string | null;
+  };
   endereco: EnderecoPropriedade;
   estrutura: {
     areaExterna: boolean;
@@ -61,6 +67,10 @@ type EntradaPropriedade = {
   };
   comodidadeIds: string[];
   comodidadesPersonalizadas: string[];
+  comodidadesPersonalizadasExistentes: Array<{
+    id: string;
+    nome: string;
+  }>;
   descricaoCompleta: string | null;
   descricaoCurta: string | null;
   destaqueMarketplace: boolean;
@@ -74,6 +84,9 @@ type EntradaPropriedade = {
   regras: {
     checkInTime: string | null;
     checkOutTime: string | null;
+    instrucoesEspeciais: string | null;
+    observacoesInternas: string | null;
+    permiteCriancas: boolean;
     permiteEventos: boolean;
     permiteFumantes: boolean;
     permitePets: boolean;
@@ -84,6 +97,7 @@ type EntradaPropriedade = {
   valores: {
     aceitaCartaoCredito: boolean;
     caucao: number;
+    cobraHospedeExtra: boolean;
     hospedesInclusos: number;
     jurosParcelasCartao: Array<{
       jurosPercentual: number;
@@ -117,10 +131,6 @@ export async function criarPropriedadeAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
 
     await garantirLimitePropriedades(supabase, escopo.tenantId);
-    if (!escopo.contexto.featureFlags.multi_unit) {
-      await garantirLimiteUnidades(supabase, escopo.tenantId);
-    }
-
     const { data: propriedade, error } = await supabase
       .from("properties")
       .insert({
@@ -137,6 +147,7 @@ export async function criarPropriedadeAction(formData: FormData) {
         full_description: entrada.descricaoCompleta,
         is_public: entrada.publica,
         marketplace_featured: entrada.destaqueMarketplace,
+        public_details: entrada.detalhesPublicos,
         address: entrada.endereco,
         structure_details: entrada.estrutura,
         pricing_details: entrada.valores,
@@ -149,10 +160,6 @@ export async function criarPropriedadeAction(formData: FormData) {
       throw new Error(
         error?.message ?? "Propriedade não retornada após criação.",
       );
-    }
-
-    if (!escopo.contexto.featureFlags.multi_unit) {
-      await salvarUnidadePadraoCasa(supabase, escopo.tenantId, propriedade, entrada);
     }
 
     await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
@@ -195,6 +202,7 @@ export async function atualizarPropriedadeAction(formData: FormData) {
         full_description: entrada.descricaoCompleta,
         is_public: entrada.publica,
         marketplace_featured: entrada.destaqueMarketplace,
+        public_details: entrada.detalhesPublicos,
         address: entrada.endereco,
         structure_details: entrada.estrutura,
         pricing_details: entrada.valores,
@@ -209,10 +217,6 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       throw new ErroRegraNegocio(
         "Propriedade não encontrada para este tenant.",
       );
-    }
-
-    if (!escopo.contexto.featureFlags.multi_unit) {
-      await salvarUnidadePadraoCasa(supabase, escopo.tenantId, propriedade, entrada);
     }
 
     await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
@@ -639,6 +643,7 @@ export async function excluirUnidadeAction(formData: FormData) {
 }
 
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
+  const nome = textoObrigatorio(formData, "nome", "nome");
   const hospedesMaximos = numeroInteiro(
     formData,
     "hospedesMaximos",
@@ -651,6 +656,12 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   const valorDiaria = numeroMoedaOpcional(formData, "valorDiaria", 0);
 
   return {
+    detalhesPublicos: {
+      descricaoPublica: textoOpcional(formData, "descricaoPublica"),
+      imagemCompartilhamento: validarUrlOpcional(formData, "imagemCompartilhamento"),
+      nomeExibicao: textoOpcional(formData, "nomeExibicao") ?? nome,
+      tituloPublico: textoOpcional(formData, "tituloPublico"),
+    },
     endereco: {
       bairro: textoOpcional(formData, "bairro") ?? "",
       cep: textoOpcional(formData, "cep") ?? "",
@@ -658,7 +669,9 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       complemento: textoOpcional(formData, "complemento") ?? "",
       estado: textoObrigatorio(formData, "estado", "estado"),
       googleMapsLink: textoOpcional(formData, "googleMapsLink") ?? "",
+      latitude: numeroDecimalOpcionalOuNulo(formData, "latitude", -90, 90),
       linha1: textoObrigatorio(formData, "endereco", "endereco"),
+      longitude: numeroDecimalOpcionalOuNulo(formData, "longitude", -180, 180),
       numero: textoOpcional(formData, "numero") ?? "",
       referencia: textoOpcional(formData, "referencia") ?? "",
     },
@@ -674,6 +687,8 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     },
     comodidadeIds: obterValoresMultiplos(formData, "comodidadeIds"),
     comodidadesPersonalizadas: obterComodidadesPersonalizadas(formData),
+    comodidadesPersonalizadasExistentes:
+      obterComodidadesPersonalizadasExistentes(formData),
     descricaoCompleta: textoOpcional(formData, "descricaoCompleta"),
     descricaoCurta: textoOpcional(formData, "descricaoCurta"),
     destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
@@ -686,11 +701,14 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     galeriaOrdens: obterNumerosInteirosMultiplos(formData, "ordensGaleria"),
     galeriaTitulos: obterValoresMultiplos(formData, "titulosGaleria"),
     imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
-    nome: textoObrigatorio(formData, "nome", "nome"),
+    nome,
     publica: checkboxAtivo(formData, "visibilidadePublica"),
     regras: {
       checkInTime: validarHoraOpcional(formData, "checkInTime"),
       checkOutTime: validarHoraOpcional(formData, "checkOutTime"),
+      instrucoesEspeciais: textoOpcional(formData, "specialInstructions"),
+      observacoesInternas: textoOpcional(formData, "internalNotes"),
+      permiteCriancas: checkboxAtivo(formData, "allowChildren"),
       permiteEventos: checkboxAtivo(formData, "allowEvents"),
       permiteFumantes: checkboxAtivo(formData, "allowSmoking"),
       permitePets: checkboxAtivo(formData, "allowPets"),
@@ -703,6 +721,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     valores: {
       aceitaCartaoCredito: checkboxAtivo(formData, "aceitaCartaoCredito"),
       caucao: numeroMoedaOpcional(formData, "caucao", 0),
+      cobraHospedeExtra: checkboxAtivo(formData, "cobraHospedeExtra"),
       hospedesInclusos: numeroInteiroOpcional(formData, "hospedesInclusos", 1, 1),
       jurosParcelasCartao: obterJurosParcelasCartao(formData),
       maxParcelasCartao: Math.min(
@@ -748,6 +767,27 @@ function obterComodidadesPersonalizadas(formData: FormData): string[] {
   });
 }
 
+function obterComodidadesPersonalizadasExistentes(formData: FormData) {
+  const ids = obterValoresMultiplos(
+    formData,
+    "comodidadePersonalizadaExistenteIds",
+  );
+  const nomes = obterValoresMultiplos(
+    formData,
+    "comodidadePersonalizadaExistenteNomes",
+  );
+
+  return ids.map((id, indice) => {
+    const nome = nomes[indice]?.trim();
+    if (!nome || nome.length > 80) {
+      throw new ErroRegraNegocio(
+        "Comodidade personalizada deve possuir entre 1 e 80 caracteres.",
+      );
+    }
+    return { id, nome };
+  });
+}
+
 
 function obterEntradaUnidade(formData: FormData): EntradaUnidade {
   return {
@@ -766,58 +806,6 @@ function obterEntradaUnidade(formData: FormData): EntradaUnidade {
   };
 }
 
-async function salvarUnidadePadraoCasa(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-  propriedade: Pick<PropertyRow, "id">,
-  entrada: EntradaPropriedade,
-) {
-  const dadosUnidade = {
-    base_price: entrada.valores.valorDiaria,
-    bathrooms: entrada.estrutura.banheiros,
-    bedrooms: entrada.estrutura.quartos,
-    beds: entrada.estrutura.camas,
-    capacity: entrada.estrutura.hospedesMaximos,
-    name: "Casa inteira",
-    status: "active" as UnitStatus,
-  };
-  const { data: unidadeExistente, error: erroBusca } = await supabase
-    .from("units")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("property_id", propriedade.id)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle<UnitRow>();
-
-  if (erroBusca) throw new Error(erroBusca.message);
-
-  if (unidadeExistente) {
-    const { error } = await supabase
-      .from("units")
-      .update(dadosUnidade)
-      .eq("id", unidadeExistente.id)
-      .eq("tenant_id", tenantId);
-
-    if (error) throw new Error(error.message);
-    return;
-  }
-
-  /*
-    Enquanto multiunidades estiver desligado, cada casa precisa de uma unidade
-    interna para reservas, calendario e disponibilidade continuarem vinculados.
-  */
-  const { error } = await supabase.from("units").insert({
-    ...dadosUnidade,
-    code: "casa-inteira",
-    property_id: propriedade.id,
-    tenant_id: tenantId,
-    unit_category_id: null,
-  });
-
-  if (error) throw new Error(error.message);
-}
-
 async function salvarConfiguracoesDaCasa(
   supabase: ClienteSupabaseServer,
   escopo: EscopoGerenciamento,
@@ -827,13 +815,16 @@ async function salvarConfiguracoesDaCasa(
   const { error } = await supabase.from("property_settings").upsert(
     {
       additional_rules: entrada.regras.regrasAdicionais,
+      allow_children: entrada.regras.permiteCriancas,
       allow_events: entrada.regras.permiteEventos,
       allow_pets: entrada.regras.permitePets,
       allow_smoking: entrada.regras.permiteFumantes,
       check_in_time: entrada.regras.checkInTime,
       check_out_time: entrada.regras.checkOutTime,
+      internal_notes: entrada.regras.observacoesInternas,
       max_guests: entrada.estrutura.hospedesMaximos,
       property_id: propriedadeId,
+      special_instructions: entrada.regras.instrucoesEspeciais,
       tenant_id: escopo.tenantId,
     },
     { onConflict: "property_id" },
@@ -848,6 +839,11 @@ async function salvarComodidadesDaCasa(
   propriedadeId: string,
   entrada: EntradaPropriedade,
 ) {
+  await atualizarComodidadesPersonalizadasExistentes(
+    supabase,
+    escopo.tenantId,
+    entrada.comodidadesPersonalizadasExistentes,
+  );
   const idsPersonalizados = await obterOuCriarComodidadesPersonalizadas(
     supabase,
     escopo.tenantId,
@@ -877,6 +873,27 @@ async function salvarComodidadesDaCasa(
   );
 
   if (error) throw new Error(error.message);
+}
+
+async function atualizarComodidadesPersonalizadasExistentes(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  comodidades: EntradaPropriedade["comodidadesPersonalizadasExistentes"],
+) {
+  for (const comodidade of comodidades) {
+    // Apenas comodidades customizadas do proprio tenant podem ser renomeadas.
+    const { error } = await supabase
+      .from("amenities")
+      .update({
+        code: normalizarCodigoUnico(comodidade.nome),
+        name: comodidade.nome,
+      })
+      .eq("id", comodidade.id)
+      .eq("tenant_id", tenantId)
+      .eq("is_system", false);
+
+    if (error) throw new Error(error.message);
+  }
 }
 
 async function obterOuCriarComodidadesPersonalizadas(
@@ -1349,6 +1366,23 @@ function numeroInteiroOpcional(
   return valor;
 }
 
+function numeroDecimalOpcionalOuNulo(
+  formData: FormData,
+  chave: string,
+  minimo: number,
+  maximo: number,
+): number | null {
+  const valorBruto = formData.get(chave)?.toString().trim();
+  if (!valorBruto) return null;
+
+  const valor = Number.parseFloat(valorBruto.replace(",", "."));
+  if (!Number.isFinite(valor) || valor < minimo || valor > maximo) {
+    throw new ErroRegraNegocio("Informe coordenadas geograficas validas.");
+  }
+
+  return valor;
+}
+
 function numeroInteiro(
   formData: FormData,
   chave: string,
@@ -1408,6 +1442,20 @@ function validarHoraOpcional(formData: FormData, chave: string): string | null {
   if (!valor) return null;
   if (/^\d{2}:\d{2}$/.test(valor)) return valor;
   throw new ErroRegraNegocio("Informe horarios validos.");
+}
+
+function validarUrlOpcional(formData: FormData, chave: string): string | null {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+
+  try {
+    const url = new URL(valor);
+    if (url.protocol === "http:" || url.protocol === "https:") return valor;
+  } catch {
+    // A mensagem de negocio abaixo evita expor detalhes internos de parsing.
+  }
+
+  throw new ErroRegraNegocio("Informe uma URL publica valida.");
 }
 
 function checkboxAtivo(formData: FormData, chave: string): boolean {

@@ -41,7 +41,9 @@ export default async function UnidadesPage({ searchParams }: PageProps) {
   }
 
   const params = await searchParams;
-  const dados = await carregarDadosModuloPropriedades(contexto);
+  const dados = await carregarDadosModuloPropriedades(contexto, {
+    incluirUnidades: true
+  });
 
   return (
     <AdminLayoutBase contexto={contexto}>

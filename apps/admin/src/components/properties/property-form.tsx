@@ -2,6 +2,8 @@
 
 import type { AmenityRow, PropertyStatus, PropertyType } from "@hospedex/types";
 import {
+  ArrowDown,
+  ArrowUp,
   BedDouble,
   Camera,
   Clock3,
@@ -9,7 +11,7 @@ import {
   Home,
   ImagePlus,
   MapPin,
-  Plus,
+  Share2,
   Sparkles,
   Star,
   Trash2,
@@ -22,6 +24,7 @@ import { Input, Label, cn } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
 import { AppModal } from "../management/entity-modal";
+import { PropertyAmenitiesStep } from "./property-amenities-step";
 import {
   atualizarPropriedadeAction,
   criarPropriedadeAction,
@@ -37,12 +40,11 @@ import {
  * Formulario completo de casa em etapas.
  *
  * A UI coleta dados publicos, operacionais, regras e imagens, mas tenant,
- * owner, plano, multiunidade e permissoes continuam validados na server action.
+ * owner, plano e permissoes continuam validados na server action.
  */
 export type PropertyFormProps = {
   comodidadesDisponiveis: AmenityRow[];
   modo: "criar" | "editar";
-  multiUnidadesAtivo: boolean;
   podeGerenciar: boolean;
   propriedade?: PropriedadeComRelacionamentos;
 };
@@ -54,7 +56,8 @@ type EtapaId =
   | "valores"
   | "regras"
   | "imagens"
-  | "comodidades";
+  | "comodidades"
+  | "compartilhamento";
 
 const ETAPAS: Array<{ icon: ReactNode; id: EtapaId; label: string }> = [
   { icon: <Home />, id: "basico", label: "Basico" },
@@ -64,6 +67,7 @@ const ETAPAS: Array<{ icon: ReactNode; id: EtapaId; label: string }> = [
   { icon: <Clock3 />, id: "regras", label: "Regras" },
   { icon: <Camera />, id: "imagens", label: "Imagens" },
   { icon: <Sparkles />, id: "comodidades", label: "Comodidades" },
+  { icon: <Share2 />, id: "compartilhamento", label: "Publicacao" },
 ];
 
 const TIPOS: Array<{ label: string; valor: PropertyType }> = [
@@ -123,6 +127,7 @@ function criarJurosParcelasIniciais(
 }
 
 type PreviewGaleria = {
+  arquivo: File;
   id: string;
   nome: string;
   ordem: number;
@@ -133,6 +138,7 @@ type PreviewGaleria = {
 
 function criarPreviewGaleria(arquivo: File, ordem: number, principal: boolean): PreviewGaleria {
   return {
+    arquivo,
     id: `${arquivo.name}-${arquivo.lastModified}-${arquivo.size}-${crypto.randomUUID()}`,
     nome: arquivo.name,
     ordem,
@@ -159,7 +165,6 @@ function normalizarGaleria(previews: PreviewGaleria[]): PreviewGaleria[] {
 export function PropertyForm({
   comodidadesDisponiveis,
   modo,
-  multiUnidadesAtivo,
   podeGerenciar,
   propriedade,
 }: PropertyFormProps) {
@@ -177,7 +182,6 @@ export function PropertyForm({
   const estrutura = propriedade?.estrutura;
   const valores = propriedade?.valores;
   const regras = propriedade?.regras;
-  const unidadeCasa = propriedade?.unidades[0];
   const comodidadesSelecionadas = new Set(propriedade?.comodidades.map((item) => item.id) ?? []);
   const bloqueado = !podeGerenciar || Boolean(erroImagem);
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
@@ -261,10 +265,30 @@ export function PropertyForm({
       const previewRemovido = previewsAtuais[indiceRemovido];
       if (previewRemovido) URL.revokeObjectURL(previewRemovido.url);
 
-      return normalizarGaleria(previewsAtuais.filter((_, indice) => indice !== indiceRemovido));
+      const atualizados = normalizarGaleria(
+        previewsAtuais.filter((_, indice) => indice !== indiceRemovido),
+      );
+      sincronizarArquivosGaleria(atualizados.map((preview) => preview.arquivo));
+      return atualizados;
     });
+  }
 
-    sincronizarArquivosGaleria(arquivosGaleriaRef.current.filter((_, indice) => indice !== indiceRemovido));
+  function moverGaleria(indiceAtual: number, deslocamento: -1 | 1) {
+    setPreviewsGaleria((previewsAtuais) => {
+      const indiceDestino = indiceAtual + deslocamento;
+      if (indiceDestino < 0 || indiceDestino >= previewsAtuais.length) return previewsAtuais;
+
+      const atualizados = [...previewsAtuais];
+      const itemAtual = atualizados[indiceAtual];
+      const itemDestino = atualizados[indiceDestino];
+      if (!itemAtual || !itemDestino) return previewsAtuais;
+
+      atualizados[indiceAtual] = itemDestino;
+      atualizados[indiceDestino] = itemAtual;
+      const normalizados = normalizarGaleria(atualizados);
+      sincronizarArquivosGaleria(normalizados.map((preview) => preview.arquivo));
+      return normalizados;
+    });
   }
 
   function atualizarTituloGaleria(indiceAlterado: number, titulo: string) {
@@ -331,6 +355,9 @@ export function PropertyForm({
             defaultDescricaoCurta={propriedade?.short_description ?? propriedade?.headline ?? ""}
             defaultDestaque={propriedade?.marketplace_featured ?? false}
             defaultNome={propriedade?.name}
+            defaultNomeExibicao={
+              propriedade?.detalhesPublicos.nomeExibicao || propriedade?.name || ""
+            }
             defaultPublica={propriedade?.is_public ?? false}
             defaultStatus={propriedade?.status ?? "draft"}
             defaultTipo={propriedade?.property_type ?? "seasonal_home"}
@@ -346,13 +373,11 @@ export function PropertyForm({
           <EtapaEstrutura
             disabled={!podeGerenciar}
             estrutura={estrutura}
-            multiUnidadesAtivo={multiUnidadesAtivo}
-            unidadeCasa={unidadeCasa}
           />
         </div>
 
         <div hidden={etapa.id !== "valores"}>
-          <EtapaValores disabled={!podeGerenciar} unidadeCasa={unidadeCasa} valores={valores} />
+          <EtapaValores disabled={!podeGerenciar} valores={valores} />
         </div>
 
         <div hidden={etapa.id !== "regras"}>
@@ -365,21 +390,31 @@ export function PropertyForm({
             disabled={!podeGerenciar}
             erroImagem={erroImagem}
             galeriaRef={galeriaRef}
+            imagemCapaAtual={propriedade?.imagemCapa?.url ?? null}
             previewCapa={previewCapa}
             previewsGaleria={previewsGaleria}
             atualizarTituloGaleria={atualizarTituloGaleria}
             definirPrincipalGaleria={definirPrincipalGaleria}
+            moverGaleria={moverGaleria}
             removerGaleria={removerGaleria}
             selecionarCapa={selecionarCapa}
             selecionarGaleria={selecionarGaleria}
+            totalImagensAtuais={propriedade?.imagens.length ?? 0}
           />
         </div>
 
         <div hidden={etapa.id !== "comodidades"}>
-          <EtapaComodidades
+          <PropertyAmenitiesStep
             comodidades={comodidadesDisponiveis}
             disabled={!podeGerenciar}
             selecionadas={comodidadesSelecionadas}
+          />
+        </div>
+
+        <div hidden={etapa.id !== "compartilhamento"}>
+          <EtapaCompartilhamento
+            detalhes={propriedade?.detalhesPublicos}
+            disabled={!podeGerenciar}
           />
         </div>
       </section>
@@ -398,6 +433,7 @@ function EtapaBasico({
   defaultDescricaoCurta,
   defaultDestaque,
   defaultNome,
+  defaultNomeExibicao,
   defaultPublica,
   defaultStatus,
   defaultTipo,
@@ -407,6 +443,7 @@ function EtapaBasico({
   defaultDescricaoCurta: string;
   defaultDestaque: boolean;
   defaultNome?: string | undefined;
+  defaultNomeExibicao: string;
   defaultPublica: boolean;
   defaultStatus: PropertyStatus;
   defaultTipo: PropertyType;
@@ -416,6 +453,13 @@ function EtapaBasico({
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
         <CampoTexto defaultValue={defaultNome} disabled={disabled} label="Nome da casa" name="nome" />
+        <CampoTexto
+          defaultValue={defaultNomeExibicao}
+          disabled={disabled}
+          label="Nome de exibicao"
+          name="nomeExibicao"
+          placeholder="Nome apresentado futuramente ao hospede."
+        />
         <CampoSelect defaultValue={defaultTipo} disabled={disabled} label="Tipo" name="tipo" options={TIPOS} />
       </div>
       <CampoTexto
@@ -469,8 +513,28 @@ function EtapaLocalizacao({
         disabled={disabled}
         label="Link do Google Maps"
         name="googleMapsLink"
-        placeholder="URL do Google Maps, link encurtado ou coordenadas futuramente."
+        placeholder="https://maps.google.com/..."
       />
+      <div className="grid gap-4 md:grid-cols-2">
+        <CampoNumero
+          defaultValue={endereco?.latitude ?? ""}
+          disabled={disabled}
+          label="Latitude"
+          max={90}
+          min={-90}
+          name="latitude"
+          step="0.000001"
+        />
+        <CampoNumero
+          defaultValue={endereco?.longitude ?? ""}
+          disabled={disabled}
+          label="Longitude"
+          max={180}
+          min={-180}
+          name="longitude"
+          step="0.000001"
+        />
+      </div>
     </div>
   );
 }
@@ -478,21 +542,17 @@ function EtapaLocalizacao({
 function EtapaEstrutura({
   disabled,
   estrutura,
-  multiUnidadesAtivo,
-  unidadeCasa,
 }: {
   disabled: boolean;
   estrutura?: PropriedadeComRelacionamentos["estrutura"] | undefined;
-  multiUnidadesAtivo: boolean;
-  unidadeCasa?: PropriedadeComRelacionamentos["unidades"][number] | undefined;
 }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? unidadeCasa?.capacity ?? 1} disabled={disabled} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" />
-        <CampoNumero defaultValue={estrutura?.quartos ?? unidadeCasa?.bedrooms ?? 0} disabled={disabled} label="Quartos" min={0} name="quartosCasa" />
-        <CampoNumero defaultValue={estrutura?.camas ?? unidadeCasa?.beds ?? 1} disabled={disabled} label="Camas" min={1} name="camasCasa" />
-        <CampoNumero defaultValue={estrutura?.banheiros ?? unidadeCasa?.bathrooms ?? 0} disabled={disabled} label="Banheiros" min={0} name="banheirosCasa" />
+        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? 1} disabled={disabled} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" />
+        <CampoNumero defaultValue={estrutura?.quartos ?? 0} disabled={disabled} label="Quartos" min={0} name="quartosCasa" />
+        <CampoNumero defaultValue={estrutura?.camas ?? 1} disabled={disabled} label="Camas" min={1} name="camasCasa" />
+        <CampoNumero defaultValue={estrutura?.banheiros ?? 0} disabled={disabled} label="Banheiros" min={0} name="banheirosCasa" />
         <CampoNumero defaultValue={estrutura?.garagemVagas ?? 0} disabled={disabled} label="Garagem/vagas" min={0} name="garagemVagas" />
       </div>
       <div className="grid gap-3 md:grid-cols-3">
@@ -500,22 +560,15 @@ function EtapaEstrutura({
         <CampoCheckbox defaultChecked={estrutura?.piscina ?? false} disabled={disabled} label="Piscina" name="piscina" />
         <CampoCheckbox defaultChecked={estrutura?.churrasqueira ?? false} disabled={disabled} label="Churrasqueira" name="churrasqueira" />
       </div>
-      {!multiUnidadesAtivo ? (
-        <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
-          Como multiunidades esta desligado, estes dados atualizam a unidade interna "Casa inteira".
-        </p>
-      ) : null}
     </div>
   );
 }
 
 function EtapaValores({
   disabled,
-  unidadeCasa,
   valores,
 }: {
   disabled: boolean;
-  unidadeCasa?: PropriedadeComRelacionamentos["unidades"][number] | undefined;
   valores?: PropriedadeComRelacionamentos["valores"] | undefined;
 }) {
   const maxParcelasInicial = limitarParcelasCartao(valores?.maxParcelasCartao ?? 1);
@@ -567,12 +620,18 @@ function EtapaValores({
   return (
     <div className="grid gap-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoMoeda defaultValue={valores?.valorDiaria ?? unidadeCasa?.base_price ?? 0} disabled={disabled} label="Valor da diaria" name="valorDiaria" />
+        <CampoMoeda defaultValue={valores?.valorDiaria ?? 0} disabled={disabled} label="Valor da diaria" name="valorDiaria" />
         <CampoMoeda defaultValue={valores?.taxaLimpeza ?? 0} disabled={disabled} label="Taxa de limpeza" name="taxaLimpeza" />
         <CampoMoeda defaultValue={valores?.caucao ?? 0} disabled={disabled} label="Caucao" name="caucao" />
         <CampoMoeda defaultValue={valores?.valorHospedeExtra ?? 0} disabled={disabled} label="Valor por hospede extra" name="valorHospedeExtra" />
         <CampoNumero defaultValue={valores?.hospedesInclusos ?? 1} disabled={disabled} label="Hospedes inclusos no valor base" min={1} name="hospedesInclusos" />
       </div>
+      <CampoCheckbox
+        defaultChecked={valores?.cobraHospedeExtra ?? false}
+        disabled={disabled}
+        label="Cobrar hospede extra"
+        name="cobraHospedeExtra"
+      />
 
       <section className="rounded-xl border bg-background/45 p-4">
         <div className="mb-4 flex items-center gap-2">
@@ -719,12 +778,63 @@ function EtapaRegras({
         <CampoTexto defaultValue={regras?.check_in_time ?? ""} disabled={disabled} label="Horario de check-in" name="checkInTime" type="time" />
         <CampoTexto defaultValue={regras?.check_out_time ?? ""} disabled={disabled} label="Horario de check-out" name="checkOutTime" type="time" />
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <CampoCheckbox defaultChecked={regras?.allow_pets ?? false} disabled={disabled} label="Permite pets" name="allowPets" />
+        <CampoCheckbox defaultChecked={regras?.allow_children ?? true} disabled={disabled} label="Aceita criancas" name="allowChildren" />
         <CampoCheckbox defaultChecked={regras?.allow_smoking ?? false} disabled={disabled} label="Permite fumantes" name="allowSmoking" />
         <CampoCheckbox defaultChecked={regras?.allow_events ?? false} disabled={disabled} label="Permite festas/eventos" name="allowEvents" />
       </div>
-      <CampoArea defaultValue={regras?.additional_rules ?? ""} disabled={disabled} label="Regras adicionais" name="additionalRules" />
+      <CampoArea defaultValue={regras?.additional_rules ?? ""} disabled={disabled} label="Regras gerais" name="additionalRules" />
+      <CampoArea
+        defaultValue={regras?.special_instructions ?? ""}
+        disabled={disabled}
+        label="Instrucoes especiais"
+        name="specialInstructions"
+        placeholder="Informacoes que poderao ser apresentadas ao hospede."
+      />
+      <CampoArea
+        defaultValue={regras?.internal_notes ?? ""}
+        disabled={disabled}
+        label="Observacoes internas"
+        name="internalNotes"
+        placeholder="Visivel apenas no Gerenciamento."
+      />
+    </div>
+  );
+}
+
+function EtapaCompartilhamento({
+  detalhes,
+  disabled,
+}: {
+  detalhes?: PropriedadeComRelacionamentos["detalhesPublicos"] | undefined;
+  disabled: boolean;
+}) {
+  return (
+    <div className="grid gap-4">
+      <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
+        Campos opcionais preparados para publicacao e compartilhamento futuros. Nenhuma regra de SEO e aplicada agora.
+      </p>
+      <CampoTexto
+        defaultValue={detalhes?.tituloPublico}
+        disabled={disabled}
+        label="Titulo publico"
+        name="tituloPublico"
+      />
+      <CampoArea
+        defaultValue={detalhes?.descricaoPublica}
+        disabled={disabled}
+        label="Descricao publica"
+        name="descricaoPublica"
+      />
+      <CampoTexto
+        defaultValue={detalhes?.imagemCompartilhamento}
+        disabled={disabled}
+        label="Imagem de compartilhamento"
+        name="imagemCompartilhamento"
+        placeholder="https://..."
+        type="url"
+      />
     </div>
   );
 }
@@ -736,11 +846,14 @@ function EtapaImagens({
   disabled,
   erroImagem,
   galeriaRef,
+  imagemCapaAtual,
+  moverGaleria,
   previewCapa,
   previewsGaleria,
   removerGaleria,
   selecionarCapa,
   selecionarGaleria,
+  totalImagensAtuais,
 }: {
   atualizarTituloGaleria: (indice: number, titulo: string) => void;
   capaRef: RefObject<HTMLInputElement | null>;
@@ -748,11 +861,14 @@ function EtapaImagens({
   disabled: boolean;
   erroImagem: string | null;
   galeriaRef: RefObject<HTMLInputElement | null>;
+  imagemCapaAtual: string | null;
+  moverGaleria: (indice: number, deslocamento: -1 | 1) => void;
   previewCapa: string | null;
   previewsGaleria: PreviewGaleria[];
   removerGaleria: (indice: number) => void;
   selecionarCapa: (arquivo?: File) => void;
   selecionarGaleria: (arquivos: FileList | null) => void;
+  totalImagensAtuais: number;
 }) {
   return (
     <div className="grid gap-4">
@@ -781,7 +897,12 @@ function EtapaImagens({
         </p>
       ) : null}
       <div className="grid gap-3">
-        {previewCapa ? <PreviewImagem titulo="Imagem principal" url={previewCapa} /> : null}
+        {previewCapa || imagemCapaAtual ? (
+          <PreviewImagem
+            titulo={previewCapa ? "Nova imagem principal" : "Imagem principal atual"}
+            url={previewCapa ?? imagemCapaAtual ?? ""}
+          />
+        ) : null}
         <div className="rounded-xl border bg-background/45 p-3">
           <p className="mb-3 text-sm font-semibold">Galeria</p>
           {previewsGaleria.length ? (
@@ -814,6 +935,28 @@ function EtapaImagens({
                       Principal
                     </ActionButton>
                     <ActionButton
+                      aria-label="Mover foto para cima"
+                      disabled={disabled || indice === 0}
+                      icon={<ArrowUp className="h-4 w-4" />}
+                      onClick={() => moverGaleria(indice, -1)}
+                      size="icon"
+                      type="button"
+                      variant="settings"
+                    >
+                      Subir
+                    </ActionButton>
+                    <ActionButton
+                      aria-label="Mover foto para baixo"
+                      disabled={disabled || indice === previewsGaleria.length - 1}
+                      icon={<ArrowDown className="h-4 w-4" />}
+                      onClick={() => moverGaleria(indice, 1)}
+                      size="icon"
+                      type="button"
+                      variant="settings"
+                    >
+                      Descer
+                    </ActionButton>
+                    <ActionButton
                       disabled={disabled}
                       icon={<Trash2 className="h-4 w-4" />}
                       onClick={() => removerGaleria(indice)}
@@ -828,91 +971,21 @@ function EtapaImagens({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma foto selecionada. Use o botao Adicionar foto quando quiser montar a galeria.
-            </p>
+            <div className="grid min-h-28 place-items-center rounded-xl border border-dashed p-4 text-center">
+              <div>
+                <ImagePlus className="mx-auto h-6 w-6 text-cyan-600" />
+                <p className="mt-2 text-sm font-medium">
+                  {totalImagensAtuais
+                    ? `${totalImagensAtuais} foto(s) ja cadastrada(s)`
+                    : "Nenhuma foto cadastrada"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Adicione novas fotos aqui. A galeria salva permite definir capa, reordenar e excluir.
+                </p>
+              </div>
+            </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function EtapaComodidades({
-  comodidades,
-  disabled,
-  selecionadas,
-}: {
-  comodidades: AmenityRow[];
-  disabled: boolean;
-  selecionadas: Set<string>;
-}) {
-  const [novaComodidade, setNovaComodidade] = useState("");
-  const [personalizadas, setPersonalizadas] = useState<string[]>([]);
-
-  function adicionarComodidade() {
-    const nome = novaComodidade.trim();
-    if (!nome || personalizadas.includes(nome)) return;
-    setPersonalizadas((atuais) => [...atuais, nome]);
-    setNovaComodidade("");
-  }
-
-  function removerComodidade(nome: string) {
-    setPersonalizadas((atuais) => atuais.filter((item) => item !== nome));
-  }
-
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {comodidades.map((comodidade) => (
-          <CampoCheckbox
-            defaultChecked={selecionadas.has(comodidade.id)}
-            disabled={disabled}
-            key={comodidade.id}
-            label={comodidade.name}
-            name="comodidadeIds"
-            value={comodidade.id}
-          />
-        ))}
-      </div>
-
-      <div className="rounded-xl border bg-background/45 p-4">
-        <Label htmlFor="novaComodidade">Nome da nova comodidade</Label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-          <Input
-            disabled={disabled}
-            id="novaComodidade"
-            maxLength={80}
-            onChange={(evento) => setNovaComodidade(evento.currentTarget.value)}
-            placeholder="Ex.: Vista para o rio"
-            value={novaComodidade}
-          />
-          <ActionButton disabled={disabled} icon={<Plus className="h-4 w-4" />} onClick={adicionarComodidade} type="button" variant="add">
-            Adicionar comodidade
-          </ActionButton>
-        </div>
-
-        {personalizadas.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {personalizadas.map((nome) => (
-              <span className="inline-flex items-center gap-2 rounded-xl border bg-background/60 px-2 py-1 text-sm" key={nome}>
-                <input name="comodidadesPersonalizadas" readOnly type="hidden" value={nome} />
-                {nome}
-                <ActionButton
-                  aria-label={`Remover ${nome}`}
-                  disabled={disabled}
-                  icon={<Trash2 className="h-4 w-4" />}
-                  onClick={() => removerComodidade(nome)}
-                  size="icon"
-                  type="button"
-                  variant="delete"
-                >
-                  Remover
-                </ActionButton>
-              </span>
-            ))}
-          </div>
-        ) : null}
       </div>
     </div>
   );
