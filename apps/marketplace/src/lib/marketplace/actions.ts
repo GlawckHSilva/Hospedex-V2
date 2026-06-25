@@ -19,7 +19,9 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
 
   try {
     if (!supabaseMarketplaceConfigurado()) {
-      throw new ErroSolicitacao("Supabase não configurado para receber solicitações.");
+      throw new ErroSolicitacao(
+        "As solicitações estão temporariamente indisponíveis.",
+      );
     }
 
     const checkIn = dataObrigatoria(formData, "checkIn", "check-in");
@@ -54,15 +56,12 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
       p_unit_id: textoObrigatorio(formData, "unidadeId", "unidade")
     });
 
-    if (error) throw new ErroSolicitacao(error.message);
+    if (error) throw new ErroRpcReserva(error.message);
 
     const resultado = data as ResultadoRpcReserva | null;
     codigoReserva = resultado?.code ?? "";
   } catch (erro) {
-    const mensagem =
-      erro instanceof ErroSolicitacao
-        ? erro.message
-        : "Não foi possível enviar a solicitação agora.";
+    const mensagem = obterMensagemPublica(erro);
 
     redirect(`${destino}?reserva=erro&mensagem=${encodeURIComponent(mensagem)}`);
   }
@@ -75,6 +74,63 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
 }
 
 class ErroSolicitacao extends Error {}
+class ErroRpcReserva extends Error {}
+
+/**
+ * A RPC não deve expor detalhes técnicos do PostgREST ou do banco ao visitante.
+ * Somente regras de negócio conhecidas são traduzidas para mensagens públicas.
+ */
+function obterMensagemPublica(erro: unknown) {
+  if (erro instanceof ErroSolicitacao) return erro.message;
+  if (!(erro instanceof ErroRpcReserva)) {
+    return "Não foi possível enviar a solicitação agora.";
+  }
+
+  const mensagem = normalizarTextoErro(erro.message);
+  const mensagensConhecidas: Array<[string, string]> = [
+    [
+      "propriedade nao encontrada ou indisponivel",
+      "Esta propriedade não está disponível para reserva.",
+    ],
+    [
+      "unidade nao encontrada ou indisponivel",
+      "A unidade selecionada não está disponível.",
+    ],
+    ["check-in nao pode ser no passado", "O check-in não pode ser no passado."],
+    [
+      "check-out deve ser depois do check-in",
+      "O check-out deve ser depois do check-in.",
+    ],
+    [
+      "quantidade de hospedes acima da capacidade",
+      "A quantidade de hóspedes excede a capacidade da unidade.",
+    ],
+    [
+      "quantidade de hospedes invalida",
+      "Informe uma quantidade válida de hóspedes.",
+    ],
+    [
+      "a unidade ja possui solicitacao ou reserva neste periodo",
+      "A unidade já possui uma solicitação ou reserva neste período.",
+    ],
+    [
+      "a unidade esta bloqueada neste periodo",
+      "A unidade está indisponível neste período.",
+    ],
+  ];
+
+  return (
+    mensagensConhecidas.find(([trecho]) => mensagem.includes(trecho))?.[1] ??
+    "Não foi possível enviar a solicitação agora."
+  );
+}
+
+function normalizarTextoErro(mensagem: string) {
+  return mensagem
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
 
 function textoObrigatorio(formData: FormData, chave: string, label: string) {
   const valor = formData.get(chave)?.toString().trim();

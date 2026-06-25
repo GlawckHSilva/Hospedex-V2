@@ -36,7 +36,10 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
       </div>
 
       {feedback.status === "erro" ? (
-        <div className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+        <div
+          className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+          role="alert"
+        >
           {feedback.mensagem ?? "Não foi possível enviar a solicitação."}
         </div>
       ) : null}
@@ -151,13 +154,17 @@ function ReservationSuccess({
   property: PropriedadePublica;
 }) {
   return (
-    <GlassCard className="p-6 text-center shadow-2xl shadow-cyan-950/15">
+    <GlassCard
+      aria-live="polite"
+      className="p-6 text-center shadow-2xl shadow-cyan-950/15"
+      role="status"
+    >
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
         <CheckCircle2 className="h-6 w-6" />
       </span>
       <h2 className="mt-5 text-xl font-semibold">Solicitação enviada com sucesso.</h2>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        O proprietário analisará sua reserva.
+        O proprietário irá analisar sua reserva.
       </p>
       {codigo ? (
         <p className="mt-4 rounded-lg border bg-background/70 px-3 py-2 text-sm font-semibold">
