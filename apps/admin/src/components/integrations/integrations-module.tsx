@@ -1,7 +1,7 @@
-import { Cable, CirclePause, Clock3, Layers3 } from "lucide-react";
+import { Cable, CircleCheck, Clock3, Layers3, PlugZap } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge, FadeIn } from "@hospedex/ui";
+import { Badge, FadeIn, PremiumEmptyState } from "@hospedex/ui";
 
 import type {
   DadosCentralIntegracoes,
@@ -43,8 +43,8 @@ export function IntegrationsModule({
               Integracoes
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              {tenantNome} · controle de conectores e sincronizacoes do
-              Gerenciamento.
+              {tenantNome} - escolha como deseja usar os recursos liberados
+              para sua operacao.
             </p>
           </div>
 
@@ -57,23 +57,31 @@ export function IntegrationsModule({
               valor={resumo.pendentes}
             />
             <Resumo
-              icon={<CirclePause />}
-              label="Futuras"
-              valor={resumo.futuras}
+              icon={<CircleCheck />}
+              label="Configuradas"
+              valor={resumo.configuradas}
             />
           </div>
         </div>
       </section>
 
-      <section className="grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {integracoes.map((integracao) => (
-          <IntegrationCard
-            integracao={integracao}
-            key={integracao.provider}
-            podeGerenciar={podeGerenciar}
-          />
-        ))}
-      </section>
+      {integracoes.length ? (
+        <section className="grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {integracoes.map((integracao) => (
+            <IntegrationCard
+              integracao={integracao}
+              key={integracao.provider}
+              podeGerenciar={podeGerenciar}
+            />
+          ))}
+        </section>
+      ) : (
+        <PremiumEmptyState
+          description="O Super Admin ainda nao liberou integracoes para este plano ou licenca."
+          icon={<PlugZap className="h-5 w-5" />}
+          title="Nenhuma integracao disponivel"
+        />
+      )}
     </FadeIn>
   );
 }

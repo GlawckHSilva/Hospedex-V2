@@ -1,5 +1,5 @@
-import { PageLoading } from "@hospedex/ui";
+import { IntegrationsSkeleton } from "../../components/integrations/integrations-skeleton";
 
 export default function IntegracoesLoading() {
-  return <PageLoading />;
+  return <IntegrationsSkeleton />;
 }

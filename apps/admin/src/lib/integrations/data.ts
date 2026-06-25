@@ -9,6 +9,7 @@ import type {
   DadosCentralIntegracoes,
   FrequenciaSincronizacao,
   IntegracaoGerenciamento,
+  ModoUsoIntegracao,
 } from "./types";
 
 /**
@@ -53,36 +54,43 @@ function montarDados(
   const porProvider = new Map(
     registros.map((registro) => [registro.provider, registro]),
   );
-  const integracoes: IntegracaoGerenciamento[] = CATALOGO_INTEGRACOES.map(
+  const integracoes: IntegracaoGerenciamento[] = CATALOGO_INTEGRACOES.flatMap(
     (definicao) => {
       const registro = porProvider.get(definicao.provider);
 
-      return {
-        ...definicao,
-        configuracao: normalizarConfiguracao(registro?.public_settings),
-        configuradaEm: registro?.configured_at ?? null,
-        enabled: registro?.enabled ?? false,
-        id: registro?.id ?? null,
-        lastSyncedAt: registro?.last_synced_at ?? null,
-        status: registro?.status ?? "disabled",
-      };
+      // A disponibilidade pertence ao Super Admin. Integracoes bloqueadas nao
+      // sao reveladas nem configuradas pelo proprietario.
+      if (!registro?.enabled || definicao.futura) return [];
+
+      const configuracao = normalizarConfiguracao(
+        registro.public_settings,
+        registro.enabled,
+      );
+
+      return [
+        {
+          ...definicao,
+          ativa: configuracao.ativaPeloProprietario,
+          configuracao,
+          configuradaEm: registro.configured_at,
+          id: registro.id,
+          lastSyncedAt: registro.last_synced_at,
+          status: registro.status,
+        },
+      ];
     },
   );
-
-  const operacionais = integracoes.filter((integracao) => !integracao.futura);
 
   return {
     erroCarregamento,
     integracoes,
     podeGerenciar: podeGerenciarIntegracoes(contexto),
     resumo: {
-      ativas: operacionais.filter((integracao) => integracao.enabled).length,
-      futuras: integracoes.filter((integracao) => integracao.futura).length,
-      pendentes: operacionais.filter(
-        (integracao) =>
-          integracao.enabled &&
-          ["not_configured", "pending_backend"].includes(integracao.status),
-      ).length,
+      ativas: integracoes.filter((integracao) => integracao.ativa).length,
+      configuradas: integracoes.filter((integracao) => integracao.configuradaEm)
+        .length,
+      pendentes: integracoes.filter((integracao) => !integracao.configuradaEm)
+        .length,
       total: integracoes.length,
     },
     tenantNome: contexto.tenant?.name ?? "Tenant nao encontrado",
@@ -91,15 +99,30 @@ function montarDados(
 
 function normalizarConfiguracao(
   valor: JsonValue | undefined,
+  ativaAnterior: boolean,
 ): ConfiguracaoPublicaIntegracao {
   const objeto = ehObjetoJson(valor) ? valor : {};
 
   return {
+    // Registros anteriores usavam enabled como disponibilidade e ativacao.
+    // O fallback preserva o comportamento ate o proprietario salvar a escolha.
+    ativaPeloProprietario:
+      typeof objeto.ativa_pelo_proprietario === "boolean"
+        ? objeto.ativa_pelo_proprietario
+        : ativaAnterior,
+    cidade: textoOuNull(objeto.cidade),
+    formatoData: textoOuNull(objeto.formato_data),
     frequenciaSincronizacao: normalizarFrequencia(
       objeto.frequencia_sincronizacao,
     ),
-    nomeInterno: textoOuNull(objeto.nome_interno),
-    observacoes: textoOuNull(objeto.observacoes),
+    fusoHorario: textoOuNull(objeto.fuso_horario),
+    idioma: textoOuNull(objeto.idioma),
+    mensagensAutomaticas: objeto.mensagens_automaticas === true,
+    modoUso: normalizarModoUso(objeto.modo_uso),
+    nomePublico:
+      textoOuNull(objeto.nome_publico) ?? textoOuNull(objeto.nome_interno),
+    nomeRemetente: textoOuNull(objeto.nome_remetente),
+    numeroPublico: textoOuNull(objeto.numero_publico),
   };
 }
 
@@ -118,4 +141,23 @@ function normalizarFrequencia(
 ): FrequenciaSincronizacao {
   if (valor === "hourly" || valor === "daily") return valor;
   return "manual";
+}
+
+function normalizarModoUso(
+  valor: JsonValue | undefined,
+): ModoUsoIntegracao | null {
+  const modos: ModoUsoIntegracao[] = [
+    "hospedex",
+    "conta_propria",
+    "smtp_proprio",
+    "google_calendar",
+    "ical",
+    "automatico",
+    "manual",
+  ];
+
+  return typeof valor === "string" &&
+    modos.includes(valor as ModoUsoIntegracao)
+    ? (valor as ModoUsoIntegracao)
+    : null;
 }

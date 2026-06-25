@@ -9,10 +9,33 @@ import type { IntegrationProvider, IntegrationStatus } from "@hospedex/types";
 
 export type FrequenciaSincronizacao = "manual" | "hourly" | "daily";
 
+export type ModoUsoIntegracao =
+  | "hospedex"
+  | "conta_propria"
+  | "smtp_proprio"
+  | "google_calendar"
+  | "ical"
+  | "automatico"
+  | "manual";
+
 export type ConfiguracaoPublicaIntegracao = {
+  ativaPeloProprietario: boolean;
+  cidade: string | null;
+  formatoData: string | null;
   frequenciaSincronizacao: FrequenciaSincronizacao;
-  nomeInterno: string | null;
-  observacoes: string | null;
+  fusoHorario: string | null;
+  idioma: string | null;
+  mensagensAutomaticas: boolean;
+  modoUso: ModoUsoIntegracao | null;
+  nomePublico: string | null;
+  nomeRemetente: string | null;
+  numeroPublico: string | null;
+};
+
+export type OpcaoUsoIntegracao = {
+  descricao: string;
+  label: string;
+  valor: ModoUsoIntegracao;
 };
 
 export type DefinicaoIntegracao = {
@@ -20,14 +43,15 @@ export type DefinicaoIntegracao = {
   descricao: string;
   futura: boolean;
   nome: string;
+  opcoesUso: readonly OpcaoUsoIntegracao[];
   provider: IntegrationProvider;
   sincronizavel: boolean;
 };
 
 export type IntegracaoGerenciamento = DefinicaoIntegracao & {
+  ativa: boolean;
   configuracao: ConfiguracaoPublicaIntegracao;
   configuradaEm: string | null;
-  enabled: boolean;
   id: string | null;
   lastSyncedAt: string | null;
   status: IntegrationStatus;
@@ -39,7 +63,7 @@ export type DadosCentralIntegracoes = {
   podeGerenciar: boolean;
   resumo: {
     ativas: number;
-    futuras: number;
+    configuradas: number;
     pendentes: number;
     total: number;
   };

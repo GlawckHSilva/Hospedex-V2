@@ -2,6 +2,7 @@
 
 import type {
   IntegrationProvider,
+  JsonValue,
   TenantIntegrationRow,
 } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
@@ -13,7 +14,10 @@ import {
   exigirAcessoIntegracoes,
   podeGerenciarIntegracoes,
 } from "./permissions";
-import type { FrequenciaSincronizacao } from "./types";
+import type {
+  FrequenciaSincronizacao,
+  ModoUsoIntegracao,
+} from "./types";
 
 /**
  * Mutacoes da Central de Integracoes.
@@ -37,19 +41,28 @@ export async function alternarIntegracaoAction(formData: FormData) {
   try {
     const provider = obterProvider(formData);
     validarDisponibilidade(provider);
-    const enabled = textoObrigatorio(formData, "ativo", "status") === "true";
+    const ativaPeloProprietario =
+      textoObrigatorio(formData, "ativo", "status") === "true";
     const supabase = await criarClienteSupabaseServer();
     const atual = await carregarRegistro(supabase, escopo.tenantId, provider);
-    const status = enabled
-      ? atual?.configured_at
-        ? "pending_backend"
-        : "not_configured"
-      : "disabled";
+    validarLiberacaoAdministrativa(atual);
+    const configuracaoAtual = obterObjetoConfiguracao(atual.public_settings);
+    const status =
+      ativaPeloProprietario &&
+      !["connected", "error"].includes(atual.status)
+        ? atual.configured_at
+          ? "pending_backend"
+          : "not_configured"
+        : atual.status;
 
     const { error } = await supabase.from("tenant_integrations").upsert(
       {
-        enabled,
+        enabled: true,
         provider,
+        public_settings: {
+          ...configuracaoAtual,
+          ativa_pelo_proprietario: ativaPeloProprietario,
+        },
         status,
         tenant_id: escopo.tenantId,
       },
@@ -74,22 +87,43 @@ export async function salvarConfiguracaoIntegracaoAction(formData: FormData) {
     const definicao = obterDefinicaoIntegracao(provider);
     const supabase = await criarClienteSupabaseServer();
     const atual = await carregarRegistro(supabase, escopo.tenantId, provider);
+    validarLiberacaoAdministrativa(atual);
+    const modoUso = obterModoUso(formData, provider);
+    validarCamposObrigatorios(formData, provider);
     const frequencia = definicao.sincronizavel
       ? obterFrequencia(formData)
       : "manual";
+    const ativaPeloProprietario =
+      String(formData.get("ativoPeloProprietario") ?? "") === "true";
+    const configuracaoAtual = obterObjetoConfiguracao(atual.public_settings);
+    const status =
+      ativaPeloProprietario &&
+      !["connected", "error"].includes(atual.status)
+        ? "pending_backend"
+        : atual.status;
 
     const { error } = await supabase.from("tenant_integrations").upsert(
       {
         configured_at: new Date().toISOString(),
         configured_by: escopo.userId,
-        enabled: atual?.enabled ?? false,
+        enabled: true,
         provider,
         public_settings: {
+          ...configuracaoAtual,
+          ativa_pelo_proprietario: ativaPeloProprietario,
+          cidade: textoOpcional(formData, "cidade", 100),
+          formato_data: textoOpcional(formData, "formatoData", 20),
           frequencia_sincronizacao: frequencia,
-          nome_interno: textoOpcional(formData, "nomeInterno", 80),
-          observacoes: textoOpcional(formData, "observacoes", 500),
+          fuso_horario: textoOpcional(formData, "fusoHorario", 80),
+          idioma: textoOpcional(formData, "idioma", 20),
+          mensagens_automaticas:
+            String(formData.get("mensagensAutomaticas") ?? "") === "true",
+          modo_uso: modoUso,
+          nome_publico: textoOpcional(formData, "nomePublico", 80),
+          nome_remetente: textoOpcional(formData, "nomeRemetente", 80),
+          numero_publico: textoOpcional(formData, "numeroPublico", 30),
         },
-        status: atual?.enabled ? "pending_backend" : "disabled",
+        status,
         tenant_id: escopo.tenantId,
       },
       { onConflict: "tenant_id,provider" },
@@ -151,6 +185,61 @@ function validarDisponibilidade(provider: IntegrationProvider) {
   }
 }
 
+function validarLiberacaoAdministrativa(
+  registro: TenantIntegrationRow | null,
+): asserts registro is TenantIntegrationRow {
+  if (!registro?.enabled) {
+    throw new ErroRegraIntegracoes(
+      "Esta integracao nao esta liberada para seu plano ou licenca.",
+    );
+  }
+}
+
+function obterModoUso(
+  formData: FormData,
+  provider: IntegrationProvider,
+): ModoUsoIntegracao {
+  const valor = textoObrigatorio(formData, "modoUso", "forma de utilizacao");
+  const permitidos = obterDefinicaoIntegracao(provider).opcoesUso.map(
+    (opcao) => opcao.valor,
+  );
+
+  if (!permitidos.includes(valor as ModoUsoIntegracao)) {
+    throw new ErroRegraIntegracoes(
+      "Forma de utilizacao invalida para esta integracao.",
+    );
+  }
+
+  return valor as ModoUsoIntegracao;
+}
+
+function validarCamposObrigatorios(
+  formData: FormData,
+  provider: IntegrationProvider,
+) {
+  if (provider === "whatsapp") {
+    textoObrigatorio(formData, "nomePublico", "nome publico");
+    textoObrigatorio(formData, "numeroPublico", "numero publico");
+  }
+
+  if (provider === "email") {
+    textoObrigatorio(formData, "nomeRemetente", "nome do remetente");
+  }
+
+  if (provider === "payments") {
+    textoObrigatorio(formData, "nomePublico", "nome exibido ao hospede");
+  }
+
+  if (provider === "google_maps" || provider === "weather") {
+    textoObrigatorio(formData, "cidade", "cidade");
+  }
+
+  if (provider === "ical") {
+    textoObrigatorio(formData, "fusoHorario", "fuso horario");
+    textoObrigatorio(formData, "formatoData", "formato de data");
+  }
+}
+
 function obterFrequencia(formData: FormData): FrequenciaSincronizacao {
   const valor = textoObrigatorio(formData, "frequencia", "frequencia");
   if (!FREQUENCIAS.has(valor as FrequenciaSincronizacao)) {
@@ -182,6 +271,14 @@ function textoOpcional(
     );
   }
   return valor;
+}
+
+function obterObjetoConfiguracao(
+  valor: JsonValue,
+): Record<string, JsonValue> {
+  return valor && typeof valor === "object" && !Array.isArray(valor)
+    ? valor
+    : {};
 }
 
 function revalidarModulo() {

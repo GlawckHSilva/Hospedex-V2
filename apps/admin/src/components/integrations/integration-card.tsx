@@ -17,7 +17,11 @@ import { Badge, type BadgeProps } from "@hospedex/ui";
 import { alternarIntegracaoAction } from "../../lib/integrations/actions";
 import type { IntegracaoGerenciamento } from "../../lib/integrations/types";
 import { ActionButton } from "../management/action-button";
-import { EntityCard, EntityCardHeader } from "../management/entity-card";
+import {
+  EntityCard,
+  EntityCardActions,
+  EntityCardHeader,
+} from "../management/entity-card";
 import { EntityModal } from "../management/entity-modal";
 import { IntegrationConfigForm } from "./integration-config-form";
 
@@ -40,7 +44,6 @@ export function IntegrationCard({
   podeGerenciar: boolean;
 }) {
   const Icone = ICONES[integracao.provider];
-  const bloqueada = integracao.futura || !podeGerenciar;
 
   return (
     <EntityCard contentClassName="gap-3">
@@ -54,7 +57,7 @@ export function IntegrationCard({
           </>
         }
         icon={<Icone />}
-        subtitle={integracao.configuracao.nomeInterno ?? integracao.categoria}
+        subtitle={integracao.configuracao.nomePublico ?? integracao.categoria}
         title={integracao.nome}
       />
 
@@ -66,7 +69,7 @@ export function IntegrationCard({
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Estado</dt>
           <dd className="font-medium">
-            {integracao.enabled ? "Ativada" : "Desativada"}
+            {integracao.ativa ? "Ativada" : "Desativada"}
           </dd>
         </div>
         {integracao.sincronizavel ? (
@@ -79,12 +82,12 @@ export function IntegrationCard({
         ) : null}
       </dl>
 
-      <div className="mt-auto grid grid-cols-2 gap-2 [&>button]:w-full [&>form>button]:w-full">
+      <EntityCardActions>
         <EntityModal
-          description={`Preferencias nao sensiveis de ${integracao.nome}.`}
-          disabled={bloqueada}
-          eyebrow="Integracao"
-          size="md"
+          description={`Configure ${integracao.nome} em etapas simples, sem credenciais tecnicas.`}
+          disabled={!podeGerenciar}
+          eyebrow="Assistente de configuracao"
+          size="lg"
           title={`Configurar ${integracao.nome}`}
           triggerAction="settings"
           triggerIcon={<Settings />}
@@ -101,41 +104,38 @@ export function IntegrationCard({
           <input
             name="ativo"
             type="hidden"
-            value={String(!integracao.enabled)}
+            value={String(!integracao.ativa)}
           />
           <ActionButton
-            disabled={bloqueada}
+            disabled={!podeGerenciar}
             icon={<Power />}
             type="submit"
-            variant={integracao.enabled ? "cancel" : "status"}
+            variant={integracao.ativa ? "cancel" : "status"}
           >
-            {integracao.enabled ? "Desativar" : "Ativar"}
+            {integracao.ativa ? "Desativar" : "Ativar"}
           </ActionButton>
         </form>
-      </div>
+      </EntityCardActions>
     </EntityCard>
   );
 }
 
 function obterLabelStatus(integracao: IntegracaoGerenciamento): string {
-  if (integracao.futura) return "Em breve";
+  if (!integracao.ativa) return "Desativada";
+  if (!integracao.configuradaEm) return "Configuracao pendente";
   if (integracao.status === "connected") return "Conectada";
   if (integracao.status === "error") return "Erro";
-  if (integracao.status === "pending_backend") return "Aguardando backend";
-  if (integracao.status === "not_configured") return "Configuracao pendente";
-  return "Desativada";
+  return "Estrutura preparada";
 }
 
 function obterVarianteStatus(
   integracao: IntegracaoGerenciamento,
 ): BadgeProps["variant"] {
-  if (integracao.futura) return "secondary";
+  if (!integracao.ativa) return "outline";
+  if (!integracao.configuradaEm) return "warning";
   if (integracao.status === "connected") return "success";
   if (integracao.status === "error") return "danger";
-  if (["pending_backend", "not_configured"].includes(integracao.status)) {
-    return "warning";
-  }
-  return "outline";
+  return "info";
 }
 
 function formatarSincronizacao(valor: string | null): string {
