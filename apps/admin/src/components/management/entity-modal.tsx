@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import {
   type ComponentProps,
   type ReactNode,
@@ -237,6 +238,17 @@ export function EntityModal({
   triggerVariant = "outline",
 }: EntityModalProps) {
   const [open, setOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const sucesso = searchParams.get("sucesso");
+
+  useEffect(() => {
+    if (!sucesso) return;
+
+    // Server Actions do Gerenciamento retornam sucesso via query string.
+    // Fechar a modal neste ponto confirma visualmente a conclusao da acao
+    // sem depender de reload completo da pagina atual.
+    setOpen(false);
+  }, [sucesso]);
 
   return (
     <>

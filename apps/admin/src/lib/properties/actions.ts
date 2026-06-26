@@ -191,7 +191,6 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       })
       .eq("id", propriedadeId)
       .eq("tenant_id", escopo.tenantId)
-      .eq("owner_id", escopo.ownerId)
       .select("*")
       .maybeSingle<PropertyRow>();
 
