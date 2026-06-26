@@ -457,23 +457,47 @@ export async function atualizarRegrasReservaAction(formData: FormData) {
 
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   const nome = textoObrigatorio(formData, "nome", "nome");
+  const descricaoCurta = textoObrigatorio(
+    formData,
+    "descricaoCurta",
+    "descrição curta",
+  );
   const hospedesMaximos = numeroInteiro(
     formData,
     "hospedesMaximos",
     "quantidade maxima de hospedes",
     1,
   );
-  const quartos = numeroInteiroOpcional(formData, "quartosCasa", 0, 0);
+  const quartos = numeroInteiro(formData, "quartosCasa", "quantidade de quartos", 1);
   const camas = numeroInteiroOpcional(formData, "camasCasa", 1, 1);
-  const banheiros = numeroInteiroOpcional(formData, "banheirosCasa", 0, 0);
+  const banheiros = numeroInteiro(
+    formData,
+    "banheirosCasa",
+    "quantidade de banheiros",
+    1,
+  );
   const valorDiaria = numeroMoedaObrigatoria(formData, "valorDiaria", "valor da diaria", 0.01);
+  const tituloPublico = textoOpcional(formData, "tituloPublico");
+  const descricaoPublica = textoOpcional(formData, "descricaoPublica");
+  const publica = checkboxAtivo(formData, "visibilidadePublica");
+  const imagemCapaArquivo = obterArquivoImagem(formData, "imagemCapaArquivo");
+  const galeriaArquivos = obterArquivosImagem(formData, "imagensGaleriaArquivos");
+
+  validarPublicacaoObrigatoria({
+    descricaoPublica,
+    formData,
+    galeriaArquivos,
+    imagemCapaArquivo,
+    publica,
+    tituloPublico,
+  });
 
   return {
     detalhesPublicos: {
-      descricaoPublica: textoOpcional(formData, "descricaoPublica"),
+      descricaoPublica,
       imagemCompartilhamento: validarUrlOpcional(formData, "imagemCompartilhamento"),
       nomeExibicao: textoOpcional(formData, "nomeExibicao") ?? nome,
-      tituloPublico: textoOpcional(formData, "tituloPublico"),
+      tituloPublico,
     },
     endereco: {
       bairro: textoOpcional(formData, "bairro") ?? "",
@@ -503,9 +527,9 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     comodidadesPersonalizadasExistentes:
       obterComodidadesPersonalizadasExistentes(formData),
     descricaoCompleta: textoOpcional(formData, "descricaoCompleta"),
-    descricaoCurta: textoOpcional(formData, "descricaoCurta"),
+    descricaoCurta,
     destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
-    galeriaArquivos: obterArquivosImagem(formData, "imagensGaleriaArquivos"),
+    galeriaArquivos,
     galeriaIndicePrincipal: numeroInteiroOpcionalOuNulo(
       formData,
       "imagemPrincipalGaleriaIndice",
@@ -513,9 +537,9 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     ),
     galeriaOrdens: obterNumerosInteirosMultiplos(formData, "ordensGaleria"),
     galeriaTitulos: obterValoresMultiplos(formData, "titulosGaleria"),
-    imagemCapaArquivo: obterArquivoImagem(formData, "imagemCapaArquivo"),
+    imagemCapaArquivo,
     nome,
-    publica: checkboxAtivo(formData, "visibilidadePublica"),
+    publica,
     regras: {
       checkInTime: validarHoraOpcional(formData, "checkInTime"),
       checkOutTime: validarHoraOpcional(formData, "checkOutTime"),
@@ -546,6 +570,43 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       valorHospedeExtra: numeroMoedaOpcional(formData, "valorHospedeExtra", 0),
     },
   };
+}
+
+function validarPublicacaoObrigatoria({
+  descricaoPublica,
+  formData,
+  galeriaArquivos,
+  imagemCapaArquivo,
+  publica,
+  tituloPublico,
+}: {
+  descricaoPublica: string | null;
+  formData: FormData;
+  galeriaArquivos: File[];
+  imagemCapaArquivo: File | null;
+  publica: boolean;
+  tituloPublico: string | null;
+}) {
+  if (!publica) return;
+
+  if (!tituloPublico) {
+    throw new ErroRegraNegocio("Informe o título público para publicar a casa.");
+  }
+
+  if (!descricaoPublica) {
+    throw new ErroRegraNegocio("Informe a descrição pública para publicar a casa.");
+  }
+
+  const possuiImagemAtual =
+    Boolean(textoOpcional(formData, "propriedadeId")) &&
+    formData.get("possuiImagemPrincipalAtual") === "true";
+  const possuiImagemNova = Boolean(imagemCapaArquivo);
+  const galeriaDefinePrincipal =
+    galeriaArquivos.length > 0 && formData.has("imagemPrincipalGaleriaIndice");
+
+  if (!possuiImagemAtual && !possuiImagemNova && !galeriaDefinePrincipal) {
+    throw new ErroRegraNegocio("Adicione uma foto principal para publicar a casa.");
+  }
 }
 
 function obterJurosParcelasCartao(formData: FormData) {

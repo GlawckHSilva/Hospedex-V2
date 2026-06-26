@@ -98,11 +98,19 @@ type CampoObrigatorioCasa = {
   mensagem: string;
   minimo?: number;
   name: string;
-  tipo: "texto" | "numero";
+  tipo: "imagem" | "numero" | "texto";
+  validarQuando?: (dados: FormData) => boolean;
 };
 
 const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   { etapa: "basico", mensagem: "Informe o nome da casa.", name: "nome", tipo: "texto" },
+  { etapa: "basico", mensagem: "Informe o tipo da casa.", name: "tipo", tipo: "texto" },
+  {
+    etapa: "basico",
+    mensagem: "Informe a descricao curta da casa.",
+    name: "descricaoCurta",
+    tipo: "texto",
+  },
   { etapa: "localizacao", mensagem: "Informe o endereco.", name: "endereco", tipo: "texto" },
   { etapa: "localizacao", mensagem: "Informe a cidade.", name: "cidade", tipo: "texto" },
   { etapa: "localizacao", mensagem: "Informe o estado.", name: "estado", tipo: "texto" },
@@ -114,11 +122,46 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     tipo: "numero",
   },
   {
+    etapa: "estrutura",
+    mensagem: "Informe a quantidade de quartos.",
+    minimo: 1,
+    name: "quartosCasa",
+    tipo: "numero",
+  },
+  {
+    etapa: "estrutura",
+    mensagem: "Informe a quantidade de banheiros.",
+    minimo: 1,
+    name: "banheirosCasa",
+    tipo: "numero",
+  },
+  {
     etapa: "valores",
     mensagem: "Informe o valor da diaria.",
     minimo: 0.01,
     name: "valorDiaria",
     tipo: "numero",
+  },
+  {
+    etapa: "imagens",
+    mensagem: "Adicione uma foto principal para publicar a casa.",
+    name: "imagemCapaArquivo",
+    tipo: "imagem",
+    validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
+  },
+  {
+    etapa: "compartilhamento",
+    mensagem: "Informe o titulo publico para publicar a casa.",
+    name: "tituloPublico",
+    tipo: "texto",
+    validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
+  },
+  {
+    etapa: "compartilhamento",
+    mensagem: "Informe a descricao publica para publicar a casa.",
+    name: "descricaoPublica",
+    tipo: "texto",
+    validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
   },
 ];
 
@@ -206,15 +249,22 @@ function indiceDaEtapa(etapaId: EtapaId) {
 function validarFormularioCasa(
   formulario: HTMLFormElement,
   etapasPermitidas?: Set<EtapaId>,
+  contexto: { possuiImagemPrincipal: boolean } = { possuiImagemPrincipal: false },
 ): ErrosFormularioCasa {
   const dados = new FormData(formulario);
   const erros: ErrosFormularioCasa = {};
 
   for (const campo of CAMPOS_OBRIGATORIOS_CASA) {
     if (etapasPermitidas && !etapasPermitidas.has(campo.etapa)) continue;
+    if (campo.validarQuando && !campo.validarQuando(dados)) continue;
 
     const valorBruto = dados.get(campo.name)?.toString().trim() ?? "";
     if (campo.tipo === "texto" && !valorBruto) {
+      erros[campo.name] = campo.mensagem;
+      continue;
+    }
+
+    if (campo.tipo === "imagem" && !contexto.possuiImagemPrincipal) {
       erros[campo.name] = campo.mensagem;
       continue;
     }
@@ -268,6 +318,9 @@ export function PropertyForm({
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>([]);
+  const [publicaSelecionada, setPublicaSelecionada] = useState(
+    propriedade?.is_public ?? false,
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
@@ -279,7 +332,8 @@ export function PropertyForm({
   const valores = propriedade?.valores;
   const regras = propriedade?.regras;
   const comodidadesSelecionadas = new Set(propriedade?.comodidades.map((item) => item.id) ?? []);
-  const bloqueado = !podeGerenciar || Boolean(erroImagem);
+  const bloqueado =
+    !podeGerenciar || Boolean(erroImagem) || Object.keys(errosCampos).length > 0;
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
   const estaNaUltimaEtapa = etapaAtual === ETAPAS.length - 1;
   const etapasConcluidas = ETAPAS.slice(0, etapaAtual).map((item) => item.id);
@@ -316,6 +370,7 @@ export function PropertyForm({
     setErroImagem(erro);
     if (previewCapa) URL.revokeObjectURL(previewCapa);
     setPreviewCapa(arquivo && !erro ? URL.createObjectURL(arquivo) : null);
+    if (arquivo && !erro) removerErrosDosCampos(["imagemCapaArquivo"]);
   }
 
   function sincronizarArquivosGaleria(arquivos: File[]) {
@@ -344,6 +399,7 @@ export function PropertyForm({
     // O input file do navegador substitui a selecao a cada upload.
     // A ref preserva a colecao real para que novas fotos sejam adicionadas sem apagar as anteriores.
     sincronizarArquivosGaleria([...arquivosGaleriaRef.current, ...novasImagens]);
+    removerErrosDosCampos(["imagemCapaArquivo"]);
 
     setPreviewsGaleria((previewsAtuais) =>
       normalizarGaleria([
@@ -438,6 +494,23 @@ export function PropertyForm({
     });
   }
 
+  function removerErrosDosCampos(nomes: string[]) {
+    setErrosCampos((errosAtuais) => {
+      const novosErros = { ...errosAtuais };
+      nomes.forEach((nome) => {
+        delete novosErros[nome];
+      });
+      return novosErros;
+    });
+  }
+
+  function atualizarVisibilidadePublica(ativo: boolean) {
+    setPublicaSelecionada(ativo);
+    if (!ativo) {
+      removerErrosDosCampos(["tituloPublico", "descricaoPublica", "imagemCapaArquivo"]);
+    }
+  }
+
   function validarAteEtapaDestino(indiceDestino: number) {
     const formulario = formRef.current;
     if (!formulario) return true;
@@ -445,7 +518,11 @@ export function PropertyForm({
     const etapasParaValidar = new Set(
       ETAPAS.slice(0, indiceDestino).map((item) => item.id),
     );
-    const erros = validarFormularioCasa(formulario, etapasParaValidar);
+    const erros = validarFormularioCasa(
+      formulario,
+      etapasParaValidar,
+      obterContextoValidacaoCasa(),
+    );
 
     if (Object.keys(erros).length > 0) {
       aplicarErrosValidacao(erros);
@@ -469,7 +546,11 @@ export function PropertyForm({
     const formulario = formRef.current;
     if (!formulario) return;
 
-    const errosEtapa = validarFormularioCasa(formulario, new Set([etapa.id]));
+    const errosEtapa = validarFormularioCasa(
+      formulario,
+      new Set([etapa.id]),
+      obterContextoValidacaoCasa(),
+    );
     if (Object.keys(errosEtapa).length > 0) {
       aplicarErrosValidacao({
         ...removerErrosDaEtapa(errosCampos, etapa.id),
@@ -488,7 +569,11 @@ export function PropertyForm({
       return;
     }
 
-    const erros = validarFormularioCasa(evento.currentTarget);
+    const erros = validarFormularioCasa(
+      evento.currentTarget,
+      undefined,
+      obterContextoValidacaoCasa(),
+    );
     if (Object.keys(erros).length > 0) {
       evento.preventDefault();
       aplicarErrosValidacao(erros);
@@ -496,6 +581,16 @@ export function PropertyForm({
     }
 
     setErrosCampos({});
+  }
+
+  function obterContextoValidacaoCasa() {
+    return {
+      possuiImagemPrincipal: Boolean(
+        previewCapa ||
+          propriedade?.imagemCapa?.url ||
+          previewsGaleria.some((preview) => preview.principal),
+      ),
+    };
   }
 
   return (
@@ -556,6 +651,7 @@ export function PropertyForm({
             defaultTipo={propriedade?.property_type ?? "seasonal_home"}
             disabled={!podeGerenciar}
             erros={errosCampos}
+            onPublicaChange={atualizarVisibilidadePublica}
           />
         </div>
 
@@ -586,8 +682,10 @@ export function PropertyForm({
             erroImagem={erroImagem}
             galeriaRef={galeriaRef}
             imagemCapaAtual={propriedade?.imagemCapa?.url ?? null}
+            publicaSelecionada={publicaSelecionada}
             previewCapa={previewCapa}
             previewsGaleria={previewsGaleria}
+            erros={errosCampos}
             atualizarTituloGaleria={atualizarTituloGaleria}
             definirPrincipalGaleria={definirPrincipalGaleria}
             moverGaleria={moverGaleria}
@@ -610,6 +708,8 @@ export function PropertyForm({
           <EtapaCompartilhamento
             detalhes={propriedade?.detalhesPublicos}
             disabled={!podeGerenciar}
+            erros={errosCampos}
+            publicaSelecionada={publicaSelecionada}
           />
         </div>
       </section>
@@ -665,6 +765,7 @@ function EtapaBasico({
   defaultTipo,
   disabled,
   erros,
+  onPublicaChange,
 }: {
   defaultDescricaoCompleta: string;
   defaultDescricaoCurta: string;
@@ -676,11 +777,12 @@ function EtapaBasico({
   defaultTipo: PropertyType;
   disabled: boolean;
   erros: ErrosFormularioCasa;
+  onPublicaChange: (ativo: boolean) => void;
 }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoTexto defaultValue={defaultNome} disabled={disabled} erro={erros.nome} label="Nome da casa" name="nome" />
+        <CampoTexto defaultValue={defaultNome} disabled={disabled} erro={erros.nome} label="Nome da casa" name="nome" obrigatorio />
         <CampoTexto
           defaultValue={defaultNomeExibicao}
           disabled={disabled}
@@ -688,13 +790,15 @@ function EtapaBasico({
           name="nomeExibicao"
           placeholder="Nome apresentado futuramente ao hospede."
         />
-        <CampoSelect defaultValue={defaultTipo} disabled={disabled} label="Tipo" name="tipo" options={TIPOS} />
+        <CampoSelect defaultValue={defaultTipo} disabled={disabled} erro={erros.tipo} label="Tipo" name="tipo" obrigatorio options={TIPOS} />
       </div>
       <CampoTexto
         defaultValue={defaultDescricaoCurta}
         disabled={disabled}
+        erro={erros.descricaoCurta}
         label="Descricao curta"
         name="descricaoCurta"
+        obrigatorio
         placeholder="Resumo curto para cards e operacao."
       />
       <CampoArea
@@ -706,7 +810,13 @@ function EtapaBasico({
       />
       <div className="grid gap-4 md:grid-cols-3">
         <CampoSelect defaultValue={defaultStatus} disabled={disabled} label="Status" name="status" options={STATUS} />
-        <CampoCheckbox defaultChecked={defaultPublica} disabled={disabled} label="Visibilidade publica" name="visibilidadePublica" />
+        <CampoCheckbox
+          defaultChecked={defaultPublica}
+          disabled={disabled}
+          label="Visibilidade publica"
+          name="visibilidadePublica"
+          onChange={(evento) => onPublicaChange(evento.currentTarget.checked)}
+        />
         <CampoCheckbox defaultChecked={defaultDestaque} disabled={disabled} label="Destaque no marketplace" name="destaqueMarketplace" />
       </div>
     </div>
@@ -725,13 +835,13 @@ function EtapaLocalizacao({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-[1.4fr_0.5fr]">
-        <CampoTexto defaultValue={endereco?.linha1} disabled={disabled} erro={erros.endereco} label="Endereco" name="endereco" />
+        <CampoTexto defaultValue={endereco?.linha1} disabled={disabled} erro={erros.endereco} label="Endereco" name="endereco" obrigatorio />
         <CampoTexto defaultValue={endereco?.numero} disabled={disabled} label="Numero" name="numero" />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto defaultValue={endereco?.bairro} disabled={disabled} label="Bairro" name="bairro" />
-        <CampoTexto defaultValue={endereco?.cidade} disabled={disabled} erro={erros.cidade} label="Cidade" name="cidade" />
-        <CampoTexto defaultValue={endereco?.estado} disabled={disabled} erro={erros.estado} label="Estado" maxLength={2} name="estado" />
+        <CampoTexto defaultValue={endereco?.cidade} disabled={disabled} erro={erros.cidade} label="Cidade" name="cidade" obrigatorio />
+        <CampoTexto defaultValue={endereco?.estado} disabled={disabled} erro={erros.estado} label="Estado" maxLength={2} name="estado" obrigatorio />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto defaultValue={endereco?.cep} disabled={disabled} label="CEP" name="cep" />
@@ -781,10 +891,10 @@ function EtapaEstrutura({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? 1} disabled={disabled} erro={erros.hospedesMaximos} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" />
-        <CampoNumero defaultValue={estrutura?.quartos ?? 0} disabled={disabled} label="Quartos" min={0} name="quartosCasa" />
+        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? 1} disabled={disabled} erro={erros.hospedesMaximos} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" obrigatorio />
+        <CampoNumero defaultValue={estrutura?.quartos ?? 1} disabled={disabled} erro={erros.quartosCasa} label="Quartos" min={1} name="quartosCasa" obrigatorio />
         <CampoNumero defaultValue={estrutura?.camas ?? 1} disabled={disabled} label="Camas" min={1} name="camasCasa" />
-        <CampoNumero defaultValue={estrutura?.banheiros ?? 0} disabled={disabled} label="Banheiros" min={0} name="banheirosCasa" />
+        <CampoNumero defaultValue={estrutura?.banheiros ?? 1} disabled={disabled} erro={erros.banheirosCasa} label="Banheiros" min={1} name="banheirosCasa" obrigatorio />
         <CampoNumero defaultValue={estrutura?.garagemVagas ?? 0} disabled={disabled} label="Garagem/vagas" min={0} name="garagemVagas" />
       </div>
       <div className="grid gap-3 md:grid-cols-3">
@@ -854,7 +964,7 @@ function EtapaValores({
   return (
     <div className="grid gap-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoMoeda defaultValue={valores?.valorDiaria ?? 0} disabled={disabled} erro={erros.valorDiaria} label="Valor da diaria" name="valorDiaria" />
+        <CampoMoeda defaultValue={valores?.valorDiaria ?? 0} disabled={disabled} erro={erros.valorDiaria} label="Valor da diaria" name="valorDiaria" obrigatorio />
         <CampoMoeda defaultValue={valores?.taxaLimpeza ?? 0} disabled={disabled} label="Taxa de limpeza" name="taxaLimpeza" />
         <CampoMoeda defaultValue={valores?.caucao ?? 0} disabled={disabled} label="Caucao" name="caucao" />
         <CampoMoeda defaultValue={valores?.valorHospedeExtra ?? 0} disabled={disabled} label="Valor por hospede extra" name="valorHospedeExtra" />
@@ -1040,9 +1150,13 @@ function EtapaRegras({
 function EtapaCompartilhamento({
   detalhes,
   disabled,
+  erros,
+  publicaSelecionada,
 }: {
   detalhes?: PropriedadeComRelacionamentos["detalhesPublicos"] | undefined;
   disabled: boolean;
+  erros: ErrosFormularioCasa;
+  publicaSelecionada: boolean;
 }) {
   return (
     <div className="grid gap-4">
@@ -1052,14 +1166,18 @@ function EtapaCompartilhamento({
       <CampoTexto
         defaultValue={detalhes?.tituloPublico}
         disabled={disabled}
+        erro={erros.tituloPublico}
         label="Titulo publico"
         name="tituloPublico"
+        obrigatorio={publicaSelecionada}
       />
       <CampoArea
         defaultValue={detalhes?.descricaoPublica}
         disabled={disabled}
+        erro={erros.descricaoPublica}
         label="Descricao publica"
         name="descricaoPublica"
+        obrigatorio={publicaSelecionada}
       />
       <CampoTexto
         defaultValue={detalhes?.imagemCompartilhamento}
@@ -1079,11 +1197,13 @@ function EtapaImagens({
   definirPrincipalGaleria,
   disabled,
   erroImagem,
+  erros,
   galeriaRef,
   imagemCapaAtual,
   moverGaleria,
   previewCapa,
   previewsGaleria,
+  publicaSelecionada,
   removerGaleria,
   selecionarCapa,
   selecionarGaleria,
@@ -1094,11 +1214,13 @@ function EtapaImagens({
   definirPrincipalGaleria: (indice: number) => void;
   disabled: boolean;
   erroImagem: string | null;
+  erros: ErrosFormularioCasa;
   galeriaRef: RefObject<HTMLInputElement | null>;
   imagemCapaAtual: string | null;
   moverGaleria: (indice: number, deslocamento: -1 | 1) => void;
   previewCapa: string | null;
   previewsGaleria: PreviewGaleria[];
+  publicaSelecionada: boolean;
   removerGaleria: (indice: number) => void;
   selecionarCapa: (arquivo?: File) => void;
   selecionarGaleria: (arquivos: FileList | null) => void;
@@ -1109,9 +1231,11 @@ function EtapaImagens({
       <div className="grid gap-4 md:grid-cols-2">
         <CampoArquivo
           botaoLabel="Escolher arquivo"
+          erro={erros.imagemCapaArquivo}
           inputRef={capaRef}
           label="Imagem de capa"
           name="imagemCapaArquivo"
+          obrigatorio={publicaSelecionada}
           onChange={(evento) => selecionarCapa(evento.currentTarget.files?.[0])}
           disabled={disabled}
         />
@@ -1131,6 +1255,9 @@ function EtapaImagens({
         </p>
       ) : null}
       <div className="grid gap-3">
+        {imagemCapaAtual ? (
+          <input name="possuiImagemPrincipalAtual" type="hidden" value="true" />
+        ) : null}
         {previewCapa || imagemCapaAtual ? (
           <PreviewImagem
             titulo={previewCapa ? "Nova imagem principal" : "Imagem principal atual"}
@@ -1229,6 +1356,7 @@ type CampoTextoProps = ComponentProps<typeof Input> & {
   erro?: string | undefined;
   label: string;
   name: string;
+  obrigatorio?: boolean;
 };
 
 function CampoTexto({
@@ -1236,13 +1364,16 @@ function CampoTexto({
   erro,
   label,
   name,
+  obrigatorio,
   ...props
 }: CampoTextoProps) {
   const erroId = erro ? `${name}-erro` : undefined;
 
   return (
     <div className="grid gap-2">
-      <Label htmlFor={name}>{label}</Label>
+      <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
+        {label}
+      </LabelCampo>
       <Input
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
@@ -1273,17 +1404,41 @@ function CampoMoeda(props: CampoTextoProps) {
 }
 
 function CampoArea({
+  erro,
   label,
   name,
+  obrigatorio,
   ...props
 }: {
+  erro?: string | undefined;
   label: string;
   name: string;
+  obrigatorio?: boolean;
 } & ComponentProps<"textarea">) {
+  const erroId = erro ? `${name}-erro` : undefined;
+
   return (
     <div className="grid gap-2">
-      <Label htmlFor={name}>{label}</Label>
-      <textarea className={areaClasse} id={name} name={name} {...props} />
+      <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
+        {label}
+      </LabelCampo>
+      <textarea
+        aria-describedby={erroId}
+        aria-invalid={Boolean(erro)}
+        className={cn(
+          areaClasse,
+          erro &&
+            "border-destructive/70 bg-destructive/5 focus-visible:ring-destructive/40",
+        )}
+        id={name}
+        name={name}
+        {...props}
+      />
+      {erro ? (
+        <p className="text-xs font-medium text-destructive" id={erroId}>
+          {erro}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -1291,26 +1446,51 @@ function CampoArea({
 function CampoSelect({
   defaultValue,
   disabled,
+  erro,
   label,
   name,
+  obrigatorio,
   options,
 }: {
   defaultValue: string;
   disabled: boolean;
+  erro?: string | undefined;
   label: string;
   name: string;
+  obrigatorio?: boolean;
   options: Array<{ label: string; valor: string }>;
 }) {
+  const erroId = erro ? `${name}-erro` : undefined;
+
   return (
     <div className="grid gap-2">
-      <Label htmlFor={name}>{label}</Label>
-      <select className={campoClasse} defaultValue={defaultValue} disabled={disabled} id={name} name={name}>
+      <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
+        {label}
+      </LabelCampo>
+      <select
+        aria-describedby={erroId}
+        aria-invalid={Boolean(erro)}
+        className={cn(
+          campoClasse,
+          erro &&
+            "border-destructive/70 bg-destructive/5 focus-visible:ring-destructive/40",
+        )}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        id={name}
+        name={name}
+      >
         {options.map((option) => (
           <option key={option.valor} value={option.valor}>
             {option.label}
           </option>
         ))}
       </select>
+      {erro ? (
+        <p className="text-xs font-medium text-destructive" id={erroId}>
+          {erro}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -1320,17 +1500,26 @@ function CampoCheckbox({
   disabled,
   label,
   name,
+  onChange,
   value = "on",
 }: {
   defaultChecked?: boolean;
   disabled: boolean;
   label: string;
   name: string;
+  onChange?: ComponentProps<"input">["onChange"];
   value?: string;
 }) {
   return (
     <label className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm">
-      <input defaultChecked={defaultChecked} disabled={disabled} name={name} type="checkbox" value={value} />
+      <input
+        defaultChecked={defaultChecked}
+        disabled={disabled}
+        name={name}
+        onChange={onChange}
+        type="checkbox"
+        value={value}
+      />
       {label}
     </label>
   );
@@ -1338,19 +1527,29 @@ function CampoCheckbox({
 
 function CampoArquivo({
   botaoLabel,
+  erro,
   inputRef,
   label,
+  obrigatorio,
   ...props
 }: {
   botaoLabel: string;
+  erro?: string | undefined;
   inputRef: RefObject<HTMLInputElement | null>;
   label: string;
+  obrigatorio?: boolean;
 } & ComponentProps<typeof Input>) {
+  const erroId = erro ? `${props.name}-erro` : undefined;
+
   return (
     <div className="grid gap-2">
-      <Label htmlFor={props.name}>{label}</Label>
+      <LabelCampo htmlFor={props.name} obrigatorio={obrigatorio}>
+        {label}
+      </LabelCampo>
       <Input
         accept="image/*"
+        aria-describedby={erroId}
+        aria-invalid={Boolean(erro)}
         className="sr-only"
         id={props.name}
         ref={inputRef}
@@ -1366,7 +1565,33 @@ function CampoArquivo({
       >
         {botaoLabel}
       </ActionButton>
+      {erro ? (
+        <p className="text-xs font-medium text-destructive" id={erroId}>
+          {erro}
+        </p>
+      ) : null}
     </div>
+  );
+}
+
+function LabelCampo({
+  children,
+  htmlFor,
+  obrigatorio,
+}: {
+  children: ReactNode;
+  htmlFor?: string | undefined;
+  obrigatorio?: boolean | undefined;
+}) {
+  return (
+    <Label className="inline-flex items-center gap-1" htmlFor={htmlFor}>
+      <span>{children}</span>
+      {obrigatorio ? (
+        <span aria-hidden="true" className="text-destructive">
+          *
+        </span>
+      ) : null}
+    </Label>
   );
 }
 
