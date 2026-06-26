@@ -7,6 +7,7 @@ import type {
 } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { randomUUID } from "node:crypto";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { carregarLimitesPlano } from "./data";
@@ -114,9 +115,14 @@ export async function criarPropriedadeAction(formData: FormData) {
 
     await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
     await garantirLimitePropriedades(supabase, escopo.tenantId);
-    const { data: propriedade, error } = await supabase
+    // Geramos o id antes do insert para nao depender de RETURNING/SELECT do PostgREST.
+    // Em RLS, o cadastro pode ser permitido pelo WITH CHECK enquanto o retorno da linha
+    // ainda e bloqueado por policy de leitura; usar o id local evita falso erro de permissao.
+    const propriedadeId = randomUUID();
+    const { error } = await supabase
       .from("properties")
       .insert({
+        id: propriedadeId,
         tenant_id: escopo.tenantId,
         // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
         owner_id: escopo.ownerId,
@@ -135,21 +141,27 @@ export async function criarPropriedadeAction(formData: FormData) {
         structure_details: entrada.estrutura,
         pricing_details: entrada.valores,
         timezone: "America/Sao_Paulo",
-      })
-      .select("*")
-      .single<PropertyRow>();
+      });
 
-    if (error || !propriedade) {
+    if (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Erro bruto ao inserir os dados principais da casa.", {
+          role: escopo.contexto.role,
+          tenantId: escopo.tenantId,
+          userId: escopo.contexto.userId,
+          mensagemTecnica: error.message,
+        });
+      }
       throw erroOperacaoCasa(
-        error?.message ?? "Propriedade não retornada após criação.",
+        error.message,
         ERRO_PERMISSAO_CASAS,
       );
     }
 
-    await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
-    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada);
-    await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
-    await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
+    await salvarConfiguracoesDaCasa(supabase, escopo, propriedadeId, entrada);
+    await salvarComodidadesDaCasa(supabase, escopo, propriedadeId, entrada);
+    await salvarImagemCapa(supabase, escopo.tenantId, propriedadeId, entrada);
+    await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedadeId, entrada);
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(
