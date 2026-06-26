@@ -10,6 +10,7 @@ import {
   CreditCard,
   Home,
   ImagePlus,
+  Loader2,
   MapPin,
   Share2,
   Sparkles,
@@ -17,7 +18,7 @@ import {
   Trash2,
   WalletCards,
 } from "lucide-react";
-import type { ComponentProps, ReactNode, RefObject } from "react";
+import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 
 import { Input, Label, cn } from "@hospedex/ui";
@@ -87,6 +88,37 @@ const campoClasse =
 const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const MAX_PARCELAS_CARTAO = 12;
+
+type ErrosFormularioCasa = Partial<Record<string, string>>;
+
+type CampoObrigatorioCasa = {
+  etapa: EtapaId;
+  mensagem: string;
+  minimo?: number;
+  name: string;
+  tipo: "texto" | "numero";
+};
+
+const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
+  { etapa: "basico", mensagem: "Informe o nome da casa.", name: "nome", tipo: "texto" },
+  { etapa: "localizacao", mensagem: "Informe o endereco.", name: "endereco", tipo: "texto" },
+  { etapa: "localizacao", mensagem: "Informe a cidade.", name: "cidade", tipo: "texto" },
+  { etapa: "localizacao", mensagem: "Informe o estado.", name: "estado", tipo: "texto" },
+  {
+    etapa: "estrutura",
+    mensagem: "Informe a quantidade maxima de hospedes.",
+    minimo: 1,
+    name: "hospedesMaximos",
+    tipo: "numero",
+  },
+  {
+    etapa: "valores",
+    mensagem: "Informe o valor da diaria.",
+    minimo: 0.01,
+    name: "valorDiaria",
+    tipo: "numero",
+  },
+];
 
 type JurosParcelaCartao = PropriedadeComRelacionamentos["valores"]["jurosParcelasCartao"][number];
 
@@ -162,6 +194,55 @@ function normalizarGaleria(previews: PreviewGaleria[]): PreviewGaleria[] {
   }));
 }
 
+function indiceDaEtapa(etapaId: EtapaId) {
+  return Math.max(
+    ETAPAS.findIndex((etapa) => etapa.id === etapaId),
+    0,
+  );
+}
+
+function validarFormularioCasa(
+  formulario: HTMLFormElement,
+  etapasPermitidas?: Set<EtapaId>,
+): ErrosFormularioCasa {
+  const dados = new FormData(formulario);
+  const erros: ErrosFormularioCasa = {};
+
+  for (const campo of CAMPOS_OBRIGATORIOS_CASA) {
+    if (etapasPermitidas && !etapasPermitidas.has(campo.etapa)) continue;
+
+    const valorBruto = dados.get(campo.name)?.toString().trim() ?? "";
+    if (campo.tipo === "texto" && !valorBruto) {
+      erros[campo.name] = campo.mensagem;
+      continue;
+    }
+
+    if (campo.tipo === "numero") {
+      const valor = Number.parseFloat(valorBruto.replace(",", "."));
+      if (!Number.isFinite(valor) || valor < (campo.minimo ?? 0)) {
+        erros[campo.name] = campo.mensagem;
+      }
+    }
+  }
+
+  return erros;
+}
+
+function removerErrosDaEtapa(
+  erros: ErrosFormularioCasa,
+  etapaId: EtapaId,
+): ErrosFormularioCasa {
+  const camposDaEtapa = new Set(
+    CAMPOS_OBRIGATORIOS_CASA.filter((campo) => campo.etapa === etapaId).map(
+      (campo) => campo.name,
+    ),
+  );
+
+  return Object.fromEntries(
+    Object.entries(erros).filter(([nome]) => !camposDaEtapa.has(nome)),
+  );
+}
+
 export function PropertyForm({
   comodidadesDisponiveis,
   modo,
@@ -170,9 +251,12 @@ export function PropertyForm({
 }: PropertyFormProps) {
   const action = modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const [etapaAtual, setEtapaAtual] = useState(0);
+  const [errosCampos, setErrosCampos] = useState<ErrosFormularioCasa>({});
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>([]);
+  const [salvando, setSalvando] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
   const arquivosGaleriaRef = useRef<File[]>([]);
@@ -183,8 +267,9 @@ export function PropertyForm({
   const valores = propriedade?.valores;
   const regras = propriedade?.regras;
   const comodidadesSelecionadas = new Set(propriedade?.comodidades.map((item) => item.id) ?? []);
-  const bloqueado = !podeGerenciar || Boolean(erroImagem);
+  const bloqueado = !podeGerenciar || Boolean(erroImagem) || salvando;
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
+  const estaNaUltimaEtapa = etapaAtual === ETAPAS.length - 1;
 
   useEffect(() => {
     previewCapaRef.current = previewCapa;
@@ -308,8 +393,108 @@ export function PropertyForm({
     );
   }
 
+  function focarCampoInvalido(nome: string) {
+    window.setTimeout(() => {
+      const campo = formRef.current?.querySelector<HTMLElement>(`[name="${nome}"]`);
+      campo?.scrollIntoView({ behavior: "smooth", block: "center" });
+      campo?.focus({ preventScroll: true });
+    }, 80);
+  }
+
+  function aplicarErrosValidacao(erros: ErrosFormularioCasa) {
+    const primeiroCampo = CAMPOS_OBRIGATORIOS_CASA.find((campo) => erros[campo.name]);
+    setErrosCampos(erros);
+
+    if (!primeiroCampo) return;
+
+    // O wizard volta para a etapa do primeiro erro para evitar envio invisivel
+    // e manter o modal aberto com a correcao exatamente onde o usuario precisa.
+    setEtapaAtual(indiceDaEtapa(primeiroCampo.etapa));
+    focarCampoInvalido(primeiroCampo.name);
+  }
+
+  function limparErroDoCampo(evento: FormEvent<HTMLFormElement>) {
+    const alvo = evento.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    if (!alvo.name || !errosCampos[alvo.name]) return;
+
+    setErrosCampos((errosAtuais) => {
+      const novosErros = { ...errosAtuais };
+      delete novosErros[alvo.name];
+      return novosErros;
+    });
+  }
+
+  function validarAteEtapaDestino(indiceDestino: number) {
+    const formulario = formRef.current;
+    if (!formulario) return true;
+
+    const etapasParaValidar = new Set(
+      ETAPAS.slice(0, indiceDestino).map((item) => item.id),
+    );
+    const erros = validarFormularioCasa(formulario, etapasParaValidar);
+
+    if (Object.keys(erros).length > 0) {
+      aplicarErrosValidacao(erros);
+      return false;
+    }
+
+    return true;
+  }
+
+  function navegarParaEtapa(indiceDestino: number) {
+    if (indiceDestino <= etapaAtual || validarAteEtapaDestino(indiceDestino)) {
+      setEtapaAtual(indiceDestino);
+    }
+  }
+
+  function voltarEtapa() {
+    setEtapaAtual((indiceAtual) => Math.max(indiceAtual - 1, 0));
+  }
+
+  function avancarEtapa() {
+    const formulario = formRef.current;
+    if (!formulario) return;
+
+    const errosEtapa = validarFormularioCasa(formulario, new Set([etapa.id]));
+    if (Object.keys(errosEtapa).length > 0) {
+      aplicarErrosValidacao({
+        ...removerErrosDaEtapa(errosCampos, etapa.id),
+        ...errosEtapa,
+      });
+      return;
+    }
+
+    setErrosCampos((errosAtuais) => removerErrosDaEtapa(errosAtuais, etapa.id));
+    setEtapaAtual((indiceAtual) => Math.min(indiceAtual + 1, ETAPAS.length - 1));
+  }
+
+  function validarEnvio(evento: FormEvent<HTMLFormElement>) {
+    if (!podeGerenciar || erroImagem) {
+      evento.preventDefault();
+      return;
+    }
+
+    const erros = validarFormularioCasa(evento.currentTarget);
+    if (Object.keys(erros).length > 0) {
+      evento.preventDefault();
+      setSalvando(false);
+      aplicarErrosValidacao(erros);
+      return;
+    }
+
+    setErrosCampos({});
+    setSalvando(true);
+  }
+
   return (
-    <form action={action} className="space-y-5">
+    <form
+      action={action}
+      className="space-y-5"
+      onChange={limparErroDoCampo}
+      onInput={limparErroDoCampo}
+      onSubmit={validarEnvio}
+      ref={formRef}
+    >
       {propriedade ? <input name="propriedadeId" type="hidden" value={propriedade.id} /> : null}
 
       <nav className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -322,7 +507,7 @@ export function PropertyForm({
                 : "bg-background/45 text-muted-foreground hover:border-cyan-300/40 hover:text-foreground",
             )}
             key={item.id}
-            onClick={() => setEtapaAtual(indice)}
+            onClick={() => navegarParaEtapa(indice)}
             type="button"
           >
             {item.icon}
@@ -362,22 +547,24 @@ export function PropertyForm({
             defaultStatus={propriedade?.status ?? "draft"}
             defaultTipo={propriedade?.property_type ?? "seasonal_home"}
             disabled={!podeGerenciar}
+            erros={errosCampos}
           />
         </div>
 
         <div hidden={etapa.id !== "localizacao"}>
-          <EtapaLocalizacao endereco={endereco} disabled={!podeGerenciar} />
+          <EtapaLocalizacao endereco={endereco} disabled={!podeGerenciar} erros={errosCampos} />
         </div>
 
         <div hidden={etapa.id !== "estrutura"}>
           <EtapaEstrutura
             disabled={!podeGerenciar}
+            erros={errosCampos}
             estrutura={estrutura}
           />
         </div>
 
         <div hidden={etapa.id !== "valores"}>
-          <EtapaValores disabled={!podeGerenciar} valores={valores} />
+          <EtapaValores disabled={!podeGerenciar} erros={errosCampos} valores={valores} />
         </div>
 
         <div hidden={etapa.id !== "regras"}>
@@ -419,10 +606,30 @@ export function PropertyForm({
         </div>
       </section>
 
-      <div className="flex justify-end border-t pt-4">
-        <ActionButton disabled={bloqueado} size="lg" type="submit" variant="add">
-          {modo === "editar" ? "Salvar casa" : "Criar casa"}
-        </ActionButton>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+        <div>
+          {etapaAtual > 0 ? (
+            <ActionButton disabled={salvando} onClick={voltarEtapa} size="md" type="button" variant="settings">
+              Voltar
+            </ActionButton>
+          ) : null}
+        </div>
+
+        {!estaNaUltimaEtapa ? (
+          <ActionButton disabled={!podeGerenciar || salvando} onClick={avancarEtapa} size="lg" type="button" variant="edit">
+            Proximo
+          </ActionButton>
+        ) : (
+          <ActionButton
+            disabled={bloqueado}
+            icon={salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+            size="lg"
+            type="submit"
+            variant="add"
+          >
+            {salvando ? "Salvando..." : modo === "editar" ? "Salvar casa" : "Criar casa"}
+          </ActionButton>
+        )}
       </div>
     </form>
   );
@@ -438,6 +645,7 @@ function EtapaBasico({
   defaultStatus,
   defaultTipo,
   disabled,
+  erros,
 }: {
   defaultDescricaoCompleta: string;
   defaultDescricaoCurta: string;
@@ -448,11 +656,12 @@ function EtapaBasico({
   defaultStatus: PropertyStatus;
   defaultTipo: PropertyType;
   disabled: boolean;
+  erros: ErrosFormularioCasa;
 }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoTexto defaultValue={defaultNome} disabled={disabled} label="Nome da casa" name="nome" />
+        <CampoTexto defaultValue={defaultNome} disabled={disabled} erro={erros.nome} label="Nome da casa" name="nome" />
         <CampoTexto
           defaultValue={defaultNomeExibicao}
           disabled={disabled}
@@ -488,20 +697,22 @@ function EtapaBasico({
 function EtapaLocalizacao({
   disabled,
   endereco,
+  erros,
 }: {
   disabled: boolean;
   endereco?: PropriedadeComRelacionamentos["enderecoFormatado"] | undefined;
+  erros: ErrosFormularioCasa;
 }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-[1.4fr_0.5fr]">
-        <CampoTexto defaultValue={endereco?.linha1} disabled={disabled} label="Endereco" name="endereco" />
+        <CampoTexto defaultValue={endereco?.linha1} disabled={disabled} erro={erros.endereco} label="Endereco" name="endereco" />
         <CampoTexto defaultValue={endereco?.numero} disabled={disabled} label="Numero" name="numero" />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto defaultValue={endereco?.bairro} disabled={disabled} label="Bairro" name="bairro" />
-        <CampoTexto defaultValue={endereco?.cidade} disabled={disabled} label="Cidade" name="cidade" />
-        <CampoTexto defaultValue={endereco?.estado} disabled={disabled} label="Estado" maxLength={2} name="estado" />
+        <CampoTexto defaultValue={endereco?.cidade} disabled={disabled} erro={erros.cidade} label="Cidade" name="cidade" />
+        <CampoTexto defaultValue={endereco?.estado} disabled={disabled} erro={erros.estado} label="Estado" maxLength={2} name="estado" />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto defaultValue={endereco?.cep} disabled={disabled} label="CEP" name="cep" />
@@ -541,15 +752,17 @@ function EtapaLocalizacao({
 
 function EtapaEstrutura({
   disabled,
+  erros,
   estrutura,
 }: {
   disabled: boolean;
+  erros: ErrosFormularioCasa;
   estrutura?: PropriedadeComRelacionamentos["estrutura"] | undefined;
 }) {
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? 1} disabled={disabled} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" />
+        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? 1} disabled={disabled} erro={erros.hospedesMaximos} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" />
         <CampoNumero defaultValue={estrutura?.quartos ?? 0} disabled={disabled} label="Quartos" min={0} name="quartosCasa" />
         <CampoNumero defaultValue={estrutura?.camas ?? 1} disabled={disabled} label="Camas" min={1} name="camasCasa" />
         <CampoNumero defaultValue={estrutura?.banheiros ?? 0} disabled={disabled} label="Banheiros" min={0} name="banheirosCasa" />
@@ -566,9 +779,11 @@ function EtapaEstrutura({
 
 function EtapaValores({
   disabled,
+  erros,
   valores,
 }: {
   disabled: boolean;
+  erros: ErrosFormularioCasa;
   valores?: PropriedadeComRelacionamentos["valores"] | undefined;
 }) {
   const maxParcelasInicial = limitarParcelasCartao(valores?.maxParcelasCartao ?? 1);
@@ -620,7 +835,7 @@ function EtapaValores({
   return (
     <div className="grid gap-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoMoeda defaultValue={valores?.valorDiaria ?? 0} disabled={disabled} label="Valor da diaria" name="valorDiaria" />
+        <CampoMoeda defaultValue={valores?.valorDiaria ?? 0} disabled={disabled} erro={erros.valorDiaria} label="Valor da diaria" name="valorDiaria" />
         <CampoMoeda defaultValue={valores?.taxaLimpeza ?? 0} disabled={disabled} label="Taxa de limpeza" name="taxaLimpeza" />
         <CampoMoeda defaultValue={valores?.caucao ?? 0} disabled={disabled} label="Caucao" name="caucao" />
         <CampoMoeda defaultValue={valores?.valorHospedeExtra ?? 0} disabled={disabled} label="Valor por hospede extra" name="valorHospedeExtra" />
@@ -991,27 +1206,50 @@ function EtapaImagens({
   );
 }
 
+type CampoTextoProps = ComponentProps<typeof Input> & {
+  erro?: string | undefined;
+  label: string;
+  name: string;
+};
+
 function CampoTexto({
+  className,
+  erro,
   label,
   name,
   ...props
-}: {
-  label: string;
-  name: string;
-} & ComponentProps<typeof Input>) {
+}: CampoTextoProps) {
+  const erroId = erro ? `${name}-erro` : undefined;
+
   return (
     <div className="grid gap-2">
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} {...props} />
+      <Input
+        aria-describedby={erroId}
+        aria-invalid={Boolean(erro)}
+        className={cn(
+          className,
+          erro &&
+            "border-destructive/70 bg-destructive/5 focus-visible:ring-destructive/40",
+        )}
+        id={name}
+        name={name}
+        {...props}
+      />
+      {erro ? (
+        <p className="text-xs font-medium text-destructive" id={erroId}>
+          {erro}
+        </p>
+      ) : null}
     </div>
   );
 }
 
-function CampoNumero(props: ComponentProps<typeof Input> & { label: string; name: string }) {
+function CampoNumero(props: CampoTextoProps) {
   return <CampoTexto {...props} type="number" />;
 }
 
-function CampoMoeda(props: ComponentProps<typeof Input> & { label: string; name: string }) {
+function CampoMoeda(props: CampoTextoProps) {
   return <CampoTexto {...props} min={0} step="0.01" type="number" />;
 }
 

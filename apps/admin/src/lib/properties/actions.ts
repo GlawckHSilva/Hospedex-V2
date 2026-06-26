@@ -455,7 +455,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   const quartos = numeroInteiroOpcional(formData, "quartosCasa", 0, 0);
   const camas = numeroInteiroOpcional(formData, "camasCasa", 1, 1);
   const banheiros = numeroInteiroOpcional(formData, "banheirosCasa", 0, 0);
-  const valorDiaria = numeroMoedaOpcional(formData, "valorDiaria", 0);
+  const valorDiaria = numeroMoedaObrigatoria(formData, "valorDiaria", "valor da diaria", 0.01);
 
   return {
     detalhesPublicos: {
@@ -1080,6 +1080,20 @@ function numeroMoedaOpcional(
   const valor = Number.parseFloat(valorBruto.replace(",", "."));
   if (Number.isNaN(valor) || valor < 0) {
     throw new ErroRegraNegocio("Informe o valor base da casa corretamente.");
+  }
+
+  return valor;
+}
+
+function numeroMoedaObrigatoria(
+  formData: FormData,
+  chave: string,
+  label: string,
+  minimo: number,
+): number {
+  const valor = Number.parseFloat(textoObrigatorio(formData, chave, label).replace(",", "."));
+  if (!Number.isFinite(valor) || valor < minimo) {
+    throw new ErroRegraNegocio(`Informe ${label} valido.`);
   }
 
   return valor;

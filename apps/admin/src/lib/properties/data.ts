@@ -1,6 +1,7 @@
 import type {
   AmenityRow,
   JsonValue,
+  LicenseRow,
   MediaAssetRow,
   PlanRow,
   PropertyAmenityRow,
@@ -35,6 +36,7 @@ type SubscriptionPlanoRow = {
 };
 
 type PlanoLimiteRow = Pick<PlanRow, "name" | "max_properties">;
+type LicencaLimiteRow = Pick<LicenseRow, "limits" | "status">;
 
 export function podeLerPropriedades(contexto: ContextoAutenticacao): boolean {
   if (contexto.role === "owner") return true;
@@ -132,18 +134,34 @@ export async function carregarLimitesPlano(
   tenantId: string
 ): Promise<Omit<LimitesPlanoPropriedades, "propriedadesUsadas">> {
   const supabase = await criarClienteSupabaseServer();
-  const { data: assinatura, error: erroAssinatura } = await supabase
-    .from("subscriptions")
-    .select("plan_id,status")
-    .eq("tenant_id", tenantId)
-    .in("status", ["trialing", "active"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<SubscriptionPlanoRow>();
+  const [assinaturaResultado, licencaResultado] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("plan_id,status")
+      .eq("tenant_id", tenantId)
+      .in("status", ["trialing", "active"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<SubscriptionPlanoRow>(),
+    supabase
+      .from("licenses")
+      .select("limits,status")
+      .eq("tenant_id", tenantId)
+      .in("status", ["trial", "active"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<LicencaLimiteRow>()
+  ]);
 
-  if (erroAssinatura) {
-    registrarErroLeitura("assinatura do plano", erroAssinatura);
+  if (assinaturaResultado.error) {
+    registrarErroLeitura("assinatura do plano", assinaturaResultado.error);
   }
+  if (licencaResultado.error) {
+    registrarErroLeitura("licenca do tenant", licencaResultado.error);
+  }
+
+  const assinatura = assinaturaResultado.data;
+  const limiteLicenca = obterLimitePropriedadesLicenca(licencaResultado.data?.limits);
 
   if (!assinatura?.plan_id) return criarLimitesPlanoPadrao();
 
@@ -159,7 +177,7 @@ export async function carregarLimitesPlano(
 
   return {
     nomePlano: plano?.name ?? "Plano padrão",
-    maxPropriedades: plano?.max_properties ?? LIMITE_PADRAO_PLANO
+    maxPropriedades: limiteLicenca ?? plano?.max_properties ?? LIMITE_PADRAO_PLANO
   };
 }
 
@@ -331,6 +349,19 @@ function criarLimitesPlanoPadrao() {
     maxPropriedades: LIMITE_PADRAO_PLANO,
     propriedadesUsadas: 0
   };
+}
+
+function obterLimitePropriedadesLicenca(limites: JsonValue | undefined): number | null {
+  if (!limites || !valorEhObjeto(limites)) return null;
+
+  const maxPropriedades = limites.max_properties;
+  if (typeof maxPropriedades !== "number" || !Number.isFinite(maxPropriedades)) {
+    return null;
+  }
+
+  // O limite da licenca e o override administrativo do Super Admin para o tenant.
+  // Ele prevalece sobre o plano para o Gerenciamento refletir mudancas imediatamente.
+  return Math.max(1, Math.trunc(maxPropriedades));
 }
 
 function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string {

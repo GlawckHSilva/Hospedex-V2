@@ -717,6 +717,9 @@ function redirecionarComErro(erro: unknown, mensagemLog: string): never {
 function revalidarModulo() {
   revalidatePath(CAMINHO_PROPRIETARIOS);
   revalidatePath("/super-admin");
+  // O limite de casas salvo na licenca impacta diretamente o Gerenciamento.
+  // Revalidar a rota evita que o proprietario veja contador antigo apos ajuste do Super Admin.
+  revalidatePath("/propriedades");
 }
 
 class ErroRegraProprietario extends Error {}
