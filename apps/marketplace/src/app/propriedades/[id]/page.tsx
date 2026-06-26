@@ -165,7 +165,10 @@ export default async function PropriedadePage({
             </Secao>
 
             <Secao title="Calendário de disponibilidade">
-              <PropertyAvailabilityCalendar availability={propriedade.availability} />
+              <PropertyAvailabilityCalendar
+                availability={propriedade.availability}
+                error={propriedade.availabilityError}
+              />
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
                 O calendário mostra apenas o status público de cada data. Detalhes
                 operacionais, motivos e observações internas não são exibidos ao hóspede.

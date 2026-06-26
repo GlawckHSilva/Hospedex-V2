@@ -1,7 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   AmenityRow,
-  CalendarAvailabilityBlockRow,
   JsonValue,
   MediaAssetRow,
   PropertyAmenityRow,
@@ -11,7 +10,6 @@ import type {
   PropertyType,
   RegionalGuideCategory,
   RegionalGuideLocationRow,
-  ReservationRow,
 } from "@hospedex/types";
 
 type PropriedadeRowPublica = Pick<
@@ -243,6 +241,7 @@ export type PropriedadePublica = {
   structure: EstruturaCasaPublica;
   pricing: ValoresCasaPublica;
   availability: PeriodoDisponibilidadePublica[];
+  availabilityError: string | null;
   bedrooms: number;
   beds: number;
   bathrooms: number;
@@ -285,12 +284,8 @@ const CAMPOS_MIDIA =
   "id,property_id,media_type,storage_bucket,storage_path,url,alt,sort_order,is_cover,status";
 const CAMPOS_COMODIDADE = "id,code,name,category";
 const CAMPOS_VINCULO_COMODIDADE = "property_id,amenity_id";
-const CAMPOS_RESERVA_OCUPACAO = "property_id,status,check_in,check_out";
-const CAMPOS_BLOQUEIO_OCUPACAO = "property_id,status,starts_on,ends_on";
 const CAMPOS_REGRAS_CASA =
   "tenant_id,property_id,check_in_time,check_out_time,min_nights,max_nights,allow_children,allow_pets,allow_smoking,allow_events,max_guests,min_responsible_age,additional_rules,special_instructions,cancellation_refund_until_days,cancellation_refund_until_percentage,cancellation_late_until_days,cancellation_late_refund_percentage,cancellation_no_refund_within_days,cancellation_notes";
-const CAMPOS_DISPONIBILIDADE_PUBLICA =
-  "property_id,status,blocks_availability,starts_on,ends_on";
 const CAMPOS_GUIA_REGIAO =
   "id,tenant_id,category,name,description,address,phone,whatsapp,website_url,opening_hours,cover_image_url,display_order,status,deleted_at";
 const CAMPOS_AVALIACAO_PUBLICA =
@@ -300,12 +295,6 @@ const TIPOS_PROPRIEDADE = new Set<PropertyType>([
   "inn",
   "small_hotel"
 ]);
-const STATUS_RESERVA_OCUPA_CASA = [
-  "pending",
-  "awaiting_payment",
-  "confirmed",
-  "checked_in"
-];
 const STATUS_DISPONIBILIDADE_PUBLICA = [
   "blocked",
   "interdicted",
@@ -314,22 +303,18 @@ const STATUS_DISPONIBILIDADE_PUBLICA = [
   "unavailable",
   "reserved"
 ] as const;
-const STATUS_BLOQUEIA_CASA = ["blocked", "unavailable", "reserved"];
 
-type ReservaOcupacaoPublica = Pick<
-  ReservationRow,
-  "property_id" | "status" | "check_in" | "check_out"
->;
+type DisponibilidadeRowPublica = {
+  ends_on: string;
+  property_id: string;
+  starts_on: string;
+  status: StatusDisponibilidadePublica;
+};
 
-type BloqueioOcupacaoPublica = Pick<
-  CalendarAvailabilityBlockRow,
-  "property_id" | "status" | "starts_on" | "ends_on"
->;
-
-type DisponibilidadeRowPublica = Pick<
-  CalendarAvailabilityBlockRow,
-  "property_id" | "status" | "blocks_availability" | "starts_on" | "ends_on"
->;
+type ResultadoDisponibilidadePublica = {
+  erro: string | null;
+  periodos: DisponibilidadeRowPublica[];
+};
 
 let clienteMarketplace: SupabaseClient | null = null;
 
@@ -438,34 +423,57 @@ async function carregarPropriedadesIndisponiveis(
   const idsPropriedades = propriedades.map((propriedade) => propriedade.id);
   if (!idsPropriedades.length) return new Set<string>();
 
-  const [reservasResultado, bloqueiosResultado] = await Promise.all([
-    supabase
-      .from("reservations")
-      .select(CAMPOS_RESERVA_OCUPACAO)
-      .in("property_id", idsPropriedades)
-      .in("status", STATUS_RESERVA_OCUPA_CASA)
-      .lt("check_in", filtros.dataFim!)
-      .gt("check_out", filtros.dataInicio!)
-      .returns<ReservaOcupacaoPublica[]>(),
-    supabase
-      .from("calendar_availability_blocks")
-      .select(CAMPOS_BLOQUEIO_OCUPACAO)
-      .in("property_id", idsPropriedades)
-      .in("status", STATUS_BLOQUEIA_CASA)
-      .lt("starts_on", filtros.dataFim!)
-      .gt("ends_on", filtros.dataInicio!)
-      .returns<BloqueioOcupacaoPublica[]>()
-  ]);
-
-  registrarErroLeitura("reservas publicas de disponibilidade", reservasResultado.error);
-  registrarErroLeitura("bloqueios publicos de disponibilidade", bloqueiosResultado.error);
-
-  return new Set(
-    [
-      ...(reservasResultado.data ?? []).map((reserva) => reserva.property_id),
-      ...(bloqueiosResultado.data ?? []).map((bloqueio) => bloqueio.property_id)
-    ].filter((propertyId): propertyId is string => Boolean(propertyId))
+  const disponibilidade = await carregarDisponibilidadePublica(
+    supabase,
+    idsPropriedades,
+    filtros.dataInicio!,
+    filtros.dataFim!
   );
+
+  if (disponibilidade.erro) {
+    throw new Error(disponibilidade.erro);
+  }
+
+  return new Set(disponibilidade.periodos.map((periodo) => periodo.property_id));
+}
+
+async function carregarDisponibilidadePublica(
+  supabase: SupabaseClient,
+  propriedadeIds: string[],
+  dataInicio: string,
+  dataFim: string
+): Promise<ResultadoDisponibilidadePublica> {
+  if (!propriedadeIds.length) {
+    return { erro: null, periodos: [] };
+  }
+
+  // A disponibilidade publica passa por RPC para nao expor tabelas internas
+  // como calendar_availability_blocks ou reservations ao visitante anonimo.
+  const resultado = await supabase
+    .rpc("get_public_property_availability", {
+      p_ends_on: dataFim,
+      p_property_ids: propriedadeIds,
+      p_starts_on: dataInicio
+    })
+    .returns<DisponibilidadeRowPublica[]>();
+
+  if (resultado.error) {
+    return {
+      erro: `Nao foi possivel carregar a disponibilidade publica: ${resultado.error.message}`,
+      periodos: []
+    };
+  }
+
+  const periodos = Array.isArray(resultado.data)
+    ? (resultado.data as DisponibilidadeRowPublica[])
+    : [];
+
+  return {
+    erro: null,
+    periodos: periodos.filter((periodo) =>
+      STATUS_DISPONIBILIDADE_PUBLICA.includes(periodo.status)
+    )
+  };
 }
 
 function propriedadeAtendeFiltros(
@@ -630,7 +638,8 @@ async function montarPropriedadesPublicas(
       regras: detalhes.regras,
       guiaRegiao: detalhes.guiaRegiao,
       avaliacoes: detalhes.avaliacoes,
-      disponibilidade: detalhes.disponibilidade
+      disponibilidade: detalhes.disponibilidade,
+      disponibilidadeErro: detalhes.disponibilidadeErro
     })
   );
 }
@@ -640,6 +649,7 @@ type DetalhesPublicosPropriedade = {
   guiaRegiao: GuiaRegiaoRowPublica[];
   avaliacoes: AvaliacaoRowPublica[];
   disponibilidade: DisponibilidadeRowPublica[];
+  disponibilidadeErro: string | null;
 };
 
 function criarDetalhesPublicosVazios(): DetalhesPublicosPropriedade {
@@ -647,7 +657,8 @@ function criarDetalhesPublicosVazios(): DetalhesPublicosPropriedade {
     regras: [],
     guiaRegiao: [],
     avaliacoes: [],
-    disponibilidade: []
+    disponibilidade: [],
+    disponibilidadeErro: null
   };
 }
 
@@ -686,31 +697,24 @@ async function carregarDetalhesPublicosPropriedade(
       .order("reviewed_at", { ascending: false })
       .limit(80)
       .returns<AvaliacaoRowPublica[]>(),
-    supabase
-      .from("calendar_availability_blocks")
-      .select(CAMPOS_DISPONIBILIDADE_PUBLICA)
-      .in("property_id", propriedadeIds)
-      .eq("blocks_availability", true)
-      .in("status", [...STATUS_DISPONIBILIDADE_PUBLICA])
-      .lt("starts_on", fimDisponibilidade)
-      .gt("ends_on", inicioDisponibilidade)
-      .order("starts_on", { ascending: true })
-      .returns<DisponibilidadeRowPublica[]>()
+    carregarDisponibilidadePublica(
+      supabase,
+      propriedadeIds,
+      inicioDisponibilidade,
+      fimDisponibilidade
+    )
     ]);
 
   registrarErroLeitura("regras publicas da propriedade", regrasResultado.error);
   registrarErroLeitura("guia publico da regiao", guiaResultado.error);
   registrarErroLeitura("avaliacoes publicas", avaliacoesResultado.error);
-  registrarErroLeitura(
-    "disponibilidade publica da casa",
-    disponibilidadeResultado.error
-  );
 
   return {
     regras: regrasResultado.data ?? [],
     guiaRegiao: guiaResultado.data ?? [],
     avaliacoes: avaliacoesResultado.data ?? [],
-    disponibilidade: disponibilidadeResultado.data ?? []
+    disponibilidade: disponibilidadeResultado.periodos,
+    disponibilidadeErro: disponibilidadeResultado.erro
   };
 }
 
@@ -743,6 +747,7 @@ function montarPropriedadePublica(
     guiaRegiao: GuiaRegiaoRowPublica[];
     avaliacoes: AvaliacaoRowPublica[];
     disponibilidade: DisponibilidadeRowPublica[];
+    disponibilidadeErro: string | null;
   }
 ): PropriedadePublica {
   const endereco = normalizarEndereco(propriedade.address);
@@ -800,6 +805,7 @@ function montarPropriedadePublica(
       propriedade.id,
       relacionamentos.disponibilidade
     ),
+    availabilityError: relacionamentos.disponibilidadeErro,
     bedrooms: estrutura.bedrooms,
     beds: estrutura.beds,
     bathrooms: estrutura.bathrooms,
@@ -1058,7 +1064,6 @@ function montarDisponibilidadePublica(
     .filter(
       (periodo) =>
         periodo.property_id === propriedadeId &&
-        periodo.blocks_availability &&
         STATUS_DISPONIBILIDADE_PUBLICA.includes(
           periodo.status as (typeof STATUS_DISPONIBILIDADE_PUBLICA)[number]
         )

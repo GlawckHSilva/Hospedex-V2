@@ -12,6 +12,7 @@ import type {
 
 type PropertyAvailabilityCalendarProps = {
   availability: PeriodoDisponibilidadePublica[];
+  error?: string | null;
 };
 
 type DiaCalendario = {
@@ -73,7 +74,8 @@ const STATUS_VISUAL: Record<
  * motivos e observações administrativas não são expostos ao hóspede.
  */
 export function PropertyAvailabilityCalendar({
-  availability
+  availability,
+  error
 }: PropertyAvailabilityCalendarProps) {
   const [mesReferencia, setMesReferencia] = useState(() => inicioDoMes(new Date()));
   const dias = useMemo(
@@ -167,6 +169,13 @@ export function PropertyAvailabilityCalendar({
           );
         })}
       </div>
+
+      {error ? (
+        <div className="border-t border-amber-400/25 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
+          Nao foi possivel carregar a disponibilidade agora. A casa continua
+          visivel, mas confirme as datas antes de enviar a solicitacao.
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap gap-2 p-4">
         {Object.entries(STATUS_VISUAL).map(([status, visual]) => (
