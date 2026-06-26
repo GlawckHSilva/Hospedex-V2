@@ -5,7 +5,7 @@ import {
   TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB,
   tipoImagemPropriedadePermitido
 } from "./media-limits";
-import type { ClienteSupabaseServer } from "./permissions";
+import { ErroRegraNegocio, type ClienteSupabaseServer } from "./permissions";
 
 /**
  * Integração de mídia com Supabase Storage.
@@ -57,7 +57,7 @@ export async function enviarImagemParaStorage(
       upsert: false
     });
 
-  if (error) throw new Error(`Erro ao enviar imagem para o Storage: ${error.message}`);
+  if (error) throw new ErroRegraNegocio(`Erro ao enviar imagem para o Storage: ${error.message}`);
 
   const { data } = supabase.storage
     .from(BUCKET_MIDIA_PROPRIEDADES)
@@ -80,7 +80,7 @@ export async function removerImagemDoStorage(
     .from(imagem.storage_bucket ?? BUCKET_MIDIA_PROPRIEDADES)
     .remove([imagem.storage_path]);
 
-  if (error) throw new Error(`Erro ao remover imagem do Storage: ${error.message}`);
+  if (error) throw new ErroRegraNegocio(`Erro ao remover imagem do Storage: ${error.message}`);
 }
 
 export async function enviarLogoTenantParaStorage(
@@ -98,7 +98,7 @@ export async function enviarLogoTenantParaStorage(
       upsert: false
     });
 
-  if (error) throw new Error(`Erro ao enviar logo para o Storage: ${error.message}`);
+  if (error) throw new ErroRegraNegocio(`Erro ao enviar logo para o Storage: ${error.message}`);
 
   const { data } = supabase.storage
     .from(BUCKET_MIDIA_PROPRIEDADES)
@@ -124,26 +124,26 @@ export async function removerLogoTenantDoStorage(
     .from(BUCKET_MIDIA_PROPRIEDADES)
     .remove([caminho]);
 
-  if (error) throw new Error(`Erro ao remover logo do Storage: ${error.message}`);
+  if (error) throw new ErroRegraNegocio(`Erro ao remover logo do Storage: ${error.message}`);
 }
 
 function validarImagem(arquivo: File) {
   if (!tipoImagemPropriedadePermitido(arquivo.type)) {
-    throw new Error("Formato de imagem inválido. Use JPG, PNG, WebP ou GIF.");
+    throw new ErroRegraNegocio("Formato de imagem inválido. Use JPG, PNG, WebP ou GIF.");
   }
 
   if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
-    throw new Error(`Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+    throw new ErroRegraNegocio(`Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
   }
 }
 
 function validarLogoTenant(arquivo: File) {
   if (!(TIPOS_LOGO_TENANT_PERMITIDOS as readonly string[]).includes(arquivo.type)) {
-    throw new Error("Formato de logo invalido. Use JPG, PNG, WebP ou SVG.");
+    throw new ErroRegraNegocio("Formato de logo invalido. Use JPG, PNG, WebP ou SVG.");
   }
 
   if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
-    throw new Error(`Logo acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+    throw new ErroRegraNegocio(`Logo acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
   }
 }
 

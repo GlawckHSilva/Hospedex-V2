@@ -110,6 +110,7 @@ export async function criarPropriedadeAction(formData: FormData) {
     const entrada = obterEntradaPropriedade(formData);
     const supabase = await criarClienteSupabaseServer();
 
+    await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
     await garantirLimitePropriedades(supabase, escopo.tenantId);
     const { data: propriedade, error } = await supabase
       .from("properties")
@@ -137,7 +138,7 @@ export async function criarPropriedadeAction(formData: FormData) {
       .single<PropertyRow>();
 
     if (error || !propriedade) {
-      throw new Error(
+      throw new ErroRegraNegocio(
         error?.message ?? "Propriedade não retornada após criação.",
       );
     }
@@ -766,6 +767,56 @@ async function garantirLimitePropriedades(
   }
 }
 
+async function garantirTenantOperacionalParaCasas(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+) {
+  // A RLS do banco bloqueia cadastro de casas sem tenant/licenca operacional.
+  // Validar antes do insert evita erro generico e mostra ao proprietario a acao correta.
+  const { data: tenant, error: erroTenant } = await supabase
+    .from("tenants")
+    .select("status")
+    .eq("id", tenantId)
+    .maybeSingle<{ status: string }>();
+
+  if (erroTenant) {
+    throw new ErroRegraNegocio(
+      traduzirErroSupabase(erroTenant.message, "Não foi possível validar o tenant."),
+    );
+  }
+  if (!tenant || !["trial", "active", "past_due"].includes(tenant.status)) {
+    throw new ErroRegraNegocio("Tenant inativo. Verifique o status da conta no Super Admin.");
+  }
+
+  const { data: licenca, error: erroLicenca } = await supabase
+    .from("licenses")
+    .select("status,starts_at,expires_at")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ expires_at: string | null; starts_at: string; status: string }>();
+
+  if (erroLicenca) {
+    throw new ErroRegraNegocio(
+      traduzirErroSupabase(erroLicenca.message, "Não foi possível validar a licença."),
+    );
+  }
+  if (!licenca) {
+    throw new ErroRegraNegocio("Licença não encontrada. Configure a licença no Super Admin.");
+  }
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  if (!["trial", "active"].includes(licenca.status)) {
+    throw new ErroRegraNegocio("Licença inativa. Verifique o status da licença no Super Admin.");
+  }
+  if (licenca.starts_at > hoje) {
+    throw new ErroRegraNegocio("Licença ainda não iniciou. Verifique a data de início no Super Admin.");
+  }
+  if (licenca.expires_at && licenca.expires_at < hoje) {
+    throw new ErroRegraNegocio("Licença vencida. Renove a licença para cadastrar casas.");
+  }
+}
+
 async function carregarPropriedadeDoTenant(
   supabase: ClienteSupabaseServer,
   escopo: EscopoGerenciamento,
@@ -1152,16 +1203,52 @@ function redirecionarComErro(
   erro: unknown,
   mensagemLog: string,
 ): never {
+  const mensagemTecnica = erro instanceof Error ? erro.message : null;
   const mensagem =
     erro instanceof ErroRegraNegocio
-      ? erro.message
-      : "Não foi possível concluir a operação.";
+      ? traduzirErroSupabase(erro.message, erro.message)
+      : traduzirErroSupabase(
+          mensagemTecnica,
+          "Não foi possível concluir a operação.",
+        );
 
   if (!(erro instanceof ErroRegraNegocio)) {
-    console.error(mensagemLog, erro);
+    console.error(mensagemLog, mensagemTecnica, erro);
   }
 
   redirect(`${caminho}?erro=${encodeURIComponent(mensagem)}`);
+}
+
+function traduzirErroSupabase(
+  mensagemTecnica: string | null | undefined,
+  fallback: string,
+) {
+  const mensagem = mensagemTecnica?.toLowerCase() ?? "";
+
+  if (!mensagem) return fallback;
+  if (mensagem.includes("row-level security") || mensagem.includes("rls")) {
+    return "Erro de permissão ao cadastrar casa. Verifique licença, tenant e permissões.";
+  }
+  if (mensagem.includes("duplicate key") && mensagem.includes("properties_slug")) {
+    return "Já existe uma casa com identificador semelhante. Tente novamente.";
+  }
+  if (mensagem.includes("violates not-null constraint")) {
+    return "Existe um campo obrigatório da casa sem preenchimento. Revise os dados e tente novamente.";
+  }
+  if (mensagem.includes("violates check constraint")) {
+    return "Existe um valor inválido no cadastro da casa. Revise os dados e tente novamente.";
+  }
+  if (mensagem.includes("storage") || mensagem.includes("imagem") || mensagem.includes("mime")) {
+    return "Não foi possível salvar a imagem. Verifique o formato e tente novamente.";
+  }
+  if (mensagem.includes("jwt") || mensagem.includes("session") || mensagem.includes("auth")) {
+    return "Sessão expirada. Entre novamente.";
+  }
+  if (mensagem.includes("network") || mensagem.includes("fetch failed")) {
+    return "Falha de conexão com o Supabase. Tente novamente em instantes.";
+  }
+
+  return fallback;
 }
 
 function revalidarModulo() {
