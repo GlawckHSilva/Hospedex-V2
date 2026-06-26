@@ -1,0 +1,91 @@
+"use client";
+
+import { CheckCircle2, Sparkles } from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { Button, PremiumEmptyState } from "@hospedex/ui";
+
+import type { PropriedadePublica } from "../../lib/marketplace/data";
+
+type PropertyAmenitiesSectionProps = {
+  amenities: PropriedadePublica["amenities"];
+};
+
+const LIMITE_INICIAL = 12;
+
+/**
+ * Comodidades públicas agrupadas.
+ *
+ * Mantém a página legível em casas com muitas comodidades e permite expansão
+ * sem criar uma lista gigante no primeiro carregamento.
+ */
+export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSectionProps) {
+  const [expandido, setExpandido] = useState(false);
+  const comodidadesVisiveis = expandido ? amenities : amenities.slice(0, LIMITE_INICIAL);
+  const grupos = useMemo(() => agruparComodidades(comodidadesVisiveis), [comodidadesVisiveis]);
+
+  if (!amenities.length) {
+    return (
+      <PremiumEmptyState
+        className="border border-dashed bg-background/60"
+        description="O proprietário ainda não publicou comodidades para esta casa."
+        icon={<Sparkles className="h-5 w-5" />}
+        title="Comodidades em breve"
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-5">
+      {grupos.map((grupo) => (
+        <div className="grid gap-3" key={grupo.categoria}>
+          <h3 className="text-sm font-semibold text-muted-foreground">
+            {formatarCategoria(grupo.categoria)}
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {grupo.itens.map((comodidade) => (
+              <span
+                className="inline-flex items-center gap-2 rounded-md border bg-background/70 px-3 py-2 text-sm"
+                key={comodidade.id}
+              >
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                {comodidade.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {amenities.length > LIMITE_INICIAL ? (
+        <Button
+          className="w-fit"
+          onClick={() => setExpandido((valor) => !valor)}
+          type="button"
+          variant="outline"
+        >
+          {expandido ? "Ver menos" : `Ver todas (${amenities.length})`}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function agruparComodidades(comodidades: PropertyAmenitiesSectionProps["amenities"]) {
+  const grupos = new Map<string, PropertyAmenitiesSectionProps["amenities"]>();
+
+  for (const comodidade of comodidades) {
+    const categoria = comodidade.category ?? "geral";
+    grupos.set(categoria, [...(grupos.get(categoria) ?? []), comodidade]);
+  }
+
+  return [...grupos.entries()].map(([categoria, itens]) => ({
+    categoria,
+    itens
+  }));
+}
+
+function formatarCategoria(categoria: string) {
+  return categoria.replace(/[_-]/g, " ").replace(/\b\w/g, (letra) =>
+    letra.toUpperCase()
+  );
+}

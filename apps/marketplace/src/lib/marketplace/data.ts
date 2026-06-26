@@ -26,7 +26,13 @@ type PropriedadeRowPublica = Pick<
   | "status"
   | "headline"
   | "description"
+  | "short_description"
+  | "full_description"
+  | "is_public"
+  | "public_details"
   | "address"
+  | "structure_details"
+  | "pricing_details"
   | "timezone"
   | "created_at"
   | "updated_at"
@@ -81,12 +87,14 @@ type RegrasCasaRowPublica = Pick<
   | "check_out_time"
   | "min_nights"
   | "max_nights"
+  | "allow_children"
   | "allow_pets"
   | "allow_smoking"
   | "allow_events"
   | "max_guests"
   | "min_responsible_age"
   | "additional_rules"
+  | "special_instructions"
   | "cancellation_refund_until_days"
   | "cancellation_refund_until_percentage"
   | "cancellation_late_until_days"
@@ -154,9 +162,41 @@ export type ComodidadePublica = {
 };
 
 export type EnderecoPublico = {
+  bairro: string;
+  cep: string;
+  complemento: string;
+  googleMapsLink: string;
   linha1: string;
+  numero: string;
   cidade: string;
   estado: string;
+};
+
+export type EstruturaCasaPublica = {
+  bathrooms: number;
+  bedrooms: number;
+  beds: number;
+  garageSpaces: number;
+  maxGuests: number;
+};
+
+export type ValoresCasaPublica = {
+  cleaningFee: number;
+  dailyRate: number;
+};
+
+export type StatusDisponibilidadePublica =
+  | "reserved"
+  | "blocked"
+  | "interdicted"
+  | "maintenance"
+  | "cleaning"
+  | "unavailable";
+
+export type PeriodoDisponibilidadePublica = {
+  startsOn: string;
+  endsOn: string;
+  status: StatusDisponibilidadePublica;
 };
 
 export type PoliticaCancelamentoPublica = {
@@ -168,6 +208,7 @@ export type RegrasCasaPublicas = {
   checkIn: string;
   checkOut: string;
   allowPets: boolean;
+  allowChildren: boolean;
   allowSmoking: boolean;
   allowEvents: boolean;
   maxGuests: number;
@@ -175,6 +216,7 @@ export type RegrasCasaPublicas = {
   minNights: number;
   maxNights: number | null;
   additionalRules: string | null;
+  specialInstructions: string | null;
   cancellationPolicy: PoliticaCancelamentoPublica;
   summary: string[];
 };
@@ -231,8 +273,12 @@ export type PropriedadePublica = {
   coverImage: ImagemPublica | null;
   amenities: ComodidadePublica[];
   units: UnidadePublica[];
+  reservationUnitId: string | null;
   minPrice: number | null;
   maxGuests: number;
+  structure: EstruturaCasaPublica;
+  pricing: ValoresCasaPublica;
+  availability: PeriodoDisponibilidadePublica[];
   rules: string[];
   checkIn: string;
   checkOut: string;
@@ -267,7 +313,7 @@ export type DestinoEmDestaque = {
 };
 
 const CAMPOS_PROPRIEDADE =
-  "id,tenant_id,name,slug,property_type,status,headline,description,address,timezone,created_at,updated_at,deleted_at";
+  "id,tenant_id,name,slug,property_type,status,headline,description,short_description,full_description,is_public,public_details,address,structure_details,pricing_details,timezone,created_at,updated_at,deleted_at";
 const CAMPOS_MIDIA =
   "id,property_id,unit_id,media_type,storage_bucket,storage_path,url,alt,sort_order,is_cover,status";
 const CAMPOS_UNIDADE =
@@ -279,7 +325,9 @@ const CAMPOS_VINCULO_COMODIDADE = "property_id,amenity_id";
 const CAMPOS_RESERVA_OCUPACAO = "property_id,unit_id,status,check_in,check_out";
 const CAMPOS_BLOQUEIO_OCUPACAO = "property_id,unit_id,status,starts_on,ends_on";
 const CAMPOS_REGRAS_CASA =
-  "tenant_id,property_id,check_in_time,check_out_time,min_nights,max_nights,allow_pets,allow_smoking,allow_events,max_guests,min_responsible_age,additional_rules,cancellation_refund_until_days,cancellation_refund_until_percentage,cancellation_late_until_days,cancellation_late_refund_percentage,cancellation_no_refund_within_days,cancellation_notes";
+  "tenant_id,property_id,check_in_time,check_out_time,min_nights,max_nights,allow_children,allow_pets,allow_smoking,allow_events,max_guests,min_responsible_age,additional_rules,special_instructions,cancellation_refund_until_days,cancellation_refund_until_percentage,cancellation_late_until_days,cancellation_late_refund_percentage,cancellation_no_refund_within_days,cancellation_notes";
+const CAMPOS_DISPONIBILIDADE_PUBLICA =
+  "property_id,status,blocks_availability,starts_on,ends_on";
 const CAMPOS_GUIA_REGIAO =
   "id,tenant_id,category,name,description,address,phone,whatsapp,website_url,opening_hours,cover_image_url,display_order,status,deleted_at";
 const CAMPOS_AVALIACAO_PUBLICA =
@@ -296,6 +344,14 @@ const STATUS_RESERVA_OCUPA_UNIDADE = [
   "checked_in"
 ];
 const STATUS_BLOQUEIA_UNIDADE = ["blocked", "unavailable", "reserved"];
+const STATUS_DISPONIBILIDADE_PUBLICA = [
+  "blocked",
+  "interdicted",
+  "maintenance",
+  "cleaning",
+  "unavailable",
+  "reserved"
+] as const;
 
 type ReservaOcupacaoPublica = Pick<
   ReservationRow,
@@ -305,6 +361,11 @@ type ReservaOcupacaoPublica = Pick<
 type BloqueioOcupacaoPublica = Pick<
   CalendarAvailabilityBlockRow,
   "property_id" | "unit_id" | "status" | "starts_on" | "ends_on"
+>;
+
+type DisponibilidadeRowPublica = Pick<
+  CalendarAvailabilityBlockRow,
+  "property_id" | "status" | "blocks_availability" | "starts_on" | "ends_on"
 >;
 
 let clienteMarketplace: SupabaseClient | null = null;
@@ -630,7 +691,8 @@ async function montarPropriedadesPublicas(
       comodidades,
       regras: detalhes.regras,
       guiaRegiao: detalhes.guiaRegiao,
-      avaliacoes: detalhes.avaliacoes
+      avaliacoes: detalhes.avaliacoes,
+      disponibilidade: detalhes.disponibilidade
     })
   );
 }
@@ -639,13 +701,15 @@ type DetalhesPublicosPropriedade = {
   regras: RegrasCasaRowPublica[];
   guiaRegiao: GuiaRegiaoRowPublica[];
   avaliacoes: AvaliacaoRowPublica[];
+  disponibilidade: DisponibilidadeRowPublica[];
 };
 
 function criarDetalhesPublicosVazios(): DetalhesPublicosPropriedade {
   return {
     regras: [],
     guiaRegiao: [],
-    avaliacoes: []
+    avaliacoes: [],
+    disponibilidade: []
   };
 }
 
@@ -656,7 +720,12 @@ async function carregarDetalhesPublicosPropriedade(
 ): Promise<DetalhesPublicosPropriedade> {
   if (!propriedadeIds.length) return criarDetalhesPublicosVazios();
 
-  const [regrasResultado, guiaResultado, avaliacoesResultado] = await Promise.all([
+  const inicioDisponibilidade = formatarDataIso(new Date());
+  const fimDisponibilidade = formatarDataIso(
+    new Date(new Date().setFullYear(new Date().getFullYear() + 1))
+  );
+  const [regrasResultado, guiaResultado, avaliacoesResultado, disponibilidadeResultado] =
+    await Promise.all([
     supabase
       .from("property_settings")
       .select(CAMPOS_REGRAS_CASA)
@@ -678,17 +747,32 @@ async function carregarDetalhesPublicosPropriedade(
       .eq("status", "approved")
       .order("reviewed_at", { ascending: false })
       .limit(80)
-      .returns<AvaliacaoRowPublica[]>()
-  ]);
+      .returns<AvaliacaoRowPublica[]>(),
+    supabase
+      .from("calendar_availability_blocks")
+      .select(CAMPOS_DISPONIBILIDADE_PUBLICA)
+      .in("property_id", propriedadeIds)
+      .eq("blocks_availability", true)
+      .in("status", [...STATUS_DISPONIBILIDADE_PUBLICA])
+      .lt("starts_on", fimDisponibilidade)
+      .gt("ends_on", inicioDisponibilidade)
+      .order("starts_on", { ascending: true })
+      .returns<DisponibilidadeRowPublica[]>()
+    ]);
 
   registrarErroLeitura("regras publicas da propriedade", regrasResultado.error);
   registrarErroLeitura("guia publico da regiao", guiaResultado.error);
   registrarErroLeitura("avaliacoes publicas", avaliacoesResultado.error);
+  registrarErroLeitura(
+    "disponibilidade publica da casa",
+    disponibilidadeResultado.error
+  );
 
   return {
     regras: regrasResultado.data ?? [],
     guiaRegiao: guiaResultado.data ?? [],
-    avaliacoes: avaliacoesResultado.data ?? []
+    avaliacoes: avaliacoesResultado.data ?? [],
+    disponibilidade: disponibilidadeResultado.data ?? []
   };
 }
 
@@ -722,9 +806,15 @@ function montarPropriedadePublica(
     regras: RegrasCasaRowPublica[];
     guiaRegiao: GuiaRegiaoRowPublica[];
     avaliacoes: AvaliacaoRowPublica[];
+    disponibilidade: DisponibilidadeRowPublica[];
   }
 ): PropriedadePublica {
   const endereco = normalizarEndereco(propriedade.address);
+  const estrutura = normalizarEstruturaCasa(propriedade.structure_details);
+  const valores = normalizarValoresCasa(propriedade.pricing_details);
+  const detalhesPublicos = valorEhObjeto(propriedade.public_details)
+    ? propriedade.public_details
+    : {};
   const midias = relacionamentos.midias.filter(
     (midia) => midia.property_id === propriedade.id && !midia.unit_id
   );
@@ -733,25 +823,32 @@ function montarPropriedadePublica(
     .filter((imagem): imagem is ImagemPublica => Boolean(imagem));
   const unidades = montarUnidadesPublicas(propriedade.id, relacionamentos);
   const comodidades = montarComodidadesPublicas(propriedade.id, relacionamentos);
-  const minPrice = obterMenorPreco(unidades);
+  const minPrice = valores.dailyRate || obterMenorPreco(unidades);
   const maxGuestsUnidades = Math.max(...unidades.map((unidade) => unidade.capacity), 1);
   const regrasCasa = montarRegrasCasaPublicas(
     relacionamentos.regras.find((regra) => regra.property_id === propriedade.id),
-    maxGuestsUnidades
+    estrutura.maxGuests || maxGuestsUnidades
   );
+  const tituloPublico = obterTextoJson(detalhesPublicos, "publicTitle");
+  const descricaoPublica = obterTextoJson(detalhesPublicos, "publicDescription");
 
   return {
     id: propriedade.id,
     tenantId: propriedade.tenant_id,
-    name: propriedade.name,
+    name: obterTextoJson(detalhesPublicos, "displayName") || propriedade.name,
     slug: propriedade.slug,
     propertyType: propriedade.property_type,
     propertyTypeLabel: rotuloTipoPropriedade(propriedade.property_type),
     headline:
-      propriedade.headline ??
+      tituloPublico ||
+      propriedade.headline ||
+      propriedade.short_description ||
       "Hospedagem independente com curadoria Hospedex.",
     description:
-      propriedade.description ??
+      descricaoPublica ||
+      propriedade.full_description ||
+      propriedade.description ||
+      propriedade.short_description ||
       "Esta propriedade ainda está preparando uma descrição pública completa.",
     address: endereco,
     locationLabel: formatarLocalizacao(endereco),
@@ -759,8 +856,18 @@ function montarPropriedadePublica(
     coverImage: imagens.find((imagem) => imagem.isCover) ?? imagens[0] ?? null,
     amenities: comodidades,
     units: unidades,
+    reservationUnitId: unidades[0]?.id ?? null,
     minPrice,
     maxGuests: regrasCasa.maxGuests,
+    structure: {
+      ...estrutura,
+      maxGuests: regrasCasa.maxGuests
+    },
+    pricing: valores,
+    availability: montarDisponibilidadePublica(
+      propriedade.id,
+      relacionamentos.disponibilidade
+    ),
     rules: [
       ...regrasCasa.summary
     ],
@@ -785,10 +892,12 @@ function montarRegrasCasaPublicas(
   const maxNights = regras?.max_nights ?? null;
   const maxGuests = Math.max(regras?.max_guests ?? maxGuestsUnidades, 1);
   const minResponsibleAge = Math.max(regras?.min_responsible_age ?? 18, 0);
+  const allowChildren = regras?.allow_children ?? true;
   const allowPets = regras?.allow_pets ?? false;
   const allowSmoking = regras?.allow_smoking ?? false;
   const allowEvents = regras?.allow_events ?? false;
   const additionalRules = normalizarTextoOpcional(regras?.additional_rules);
+  const specialInstructions = normalizarTextoOpcional(regras?.special_instructions);
   const cancellationPolicy = montarPoliticaCancelamentoPublica(regras);
   const summary = [
     `${checkIn}; check-out ${checkOut.replace(/^Até /, "até ")}.`,
@@ -814,6 +923,7 @@ function montarRegrasCasaPublicas(
   return {
     checkIn,
     checkOut,
+    allowChildren,
     allowPets,
     allowSmoking,
     allowEvents,
@@ -822,6 +932,7 @@ function montarRegrasCasaPublicas(
     minNights,
     maxNights,
     additionalRules,
+    specialInstructions,
     cancellationPolicy,
     summary
   };
@@ -1000,15 +1111,70 @@ function normalizarEndereco(valor: JsonValue): EnderecoPublico {
   const endereco = valorEhObjeto(valor) ? valor : {};
 
   return {
+    bairro: obterTextoJson(endereco, "bairro"),
+    cep: obterTextoJson(endereco, "cep"),
+    complemento: obterTextoJson(endereco, "complemento"),
+    googleMapsLink: obterTextoJson(endereco, "googleMapsLink"),
     linha1: obterTextoJson(endereco, "linha1"),
+    numero: obterTextoJson(endereco, "numero"),
     cidade: obterTextoJson(endereco, "cidade") || obterTextoJson(endereco, "city"),
     estado: obterTextoJson(endereco, "estado") || obterTextoJson(endereco, "state")
   };
 }
 
+function normalizarEstruturaCasa(valor: JsonValue): EstruturaCasaPublica {
+  const estrutura = valorEhObjeto(valor) ? valor : {};
+
+  return {
+    bathrooms: obterNumeroJson(estrutura, "banheiros"),
+    bedrooms: obterNumeroJson(estrutura, "quartos"),
+    beds: obterNumeroJson(estrutura, "camas"),
+    garageSpaces: obterNumeroJson(estrutura, "garagemVagas"),
+    maxGuests: obterNumeroJson(estrutura, "hospedesMaximos", 1)
+  };
+}
+
+function normalizarValoresCasa(valor: JsonValue): ValoresCasaPublica {
+  const valores = valorEhObjeto(valor) ? valor : {};
+
+  return {
+    cleaningFee: obterNumeroJson(valores, "taxaLimpeza"),
+    dailyRate: obterNumeroJson(valores, "valorDiaria")
+  };
+}
+
+function montarDisponibilidadePublica(
+  propriedadeId: string,
+  periodos: DisponibilidadeRowPublica[]
+): PeriodoDisponibilidadePublica[] {
+  return periodos
+    .filter(
+      (periodo) =>
+        periodo.property_id === propriedadeId &&
+        periodo.blocks_availability &&
+        STATUS_DISPONIBILIDADE_PUBLICA.includes(
+          periodo.status as (typeof STATUS_DISPONIBILIDADE_PUBLICA)[number]
+        )
+    )
+    .map((periodo) => ({
+      endsOn: periodo.ends_on,
+      startsOn: periodo.starts_on,
+      status: periodo.status as StatusDisponibilidadePublica
+    }));
+}
+
 function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string {
   const dado = valor[chave];
   return typeof dado === "string" ? dado : "";
+}
+
+function obterNumeroJson(
+  valor: Record<string, JsonValue>,
+  chave: string,
+  padrao = 0
+) {
+  const dado = valor[chave];
+  return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
 }
 
 function normalizarTextoOpcional(valor: string | null | undefined) {
@@ -1022,6 +1188,10 @@ function valorEhObjeto(valor: JsonValue): valor is Record<string, JsonValue> {
 
 function formatarLocalizacao(endereco: EnderecoPublico) {
   return [endereco.cidade, endereco.estado].filter(Boolean).join(", ") || "Brasil";
+}
+
+function formatarDataIso(data: Date) {
+  return data.toISOString().slice(0, 10);
 }
 
 function obterMenorPreco(unidades: readonly UnidadePublica[]) {

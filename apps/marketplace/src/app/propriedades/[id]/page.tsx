@@ -1,10 +1,14 @@
 import {
+  Bath,
   BedDouble,
-  CheckCircle2,
-  Clock,
+  Car,
+  ExternalLink,
+  Home,
   Info,
   MapPin,
-  Users
+  Star,
+  Users,
+  WalletCards
 } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
@@ -12,6 +16,8 @@ import type { ReactNode } from "react";
 import { FadeIn, GlassCard, GlassPanel, StatusBadge } from "@hospedex/ui";
 
 import { PublicShell } from "../../../components/layout/public-shell";
+import { PropertyAmenitiesSection } from "../../../components/properties/property-amenities-section";
+import { PropertyAvailabilityCalendar } from "../../../components/properties/property-availability-calendar";
 import {
   PropertyRegionalGuideSection,
   PropertyReviewsSection,
@@ -23,7 +29,10 @@ import {
   type ReservaFeedback
 } from "../../../components/properties/property-reservation-card";
 import { ShareButton } from "../../../components/properties/share-button";
-import { carregarPropriedadePublica } from "../../../lib/marketplace/data";
+import {
+  carregarPropriedadePublica,
+  type EnderecoPublico
+} from "../../../lib/marketplace/data";
 
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -50,7 +59,7 @@ export default async function PropriedadePage({
           <GlassCard className="max-w-lg p-6 text-center">
             <Info className="mx-auto h-8 w-8 text-primary" />
             <h1 className="mt-5 text-2xl font-semibold">
-              Não foi possível carregar esta propriedade
+              Não foi possível carregar esta casa
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               {resultado.erro}
@@ -76,99 +85,97 @@ export default async function PropriedadePage({
             <FadeIn className="max-w-4xl">
               <div className="flex flex-wrap gap-2">
                 <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
-                <StatusBadge tone="success">Disponível para solicitação</StatusBadge>
+                <StatusBadge tone="success">Casa publicada</StatusBadge>
+                {propriedade.reviews.total ? (
+                  <StatusBadge tone="warning">
+                    {propriedade.reviews.average?.toFixed(1)} estrelas
+                  </StatusBadge>
+                ) : null}
               </div>
               <h1 className="mt-4 text-4xl font-semibold tracking-normal sm:text-5xl">
                 {propriedade.name}
               </h1>
-              <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground sm:text-base">
-                <MapPin className="h-4 w-4" />
-                {propriedade.locationLabel}
+              <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
+                {propriedade.headline}
               </p>
+              <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  {propriedade.locationLabel}
+                </span>
+                {propriedade.reviews.total ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Star className="h-4 w-4 fill-primary text-primary" />
+                    {propriedade.reviews.total} avaliações
+                  </span>
+                ) : null}
+              </div>
             </FadeIn>
             <FadeIn>
               <ShareButton />
             </FadeIn>
           </div>
+
+          <FadeIn>
+            <GlassPanel className="p-4 sm:p-5">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                <ResumoItem
+                  icon={Users}
+                  label="Hóspedes"
+                  value={`${propriedade.maxGuests} máx.`}
+                />
+                <ResumoItem
+                  icon={Home}
+                  label="Quartos"
+                  value={formatarQuantidade(propriedade.structure.bedrooms)}
+                />
+                <ResumoItem
+                  icon={BedDouble}
+                  label="Camas"
+                  value={formatarQuantidade(propriedade.structure.beds)}
+                />
+                <ResumoItem
+                  icon={Bath}
+                  label="Banheiros"
+                  value={formatarQuantidade(propriedade.structure.bathrooms)}
+                />
+                <ResumoItem
+                  icon={Car}
+                  label="Garagem"
+                  value={formatarVagas(propriedade.structure.garageSpaces)}
+                />
+                <ResumoItem
+                  icon={WalletCards}
+                  label="Diária"
+                  value={formatarPreco(propriedade.minPrice)}
+                />
+              </div>
+            </GlassPanel>
+          </FadeIn>
         </div>
       </section>
 
       <section className="bg-background">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_360px] lg:py-14">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_380px] lg:py-14">
           <div className="grid gap-8">
-            <GlassPanel className="p-6">
-              <div className="grid gap-5 md:grid-cols-4">
-                <ResumoItem
-                  icon={Users}
-                  label="Capacidade"
-                  value={`${propriedade.maxGuests} hóspedes`}
-                />
-                <ResumoItem
-                  icon={BedDouble}
-                  label="Unidades"
-                  value={`${propriedade.units.length} disponíveis`}
-                />
-                <ResumoItem icon={Clock} label="Check-in" value={propriedade.checkIn} />
-                <ResumoItem icon={Clock} label="Check-out" value={propriedade.checkOut} />
-              </div>
-            </GlassPanel>
-
-            <Secao title="Descrição">
+            <Secao title="Sobre a casa">
               <p className="text-sm leading-7 text-muted-foreground sm:text-base">
                 {propriedade.description}
+              </p>
+            </Secao>
+
+            <Secao title="Calendário de disponibilidade">
+              <PropertyAvailabilityCalendar availability={propriedade.availability} />
+              <p className="mt-4 text-xs leading-5 text-muted-foreground">
+                O calendário mostra apenas o status público de cada data. Detalhes
+                operacionais, motivos e observações internas não são exibidos ao hóspede.
               </p>
             </Secao>
 
             <PropertyReviewsSection reviews={propriedade.reviews} />
 
             <Secao title="Comodidades">
-              {propriedade.amenities.length ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {propriedade.amenities.map((comodidade) => (
-                    <span
-                      className="inline-flex items-center gap-2 rounded-md border bg-background/70 px-3 py-2 text-sm"
-                      key={comodidade.id}
-                    >
-                      <CheckCircle2 className="h-4 w-4 text-primary" />
-                      {comodidade.name}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Comodidades públicas serão exibidas assim que forem vinculadas.
-                </p>
-              )}
-            </Secao>
-
-            <Secao id="unidades" title="Unidades disponíveis">
-              <div className="grid gap-4">
-                {propriedade.units.map((unidade) => (
-                  <article
-                    className="grid gap-4 rounded-lg border bg-background/70 p-4 shadow-sm transition hover:border-primary/40 hover:bg-background/80 sm:grid-cols-[1fr_auto] sm:items-center"
-                    key={unidade.id}
-                  >
-                    <div>
-                      <h3 className="font-semibold">{unidade.name}</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {unidade.categoryName ?? "Unidade"}
-                        {unidade.description ? ` · ${unidade.description}` : ""}
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1.5">
-                          <Users className="h-4 w-4" />
-                          {unidade.capacity} hóspedes
-                        </span>
-                        <span className="inline-flex items-center gap-1.5">
-                          <BedDouble className="h-4 w-4" />
-                          {unidade.beds} cama{unidade.beds === 1 ? "" : "s"}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="font-semibold">{formatarPreco(unidade.basePrice)}</p>
-                  </article>
-                ))}
-              </div>
+              <PropertyAmenitiesSection amenities={propriedade.amenities} />
             </Secao>
 
             <PropertyRulesSection rules={propriedade.houseRules} />
@@ -176,26 +183,27 @@ export default async function PropriedadePage({
             <PropertyRegionalGuideSection locations={propriedade.regionalGuide} />
 
             <Secao title="Localização">
-              <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+              <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold">
                     <MapPin className="h-4 w-4 text-primary" />
                     {propriedade.locationLabel}
                   </p>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {propriedade.address.linha1 ||
-                      "Endereço completo compartilhado após a solicitação."}
+                    {formatarEnderecoResumido(propriedade.address)}
                   </p>
                 </div>
-                <div className="grid min-h-52 place-items-center rounded-lg border bg-[linear-gradient(135deg,rgba(14,165,233,0.16),rgba(99,102,241,0.12))] p-6 text-center">
-                  <div>
-                    <MapPin className="mx-auto h-8 w-8 text-primary" />
-                    <p className="mt-3 text-sm font-semibold">Mapa simples</p>
-                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                      Integração com mapa real será feita em uma etapa futura.
-                    </p>
-                  </div>
-                </div>
+                {propriedade.address.googleMapsLink ? (
+                  <a
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+                    href={propriedade.address.googleMapsLink}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Abrir no Google Maps
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                ) : null}
               </div>
             </Secao>
           </div>
@@ -227,16 +235,14 @@ function obterParametro(valor: string | string[] | undefined) {
 
 function Secao({
   children,
-  id,
   title
 }: {
   children: ReactNode;
-  id?: string;
   title: string;
 }) {
   return (
     <FadeIn>
-      <GlassCard className="p-6" id={id}>
+      <GlassCard className="p-6">
         <h2 className="mb-5 text-xl font-semibold">{title}</h2>
         {children}
       </GlassCard>
@@ -270,4 +276,27 @@ function formatarPreco(valor: number | null) {
     maximumFractionDigits: 0,
     style: "currency"
   }).format(valor);
+}
+
+function formatarQuantidade(valor: number) {
+  return valor > 0 ? String(valor) : "Sob consulta";
+}
+
+function formatarVagas(valor: number) {
+  if (!valor) return "Sob consulta";
+  return `${valor} ${valor === 1 ? "vaga" : "vagas"}`;
+}
+
+function formatarEnderecoResumido(endereco: EnderecoPublico) {
+  const linha = [
+    endereco.linha1,
+    endereco.numero,
+    endereco.bairro,
+    endereco.cidade,
+    endereco.estado
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return linha || "Endereço completo compartilhado após a solicitação.";
 }

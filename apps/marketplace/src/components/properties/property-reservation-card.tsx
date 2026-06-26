@@ -23,7 +23,7 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
     return <ReservationSuccess codigo={feedback.codigo} property={property} />;
   }
 
-  const unidadeInicial = property.units[0];
+  const podeSolicitarReserva = Boolean(property.reservationUnitId);
 
   return (
     <GlassCard className="p-5 shadow-2xl shadow-cyan-950/15">
@@ -46,31 +46,36 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
 
       <form action={solicitarReservaPublicaAction} className="mt-6 grid gap-4">
         <input name="propertySlug" type="hidden" value={property.slug} />
+        {property.reservationUnitId ? (
+          <input name="unidadeId" type="hidden" value={property.reservationUnitId} />
+        ) : null}
 
-        <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-          Unidade
-          <select
-            className="glass-input h-11 w-full rounded-md px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            defaultValue={unidadeInicial?.id}
-            name="unidadeId"
-            required
-          >
-            {property.units.map((unidade) => (
-              <option key={unidade.id} value={unidade.id}>
-                {unidade.name} - até {unidade.capacity} hóspedes
-              </option>
-            ))}
-          </select>
-        </label>
+        {!podeSolicitarReserva ? (
+          <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+            Solicitação online em preparação para esta casa.
+          </div>
+        ) : null}
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Check-in">
             <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <GlassInput className="h-11 pl-10" name="checkIn" required type="date" />
+            <GlassInput
+              className="h-11 pl-10"
+              disabled={!podeSolicitarReserva}
+              name="checkIn"
+              required
+              type="date"
+            />
           </Field>
           <Field label="Check-out">
             <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <GlassInput className="h-11 pl-10" name="checkOut" required type="date" />
+            <GlassInput
+              className="h-11 pl-10"
+              disabled={!podeSolicitarReserva}
+              name="checkOut"
+              required
+              type="date"
+            />
           </Field>
         </div>
 
@@ -79,6 +84,7 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
           <GlassInput
             className="h-11 pl-10"
             defaultValue={Math.min(property.maxGuests, 2)}
+            disabled={!podeSolicitarReserva}
             max={property.maxGuests}
             min={1}
             name="quantidadeHospedes"
@@ -89,28 +95,49 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
 
         <Field label="Nome do hóspede">
           <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <GlassInput className="h-11 pl-10" name="hospedeNome" required />
+          <GlassInput
+            className="h-11 pl-10"
+            disabled={!podeSolicitarReserva}
+            name="hospedeNome"
+            required
+          />
         </Field>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Telefone">
             <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <GlassInput className="h-11 pl-10" name="hospedeTelefone" required />
+            <GlassInput
+              className="h-11 pl-10"
+              disabled={!podeSolicitarReserva}
+              name="hospedeTelefone"
+              required
+            />
           </Field>
           <Field label="E-mail">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <GlassInput className="h-11 pl-10" name="hospedeEmail" required type="email" />
+            <GlassInput
+              className="h-11 pl-10"
+              disabled={!podeSolicitarReserva}
+              name="hospedeEmail"
+              required
+              type="email"
+            />
           </Field>
         </div>
 
         <Field label="CPF opcional">
-          <GlassInput className="h-11" name="hospedeDocumento" />
+          <GlassInput
+            className="h-11"
+            disabled={!podeSolicitarReserva}
+            name="hospedeDocumento"
+          />
         </Field>
 
         <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
           Observações
           <textarea
             className="glass-input min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            disabled={!podeSolicitarReserva}
             name="observacoes"
             placeholder="Conte o motivo da viagem, horário previsto de chegada ou pedidos importantes."
           />
@@ -124,6 +151,14 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
             </span>
             <strong className="text-foreground">{property.maxGuests} hóspedes</strong>
           </span>
+          {property.pricing.cleaningFee ? (
+            <span className="flex items-center justify-between gap-3 text-muted-foreground">
+              <span>Taxa de limpeza</span>
+              <strong className="text-foreground">
+                {formatarPreco(property.pricing.cleaningFee)}
+              </strong>
+            </span>
+          ) : null}
           <span className="flex items-center justify-between gap-3 text-muted-foreground">
             <span className="inline-flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -135,7 +170,12 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
           </span>
         </div>
 
-        <GlassButton className="w-full" size="lg" type="submit">
+        <GlassButton
+          className="w-full"
+          disabled={!podeSolicitarReserva}
+          size="lg"
+          type="submit"
+        >
           Solicitar reserva
         </GlassButton>
         <p className="text-center text-xs leading-5 text-muted-foreground">

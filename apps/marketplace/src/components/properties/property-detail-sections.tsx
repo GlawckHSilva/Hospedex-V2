@@ -130,6 +130,13 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
 export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
   const permissionItems = [
     {
+      allowed: rules.allowChildren,
+      disabledLabel: "Crianças sob consulta",
+      enabledLabel: "Crianças permitidas",
+      icon: Users,
+      label: "Crianças"
+    },
+    {
       allowed: rules.allowPets,
       disabledLabel: "Pets não permitidos",
       enabledLabel: "Pets permitidos",
@@ -194,7 +201,7 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
           />
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {permissionItems.map((item) => (
             <RulePermission key={item.label} {...item} />
           ))}
@@ -208,6 +215,18 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {rules.additionalRules}
+            </p>
+          </div>
+        ) : null}
+
+        {rules.specialInstructions ? (
+          <div className="mt-6 rounded-lg border bg-background/70 p-4">
+            <h3 className="flex items-center gap-2 font-semibold">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Instruções especiais
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {rules.specialInstructions}
             </p>
           </div>
         ) : null}
@@ -243,6 +262,8 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
 export function PropertyRegionalGuideSection({
   locations
 }: PropertyRegionalGuideSectionProps) {
+  const grupos = agruparLocaisPorCategoria(locations);
+
   return (
     <FadeIn>
       <GlassCard className="p-6">
@@ -257,66 +278,75 @@ export function PropertyRegionalGuideSection({
         </div>
 
         {locations.length ? (
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {locations.map((location) => (
-              <article
-                className="overflow-hidden rounded-lg border bg-background/70 shadow-sm transition hover:border-primary/40"
-                key={location.id}
-              >
-                {location.coverImageUrl ? (
-                  <img
-                    alt={`Foto de ${location.name}`}
-                    className="h-40 w-full object-cover"
-                    src={location.coverImageUrl}
-                  />
-                ) : null}
-                <div className="p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <StatusBadge tone="neutral">{location.categoryLabel}</StatusBadge>
-                      <h3 className="mt-3 font-semibold">{location.name}</h3>
-                    </div>
-                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
-                      <Store className="h-5 w-5" />
-                    </span>
-                  </div>
+          <div className="mt-6 grid gap-6">
+            {grupos.map((grupo) => (
+              <div className="grid gap-3" key={grupo.categoria}>
+                <h3 className="text-sm font-semibold text-muted-foreground">
+                  {grupo.categoria}
+                </h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {grupo.locais.map((location) => (
+                    <article
+                      className="overflow-hidden rounded-lg border bg-background/70 shadow-sm transition hover:border-primary/40"
+                      key={location.id}
+                    >
+                      {location.coverImageUrl ? (
+                        <img
+                          alt={`Foto de ${location.name}`}
+                          className="h-40 w-full object-cover"
+                          src={location.coverImageUrl}
+                        />
+                      ) : null}
+                      <div className="p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <StatusBadge tone="neutral">{location.categoryLabel}</StatusBadge>
+                            <h3 className="mt-3 font-semibold">{location.name}</h3>
+                          </div>
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                            <Store className="h-5 w-5" />
+                          </span>
+                        </div>
 
-                  {location.description ? (
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      {location.description}
-                    </p>
-                  ) : null}
+                        {location.description ? (
+                          <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                            {location.description}
+                          </p>
+                        ) : null}
 
-                  <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
-                    {location.address ? (
-                      <InfoLine icon={MapPin}>{location.address}</InfoLine>
-                    ) : null}
-                    {location.openingHours ? (
-                      <InfoLine icon={Clock}>{location.openingHours}</InfoLine>
-                    ) : null}
-                    {location.phone ? (
-                      <InfoLine icon={Phone}>{location.phone}</InfoLine>
-                    ) : null}
-                    {location.whatsapp ? (
-                      <InfoLine icon={MessageCircle}>
-                        {`WhatsApp: ${location.whatsapp}`}
-                      </InfoLine>
-                    ) : null}
-                    {location.websiteUrl ? (
-                      <a
-                        className="inline-flex items-center gap-2 text-primary transition hover:text-primary/80"
-                        href={location.websiteUrl}
-                        rel="noreferrer"
-                        target="_blank"
-                      >
-                        <Globe2 className="h-4 w-4" />
-                        Site
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    ) : null}
-                  </div>
+                        <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
+                          {location.address ? (
+                            <InfoLine icon={MapPin}>{location.address}</InfoLine>
+                          ) : null}
+                          {location.openingHours ? (
+                            <InfoLine icon={Clock}>{location.openingHours}</InfoLine>
+                          ) : null}
+                          {location.phone ? (
+                            <InfoLine icon={Phone}>{location.phone}</InfoLine>
+                          ) : null}
+                          {location.whatsapp ? (
+                            <InfoLine icon={MessageCircle}>
+                              {`WhatsApp: ${location.whatsapp}`}
+                            </InfoLine>
+                          ) : null}
+                          {location.websiteUrl ? (
+                            <a
+                              className="inline-flex items-center gap-2 text-primary transition hover:text-primary/80"
+                              href={location.websiteUrl}
+                              rel="noreferrer"
+                              target="_blank"
+                            >
+                              <Globe2 className="h-4 w-4" />
+                              Site
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-              </article>
+              </div>
             ))}
           </div>
         ) : (
@@ -330,6 +360,22 @@ export function PropertyRegionalGuideSection({
       </GlassCard>
     </FadeIn>
   );
+}
+
+function agruparLocaisPorCategoria(locations: PropriedadePublica["regionalGuide"]) {
+  const grupos = new Map<string, PropriedadePublica["regionalGuide"]>();
+
+  for (const location of locations) {
+    grupos.set(location.categoryLabel, [
+      ...(grupos.get(location.categoryLabel) ?? []),
+      location
+    ]);
+  }
+
+  return [...grupos.entries()].map(([categoria, locais]) => ({
+    categoria,
+    locais
+  }));
 }
 
 function RuleMetric({
