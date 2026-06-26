@@ -811,10 +811,14 @@ async function garantirTenantOperacionalParaCasas(
     throw new ErroRegraNegocio("Tenant inativo. Verifique o status da conta no Super Admin.");
   }
 
+  const hoje = new Date().toISOString().slice(0, 10);
   const { data: licenca, error: erroLicenca } = await supabase
     .from("licenses")
     .select("status,starts_at,expires_at")
     .eq("tenant_id", tenantId)
+    .in("status", ["trial", "active"])
+    .lte("starts_at", hoje)
+    .or(`expires_at.is.null,expires_at.gte.${hoje}`)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle<{ expires_at: string | null; starts_at: string; status: string }>();
@@ -825,18 +829,9 @@ async function garantirTenantOperacionalParaCasas(
     );
   }
   if (!licenca) {
-    throw new ErroRegraNegocio("Licença não encontrada. Configure a licença no Super Admin.");
-  }
-
-  const hoje = new Date().toISOString().slice(0, 10);
-  if (!["trial", "active"].includes(licenca.status)) {
-    throw new ErroRegraNegocio("Licença inativa. Verifique o status da licença no Super Admin.");
-  }
-  if (licenca.starts_at > hoje) {
-    throw new ErroRegraNegocio("Licença ainda não iniciou. Verifique a data de início no Super Admin.");
-  }
-  if (licenca.expires_at && licenca.expires_at < hoje) {
-    throw new ErroRegraNegocio("Licença vencida. Renove a licença para cadastrar casas.");
+    throw new ErroRegraNegocio(
+      "Licença ativa não encontrada. Verifique status e vencimento no Super Admin.",
+    );
   }
 }
 

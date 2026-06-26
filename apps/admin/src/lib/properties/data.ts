@@ -134,6 +134,7 @@ export async function carregarLimitesPlano(
   tenantId: string
 ): Promise<Omit<LimitesPlanoPropriedades, "propriedadesUsadas">> {
   const supabase = await criarClienteSupabaseServer();
+  const hoje = new Date().toISOString().slice(0, 10);
   const [assinaturaResultado, licencaResultado] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -148,6 +149,8 @@ export async function carregarLimitesPlano(
       .select("limits,status")
       .eq("tenant_id", tenantId)
       .in("status", ["trial", "active"])
+      .lte("starts_at", hoje)
+      .or(`expires_at.is.null,expires_at.gte.${hoje}`)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle<LicencaLimiteRow>()
