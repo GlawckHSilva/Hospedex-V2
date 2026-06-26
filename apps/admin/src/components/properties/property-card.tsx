@@ -9,9 +9,8 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Badge, Button } from "@hospedex/ui";
+import { Badge } from "@hospedex/ui";
 
-import { ActionButton } from "../management/action-button";
 import {
   EntityCard,
   EntityCardActions,
@@ -22,6 +21,10 @@ import {
   EntityModal,
   EntityViewModal,
 } from "../management/entity-modal";
+import {
+  FormActionButton,
+  FormSubmitButton,
+} from "../management/form-submit-button";
 import {
   alternarStatusPropriedadeAction,
   excluirPropriedadeAction,
@@ -245,10 +248,14 @@ function AcaoStatusCasa({
         <p className="text-sm text-muted-foreground">
           Confirme para {estaPausada ? "ativar" : "pausar"} esta casa.
         </p>
-        <Button disabled={!podeGerenciar} type="submit" variant="outline">
+        <FormSubmitButton
+          disabled={!podeGerenciar}
+          pendingLabel="Atualizando..."
+          variant="outline"
+        >
           {estaPausada ? <PlayCircle /> : <PauseCircle />}
           {estaPausada ? "Ativar" : "Pausar"}
-        </Button>
+        </FormSubmitButton>
       </form>
     </ConfirmDialog>
   );
@@ -283,9 +290,13 @@ function AcaoExcluirCasa({
           />
           Confirmo que desejo remover esta propriedade da operacao do tenant.
         </label>
-        <ActionButton disabled={!podeGerenciar} type="submit" variant="delete">
+        <FormActionButton
+          disabled={!podeGerenciar}
+          pendingLabel="Excluindo..."
+          variant="delete"
+        >
           Excluir casa
-        </ActionButton>
+        </FormActionButton>
       </form>
     </ConfirmDialog>
   );

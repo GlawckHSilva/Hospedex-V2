@@ -2,9 +2,10 @@ import type { MediaAssetRow } from "@hospedex/types";
 import { ArrowDown, ArrowUp, ImagePlus, Star, Trash2, Upload } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge, Button, Input, Label } from "@hospedex/ui";
+import { Badge, Input, Label } from "@hospedex/ui";
 
 import { ConfirmDialog, EntityModal } from "../management/entity-modal";
+import { FormSubmitButton } from "../management/form-submit-button";
 import {
   alterarOrdemImagemAction,
   definirImagemPrincipalAction,
@@ -64,10 +65,14 @@ export function MediaGallery({
               />
             </div>
             <div className="flex justify-end">
-              <Button disabled={!podeGerenciar} type="submit" variant="outline">
+              <FormSubmitButton
+                disabled={!podeGerenciar}
+                pendingLabel="Enviando imagem..."
+                variant="outline"
+              >
                 <Upload />
                 Enviar
-              </Button>
+              </FormSubmitButton>
             </div>
           </form>
         </EntityModal>
@@ -184,10 +189,14 @@ function AcaoImagem({
         <form action={action} className="grid gap-3">
           <input name="retorno" type="hidden" value={retorno} />
           <input name="imagemId" type="hidden" value={imagemId} />
-          <Button disabled={disabled} type="submit" variant="destructive">
+          <FormSubmitButton
+            disabled={disabled}
+            pendingLabel="Excluindo..."
+            variant="destructive"
+          >
             <Trash2 />
             Excluir imagem
-          </Button>
+          </FormSubmitButton>
         </form>
       </ConfirmDialog>
     );
@@ -197,9 +206,14 @@ function AcaoImagem({
     <form action={action}>
       <input name="retorno" type="hidden" value={retorno} />
       <input name="imagemId" type="hidden" value={imagemId} />
-      <Button disabled={disabled} size="sm" type="submit" variant={variant}>
+      <FormSubmitButton
+        disabled={disabled}
+        pendingLabel="Publicando..."
+        size="sm"
+        variant={variant}
+      >
         {children}
-      </Button>
+      </FormSubmitButton>
     </form>
   );
 }
@@ -222,9 +236,14 @@ function AcaoOrdem({
       <input name="retorno" type="hidden" value={retorno} />
       <input name="imagemId" type="hidden" value={imagemId} />
       <input name="direcao" type="hidden" value={direcao} />
-      <Button disabled={disabled} size="sm" type="submit" variant="outline">
+      <FormSubmitButton
+        disabled={disabled}
+        pendingLabel="Atualizando..."
+        size="sm"
+        variant="outline"
+      >
         {children}
-      </Button>
+      </FormSubmitButton>
     </form>
   );
 }

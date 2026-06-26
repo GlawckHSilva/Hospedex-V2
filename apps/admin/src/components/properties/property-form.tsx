@@ -10,7 +10,6 @@ import {
   CreditCard,
   Home,
   ImagePlus,
-  Loader2,
   MapPin,
   Share2,
   Sparkles,
@@ -21,12 +20,12 @@ import {
 import { useSearchParams } from "next/navigation";
 import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
 
 import { Input, Label, cn } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
 import { AppModal } from "../management/entity-modal";
+import { FormActionButton } from "../management/form-submit-button";
 import { WizardStepper } from "../management/wizard-stepper";
 import { PropertyAmenitiesStep } from "./property-amenities-step";
 import {
@@ -63,15 +62,15 @@ type EtapaId =
   | "comodidades"
   | "compartilhamento";
 
-const ETAPAS: Array<{ icon: ReactNode; id: EtapaId; label: string }> = [
-  { icon: <Home />, id: "basico", label: "Basico" },
-  { icon: <MapPin />, id: "localizacao", label: "Localizacao" },
-  { icon: <BedDouble />, id: "estrutura", label: "Estrutura" },
-  { icon: <WalletCards />, id: "valores", label: "Valores" },
-  { icon: <Clock3 />, id: "regras", label: "Regras" },
-  { icon: <Camera />, id: "imagens", label: "Imagens" },
-  { icon: <Sparkles />, id: "comodidades", label: "Comodidades" },
-  { icon: <Share2 />, id: "compartilhamento", label: "Publicacao" },
+const ETAPAS: Array<{ descricao: string; icon: ReactNode; id: EtapaId; label: string }> = [
+  { descricao: "Identificacao, status e textos principais da casa.", icon: <Home />, id: "basico", label: "Basico" },
+  { descricao: "Endereco operacional e referencias para localizacao.", icon: <MapPin />, id: "localizacao", label: "Localizacao" },
+  { descricao: "Capacidade, quartos e estrutura fisica da hospedagem.", icon: <BedDouble />, id: "estrutura", label: "Estrutura" },
+  { descricao: "Diaria, taxas e configuracao futura de cartao.", icon: <WalletCards />, id: "valores", label: "Valores" },
+  { descricao: "Horarios, regras e observacoes internas.", icon: <Clock3 />, id: "regras", label: "Regras" },
+  { descricao: "Capa e novas fotos da galeria.", icon: <Camera />, id: "imagens", label: "Imagens" },
+  { descricao: "Comodidades padrao e personalizadas.", icon: <Sparkles />, id: "comodidades", label: "Comodidades" },
+  { descricao: "Dados publicos usados no Marketplace.", icon: <Share2 />, id: "compartilhamento", label: "Publicacao" },
 ];
 
 const TIPOS: Array<{ label: string; valor: PropertyType }> = [
@@ -502,7 +501,7 @@ export function PropertyForm({
   return (
     <form
       action={action}
-      className="space-y-5"
+      className="space-y-5 pb-1"
       onChange={limparErroDoCampo}
       onInput={limparErroDoCampo}
       onSubmit={validarEnvio}
@@ -524,8 +523,8 @@ export function PropertyForm({
         onEtapaClick={(indice) => navegarParaEtapa(indice)}
       />
 
-      <section className="rounded-2xl border bg-background/45 p-4">
-        <div className="mb-4 flex items-center gap-2">
+      <section className="rounded-2xl border bg-background/45 p-4 sm:p-5">
+        <div className="mb-5 flex items-start gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-200 [&_svg]:h-4 [&_svg]:w-4">
             {etapa.icon}
           </span>
@@ -534,6 +533,7 @@ export function PropertyForm({
               Etapa {etapaAtual + 1} de {ETAPAS.length}
             </p>
             <h3 className="font-semibold">{etapa.label}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{etapa.descricao}</p>
           </div>
         </div>
 
@@ -614,7 +614,7 @@ export function PropertyForm({
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
+      <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:px-6">
         <div>
           {etapaAtual > 0 ? (
             <ActionButton onClick={voltarEtapa} size="md" type="button" variant="settings">
@@ -642,18 +642,15 @@ function BotaoSalvarCasa({
   bloqueado: boolean;
   modo: "criar" | "editar";
 }) {
-  const { pending } = useFormStatus();
-
   return (
-    <ActionButton
-      disabled={bloqueado || pending}
-      icon={pending ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+    <FormActionButton
+      disabled={bloqueado}
+      pendingLabel={modo === "editar" ? "Salvando..." : "Criando..."}
       size="lg"
-      type="submit"
       variant="add"
     >
-      {pending ? "Salvando..." : modo === "editar" ? "Salvar casa" : "Criar casa"}
-    </ActionButton>
+      {modo === "editar" ? "Salvar casa" : "Criar casa"}
+    </FormActionButton>
   );
 }
 
