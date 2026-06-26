@@ -32,6 +32,8 @@ import type { EnderecoPropriedade } from "./types";
  */
 
 const CAMINHO_PROPRIEDADES = "/propriedades";
+const ERRO_PERMISSAO_CASAS =
+  "Você não tem permissão para cadastrar casas neste tenant.";
 const STATUS_PROPRIEDADE: PropertyStatus[] = ["draft", "published", "paused"];
 const TIPOS_PROPRIEDADE: PropertyType[] = [
   "seasonal_home",
@@ -138,8 +140,9 @@ export async function criarPropriedadeAction(formData: FormData) {
       .single<PropertyRow>();
 
     if (error || !propriedade) {
-      throw new ErroRegraNegocio(
+      throw erroOperacaoCasa(
         error?.message ?? "Propriedade não retornada após criação.",
+        ERRO_PERMISSAO_CASAS,
       );
     }
 
@@ -153,6 +156,7 @@ export async function criarPropriedadeAction(formData: FormData) {
       CAMINHO_PROPRIEDADES,
       erro,
       "Erro ao criar propriedade.",
+      montarContextoErroCasa("criar", escopo),
     );
   }
 
@@ -215,6 +219,7 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       CAMINHO_PROPRIEDADES,
       erro,
       "Erro ao atualizar propriedade.",
+      montarContextoErroCasa("atualizar", escopo),
     );
   }
 
@@ -894,14 +899,18 @@ async function salvarImagemCapa(
 ) {
   if (!entrada.imagemCapaArquivo) return;
 
-  const arquivo = await enviarImagemParaStorage(
-    supabase,
-    {
-      escopo: "capa",
-      propertyId: propriedadeId,
-      tenantId,
-    },
-    entrada.imagemCapaArquivo,
+  const arquivo = await executarEtapaCasa(
+    "Erro ao salvar imagem de capa.",
+    () =>
+      enviarImagemParaStorage(
+        supabase,
+        {
+          escopo: "capa",
+          propertyId: propriedadeId,
+          tenantId,
+        },
+        entrada.imagemCapaArquivo as File,
+      ),
   );
 
   // Apenas uma imagem principal fica marcada por propriedade para evitar ambiguidade no marketplace futuro.
@@ -966,14 +975,18 @@ async function salvarGaleriaPropriedade(
 
   await Promise.all(
     entrada.galeriaArquivos.map(async (arquivo, indice) => {
-      const midia = await enviarImagemParaStorage(
-        supabase,
-        {
-          escopo: "galeria",
-          propertyId: propriedadeId,
-          tenantId,
-        },
-        arquivo,
+      const midia = await executarEtapaCasa(
+        "Erro ao salvar imagens da galeria.",
+        () =>
+          enviarImagemParaStorage(
+            supabase,
+            {
+              escopo: "galeria",
+              propertyId: propriedadeId,
+              tenantId,
+            },
+            arquivo,
+          ),
       );
 
       const titulo = entrada.galeriaTitulos[indice]?.trim() || arquivo.name;
@@ -1238,6 +1251,7 @@ function redirecionarComErro(
   caminho: string,
   erro: unknown,
   mensagemLog: string,
+  contexto?: Record<string, unknown>,
 ): never {
   const mensagemTecnica = erro instanceof Error ? erro.message : null;
   const mensagem =
@@ -1248,9 +1262,12 @@ function redirecionarComErro(
           "Não foi possível concluir a operação.",
         );
 
-  if (!(erro instanceof ErroRegraNegocio)) {
-    console.error(mensagemLog, mensagemTecnica, erro);
-  }
+  // Logamos também erros de regra para diagnosticar produção sem mostrar detalhes técnicos ao usuário.
+  console.error(mensagemLog, {
+    contexto,
+    mensagemTecnica,
+    mensagemUsuario: mensagem,
+  });
 
   redirect(`${caminho}?erro=${encodeURIComponent(mensagem)}`);
 }
@@ -1263,7 +1280,7 @@ function traduzirErroSupabase(
 
   if (!mensagem) return fallback;
   if (mensagem.includes("row-level security") || mensagem.includes("rls")) {
-    return "Erro de permissão ao cadastrar casa. Verifique licença, tenant e permissões.";
+    return fallbackEhSeguro(fallback) ? fallback : ERRO_PERMISSAO_CASAS;
   }
   if (mensagem.includes("duplicate key") && mensagem.includes("properties_slug")) {
     return "Já existe uma casa com identificador semelhante. Tente novamente.";
@@ -1292,6 +1309,40 @@ function erroOperacaoCasa(
   fallback: string,
 ) {
   return new ErroRegraNegocio(traduzirErroSupabase(mensagemTecnica, fallback));
+}
+
+async function executarEtapaCasa<T>(
+  fallback: string,
+  etapa: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await etapa();
+  } catch (erro) {
+    const mensagemTecnica = erro instanceof Error ? erro.message : null;
+    throw erroOperacaoCasa(mensagemTecnica, fallback);
+  }
+}
+
+function fallbackEhSeguro(fallback: string) {
+  const texto = fallback.toLowerCase();
+  return (
+    !texto.includes("row-level security") &&
+    !texto.includes("rls") &&
+    !texto.includes("não foi possível concluir")
+  );
+}
+
+function montarContextoErroCasa(
+  acao: "atualizar" | "criar",
+  escopo: EscopoGerenciamento,
+) {
+  return {
+    acao,
+    permissoes: escopo.contexto.permissions,
+    role: escopo.contexto.role,
+    tenantId: escopo.tenantId,
+    userId: escopo.contexto.userId,
+  };
 }
 
 function revalidarModulo() {
