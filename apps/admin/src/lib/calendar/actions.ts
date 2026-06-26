@@ -55,7 +55,6 @@ export async function bloquearPeriodoCalendarioAction(formData: FormData) {
       tenant_id: escopo.tenantId,
       owner_id: escopo.ownerId,
       property_id: entrada.propriedadeId,
-      unit_id: null,
       source: "manual",
       status: entrada.status,
       block_type: entrada.blocoTipo,
@@ -222,7 +221,6 @@ function montarRetornoCalendario(formData: FormData) {
   if (semana) params.set("semana", semana);
   if (visao) params.set("visao", visao);
   if (propriedadeId) params.set("propriedadeId", propriedadeId);
-
   const query = params.toString();
   return query ? `${CAMINHO_CALENDARIO}?${query}` : `${CAMINHO_CALENDARIO}?`;
 }

@@ -44,7 +44,7 @@ const motivosReserva = [
   },
   {
     title: "Curadoria visual",
-    description: "Fotos, unidades e comodidades reunidas em uma experiência premium.",
+    description: "Fotos, estrutura e comodidades reunidas em uma experiência premium.",
     icon: Sparkles
   }
 ] as const;
@@ -293,7 +293,7 @@ export default async function MarketplaceHomePage() {
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
               A vitrine pública nasce conectada à estrutura de propriedades,
-              unidades, mídia e comodidades da V2.
+              estrutura, mídia e comodidades da V2.
             </p>
           </div>
           <Link className={cn(buttonVariants({ size: "lg" }), "justify-self-start")} href="/propriedades">

@@ -48,7 +48,6 @@ export function InventoryModule({
   sucesso,
   tarefas,
   tenantNome,
-  unidades,
 }: InventoryModuleProps) {
   return (
     <FadeIn className="space-y-5">
@@ -100,14 +99,10 @@ export function InventoryModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <form className="grid gap-4 lg:grid-cols-[1fr_1fr_auto]">
+          <form className="grid gap-4 lg:grid-cols-[1fr_auto]">
             <CampoPropriedade
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
-            />
-            <CampoUnidade
-              defaultValue={filtros.unidadeId ?? ""}
-              unidades={unidades}
             />
             <div className="flex items-end">
               <Button className="w-full" type="submit" variant="outline">
@@ -141,7 +136,6 @@ export function InventoryModule({
                 modo="criar"
                 podeGerenciar={podeGerenciar}
                 propriedades={propriedades}
-                unidades={unidades}
               />
             </EntityModal>
           </CardContent>
@@ -170,7 +164,6 @@ export function InventoryModule({
                 podeGerenciar={podeGerenciar}
                 propriedades={propriedades}
                 responsaveis={responsaveis}
-                unidades={unidades}
               />
             </EntityModal>
           </CardContent>
@@ -187,7 +180,6 @@ export function InventoryModule({
                 key={item.id}
                 podeGerenciar={podeGerenciar}
                 propriedades={propriedades}
-                unidades={unidades}
               />
             ))}
           </EntityGrid>
@@ -212,7 +204,6 @@ export function InventoryModule({
                 propriedades={propriedades}
                 responsaveis={responsaveis}
                 tarefa={tarefa}
-                unidades={unidades}
               />
             ))}
           </EntityGrid>
@@ -227,7 +218,6 @@ export function InventoryModule({
     </FadeIn>
   );
 }
-
 function Resumo({
   icon,
   label,
@@ -266,33 +256,6 @@ function CampoPropriedade({
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>
             {propriedade.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CampoUnidade({
-  defaultValue,
-  unidades,
-}: {
-  defaultValue: string;
-  unidades: Array<{ id: string; name: string }>;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor="unidadeId">Unidade</Label>
-      <select
-        className={campoClasse}
-        defaultValue={defaultValue}
-        id="unidadeId"
-        name="unidadeId"
-      >
-        <option value="">Todas</option>
-        {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>
-            {unidade.name}
           </option>
         ))}
       </select>

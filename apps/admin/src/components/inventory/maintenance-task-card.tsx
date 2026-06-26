@@ -1,4 +1,4 @@
-import type { ProfileRow, PropertyRow, UnitRow } from "@hospedex/types";
+import type { ProfileRow, PropertyRow } from "@hospedex/types";
 import { ListChecks, Pencil, Wrench } from "lucide-react";
 
 import { Badge, Button, Card, CardContent, Label } from "@hospedex/ui";
@@ -28,7 +28,6 @@ export type MaintenanceTaskCardProps = {
   propriedades: PropertyRow[];
   responsaveis: ProfileRow[];
   tarefa: TarefaManutencaoCompleta;
-  unidades: UnitRow[];
 };
 
 const campoClasse =
@@ -40,7 +39,6 @@ export function MaintenanceTaskCard({
   propriedades,
   responsaveis,
   tarefa,
-  unidades,
 }: MaintenanceTaskCardProps) {
   return (
     <Card className="admin-glass-card">
@@ -66,8 +64,7 @@ export function MaintenanceTaskCard({
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              {tarefa.propriedade?.name ?? "Propriedade"} ·{" "}
-              {tarefa.unidade?.name ?? "Sem unidade"}
+              {tarefa.propriedade?.name ?? "Propriedade"}
             </p>
           </div>
         </div>
@@ -118,7 +115,6 @@ export function MaintenanceTaskCard({
               propriedades={propriedades}
               responsaveis={responsaveis}
               tarefa={tarefa}
-              unidades={unidades}
             />
           </EntityModal>
 

@@ -7,32 +7,28 @@ import type {
   MaintenanceTaskStatus,
   MaintenanceTaskType,
   ProfileRow,
-  PropertyRow,
-  UnitRow
+  PropertyRow
 } from "@hospedex/types";
 
 /**
  * Contratos do modulo de Inventario e Manutencao.
  *
- * Inventario e agenda compartilham propriedade/unidade para manter o controle
+ * Inventario e agenda compartilham propriedade para manter o controle
  * operacional do tenant sem misturar dados entre proprietarios.
  */
 
 export type FiltrosInventario = {
   propriedadeId?: string;
-  unidadeId?: string;
 };
 
 export type ItemInventarioCompleto = InventoryItemRow & {
   propriedade: PropertyRow | null;
-  unidade: UnitRow | null;
 };
 
 export type TarefaManutencaoCompleta = MaintenanceTaskRow & {
   item: InventoryItemRow | null;
   propriedade: PropertyRow | null;
   responsavel: ProfileRow | null;
-  unidade: UnitRow | null;
 };
 
 export type DadosModuloInventario = {
@@ -49,7 +45,6 @@ export type DadosModuloInventario = {
   };
   tarefas: TarefaManutencaoCompleta[];
   tenantNome: string;
-  unidades: UnitRow[];
 };
 
 export type SearchParamsInventario = {

@@ -1,4 +1,4 @@
-import type { PropertyRow, UnitRow } from "@hospedex/types";
+import type { PropertyRow } from "@hospedex/types";
 import { Button, Input, Label } from "@hospedex/ui";
 import type { ComponentProps } from "react";
 
@@ -20,7 +20,6 @@ export type ReservationFormProps = {
   podeGerenciar: boolean;
   propriedades: PropertyRow[];
   reserva?: ReservaComRelacionamentos;
-  unidades: UnitRow[];
 };
 
 const campoClasse =
@@ -33,7 +32,6 @@ export function ReservationForm({
   podeGerenciar,
   propriedades,
   reserva,
-  unidades,
 }: ReservationFormProps) {
   const action =
     modo === "editar" ? atualizarReservaAction : criarReservaManualAction;
@@ -47,18 +45,11 @@ export function ReservationForm({
         <input name="reservaId" type="hidden" value={reserva.id} />
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <CampoPropriedade
-          defaultValue={propriedadeSelecionada}
-          disabled={bloqueado}
-          propriedades={propriedades}
-        />
-        <CampoUnidade
-          defaultValue={reserva?.unit_id ?? ""}
-          disabled={bloqueado}
-          unidades={unidades}
-        />
-      </div>
+      <CampoPropriedade
+        defaultValue={propriedadeSelecionada}
+        disabled={bloqueado}
+        propriedades={propriedades}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoTexto
@@ -162,7 +153,6 @@ export function ReservationForm({
     </form>
   );
 }
-
 function CamposServicoExtra({ disabled }: { disabled: boolean }) {
   return (
     <div className="rounded-lg border bg-background/45 p-3">
@@ -261,36 +251,6 @@ function CampoPropriedade({
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>
             {propriedade.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CampoUnidade({
-  defaultValue,
-  disabled,
-  unidades,
-}: {
-  defaultValue: string;
-  disabled: boolean;
-  unidades: UnitRow[];
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor="unidadeId">Unidade</Label>
-      <select
-        className={campoClasse}
-        defaultValue={defaultValue}
-        disabled={disabled}
-        id="unidadeId"
-        name="unidadeId"
-      >
-        <option value="">Sem unidade específica</option>
-        {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>
-            {unidade.name}
           </option>
         ))}
       </select>

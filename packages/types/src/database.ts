@@ -16,6 +16,7 @@ export type TenantMemberStatus = "invited" | "active" | "disabled";
 export type StaffInviteStatus = "pending" | "accepted" | "cancelled" | "expired";
 export type PropertyStatus = "draft" | "published" | "paused" | "archived";
 export type PropertyType = "seasonal_home" | "inn" | "small_hotel";
+/** @deprecated Unidade foi removida do modelo ativo da V2; manter apenas para colunas legadas. */
 export type UnitStatus = "active" | "inactive" | "maintenance";
 export type ReservationStatus =
   | "pending"
@@ -334,6 +335,7 @@ export type PropertySettingRow = {
   updated_at: Timestamp;
 };
 
+/** @deprecated Tabela legada. A casa/propriedade e o recurso reservavel da V2. */
 export type UnitRow = {
   id: UUID;
   tenant_id: UUID;
@@ -352,6 +354,7 @@ export type UnitRow = {
   updated_at: Timestamp;
 };
 
+/** @deprecated Tabela legada. Categorias de unidade nao devem aparecer na UI da V2. */
 export type UnitCategoryRow = {
   id: UUID;
   tenant_id: UUID;

@@ -16,7 +16,6 @@ import {
   carregarItemInventario,
   carregarPropriedadeInventario,
   carregarTarefaManutencao,
-  carregarUnidadeInventario,
   ErroRegraInventario,
   type ClienteSupabaseServer,
   type EscopoInventario
@@ -32,7 +31,7 @@ import {
 /**
  * Server actions de Inventario e Manutencao.
  *
- * Todas as mutacoes validam tenant/propriedade/unidade no servidor. Fotos reais,
+ * Todas as mutacoes validam tenant e propriedade no servidor. Fotos reais,
  * custos e notificacoes ficam preparados via URL/metadata, sem automacao nesta etapa.
  */
 
@@ -47,7 +46,6 @@ type EntradaItemInventario = {
   notes: string | null;
   propertyId: string;
   quantity: number;
-  unitId: string | null;
 };
 
 type EntradaManutencao = {
@@ -60,7 +58,6 @@ type EntradaManutencao = {
   scheduledFor: string | null;
   status: MaintenanceTaskStatus;
   title: string;
-  unitId: string | null;
 };
 
 export async function criarItemInventarioAction(formData: FormData) {
@@ -74,7 +71,6 @@ export async function criarItemInventarioAction(formData: FormData) {
       tenant_id: escopo.tenantId,
       owner_id: escopo.ownerId,
       property_id: entrada.propertyId,
-      unit_id: entrada.unitId,
       category: entrada.category,
       name: entrada.name,
       quantity: entrada.quantity,
@@ -112,7 +108,6 @@ export async function atualizarItemInventarioAction(formData: FormData) {
       .from("inventory_items")
       .update({
         property_id: entrada.propertyId,
-        unit_id: entrada.unitId,
         category: entrada.category,
         name: entrada.name,
         quantity: entrada.quantity,
@@ -173,7 +168,6 @@ export async function criarTarefaManutencaoAction(formData: FormData) {
       tenant_id: escopo.tenantId,
       owner_id: escopo.ownerId,
       property_id: entrada.propertyId,
-      unit_id: entrada.unitId,
       inventory_item_id: entrada.inventoryItemId,
       assigned_to: entrada.assignedTo,
       maintenance_type: entrada.maintenanceType,
@@ -215,7 +209,6 @@ export async function atualizarTarefaManutencaoAction(formData: FormData) {
       .from("maintenance_tasks")
       .update({
         property_id: entrada.propertyId,
-        unit_id: entrada.unitId,
         inventory_item_id: entrada.inventoryItemId,
         assigned_to: entrada.assignedTo,
         maintenance_type: entrada.maintenanceType,
@@ -276,9 +269,7 @@ async function obterEntradaItem(
   formData: FormData
 ): Promise<EntradaItemInventario> {
   const propertyId = textoObrigatorio(formData, "propertyId", "propriedade");
-  const unitId = textoOpcional(formData, "unitId");
   await carregarPropriedadeInventario(supabase, escopo, propertyId);
-  if (unitId) await carregarUnidadeInventario(supabase, escopo, unitId, propertyId);
 
   return {
     category: validarCategoria(textoObrigatorio(formData, "category", "categoria")),
@@ -288,8 +279,7 @@ async function obterEntradaItem(
     name: textoObrigatorio(formData, "name", "nome"),
     notes: textoOpcional(formData, "notes"),
     propertyId,
-    quantity: numeroInteiro(formData, "quantity", "quantidade", 0),
-    unitId
+    quantity: numeroInteiro(formData, "quantity", "quantidade", 0)
   };
 }
 
@@ -299,10 +289,8 @@ async function obterEntradaManutencao(
   formData: FormData
 ): Promise<EntradaManutencao> {
   const propertyId = textoObrigatorio(formData, "propertyId", "propriedade");
-  const unitId = textoOpcional(formData, "unitId");
   const inventoryItemId = textoOpcional(formData, "inventoryItemId");
   await carregarPropriedadeInventario(supabase, escopo, propertyId);
-  if (unitId) await carregarUnidadeInventario(supabase, escopo, unitId, propertyId);
   if (inventoryItemId) await carregarItemInventario(supabase, escopo, inventoryItemId);
 
   return {
@@ -314,8 +302,7 @@ async function obterEntradaManutencao(
     propertyId,
     scheduledFor: dataOpcional(formData, "scheduledFor"),
     status: validarStatusManutencao(textoObrigatorio(formData, "status", "status")),
-    title: textoObrigatorio(formData, "title", "titulo"),
-    unitId
+    title: textoObrigatorio(formData, "title", "titulo")
   };
 }
 

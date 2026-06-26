@@ -44,7 +44,6 @@ export default async function PropriedadesPage({ searchParams }: PageProps) {
       <PropertyModule
         {...dados}
         erro={lerParametro(params, "erro")}
-        modo="propriedades"
         sucesso={lerParametro(params, "sucesso")}
         tenantNome={contexto.tenant.name}
       />

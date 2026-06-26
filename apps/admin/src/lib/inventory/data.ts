@@ -3,8 +3,7 @@ import type {
   MaintenanceTaskRow,
   ProfileRow,
   PropertyRow,
-  TenantMemberRow,
-  UnitRow
+  TenantMemberRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -21,7 +20,7 @@ import type {
  * Leitura do Inventario.
  *
  * As consultas sempre partem do tenant autenticado. Filtros de propriedade e
- * unidade refinam a visao, mas nunca alteram o escopo de seguranca.
+ * propriedade refinam a visao, mas nunca alteram o escopo de seguranca.
  */
 
 export async function carregarDadosModuloInventario(
@@ -36,7 +35,7 @@ export async function carregarDadosModuloInventario(
   }
 
   const supabase = await criarClienteSupabaseServer();
-  const [propriedadesResultado, unidadesResultado, itensResultado, tarefasResultado] =
+  const [propriedadesResultado, itensResultado, tarefasResultado] =
     await Promise.all([
       supabase
         .from("properties")
@@ -46,29 +45,20 @@ export async function carregarDadosModuloInventario(
         .is("deleted_at", null)
         .order("name", { ascending: true })
         .returns<PropertyRow[]>(),
-      supabase
-        .from("units")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("name", { ascending: true })
-        .returns<UnitRow[]>(),
       criarConsultaItens(tenantId, filtros),
       criarConsultaTarefas(tenantId, filtros)
     ]);
 
   registrarErro("propriedades", propriedadesResultado.error);
-  registrarErro("unidades", unidadesResultado.error);
   registrarErro("itens de inventario", itensResultado.error);
   registrarErro("tarefas de manutencao", tarefasResultado.error);
 
   const propriedades = propriedadesResultado.data ?? [];
-  const unidades = unidadesResultado.data ?? [];
-  const itens = montarItens(itensResultado.data ?? [], propriedades, unidades);
+  const itens = montarItens(itensResultado.data ?? [], propriedades);
   const responsaveis = await carregarResponsaveis(tenantId, ownerId);
   const tarefas = montarTarefas(
     tarefasResultado.data ?? [],
     propriedades,
-    unidades,
     itensResultado.data ?? [],
     responsaveis
   );
@@ -86,8 +76,7 @@ export async function carregarDadosModuloInventario(
       manutencoesPendentes: tarefas.filter((tarefa) => tarefa.status === "pending").length
     },
     tarefas,
-    tenantNome: contexto.tenant?.name ?? "Tenant",
-    unidades: filtrarUnidadesPorPropriedade(unidades, filtros.propriedadeId)
+    tenantNome: contexto.tenant?.name ?? "Tenant"
   };
 }
 
@@ -101,8 +90,6 @@ async function criarConsultaItens(tenantId: string, filtros: FiltrosInventario) 
     .order("updated_at", { ascending: false });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
-
   return consulta.returns<InventoryItemRow[]>();
 }
 
@@ -115,8 +102,6 @@ async function criarConsultaTarefas(tenantId: string, filtros: FiltrosInventario
     .order("created_at", { ascending: false });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
-
   return consulta.returns<MaintenanceTaskRow[]>();
 }
 
@@ -138,21 +123,18 @@ async function carregarResponsaveis(tenantId: string, ownerId: string) {
 
 function montarItens(
   itens: InventoryItemRow[],
-  propriedades: PropertyRow[],
-  unidades: UnitRow[]
+  propriedades: PropertyRow[]
 ): ItemInventarioCompleto[] {
   return itens.map((item) => ({
     ...item,
     propriedade:
-      propriedades.find((propriedade) => propriedade.id === item.property_id) ?? null,
-    unidade: unidades.find((unidade) => unidade.id === item.unit_id) ?? null
+      propriedades.find((propriedade) => propriedade.id === item.property_id) ?? null
   }));
 }
 
 function montarTarefas(
   tarefas: MaintenanceTaskRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   itens: InventoryItemRow[],
   responsaveis: ProfileRow[]
 ): TarefaManutencaoCompleta[] {
@@ -161,14 +143,8 @@ function montarTarefas(
     item: itens.find((item) => item.id === tarefa.inventory_item_id) ?? null,
     propriedade:
       propriedades.find((propriedade) => propriedade.id === tarefa.property_id) ?? null,
-    responsavel: responsaveis.find((responsavel) => responsavel.id === tarefa.assigned_to) ?? null,
-    unidade: unidades.find((unidade) => unidade.id === tarefa.unit_id) ?? null
+    responsavel: responsaveis.find((responsavel) => responsavel.id === tarefa.assigned_to) ?? null
   }));
-}
-
-function filtrarUnidadesPorPropriedade(unidades: UnitRow[], propriedadeId?: string) {
-  if (!propriedadeId) return unidades;
-  return unidades.filter((unidade) => unidade.property_id === propriedadeId);
 }
 
 function criarDadosVazios(
@@ -188,8 +164,7 @@ function criarDadosVazios(
       manutencoesPendentes: 0
     },
     tarefas: [],
-    tenantNome: contexto.tenant?.name ?? "Tenant",
-    unidades: []
+    tenantNome: contexto.tenant?.name ?? "Tenant"
   };
 }
 

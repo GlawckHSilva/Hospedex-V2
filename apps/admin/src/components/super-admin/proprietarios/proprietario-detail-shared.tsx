@@ -63,13 +63,11 @@ export function lerLimites(proprietario: ProprietarioCompleto) {
   const limites = proprietario.license?.limits;
   const objeto = limites && typeof limites === "object" && !Array.isArray(limites) ? limites : {};
   const propriedades = lerNumero(objeto, "max_properties") ?? proprietario.plan?.max_properties ?? 0;
-  const unidades = lerNumero(objeto, "max_units") ?? proprietario.plan?.max_units ?? 0;
   const funcionarios = lerNumero(objeto, "max_staff");
 
   return {
     funcionarios: funcionarios === null ? "Nao definido" : String(funcionarios),
-    propriedades,
-    unidades
+    propriedades
   };
 }
 

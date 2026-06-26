@@ -1,4 +1,4 @@
-import { type PropertyRow, type UnitRow } from "@hospedex/types";
+import { type PropertyRow } from "@hospedex/types";
 import {
   CalendarDays,
   CreditCard,
@@ -32,14 +32,12 @@ export type ReservationCardProps = {
   podeGerenciar: boolean;
   propriedades: PropertyRow[];
   reserva: ReservaComRelacionamentos;
-  unidades: UnitRow[];
 };
 
 export function ReservationCard({
   podeGerenciar,
   propriedades,
   reserva,
-  unidades,
 }: ReservationCardProps) {
   const hospedePrincipal =
     reserva.hospedes.find((hospede) => hospede.is_primary) ??
@@ -47,7 +45,6 @@ export function ReservationCard({
   const encerrada =
     reserva.status === "cancelled" || reserva.status === "completed";
   const nomeCasa = reserva.propriedade?.name ?? "Propriedade removida";
-  const nomeUnidade = reserva.unidade?.name ?? "Nao informada";
   const nomeHospede = hospedePrincipal?.full_name ?? "Sem hospede";
   const telefone = hospedePrincipal?.phone ?? "Nao informado";
   const email = hospedePrincipal?.email ?? "Nao informado";
@@ -102,7 +99,6 @@ export function ReservationCard({
               <ReservationTimeline reserva={reserva} />
               <div className="grid content-start gap-3">
                 <InfoModal label="Casa" valor={nomeCasa} />
-                <InfoModal label="Unidade" valor={nomeUnidade} />
                 <InfoModal
                   label="Status"
                   valor={LABEL_STATUS_RESERVA[reserva.status]}
@@ -130,7 +126,7 @@ export function ReservationCard({
           </EntityViewModal>
 
           <EntityModal
-            description="Atualize periodo, hospede, unidade e valores da reserva."
+            description="Atualize periodo, hospede e valores da reserva."
             disabled={!podeGerenciar || encerrada}
             eyebrow="Edicao"
             size="xl"
@@ -145,7 +141,6 @@ export function ReservationCard({
               podeGerenciar={podeGerenciar && !encerrada}
               propriedades={propriedades}
               reserva={reserva}
-              unidades={unidades}
             />
           </EntityModal>
 

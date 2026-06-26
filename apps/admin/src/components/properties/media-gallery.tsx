@@ -9,12 +9,11 @@ import {
   alterarOrdemImagemAction,
   definirImagemPrincipalAction,
   enviarGaleriaPropriedadeAction,
-  enviarImagensUnidadeAction,
   excluirImagemAction,
 } from "../../lib/properties/media-actions";
 
 /**
- * Galeria reutilizável de propriedades e unidades.
+ * Galeria reutilizável de casas.
  *
  * O componente só envia arquivos ao Storage via server action. Ordem, imagem
  * principal e exclusão ficam nos metadados multi-tenant de media_assets.
@@ -24,9 +23,7 @@ export type MediaGalleryProps = {
   imagens: MediaAssetRow[];
   podeGerenciar: boolean;
   propriedadeId: string;
-  retorno: "/propriedades" | "/unidades";
-  tipo: "propriedade" | "unidade";
-  unidadeId?: string;
+  retorno: "/propriedades";
 };
 
 export function MediaGallery({
@@ -34,19 +31,12 @@ export function MediaGallery({
   podeGerenciar,
   propriedadeId,
   retorno,
-  tipo,
-  unidadeId,
 }: MediaGalleryProps) {
-  const action =
-    tipo === "propriedade"
-      ? enviarGaleriaPropriedadeAction
-      : enviarImagensUnidadeAction;
-
   return (
     <section className="space-y-3">
       <div className="flex justify-end">
         <EntityModal
-          description="Envie imagens para a galeria desta casa ou unidade."
+          description="Envie imagens para a galeria desta casa."
           disabled={!podeGerenciar}
           eyebrow="Galeria"
           size="md"
@@ -55,23 +45,19 @@ export function MediaGallery({
           triggerLabel="Enviar imagens"
           triggerVariant="outline"
         >
-          <form action={action} className="grid gap-4">
+          <form action={enviarGaleriaPropriedadeAction} className="grid gap-4">
             <input name="retorno" type="hidden" value={retorno} />
             <input name="propriedadeId" type="hidden" value={propriedadeId} />
-            {unidadeId ? (
-              <input name="unidadeId" type="hidden" value={unidadeId} />
-            ) : null}
-
             <div className="grid gap-2">
               <Label
-                htmlFor={`${tipo}-${propriedadeId}-${unidadeId ?? "galeria"}`}
+                htmlFor={`propriedade-${propriedadeId}-galeria`}
               >
                 Galeria
               </Label>
               <Input
                 accept="image/*"
                 disabled={!podeGerenciar}
-                id={`${tipo}-${propriedadeId}-${unidadeId ?? "galeria"}`}
+                id={`propriedade-${propriedadeId}-galeria`}
                 multiple
                 name="imagens"
                 type="file"

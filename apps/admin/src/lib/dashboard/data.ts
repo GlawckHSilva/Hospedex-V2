@@ -6,8 +6,7 @@ import type {
   ReservationGuestRow,
   ReservationRow,
   ReservationStatus,
-  TransactionRow,
-  UnitRow
+  TransactionRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -74,7 +73,6 @@ export type EventoReservaDashboard = {
   id: string;
   propriedade: string;
   status: ReservationStatus;
-  unidade: string | null;
 };
 
 export type ErroDashboardModulo = {
@@ -106,7 +104,6 @@ type DadosOperacionais = {
   reservas: ReservationRow[];
   reservasPendentes: ReservationRow[];
   transacoesReceita: TransactionRow[];
-  unidades: UnitRow[];
 };
 
 type PeriodoDashboard = {
@@ -206,7 +203,6 @@ async function carregarDadosOperacionais(
 
   const [
     propriedadesResultado,
-    unidadesResultado,
     reservasResultado,
     reservasPendentesResultado,
     transacoesResultado,
@@ -223,14 +219,6 @@ async function carregarDadosOperacionais(
           .order("name", { ascending: true })
           .returns<PropertyRow[]>()
       : consultaVazia<PropertyRow>(),
-    podeVerPropriedades
-      ? supabase
-          .from("units")
-          .select("*")
-          .eq("tenant_id", tenantId)
-          .order("name", { ascending: true })
-          .returns<UnitRow[]>()
-      : consultaVazia<UnitRow>(),
     podeVerReservas
       ? supabase
           .from("reservations")
@@ -286,7 +274,6 @@ async function carregarDadosOperacionais(
   ]);
 
   registrarErroModulo(erros, "propriedades", propriedadesResultado.error);
-  registrarErroModulo(erros, "propriedades", unidadesResultado.error);
   registrarErroModulo(erros, "reservas", reservasResultado.error);
   registrarErroModulo(erros, "reservas", reservasPendentesResultado.error);
   registrarErroModulo(erros, "financeiro", transacoesResultado.error);
@@ -307,8 +294,7 @@ async function carregarDadosOperacionais(
       propriedadesPermitidas: podeVerPropriedades,
       reservas,
       reservasPendentes: reservasPendentesResultado.data ?? [],
-      transacoesReceita: transacoesResultado.data ?? [],
-      unidades: unidadesResultado.data ?? []
+      transacoesReceita: transacoesResultado.data ?? []
     },
     erros
   };
@@ -534,7 +520,6 @@ function montarEventosReserva(
 ): EventoReservaDashboard[] {
   return reservas.slice(0, 5).map((reserva) => {
     const propriedade = dados.propriedades.find((item) => item.id === reserva.property_id);
-    const unidade = dados.unidades.find((item) => item.id === reserva.unit_id);
     const hospede = dados.hospedes.find((item) => item.reservation_id === reserva.id);
 
     return {
@@ -543,8 +528,7 @@ function montarEventosReserva(
       hospede: hospede?.full_name ?? "Hóspede não informado",
       id: reserva.id,
       propriedade: propriedade?.name ?? "Propriedade não encontrada",
-      status: reserva.status,
-      unidade: unidade?.name ?? null
+      status: reserva.status
     };
   });
 }
@@ -606,11 +590,10 @@ function montarSeriePropriedades(propriedades: PropertyRow[]): PontoSerieDashboa
 }
 
 function calcularOcupacao(dados: DadosOperacionais, inicio: string, fimExclusivo: string): number {
-  const unidadesAtivas = dados.unidades.filter((unidade) => unidade.status === "active").length;
   const casasPublicadas = dados.propriedades.filter(
     (propriedade) => propriedade.status === "published"
   ).length;
-  const capacidade = unidadesAtivas > 0 ? unidadesAtivas : casasPublicadas;
+  const capacidade = casasPublicadas;
 
   if (capacidade <= 0) return 0;
 

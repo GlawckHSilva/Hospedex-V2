@@ -150,7 +150,6 @@ async function criarConsultaBlocos(
     .order("starts_on", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-
   return consulta.returns<CalendarAvailabilityBlockRow[]>();
 }
 
@@ -171,7 +170,6 @@ async function criarConsultaReservas(
     .order("check_in", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-
   return consulta.returns<ReservationRow[]>();
 }
 
@@ -190,7 +188,6 @@ async function criarConsultaLimpezas(
     .order("scheduled_for", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-
   return consulta.returns<CleaningTaskRow[]>();
 }
 
@@ -211,7 +208,6 @@ async function criarConsultaManutencoes(
     .order("scheduled_for", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-
   return consulta.returns<MaintenanceTaskRow[]>();
 }
 

@@ -11,7 +11,6 @@ import {
   carregarPropriedadeLimpeza,
   carregarReservaOperacional,
   carregarTarefaLimpeza,
-  carregarUnidadeLimpeza,
   ErroRegraLimpeza,
   type ClienteSupabaseServer,
   type EscopoLimpeza
@@ -35,7 +34,6 @@ type EntradaTarefaLimpeza = {
   scheduledFor: string | null;
   status: CleaningTaskStatus;
   title: string;
-  unitId: string;
 };
 
 export async function confirmarCheckInAction(formData: FormData) {
@@ -95,7 +93,7 @@ export async function confirmarCheckOutAction(formData: FormData) {
       observacao
     );
 
-    if (escopo.contexto.featureFlags.cleaning && reserva.unit_id) {
+    if (escopo.contexto.featureFlags.cleaning) {
       await criarTarefaCheckout(supabase, escopo, reserva, observacao);
     }
 
@@ -118,7 +116,6 @@ export async function criarTarefaLimpezaAction(formData: FormData) {
       tenant_id: escopo.tenantId,
       owner_id: escopo.ownerId,
       property_id: entrada.propertyId,
-      unit_id: entrada.unitId,
       reservation_id: entrada.reservationId,
       assigned_to: entrada.assignedTo,
       source: "manual",
@@ -132,7 +129,6 @@ export async function criarTarefaLimpezaAction(formData: FormData) {
     });
 
     if (error) throw new Error(error.message);
-    await atualizarUnidadePorStatusLimpeza(supabase, escopo, entrada.unitId, entrada.status);
     if (entrada.reservationId) {
       await registrarNotaReserva(supabase, escopo, entrada.reservationId, "Tarefa de limpeza criada.");
     }
@@ -157,7 +153,6 @@ export async function atualizarTarefaLimpezaAction(formData: FormData) {
       .from("cleaning_tasks")
       .update({
         property_id: entrada.propertyId,
-        unit_id: entrada.unitId,
         reservation_id: entrada.reservationId,
         assigned_to: entrada.assignedTo,
         status: entrada.status,
@@ -171,7 +166,6 @@ export async function atualizarTarefaLimpezaAction(formData: FormData) {
       .eq("tenant_id", escopo.tenantId);
 
     if (error) throw new Error(error.message);
-    await atualizarUnidadePorStatusLimpeza(supabase, escopo, entrada.unitId, entrada.status);
     if (entrada.reservationId) {
       await registrarNotaReserva(supabase, escopo, entrada.reservationId, "Tarefa de limpeza atualizada.");
     }
@@ -203,7 +197,6 @@ export async function alterarStatusTarefaLimpezaAction(formData: FormData) {
       .eq("tenant_id", escopo.tenantId);
 
     if (error) throw new Error(error.message);
-    if (tarefa.unit_id) await atualizarUnidadePorStatusLimpeza(supabase, escopo, tarefa.unit_id, status);
     if (tarefa.reservation_id) {
       await registrarNotaReserva(
         supabase,
@@ -226,11 +219,9 @@ async function obterEntradaTarefa(
   formData: FormData
 ): Promise<EntradaTarefaLimpeza> {
   const propertyId = textoObrigatorio(formData, "propertyId", "propriedade");
-  const unitId = textoObrigatorio(formData, "unitId", "unidade");
   const reservationId = textoOpcional(formData, "reservationId");
 
   await carregarPropriedadeLimpeza(supabase, escopo, propertyId);
-  await carregarUnidadeLimpeza(supabase, escopo, unitId, propertyId);
   if (reservationId) await carregarReservaOperacional(supabase, escopo, reservationId);
 
   return {
@@ -240,8 +231,7 @@ async function obterEntradaTarefa(
     reservationId,
     scheduledFor: dataOpcional(formData, "scheduledFor"),
     status: validarStatusLimpeza(textoObrigatorio(formData, "status", "status")),
-    title: textoObrigatorio(formData, "title", "titulo"),
-    unitId
+    title: textoObrigatorio(formData, "title", "titulo")
   };
 }
 
@@ -302,7 +292,6 @@ async function criarTarefaCheckout(
     tenant_id: escopo.tenantId,
     owner_id: escopo.ownerId,
     property_id: reserva.property_id,
-    unit_id: reserva.unit_id,
     reservation_id: reserva.id,
     assigned_to: null,
     source: "checkout",
@@ -314,26 +303,7 @@ async function criarTarefaCheckout(
   });
 
   if (error) throw new Error(error.message);
-  await atualizarUnidadePorStatusLimpeza(supabase, escopo, reserva.unit_id!, "awaiting_cleaning");
   await registrarNotaReserva(supabase, escopo, reserva.id, "Tarefa de limpeza criada apos check-out.");
-}
-
-async function atualizarUnidadePorStatusLimpeza(
-  supabase: ClienteSupabaseServer,
-  escopo: EscopoLimpeza,
-  unitId: string,
-  status: CleaningTaskStatus
-) {
-  // O schema de unidade ainda usa active/maintenance. O detalhe "aguardando"
-  // fica na tarefa de limpeza, enquanto a unidade sai de venda operacional.
-  const statusUnidade = status === "completed" || status === "cancelled" ? "active" : "maintenance";
-  const { error } = await supabase
-    .from("units")
-    .update({ status: statusUnidade })
-    .eq("id", unitId)
-    .eq("tenant_id", escopo.tenantId);
-
-  if (error) throw new Error(error.message);
 }
 
 async function registrarNotaReserva(
@@ -396,5 +366,4 @@ function revalidarOperacao() {
   revalidatePath(CAMINHO_LIMPEZA);
   revalidatePath("/reservas");
   revalidatePath("/calendario");
-  revalidatePath("/unidades");
 }

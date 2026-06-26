@@ -47,7 +47,7 @@ Super Admin cria proprietário
 ↓
 Proprietário acessa o painel
 ↓
-Proprietário cadastra propriedade e unidades
+Proprietário cadastra casas
 ↓
 Propriedade aparece no marketplace
 ↓
@@ -69,7 +69,7 @@ Status esperado: fundação técnica funcionando.
 - [x] Migrations funcionando.
 - [x] Base de autenticação.
 - [x] Layout administrativo.
-- [x] Base de propriedades e unidades.
+- [x] Base de casas/propriedades.
 - [x] Upload de imagens.
 - [x] Dashboard inicial do proprietário.
 - [ ] Validação completa de RLS.
@@ -85,7 +85,6 @@ Status esperado: proprietário consegue operar hospedagens.
 - [ ] Criar proprietário pelo Super Admin.
 - [ ] Gerenciar planos e licenças.
 - [ ] Cadastrar propriedades.
-- [ ] Cadastrar unidades.
 - [ ] Cadastrar comodidades.
 - [ ] Definir regras da propriedade.
 - [ ] Definir preços base.
@@ -110,7 +109,6 @@ Status esperado: hóspede encontra e solicita reserva.
 - [ ] Cards públicos de propriedades.
 - [ ] Página pública da propriedade.
 - [ ] Galeria de imagens.
-- [ ] Exibição de unidades.
 - [ ] Exibição de comodidades.
 - [ ] Regras e política de cancelamento.
 - [ ] Botão de solicitar reserva.
@@ -229,7 +227,7 @@ A prioridade imediata deve ser:
 
 1. Criar proprietário pelo Super Admin.
 2. Garantir login e permissões do proprietário.
-3. Finalizar propriedades e unidades.
+3. Finalizar casas/propriedades.
 4. Finalizar reservas.
 5. Finalizar calendário.
 6. Publicar propriedade no marketplace.

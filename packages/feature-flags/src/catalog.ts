@@ -57,12 +57,6 @@ export const featureFlagCatalog = [
     ownerConfigurable: true
   },
   {
-    key: "multi_unit",
-    module: "multi_unit",
-    defaultEnabled: false,
-    ownerConfigurable: true
-  },
-  {
     key: "ics_sync",
     module: "calendar",
     defaultEnabled: false,

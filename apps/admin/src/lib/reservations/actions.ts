@@ -1,6 +1,7 @@
 "use server";
 
 import type {
+  PropertyRow,
   ReservationGuestRow,
   ReservationRow,
   ReservationStatus,
@@ -15,7 +16,6 @@ import {
   carregarEscopoReservas,
   carregarPropriedadeDaReserva,
   carregarReservaGerenciavel,
-  carregarUnidadeDaReserva,
   ErroRegraReserva,
   type ClienteSupabaseServer,
   type EscopoReserva
@@ -43,8 +43,6 @@ const TRANSICOES_RESERVA: Record<ReservationStatus, ReservationStatus[]> = {
 
 type EntradaReserva = {
   propriedadeId: string;
-  unidadeId: string | null;
-  permitirOverbooking: boolean;
   hospedeNome: string;
   hospedeEmail: string | null;
   hospedeTelefone: string | null;
@@ -66,14 +64,13 @@ export async function criarReservaManualAction(formData: FormData) {
     const entrada = await obterEntradaReserva(supabase, escopo, formData);
     const statusInicial: ReservationStatus = "pending";
 
-    await validarDisponibilidadeUnidade(supabase, escopo, entrada);
+    await validarDisponibilidadeCasa(supabase, escopo, entrada);
 
     const { data: reserva, error } = await supabase
       .from("reservations")
       .insert({
         tenant_id: escopo.tenantId,
         property_id: entrada.propriedadeId,
-        unit_id: entrada.unidadeId,
         owner_id: escopo.ownerId,
         code: gerarCodigoReserva(),
         status: statusInicial,
@@ -121,13 +118,12 @@ export async function atualizarReservaAction(formData: FormData) {
       throw new ErroRegraReserva("Reserva encerrada não pode ser editada.");
     }
 
-    await validarDisponibilidadeUnidade(supabase, escopo, entrada, reservaId);
+    await validarDisponibilidadeCasa(supabase, escopo, entrada, reservaId);
 
     const { error } = await supabase
       .from("reservations")
       .update({
         property_id: entrada.propriedadeId,
-        unit_id: entrada.unidadeId,
         check_in: entrada.checkIn,
         check_out: entrada.checkOut,
         guests_count: entrada.quantidadeHospedes,
@@ -252,15 +248,22 @@ async function obterEntradaReserva(
   formData: FormData
 ): Promise<EntradaReserva> {
   const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
-  const unidadeId = textoOpcional(formData, "unidadeId");
   const checkIn = dataObrigatoria(formData, "checkIn", "check-in");
   const checkOut = dataObrigatoria(formData, "checkOut", "check-out");
-  let permitirOverbooking = false;
+  const quantidadeHospedes = numeroInteiro(
+    formData,
+    "quantidadeHospedes",
+    "hóspedes",
+    1
+  );
+  const propriedade = await carregarPropriedadeDaReserva(
+    supabase,
+    escopo,
+    propriedadeId
+  );
 
-  await carregarPropriedadeDaReserva(supabase, escopo, propriedadeId);
-  if (unidadeId) {
-    const unidade = await carregarUnidadeDaReserva(supabase, escopo, unidadeId, propriedadeId);
-    permitirOverbooking = unidade.allow_overbooking;
+  if (quantidadeHospedes > obterCapacidadeCasa(propriedade)) {
+    throw new ErroRegraReserva("A quantidade de hóspedes excede a capacidade da casa.");
   }
 
   if (new Date(`${checkOut}T00:00:00`) <= new Date(`${checkIn}T00:00:00`)) {
@@ -269,15 +272,13 @@ async function obterEntradaReserva(
 
   return {
     propriedadeId,
-    unidadeId,
-    permitirOverbooking,
     hospedeNome: textoObrigatorio(formData, "hospedeNome", "nome do hóspede"),
     hospedeEmail: textoOpcional(formData, "hospedeEmail"),
     hospedeTelefone: textoOpcional(formData, "hospedeTelefone"),
     hospedeDocumento: textoOpcional(formData, "hospedeDocumento"),
     checkIn,
     checkOut,
-    quantidadeHospedes: numeroInteiro(formData, "quantidadeHospedes", "hóspedes", 1),
+    quantidadeHospedes,
     valorBase: numeroMoeda(formData, "valorBase", "valor da reserva"),
     observacoes: textoOpcional(formData, "observacoes"),
     observacoesHospede: textoOpcional(formData, "observacoesHospede"),
@@ -285,24 +286,21 @@ async function obterEntradaReserva(
   };
 }
 
-async function validarDisponibilidadeUnidade(
+async function validarDisponibilidadeCasa(
   supabase: ClienteSupabaseServer,
   escopo: EscopoReserva,
   entrada: EntradaReserva,
   reservaIgnoradaId?: string
 ) {
-  if (!entrada.unidadeId) return;
-
   await validarBloqueioManualCalendario(supabase, escopo, entrada);
-  if (entrada.permitirOverbooking) return;
 
-  // A V2 bloqueia sobreposicao de reservas na mesma unidade por padrao. O campo
-  // allow_overbooking fica preparado para uma liberacao futura controlada.
+  // A casa e o recurso reservavel da V2. Sobreposicoes sao bloqueadas por
+  // propriedade para impedir duas estadias no mesmo periodo.
   let consulta = supabase
     .from("reservations")
     .select("id, code")
     .eq("tenant_id", escopo.tenantId)
-    .eq("unit_id", entrada.unidadeId)
+    .eq("property_id", entrada.propriedadeId)
     .neq("status", "cancelled")
     .lt("check_in", entrada.checkOut)
     .gt("check_out", entrada.checkIn)
@@ -319,7 +317,7 @@ async function validarDisponibilidadeUnidade(
   const conflito = data?.[0];
   if (conflito) {
     throw new ErroRegraReserva(
-      `A unidade ja possui reserva no periodo selecionado (${conflito.code}).`
+      `A casa ja possui reserva no periodo selecionado (${conflito.code}).`
     );
   }
 }
@@ -329,13 +327,11 @@ async function validarBloqueioManualCalendario(
   escopo: EscopoReserva,
   entrada: EntradaReserva
 ) {
-  if (!entrada.unidadeId) return;
-
   const { data, error } = await supabase
     .from("calendar_availability_blocks")
     .select("id, reason")
     .eq("tenant_id", escopo.tenantId)
-    .eq("unit_id", entrada.unidadeId)
+    .eq("property_id", entrada.propriedadeId)
     .neq("source", "reservation")
     .in("status", ["blocked", "unavailable"])
     .lt("starts_on", entrada.checkOut)
@@ -348,7 +344,7 @@ async function validarBloqueioManualCalendario(
   const bloqueio = data?.[0];
   if (bloqueio) {
     throw new ErroRegraReserva(
-      `A unidade esta bloqueada no periodo selecionado${bloqueio.reason ? `: ${bloqueio.reason}` : "."}`
+      `A casa esta bloqueada no periodo selecionado${bloqueio.reason ? `: ${bloqueio.reason}` : "."}`
     );
   }
 }
@@ -371,10 +367,6 @@ async function registrarEventosAtualizacao(
     eventos.push(
       `Valor alterado de ${formatarMoeda(Number(reservaAtual.total_amount))} para ${formatarMoeda(entrada.valorBase)}.`
     );
-  }
-
-  if (reservaAtual.unit_id !== entrada.unidadeId) {
-    eventos.push("Unidade da reserva alterada.");
   }
 
   if (eventos.length === 0) return;
@@ -580,6 +572,17 @@ function dataObrigatoria(formData: FormData, chave: string, label: string): stri
     throw new ErroRegraReserva(`Informe ${label} válido.`);
   }
   return valor;
+}
+
+function obterCapacidadeCasa(propriedade: PropertyRow) {
+  const estrutura = propriedade.structure_details;
+
+  if (!estrutura || typeof estrutura !== "object" || Array.isArray(estrutura)) {
+    return 1;
+  }
+
+  const capacidade = estrutura.hospedesMaximos;
+  return typeof capacidade === "number" && capacidade > 0 ? capacidade : 1;
 }
 
 function textoObrigatorio(formData: FormData, chave: string, label: string): string {

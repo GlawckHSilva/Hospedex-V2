@@ -49,7 +49,6 @@ export function ReportsModule({
   serieFinanceira,
   servicosExtras,
   tenantNome,
-  unidades
 }: ReportsModuleProps) {
   const possuiDados =
     resumo.reservasPeriodo > 0 ||
@@ -84,11 +83,10 @@ export function ReportsModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-[0.8fr_0.8fr_1fr_1fr_1fr_1fr_auto]">
+          <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-[0.8fr_0.8fr_1fr_1fr_1fr_auto]">
             <CampoData label="Inicio" name="dataInicio" value={filtros.dataInicio} />
             <CampoData label="Fim" name="dataFim" value={filtros.dataFim} />
             <CampoPropriedade value={filtros.propriedadeId ?? ""} propriedades={propriedades} />
-            <CampoUnidade value={filtros.unidadeId ?? ""} unidades={unidades} />
             <CampoStatus value={filtros.statusReserva} />
             <CampoCategoria
               categorias={categoriasFinanceiras}
@@ -346,22 +344,6 @@ function CampoPropriedade({
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>
             {propriedade.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CampoUnidade({ unidades, value }: { unidades: Array<{ id: string; name: string }>; value: string }) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor="unidadeId">Unidade</Label>
-      <select className={campoClasse} defaultValue={value} id="unidadeId" name="unidadeId">
-        <option value="">Todas</option>
-        {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>
-            {unidade.name}
           </option>
         ))}
       </select>

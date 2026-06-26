@@ -2,13 +2,11 @@ import type {
   AmenityRow,
   MediaAssetRow,
   PropertyRow,
-  PropertySettingRow,
-  UnitCategoryRow,
-  UnitRow
+  PropertySettingRow
 } from "@hospedex/types";
 
 /**
- * Contratos do módulo de Propriedades e Unidades.
+ * Contratos do módulo de Casas.
  *
  * Este arquivo traduz a estrutura normalizada do banco para objetos prontos para
  * tela, mantendo explícitos tenant, plano e relações sem espalhar regras pela UI.
@@ -61,11 +59,6 @@ export type ValoresPropriedade = {
   valorHospedeExtra: number;
 };
 
-export type UnidadeComCategoria = UnitRow & {
-  categoria: UnitCategoryRow | null;
-  imagens: MediaAssetRow[];
-};
-
 export type PropriedadeComRelacionamentos = PropertyRow & {
   detalhesPublicos: DetalhesPublicosPropriedade;
   enderecoFormatado: EnderecoPropriedade;
@@ -75,15 +68,12 @@ export type PropriedadeComRelacionamentos = PropertyRow & {
   comodidades: AmenityRow[];
   regras: PropertySettingRow;
   valores: ValoresPropriedade;
-  unidades: UnidadeComCategoria[];
 };
 
 export type LimitesPlanoPropriedades = {
   nomePlano: string;
   maxPropriedades: number;
-  maxUnidades: number;
   propriedadesUsadas: number;
-  unidadesUsadas: number;
 };
 
 export type DadosModuloPropriedades = {
@@ -91,7 +81,6 @@ export type DadosModuloPropriedades = {
   comodidadesDisponiveis: AmenityRow[];
   limitesPlano: LimitesPlanoPropriedades;
   podeGerenciar: boolean;
-  multiUnidadesAtivo: boolean;
 };
 
 export type SearchParamsModulo = {

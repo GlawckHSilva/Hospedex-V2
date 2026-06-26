@@ -4,9 +4,6 @@ import type {
   PropertyRow,
   PropertyStatus,
   PropertyType,
-  UnitCategoryRow,
-  UnitRow,
-  UnitStatus,
 } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -17,7 +14,6 @@ import {
   enviarImagemParaStorage,
   obterArquivoImagem,
   obterArquivosImagem,
-  removerImagemDoStorage,
 } from "./media-storage";
 import {
   carregarEscopoGerenciamento,
@@ -29,22 +25,19 @@ import {
 import type { EnderecoPropriedade } from "./types";
 
 /**
- * Server actions do módulo de Propriedades e Unidades.
+ * Server actions do módulo de Casas.
  *
- * As regras de tenant, owner, plano e feature flag ficam no servidor porque o
+ * As regras de tenant, owner e plano ficam no servidor porque o
  * cliente nunca deve decidir sozinho o que pode ser gravado em um SaaS multi-tenant.
  */
 
 const CAMINHO_PROPRIEDADES = "/propriedades";
-const CAMINHO_UNIDADES = "/unidades";
 const STATUS_PROPRIEDADE: PropertyStatus[] = ["draft", "published", "paused"];
 const TIPOS_PROPRIEDADE: PropertyType[] = [
   "seasonal_home",
   "inn",
   "small_hotel",
 ];
-const STATUS_UNIDADE: UnitStatus[] = ["active", "inactive", "maintenance"];
-const CATEGORIAS_UNIDADE = ["Standard", "Luxo", "Master"];
 const MAX_PARCELAS_CARTAO = 12;
 
 type EntradaPropriedade = {
@@ -108,19 +101,6 @@ type EntradaPropriedade = {
     valorDiaria: number;
     valorHospedeExtra: number;
   };
-};
-
-type EntradaUnidade = {
-  propriedadeId: string;
-  nome: string;
-  categoria: string;
-  imagensArquivos: File[];
-  capacidade: number;
-  quartos: number;
-  camas: number;
-  banheiros: number;
-  valorBase: number;
-  status: UnitStatus;
 };
 
 export async function criarPropriedadeAction(formData: FormData) {
@@ -253,7 +233,7 @@ export async function alternarStatusPropriedadeAction(formData: FormData) {
     const statusDestino: PropertyStatus =
       propriedade.status === "paused" ? "published" : "paused";
 
-    // Pausar preserva dados e unidades; arquivamento fica fora desta etapa para evitar perda operacional.
+    // Pausar preserva os dados da casa; arquivamento fica fora desta etapa para evitar perda operacional.
     const { error } = await supabase
       .from("properties")
       .update({ status: statusDestino })
@@ -464,184 +444,6 @@ export async function atualizarRegrasReservaAction(formData: FormData) {
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=regras-reserva-atualizadas`);
 }
 
-export async function criarUnidadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
-  const caminhoRetorno = obterCaminhoRetorno(formData);
-
-  try {
-    const entrada = obterEntradaUnidade(formData);
-    const supabase = await criarClienteSupabaseServer();
-
-    await carregarPropriedadeDoTenant(supabase, escopo, entrada.propriedadeId);
-    await garantirLimiteUnidades(supabase, escopo.tenantId);
-    await garantirRegraMultiUnidade(
-      supabase,
-      escopo.tenantId,
-      entrada.propriedadeId,
-      escopo.contexto.featureFlags.multi_unit,
-    );
-
-    const categoria = await criarOuObterCategoria(
-      supabase,
-      escopo.tenantId,
-      entrada,
-    );
-    const { data: unidade, error } = await supabase
-      .from("units")
-      .insert({
-        tenant_id: escopo.tenantId,
-        property_id: entrada.propriedadeId,
-        unit_category_id: categoria?.id ?? null,
-        code: gerarIdentificadorUrl(entrada.nome),
-        name: entrada.nome,
-        status: entrada.status,
-        capacity: entrada.capacidade,
-        bedrooms: entrada.quartos,
-        beds: entrada.camas,
-        bathrooms: entrada.banheiros,
-        base_price: entrada.valorBase,
-      })
-      .select("*")
-      .single<UnitRow>();
-
-    if (error || !unidade)
-      throw new Error(error?.message ?? "Unidade não retornada.");
-    await salvarImagensUnidade(supabase, escopo.tenantId, unidade, entrada);
-    revalidarModulo();
-  } catch (erro) {
-    redirecionarComErro(caminhoRetorno, erro, "Erro ao criar unidade.");
-  }
-
-  redirect(`${caminhoRetorno}?sucesso=unidade-criada`);
-}
-
-export async function atualizarUnidadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
-  const caminhoRetorno = obterCaminhoRetorno(formData);
-
-  try {
-    const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
-    const entrada = obterEntradaUnidade(formData);
-    const supabase = await criarClienteSupabaseServer();
-    const unidadeAtual = await carregarUnidadeDoTenant(
-      supabase,
-      escopo.tenantId,
-      unidadeId,
-    );
-
-    await carregarPropriedadeDoTenant(supabase, escopo, entrada.propriedadeId);
-    await garantirRegraMultiUnidade(
-      supabase,
-      escopo.tenantId,
-      entrada.propriedadeId,
-      escopo.contexto.featureFlags.multi_unit,
-      unidadeId,
-    );
-
-    const categoria = await criarOuObterCategoria(
-      supabase,
-      escopo.tenantId,
-      entrada,
-    );
-    const mudouPropriedade = unidadeAtual.property_id !== entrada.propriedadeId;
-    const { error } = await supabase
-      .from("units")
-      .update({
-        property_id: entrada.propriedadeId,
-        unit_category_id: categoria?.id ?? null,
-        code: mudouPropriedade
-          ? gerarIdentificadorUrl(entrada.nome)
-          : unidadeAtual.code,
-        name: entrada.nome,
-        status: entrada.status,
-        capacity: entrada.capacidade,
-        bedrooms: entrada.quartos,
-        beds: entrada.camas,
-        bathrooms: entrada.banheiros,
-        base_price: entrada.valorBase,
-      })
-      .eq("id", unidadeId)
-      .eq("tenant_id", escopo.tenantId);
-
-    if (error) throw new Error(error.message);
-    await salvarImagensUnidade(
-      supabase,
-      escopo.tenantId,
-      { id: unidadeId, property_id: entrada.propriedadeId },
-      entrada,
-    );
-    revalidarModulo();
-  } catch (erro) {
-    redirecionarComErro(caminhoRetorno, erro, "Erro ao atualizar unidade.");
-  }
-
-  redirect(`${caminhoRetorno}?sucesso=unidade-atualizada`);
-}
-
-export async function alternarStatusUnidadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
-  const caminhoRetorno = obterCaminhoRetorno(formData);
-
-  try {
-    const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
-    const supabase = await criarClienteSupabaseServer();
-    const unidade = await carregarUnidadeDoTenant(
-      supabase,
-      escopo.tenantId,
-      unidadeId,
-    );
-    const statusDestino: UnitStatus =
-      unidade.status === "active" ? "inactive" : "active";
-
-    // A pausa operacional deixa a unidade fora do uso futuro sem apagar histórico ou categoria.
-    const { error } = await supabase
-      .from("units")
-      .update({ status: statusDestino })
-      .eq("id", unidade.id)
-      .eq("tenant_id", escopo.tenantId);
-
-    if (error) throw new Error(error.message);
-    revalidarModulo();
-  } catch (erro) {
-    redirecionarComErro(caminhoRetorno, erro, "Erro ao alterar unidade.");
-  }
-
-  redirect(`${caminhoRetorno}?sucesso=status-unidade`);
-}
-
-export async function excluirUnidadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
-  const caminhoRetorno = obterCaminhoRetorno(formData);
-
-  try {
-    exigirConfirmacaoExclusao(formData);
-    const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
-    const supabase = await criarClienteSupabaseServer();
-    const unidade = await carregarUnidadeDoTenant(
-      supabase,
-      escopo.tenantId,
-      unidadeId,
-    );
-    await carregarPropriedadeDoTenant(supabase, escopo, unidade.property_id);
-    await removerImagensDaUnidade(supabase, escopo.tenantId, unidade.id);
-
-    // A unidade é excluída somente após validar tenant e propriedade. O schema atual
-    // mantém FKs preparadas para preservar reservas com unit_id nulo quando necessário.
-    const { error } = await supabase
-      .from("units")
-      .delete()
-      .eq("id", unidade.id)
-      .eq("tenant_id", escopo.tenantId);
-
-    if (error) throw new Error(error.message);
-    revalidarModulo();
-  } catch (erro) {
-    redirecionarComErro(caminhoRetorno, erro, "Erro ao excluir unidade.");
-  }
-
-  redirect(`${caminhoRetorno}?sucesso=unidade-excluida`);
-}
-
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   const nome = textoObrigatorio(formData, "nome", "nome");
   const hospedesMaximos = numeroInteiro(
@@ -786,24 +588,6 @@ function obterComodidadesPersonalizadasExistentes(formData: FormData) {
     }
     return { id, nome };
   });
-}
-
-
-function obterEntradaUnidade(formData: FormData): EntradaUnidade {
-  return {
-    propriedadeId: textoObrigatorio(formData, "propriedadeId", "propriedade"),
-    nome: textoObrigatorio(formData, "nome", "nome"),
-    categoria: obterCategoriaUnidade(formData),
-    imagensArquivos: obterArquivosImagem(formData, "imagensUnidadeArquivos"),
-    capacidade: numeroInteiro(formData, "capacidade", "capacidade", 1),
-    quartos: numeroInteiro(formData, "quartos", "quartos", 0),
-    camas: numeroInteiro(formData, "camas", "camas", 1),
-    banheiros: numeroInteiro(formData, "banheiros", "banheiros", 0),
-    valorBase: numeroMoeda(formData, "valorBase", "valor base"),
-    status: validarStatusUnidade(
-      textoObrigatorio(formData, "status", "status"),
-    ),
-  };
 }
 
 async function salvarConfiguracoesDaCasa(
@@ -982,55 +766,6 @@ async function garantirLimitePropriedades(
   }
 }
 
-async function garantirLimiteUnidades(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-) {
-  const limites = await carregarLimitesPlano(tenantId);
-  const { count, error } = await supabase
-    .from("units")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenantId);
-
-  if (error) throw new Error(error.message);
-
-  if ((count ?? 0) >= limites.maxUnidades) {
-    throw new ErroRegraNegocio(
-      `Limite do plano atingido: ${limites.maxUnidades} unidade(s).`,
-    );
-  }
-}
-
-async function garantirRegraMultiUnidade(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-  propriedadeId: string,
-  multiUnidadeAtivo: boolean | undefined,
-  unidadeIdIgnorada?: string,
-) {
-  if (multiUnidadeAtivo) return;
-
-  let consulta = supabase
-    .from("units")
-    .select("id", { count: "exact", head: true })
-    .eq("tenant_id", tenantId)
-    .eq("property_id", propriedadeId);
-
-  if (unidadeIdIgnorada) {
-    consulta = consulta.neq("id", unidadeIdIgnorada);
-  }
-
-  const { count, error } = await consulta;
-  if (error) throw new Error(error.message);
-
-  // Sem a feature flag multi_unit, uma propriedade representa uma casa ou unidade única.
-  if ((count ?? 0) > 0) {
-    throw new ErroRegraNegocio(
-      "A feature flag de multiunidades está desligada para este tenant.",
-    );
-  }
-}
-
 async function carregarPropriedadeDoTenant(
   supabase: ClienteSupabaseServer,
   escopo: EscopoGerenciamento,
@@ -1052,133 +787,12 @@ async function carregarPropriedadeDoTenant(
   return data;
 }
 
-async function carregarUnidadeDoTenant(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-  unidadeId: string,
-) {
-  const { data, error } = await supabase
-    .from("units")
-    .select("*")
-    .eq("id", unidadeId)
-    .eq("tenant_id", tenantId)
-    .maybeSingle<UnitRow>();
-
-  if (error || !data) {
-    throw new ErroRegraNegocio("Unidade não encontrada para este tenant.");
-  }
-
-  return data;
-}
-
-async function criarOuObterCategoria(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-  entrada: EntradaUnidade,
-) {
-  const { data: categoriaExistente, error: erroBusca } = await supabase
-    .from("unit_categories")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("property_id", entrada.propriedadeId)
-    .eq("name", entrada.categoria)
-    .maybeSingle<UnitCategoryRow>();
-
-  if (erroBusca) throw new Error(erroBusca.message);
-  if (categoriaExistente) return categoriaExistente;
-
-  // A categoria nasce simples para agrupar unidades semelhantes sem criar CRUD específico agora.
-  const { data: categoria, error } = await supabase
-    .from("unit_categories")
-    .insert({
-      tenant_id: tenantId,
-      property_id: entrada.propriedadeId,
-      name: entrada.categoria,
-      max_guests: entrada.capacidade,
-      bedrooms: entrada.quartos,
-      bathrooms: entrada.banheiros,
-    })
-    .select("*")
-    .single<UnitCategoryRow>();
-
-  if (error || !categoria)
-    throw new Error(error?.message ?? "Categoria não criada.");
-  return categoria;
-}
-
-async function salvarImagensUnidade(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-  unidade: Pick<UnitRow, "id" | "property_id">,
-  entrada: EntradaUnidade,
-) {
-  if (!entrada.imagensArquivos.length) return;
-
-  const proximaOrdem = await obterProximaOrdemMidia(
-    supabase,
-    tenantId,
-    unidade.property_id,
-    unidade.id,
-  );
-
-  await Promise.all(
-    entrada.imagensArquivos.map(async (arquivo, indice) => {
-      const midia = await enviarImagemParaStorage(
-        supabase,
-        {
-          escopo: "unidade",
-          propertyId: unidade.property_id,
-          tenantId,
-          unitId: unidade.id,
-        },
-        arquivo,
-      );
-
-      const { error } = await supabase.from("media_assets").insert({
-        alt: arquivo.name,
-        is_cover: proximaOrdem === 0 && indice === 0,
-        media_type: "image",
-        property_id: unidade.property_id,
-        sort_order: proximaOrdem + indice,
-        status: "active",
-        storage_bucket: midia.bucket,
-        storage_path: midia.path,
-        tenant_id: tenantId,
-        unit_id: unidade.id,
-        url: midia.url,
-      });
-
-      if (error) throw new Error(error.message);
-    }),
-  );
-}
-
-async function removerImagensDaUnidade(
-  supabase: ClienteSupabaseServer,
-  tenantId: string,
-  unidadeId: string,
-) {
-  const { data: imagens, error } = await supabase
-    .from("media_assets")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("unit_id", unidadeId)
-    .eq("status", "active");
-
-  if (error) throw new Error(error.message);
-
-  await Promise.all(
-    (imagens ?? []).map((imagem) => removerImagemDoStorage(supabase, imagem)),
-  );
-}
-
 async function obterProximaOrdemMidia(
   supabase: ClienteSupabaseServer,
   tenantId: string,
   propriedadeId: string,
-  unidadeId: string | null,
 ) {
-  let consulta = supabase
+  const consulta = supabase
     .from("media_assets")
     .select("sort_order")
     .eq("tenant_id", tenantId)
@@ -1186,8 +800,6 @@ async function obterProximaOrdemMidia(
     .eq("status", "active")
     .order("sort_order", { ascending: false })
     .limit(1);
-
-  consulta = unidadeId ? consulta.eq("unit_id", unidadeId) : consulta.is("unit_id", null);
 
   const { data, error } = await consulta.maybeSingle<{ sort_order: number }>();
 
@@ -1219,7 +831,6 @@ async function salvarImagemCapa(
     .update({ is_cover: false })
     .eq("tenant_id", tenantId)
     .eq("property_id", propriedadeId)
-    .is("unit_id", null)
     .eq("is_cover", true);
 
   if (erroCapaAnterior) throw new Error(erroCapaAnterior.message);
@@ -1227,7 +838,6 @@ async function salvarImagemCapa(
   const { error } = await supabase.from("media_assets").insert({
     tenant_id: tenantId,
     property_id: propriedadeId,
-    unit_id: null,
     media_type: "image",
     storage_bucket: arquivo.bucket,
     storage_path: arquivo.path,
@@ -1258,7 +868,6 @@ async function salvarGaleriaPropriedade(
       .update({ is_cover: false })
       .eq("tenant_id", tenantId)
       .eq("property_id", propriedadeId)
-      .is("unit_id", null)
       .eq("is_cover", true);
 
     if (error) throw new Error(error.message);
@@ -1268,7 +877,6 @@ async function salvarGaleriaPropriedade(
     supabase,
     tenantId,
     propriedadeId,
-    null,
   );
 
   await Promise.all(
@@ -1296,7 +904,6 @@ async function salvarGaleriaPropriedade(
         storage_bucket: midia.bucket,
         storage_path: midia.path,
         tenant_id: tenantId,
-        unit_id: null,
         url: midia.url,
       });
 
@@ -1478,16 +1085,6 @@ function numeroMoedaOpcional(
   return valor;
 }
 
-function numeroMoeda(formData: FormData, chave: string, label: string): number {
-  const valor = Number.parseFloat(
-    textoObrigatorio(formData, chave, label).replace(",", "."),
-  );
-  if (Number.isNaN(valor) || valor < 0) {
-    throw new ErroRegraNegocio(`Informe ${label} válido.`);
-  }
-  return valor;
-}
-
 function validarTipoPropriedade(valor: string): PropertyType {
   if (TIPOS_PROPRIEDADE.includes(valor as PropertyType))
     return valor as PropertyType;
@@ -1501,38 +1098,9 @@ function validarStatusPropriedade(valor: string): PropertyStatus {
   throw new ErroRegraNegocio("Status da propriedade inválido.");
 }
 
-function validarStatusUnidade(valor: string): UnitStatus {
-  if (STATUS_UNIDADE.includes(valor as UnitStatus)) return valor as UnitStatus;
-  throw new ErroRegraNegocio("Status da unidade inválido.");
-}
-
 function validarModoReserva(valor: string): "manual_approval" | "instant_booking" {
   if (valor === "manual_approval" || valor === "instant_booking") return valor;
   throw new ErroRegraNegocio("Modo de reserva inválido.");
-}
-
-function validarCategoriaUnidade(valor: string): string {
-  if (CATEGORIAS_UNIDADE.includes(valor)) return valor;
-  throw new ErroRegraNegocio("Categoria da unidade inválida.");
-}
-
-function obterCategoriaUnidade(formData: FormData): string {
-  const categoria = textoObrigatorio(formData, "categoria", "categoria");
-  if (categoria !== "Personalizada") return validarCategoriaUnidade(categoria);
-
-  const personalizada = textoObrigatorio(
-    formData,
-    "categoriaPersonalizada",
-    "categoria personalizada",
-  );
-
-  if (personalizada.length > 80) {
-    throw new ErroRegraNegocio(
-      "Categoria personalizada deve ter no máximo 80 caracteres.",
-    );
-  }
-
-  return personalizada;
 }
 
 function exigirConfirmacaoExclusao(formData: FormData) {
@@ -1584,12 +1152,4 @@ function redirecionarComErro(
 
 function revalidarModulo() {
   revalidatePath(CAMINHO_PROPRIEDADES);
-  revalidatePath(CAMINHO_UNIDADES);
-}
-
-function obterCaminhoRetorno(formData: FormData): string {
-  const retorno = formData.get("retorno")?.toString();
-  return retorno === CAMINHO_PROPRIEDADES
-    ? CAMINHO_PROPRIEDADES
-    : CAMINHO_UNIDADES;
 }

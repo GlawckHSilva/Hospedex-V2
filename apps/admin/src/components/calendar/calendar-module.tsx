@@ -53,7 +53,7 @@ export function CalendarModule({
   reservas,
   resumo,
   sucesso,
-  tenantNome
+  tenantNome,
 }: CalendarModuleProps) {
   const casaAtual =
     propriedades.find((propriedade) => propriedade.id === filtros.propriedadeId) ??

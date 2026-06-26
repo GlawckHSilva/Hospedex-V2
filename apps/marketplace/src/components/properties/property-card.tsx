@@ -63,7 +63,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
           </span>
           <span className="inline-flex items-center gap-1.5">
             <BedDouble className="h-4 w-4" />
-            {property.units.length || 1} unidade{property.units.length === 1 ? "" : "s"}
+            {property.bedrooms} quarto{property.bedrooms === 1 ? "" : "s"}
           </span>
           <span className="ml-auto font-semibold text-foreground">
             {formatarPreco(property.minPrice)}

@@ -269,7 +269,7 @@ function GrupoReservas({
             itemId={reserva.id}
             key={reserva.id}
             podeGerenciar={podeGerenciar}
-            subtitulo={`${reserva.propriedade?.name ?? "Casa"} · ${reserva.unidade?.name ?? "Unidade interna"}`}
+            subtitulo={reserva.propriedade?.name ?? "Casa"}
             titulo={`${reserva.code} · ${reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}`}
           />
         ))}
@@ -304,7 +304,7 @@ function GrupoLimpeza({
             itemId={limpeza.id}
             key={limpeza.id}
             podeGerenciar={podeGerenciar}
-            subtitulo={`${limpeza.propriedade?.name ?? "Casa"} · ${limpeza.unidade?.name ?? "Unidade interna"}`}
+            subtitulo={limpeza.propriedade?.name ?? "Casa"}
             titulo={limpeza.title}
           />
         ))}

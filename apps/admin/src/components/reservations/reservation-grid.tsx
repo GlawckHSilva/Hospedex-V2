@@ -1,4 +1,4 @@
-import type { PropertyRow, UnitRow } from "@hospedex/types";
+import type { PropertyRow } from "@hospedex/types";
 
 import type { ReservaComRelacionamentos } from "../../lib/reservations/types";
 import { EmptyState, EntityGrid } from "../management/entity-card";
@@ -8,14 +8,12 @@ type ReservationGridProps = {
   podeGerenciar: boolean;
   propriedades: PropertyRow[];
   reservas: ReservaComRelacionamentos[];
-  unidades: UnitRow[];
 };
 
 export function ReservationGrid({
   podeGerenciar,
   propriedades,
   reservas,
-  unidades,
 }: ReservationGridProps) {
   if (reservas.length === 0) {
     return (
@@ -34,7 +32,6 @@ export function ReservationGrid({
           podeGerenciar={podeGerenciar}
           propriedades={propriedades}
           reserva={reserva}
-          unidades={unidades}
         />
       ))}
     </EntityGrid>

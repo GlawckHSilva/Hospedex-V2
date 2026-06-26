@@ -51,7 +51,6 @@ export function CleaningModule({
   sucesso,
   tarefas,
   tenantNome,
-  unidades,
 }: CleaningModuleProps) {
   const reservasOperacionais = [...checkInsHoje, ...checkOutsHoje];
 
@@ -125,7 +124,7 @@ export function CleaningModule({
             </p>
           </div>
           <EntityModal
-            description="Informe casa, unidade, reserva vinculada e responsavel pela limpeza."
+            description="Informe casa, reserva vinculada e responsavel pela limpeza."
             disabled={!podeGerenciarLimpeza}
             eyebrow="Limpeza"
             title="Nova tarefa de limpeza"
@@ -139,7 +138,6 @@ export function CleaningModule({
               propriedades={propriedades}
               reservas={reservasOperacionais}
               responsaveis={responsaveis}
-              unidades={unidades}
             />
           </EntityModal>
         </CardContent>
@@ -155,7 +153,6 @@ export function CleaningModule({
               reservas={reservasOperacionais}
               responsaveis={responsaveis}
               tarefa={tarefa}
-              unidades={unidades}
             />
           ))}
         </EntityGrid>
@@ -203,8 +200,7 @@ function SecaoOperacional({
                 <div>
                   <p className="font-semibold">{reserva.code}</p>
                   <p className="text-sm text-muted-foreground">
-                    {reserva.propriedade?.name ?? "Propriedade"} ·{" "}
-                    {reserva.unidade?.name ?? "Unidade"}
+                    {reserva.propriedade?.name ?? "Propriedade"}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {reserva.hospedePrincipal?.full_name ??

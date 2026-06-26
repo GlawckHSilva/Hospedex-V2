@@ -3,8 +3,7 @@ import type {
   ProfileRow,
   PropertyRow,
   ReservationGuestRow,
-  ReservationRow,
-  UnitRow
+  ReservationRow
 } from "@hospedex/types";
 
 export type TipoConfirmacao =
@@ -17,13 +16,11 @@ export type TipoConfirmacao =
 export type ReservaConfirmacao = ReservationRow & {
   hospedePrincipal: ReservationGuestRow | null;
   propriedade: PropertyRow | null;
-  unidade: UnitRow | null;
 };
 
 export type LimpezaConfirmacao = CleaningTaskRow & {
   propriedade: PropertyRow | null;
   reserva: ReservationRow | null;
-  unidade: UnitRow | null;
 };
 
 export type EventoTimelineConfirmacao = {

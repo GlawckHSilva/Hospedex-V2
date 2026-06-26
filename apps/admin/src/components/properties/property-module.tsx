@@ -1,4 +1,4 @@
-import { Building2, Flag, Home, Plus, ShieldCheck } from "lucide-react";
+import { Building2, Plus, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Card, CardContent, FadeIn } from "@hospedex/ui";
@@ -12,11 +12,9 @@ import type {
 } from "../../lib/properties/types";
 import { PropertyCard } from "./property-card";
 import { PropertyForm } from "./property-form";
-import { UnitCard } from "./unit-card";
-import { UnitForm } from "./unit-form";
 
 /**
- * Módulo base de Propriedades e Unidades.
+ * Módulo base de Casas.
  *
  * Renderiza apenas a operação inicial do tenant atual. Reservas, pagamentos,
  * marketplace e calendário completo permanecem fora deste módulo por escopo.
@@ -24,7 +22,6 @@ import { UnitForm } from "./unit-form";
 
 export type PropertyModuleProps = DadosModuloPropriedades &
   SearchParamsModulo & {
-    modo: "propriedades" | "unidades";
     tenantNome: string;
   };
 
@@ -33,10 +30,6 @@ const MENSAGENS_SUCESSO_PROPRIEDADES: Record<string, string> = {
   "propriedade-atualizada": "Casa atualizada com sucesso.",
   "propriedade-excluida": "Propriedade excluída com sucesso.",
   "status-propriedade": "Status da casa atualizado.",
-  "unidade-criada": "Unidade criada com sucesso.",
-  "unidade-atualizada": "Unidade atualizada com sucesso.",
-  "unidade-excluida": "Unidade excluída com sucesso.",
-  "status-unidade": "Status da unidade atualizado.",
   "galeria-atualizada": "Galeria atualizada com sucesso.",
   "imagem-principal": "Imagem principal atualizada.",
   "imagem-excluida": "Imagem excluída com sucesso.",
@@ -50,15 +43,11 @@ export function PropertyModule({
   comodidadesDisponiveis,
   erro,
   limitesPlano,
-  modo,
-  multiUnidadesAtivo,
   podeGerenciar,
   propriedades,
   sucesso,
   tenantNome,
 }: PropertyModuleProps) {
-  const titulo = modo === "propriedades" ? "Casas" : "Unidades";
-
   return (
     <FadeIn className="space-y-5">
       <ModuleToast
@@ -74,54 +63,33 @@ export function PropertyModule({
               {podeGerenciar ? "Gestão liberada" : "Somente leitura"}
             </Badge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">
-              {titulo}
+              Casas
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               {tenantNome}
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <ResumoModulo
               icon={<Building2 />}
               label="Casas"
               valor={`${limitesPlano.propriedadesUsadas}/${limitesPlano.maxPropriedades}`}
             />
-            {modo === "unidades" && multiUnidadesAtivo ? (
-              <ResumoModulo
-                icon={<Home />}
-                label="Unidades"
-                valor={`${limitesPlano.unidadesUsadas}/${limitesPlano.maxUnidades}`}
-              />
-            ) : null}
             <ResumoModulo
               icon={<ShieldCheck />}
               label="Plano"
               valor={limitesPlano.nomePlano}
             />
-            {modo === "unidades" ? (
-              <ResumoModulo
-                icon={<Flag />}
-                label="Multiunidades"
-                valor={multiUnidadesAtivo ? "Ativo" : "Desligado"}
-              />
-            ) : null}
           </div>
         </div>
       </section>
 
-      {modo === "propriedades" ? (
-        <VisaoPropriedades
-          comodidadesDisponiveis={comodidadesDisponiveis}
-          podeGerenciar={podeGerenciar}
-          propriedades={propriedades}
-        />
-      ) : (
-        <VisaoUnidades
-          podeGerenciar={podeGerenciar}
-          propriedades={propriedades}
-        />
-      )}
+      <VisaoPropriedades
+        comodidadesDisponiveis={comodidadesDisponiveis}
+        podeGerenciar={podeGerenciar}
+        propriedades={propriedades}
+      />
     </FadeIn>
   );
 }
@@ -181,83 +149,6 @@ function VisaoPropriedades({
           icon={<Building2 className="h-5 w-5" />}
           title="Nenhuma casa cadastrada"
         />
-      )}
-    </>
-  );
-}
-
-function VisaoUnidades({
-  podeGerenciar,
-  propriedades,
-}: Pick<PropertyModuleProps, "podeGerenciar" | "propriedades">) {
-  return (
-    <>
-      <Card className="admin-glass-card">
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold">Cadastro de unidades</h2>
-            <p className="text-sm text-muted-foreground">
-              A unidade é criada em modal e vinculada a uma casa existente.
-            </p>
-          </div>
-          <EntityModal
-            description="Informe capacidade, quartos, camas, banheiros e valor base."
-            disabled={!podeGerenciar || propriedades.length === 0}
-            eyebrow="Cadastro"
-            title="Nova unidade"
-            triggerIcon={<Plus className="h-4 w-4" />}
-            triggerLabel="Nova unidade"
-            triggerVariant="default"
-          >
-            <UnitForm
-              modo="criar"
-              podeGerenciar={podeGerenciar}
-              propriedades={propriedades}
-              retorno="/unidades"
-            />
-          </EntityModal>
-        </CardContent>
-      </Card>
-
-      {propriedades.length === 0 ? (
-        <EmptyState
-          description="Cadastre uma casa antes de criar unidades internas."
-          icon={<Home className="h-5 w-5" />}
-          title="Nenhuma casa cadastrada"
-        />
-      ) : (
-        <section className="grid gap-5">
-          {propriedades.map((propriedade) => (
-            <Card className="admin-glass-card" key={propriedade.id}>
-              <CardContent className="space-y-4 p-5">
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className="text-lg font-semibold">{propriedade.name}</h2>
-                  <Badge variant="outline">
-                    {propriedade.unidades.length} unidade(s)
-                  </Badge>
-                </div>
-
-                {propriedade.unidades.length > 0 ? (
-                  <EntityGrid className="gap-3">
-                    {propriedade.unidades.map((unidade) => (
-                      <UnitCard
-                        key={unidade.id}
-                        podeGerenciar={podeGerenciar}
-                        propriedades={propriedades}
-                        retorno="/unidades"
-                        unidade={unidade}
-                      />
-                    ))}
-                  </EntityGrid>
-                ) : (
-                  <div className="rounded-lg border border-dashed bg-background/45 p-4 text-sm text-muted-foreground">
-                    Nenhuma unidade cadastrada nesta propriedade.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </section>
       )}
     </>
   );

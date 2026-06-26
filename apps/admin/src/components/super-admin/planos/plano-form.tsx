@@ -56,7 +56,7 @@ export function PlanoForm({ featureFlags, modo, plano }: PlanoFormProps) {
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto
           defaultValue={formatarValorInput(plano?.plan.monthly_price)}
           label="Valor mensal"
@@ -71,14 +71,6 @@ export function PlanoForm({ featureFlags, modo, plano }: PlanoFormProps) {
           label="Limite de propriedades"
           min={1}
           name="limitePropriedades"
-          required
-          type="number"
-        />
-        <CampoTexto
-          defaultValue={String(plano?.plan.max_units ?? 1)}
-          label="Limite de unidades"
-          min={1}
-          name="limiteUnidades"
           required
           type="number"
         />

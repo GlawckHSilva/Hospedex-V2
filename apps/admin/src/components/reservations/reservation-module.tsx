@@ -37,7 +37,6 @@ import { ReservationGrid } from "./reservation-grid";
 
 export type ReservationModuleProps = DadosModuloReservas &
   SearchParamsReservas & {
-    multiUnidadesAtivo: boolean;
     tenantNome: string;
   };
 
@@ -53,14 +52,12 @@ const MENSAGENS_SUCESSO_RESERVAS: Record<string, string> = {
 export function ReservationModule({
   erro,
   filtros,
-  multiUnidadesAtivo,
   podeGerenciar,
   propriedades,
   reservas,
   resumo,
   sucesso,
   tenantNome,
-  unidades,
 }: ReservationModuleProps) {
   return (
     <FadeIn className="space-y-5">
@@ -84,7 +81,7 @@ export function ReservationModule({
             </p>
             <div className="mt-5">
               <EntityModal
-                description="Informe casa, unidade, período, hóspede e valores da reserva."
+                description="Informe casa, período, hóspede e valores da reserva."
                 disabled={!podeGerenciar}
                 eyebrow="Cadastro"
                 size="xl"
@@ -97,7 +94,6 @@ export function ReservationModule({
                   modo="criar"
                   podeGerenciar={podeGerenciar}
                   propriedades={propriedades}
-                  unidades={unidades}
                 />
               </EntityModal>
             </div>
@@ -127,11 +123,7 @@ export function ReservationModule({
       <Card className="admin-glass-card">
         <CardContent className="p-5">
           <form
-            className={
-              multiUnidadesAtivo
-                ? "grid gap-4 lg:grid-cols-[1fr_0.8fr_0.8fr_0.8fr_0.7fr_0.7fr_auto]"
-                : "grid gap-4 lg:grid-cols-[1fr_0.8fr_0.9fr_0.7fr_0.7fr_auto]"
-            }
+            className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.9fr_0.7fr_0.7fr_auto]"
           >
             <CampoTexto
               defaultValue={filtros.busca ?? ""}
@@ -144,12 +136,6 @@ export function ReservationModule({
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
             />
-            {multiUnidadesAtivo ? (
-              <CampoUnidadeFiltro
-                defaultValue={filtros.unidadeId ?? ""}
-                unidades={unidades}
-              />
-            ) : null}
             <CampoData
               defaultValue={filtros.dataInicio ?? ""}
               label="Entrada"
@@ -174,7 +160,6 @@ export function ReservationModule({
         podeGerenciar={podeGerenciar}
         propriedades={propriedades}
         reservas={reservas}
-        unidades={unidades}
       />
     </FadeIn>
   );
@@ -265,33 +250,6 @@ function CampoPropriedade({
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>
             {propriedade.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CampoUnidadeFiltro({
-  defaultValue,
-  unidades,
-}: {
-  defaultValue: string;
-  unidades: Array<{ id: string; name: string }>;
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor="unidadeId">Unidade</Label>
-      <select
-        className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        defaultValue={defaultValue}
-        id="unidadeId"
-        name="unidadeId"
-      >
-        <option value="">Todas</option>
-        {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>
-            {unidade.name}
           </option>
         ))}
       </select>

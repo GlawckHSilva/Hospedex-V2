@@ -1,8 +1,7 @@
 import type {
   ExpenseCategoryRow,
   PropertyRow,
-  ReservationStatus,
-  UnitRow
+  ReservationStatus
 } from "@hospedex/types";
 
 /**
@@ -17,7 +16,6 @@ export type FiltrosRelatorios = {
   dataInicio: string;
   dataFim: string;
   propriedadeId?: string;
-  unidadeId?: string;
   statusReserva: ReservationStatus | "todos";
   categoriaFinanceiraId?: string;
 };
@@ -84,7 +82,6 @@ export type DadosModuloRelatorios = {
   serieFinanceira: PontoSerieRelatorio[];
   servicosExtras: ServicoExtraRelatorio[];
   tenantNome: string;
-  unidades: UnitRow[];
 };
 
 export type SearchParamsRelatorios = {

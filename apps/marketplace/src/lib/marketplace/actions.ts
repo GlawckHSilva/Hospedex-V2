@@ -52,8 +52,7 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
       p_guest_notes: textoOpcional(formData, "observacoes"),
       p_guest_phone: textoObrigatorio(formData, "hospedeTelefone", "telefone"),
       p_guests_count: quantidadeHospedes,
-      p_property_slug: slug,
-      p_unit_id: textoObrigatorio(formData, "unidadeId", "unidade")
+      p_property_slug: slug
     });
 
     if (error) throw new ErroRpcReserva(error.message);
@@ -92,10 +91,6 @@ function obterMensagemPublica(erro: unknown) {
       "propriedade nao encontrada ou indisponivel",
       "Esta propriedade não está disponível para reserva.",
     ],
-    [
-      "unidade nao encontrada ou indisponivel",
-      "A unidade selecionada não está disponível.",
-    ],
     ["check-in nao pode ser no passado", "O check-in não pode ser no passado."],
     [
       "check-out deve ser depois do check-in",
@@ -103,19 +98,19 @@ function obterMensagemPublica(erro: unknown) {
     ],
     [
       "quantidade de hospedes acima da capacidade",
-      "A quantidade de hóspedes excede a capacidade da unidade.",
+      "A quantidade de hóspedes excede a capacidade da casa.",
     ],
     [
       "quantidade de hospedes invalida",
       "Informe uma quantidade válida de hóspedes.",
     ],
     [
-      "a unidade ja possui solicitacao ou reserva neste periodo",
-      "A unidade já possui uma solicitação ou reserva neste período.",
+      "a casa ja possui solicitacao ou reserva neste periodo",
+      "A casa já possui uma solicitação ou reserva neste período.",
     ],
     [
-      "a unidade esta bloqueada neste periodo",
-      "A unidade está indisponível neste período.",
+      "a casa esta bloqueada neste periodo",
+      "A casa está indisponível neste período.",
     ],
   ];
 

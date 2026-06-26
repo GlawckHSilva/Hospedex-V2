@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BarChart3,
   BedDouble,
   Building2,
   CalendarDays,
@@ -69,8 +68,7 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   propriedades: Home,
   relatorios: FileBarChart,
   reservas: BedDouble,
-  servicosExtras: ReceiptText,
-  unidades: BarChart3
+  servicosExtras: ReceiptText
 };
 
 export type AdminShellProps = {

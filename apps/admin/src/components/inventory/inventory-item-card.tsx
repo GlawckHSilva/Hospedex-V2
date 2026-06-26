@@ -1,4 +1,4 @@
-import type { PropertyRow, UnitRow } from "@hospedex/types";
+import type { PropertyRow } from "@hospedex/types";
 import { Eye, PackageCheck, Pencil } from "lucide-react";
 
 import { Badge } from "@hospedex/ui";
@@ -23,14 +23,12 @@ export type InventoryItemCardProps = {
   item: ItemInventarioCompleto;
   podeGerenciar: boolean;
   propriedades: PropertyRow[];
-  unidades: UnitRow[];
 };
 
 export function InventoryItemCard({
   item,
   podeGerenciar,
   propriedades,
-  unidades,
 }: InventoryItemCardProps) {
   const statusCritico =
     item.conservation_state === "damaged" ||
@@ -54,7 +52,7 @@ export function InventoryItemCard({
             <Badge variant="info">{LABEL_CATEGORIA_INVENTARIO[item.category]}</Badge>
           </>
         }
-        subtitle={`${item.propriedade?.name ?? "Propriedade"} - ${item.unidade?.name ?? "Sem unidade"}`}
+        subtitle={item.propriedade?.name ?? "Propriedade"}
         title={item.name}
       />
 
@@ -77,7 +75,6 @@ export function InventoryItemCard({
             <Info label="Estado" valor={LABEL_ESTADO_CONSERVACAO[item.conservation_state]} />
             <Info label="Valor estimado" valor={formatarMoeda(Number(item.estimated_value))} />
             <Info label="Propriedade" valor={item.propriedade?.name ?? "Propriedade"} />
-            <Info label="Unidade" valor={item.unidade?.name ?? "Sem unidade"} />
             <div className="md:col-span-2">
               <Info label="Observacoes" valor={item.notes ?? "Sem observacoes"} />
             </div>
@@ -98,7 +95,6 @@ export function InventoryItemCard({
             modo="editar"
             podeGerenciar={podeGerenciar}
             propriedades={propriedades}
-            unidades={unidades}
           />
         </EntityModal>
       </EntityCardActions>

@@ -263,7 +263,7 @@ async function carregarPlanos(): Promise<SuperAdminModuloDados> {
         plan.id,
         plan.name,
         `${formatarMoeda(plan.monthly_price)} / mes`,
-        `${plan.max_properties} propriedades, ${plan.max_units} unidades`,
+        `${plan.max_properties} casas`,
         plan.status,
         toneStatusBasico(plan.status)
       )

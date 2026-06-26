@@ -275,16 +275,6 @@ async function atualizarTarefaLimpeza(
 
   if (error) throw new Error(error.message);
 
-  if (tarefa.unit_id) {
-    const { error: erroUnidade } = await supabase
-      .from("units")
-      .update({ status: "active" })
-      .eq("id", tarefa.unit_id)
-      .eq("tenant_id", escopo.tenantId);
-
-    if (erroUnidade) throw new Error(erroUnidade.message);
-  }
-
   if (tarefa.reservation_id) {
     await inserirNotaReserva(supabase, escopo, tarefa.reservation_id, nota);
   }

@@ -23,8 +23,7 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
     return <ReservationSuccess codigo={feedback.codigo} property={property} />;
   }
 
-  const podeSolicitarReserva = Boolean(property.reservationUnitId);
-
+  const podeSolicitarReserva = property.maxGuests > 0;
   return (
     <GlassCard className="p-5 shadow-2xl shadow-cyan-950/15">
       <div className="flex items-start justify-between gap-4">
@@ -46,10 +45,6 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
 
       <form action={solicitarReservaPublicaAction} className="mt-6 grid gap-4">
         <input name="propertySlug" type="hidden" value={property.slug} />
-        {property.reservationUnitId ? (
-          <input name="unidadeId" type="hidden" value={property.reservationUnitId} />
-        ) : null}
-
         {!podeSolicitarReserva ? (
           <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
             Solicitação online em preparação para esta casa.

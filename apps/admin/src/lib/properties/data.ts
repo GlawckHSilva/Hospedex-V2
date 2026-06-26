@@ -5,9 +5,7 @@ import type {
   PlanRow,
   PropertyAmenityRow,
   PropertyRow,
-  PropertySettingRow,
-  UnitCategoryRow,
-  UnitRow
+  PropertySettingRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -19,7 +17,6 @@ import type {
   EstruturaPropriedade,
   LimitesPlanoPropriedades,
   PropriedadeComRelacionamentos,
-  UnidadeComCategoria,
   ValoresPropriedade
 } from "./types";
 
@@ -37,7 +34,7 @@ type SubscriptionPlanoRow = {
   status: string;
 };
 
-type PlanoLimiteRow = Pick<PlanRow, "name" | "max_properties" | "max_units">;
+type PlanoLimiteRow = Pick<PlanRow, "name" | "max_properties">;
 
 export function podeLerPropriedades(contexto: ContextoAutenticacao): boolean {
   if (contexto.role === "owner") return true;
@@ -50,42 +47,22 @@ export function podeGerenciarPropriedades(contexto: ContextoAutenticacao): boole
 }
 
 export async function carregarDadosModuloPropriedades(
-  contexto: ContextoAutenticacao,
-  opcoes: { incluirUnidades?: boolean } = {}
+  contexto: ContextoAutenticacao
 ): Promise<DadosModuloPropriedades> {
   const tenantId = contexto.tenant?.id;
-  const incluirUnidades = opcoes.incluirUnidades ?? false;
 
   if (!tenantId) {
     return {
       propriedades: [],
       comodidadesDisponiveis: [],
       limitesPlano: criarLimitesPlanoPadrao(),
-      podeGerenciar: false,
-      multiUnidadesAtivo: false
+      podeGerenciar: false
     };
   }
 
   const supabase = await criarClienteSupabaseServer();
-  const unidadesConsulta = incluirUnidades
-    ? supabase
-        .from("units")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("created_at", { ascending: false })
-        .returns<UnitRow[]>()
-    : Promise.resolve({ data: [] as UnitRow[], error: null });
-  const categoriasConsulta = incluirUnidades
-    ? supabase
-        .from("unit_categories")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .returns<UnitCategoryRow[]>()
-    : Promise.resolve({ data: [] as UnitCategoryRow[], error: null });
   const [
     propriedadesResultado,
-    unidadesResultado,
-    categoriasResultado,
     configuracoesResultado,
     imagensResultado,
     comodidadesResultado,
@@ -99,8 +76,6 @@ export async function carregarDadosModuloPropriedades(
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .returns<PropertyRow[]>(),
-    unidadesConsulta,
-    categoriasConsulta,
     supabase
       .from("property_settings")
       .select("*")
@@ -129,8 +104,6 @@ export async function carregarDadosModuloPropriedades(
   ]);
 
   registrarErroLeitura("propriedades", propriedadesResultado.error);
-  registrarErroLeitura("unidades", unidadesResultado.error);
-  registrarErroLeitura("categorias de unidade", categoriasResultado.error);
   registrarErroLeitura("regras das casas", configuracoesResultado.error);
   registrarErroLeitura("imagens", imagensResultado.error);
   registrarErroLeitura("comodidades", comodidadesResultado.error);
@@ -138,8 +111,6 @@ export async function carregarDadosModuloPropriedades(
 
   const propriedades = montarPropriedades(
     propriedadesResultado.data ?? [],
-    unidadesResultado.data ?? [],
-    categoriasResultado.data ?? [],
     configuracoesResultado.data ?? [],
     imagensResultado.data ?? [],
     comodidadesResultado.data ?? [],
@@ -151,20 +122,15 @@ export async function carregarDadosModuloPropriedades(
     comodidadesDisponiveis: comodidadesResultado.data ?? [],
     limitesPlano: {
       ...limitesPlano,
-      propriedadesUsadas: propriedades.length,
-      unidadesUsadas: propriedades.reduce(
-        (total, propriedade) => total + propriedade.unidades.length,
-        0
-      )
+      propriedadesUsadas: propriedades.length
     },
-    podeGerenciar: podeGerenciarPropriedades(contexto),
-    multiUnidadesAtivo: Boolean(contexto.featureFlags.multi_unit)
+    podeGerenciar: podeGerenciarPropriedades(contexto)
   };
 }
 
 export async function carregarLimitesPlano(
   tenantId: string
-): Promise<Omit<LimitesPlanoPropriedades, "propriedadesUsadas" | "unidadesUsadas">> {
+): Promise<Omit<LimitesPlanoPropriedades, "propriedadesUsadas">> {
   const supabase = await criarClienteSupabaseServer();
   const { data: assinatura, error: erroAssinatura } = await supabase
     .from("subscriptions")
@@ -183,7 +149,7 @@ export async function carregarLimitesPlano(
 
   const { data: plano, error: erroPlano } = await supabase
     .from("plans")
-    .select("name,max_properties,max_units")
+    .select("name,max_properties")
     .eq("id", assinatura.plan_id)
     .maybeSingle<PlanoLimiteRow>();
 
@@ -193,8 +159,7 @@ export async function carregarLimitesPlano(
 
   return {
     nomePlano: plano?.name ?? "Plano padrão",
-    maxPropriedades: plano?.max_properties ?? LIMITE_PADRAO_PLANO,
-    maxUnidades: plano?.max_units ?? LIMITE_PADRAO_PLANO
+    maxPropriedades: plano?.max_properties ?? LIMITE_PADRAO_PLANO
   };
 }
 
@@ -218,8 +183,6 @@ export function normalizarEndereco(valor: JsonValue): EnderecoPropriedade {
 
 function montarPropriedades(
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
-  categorias: UnitCategoryRow[],
   configuracoes: PropertySettingRow[],
   imagens: MediaAssetRow[],
   comodidades: AmenityRow[],
@@ -230,16 +193,13 @@ function montarPropriedades(
     detalhesPublicos: normalizarDetalhesPublicos(propriedade.public_details),
     enderecoFormatado: normalizarEndereco(propriedade.address),
     estrutura: normalizarEstrutura(propriedade.structure_details),
-    imagemCapa: obterImagemPrincipal(propriedade.id, null, imagens),
-    imagens: imagens.filter(
-      (imagem) => imagem.property_id === propriedade.id && !imagem.unit_id
-    ),
+    imagemCapa: obterImagemPrincipal(propriedade.id, imagens),
+    imagens: imagens.filter((imagem) => imagem.property_id === propriedade.id),
     comodidades: montarComodidades(propriedade.id, comodidades, vinculosComodidades),
     regras:
       configuracoes.find((configuracao) => configuracao.property_id === propriedade.id) ??
       criarRegrasPadrao(propriedade),
-    valores: normalizarValores(propriedade.pricing_details),
-    unidades: montarUnidades(propriedade.id, unidades, categorias, imagens)
+    valores: normalizarValores(propriedade.pricing_details)
   }));
 }
 
@@ -336,22 +296,6 @@ function criarRegrasPadrao(propriedade: PropertyRow): PropertySettingRow {
   };
 }
 
-function montarUnidades(
-  propriedadeId: string,
-  unidades: UnitRow[],
-  categorias: UnitCategoryRow[],
-  imagens: MediaAssetRow[]
-): UnidadeComCategoria[] {
-  return unidades
-    .filter((unidade) => unidade.property_id === propriedadeId)
-    .map((unidade) => ({
-      ...unidade,
-      categoria:
-        categorias.find((categoria) => categoria.id === unidade.unit_category_id) ?? null,
-      imagens: imagens.filter((imagem) => imagem.unit_id === unidade.id)
-    }));
-}
-
 function montarComodidades(
   propriedadeId: string,
   comodidades: AmenityRow[],
@@ -368,11 +312,10 @@ function montarComodidades(
 
 function obterImagemPrincipal(
   propriedadeId: string,
-  unidadeId: string | null,
   imagens: MediaAssetRow[]
 ) {
   const imagensDaEntidade = imagens.filter(
-    (imagem) => imagem.property_id === propriedadeId && imagem.unit_id === unidadeId
+    (imagem) => imagem.property_id === propriedadeId
   );
 
   return (
@@ -386,9 +329,7 @@ function criarLimitesPlanoPadrao() {
   return {
     nomePlano: "Plano padrão",
     maxPropriedades: LIMITE_PADRAO_PLANO,
-    maxUnidades: LIMITE_PADRAO_PLANO,
-    propriedadesUsadas: 0,
-    unidadesUsadas: 0
+    propriedadesUsadas: 0
   };
 }
 

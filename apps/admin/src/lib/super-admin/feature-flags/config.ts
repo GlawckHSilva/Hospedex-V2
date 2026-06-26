@@ -64,7 +64,7 @@ export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
     ownerConfigurable: true
   },
   {
-    descricao: "Calendario e disponibilidade por unidade.",
+    descricao: "Calendario e disponibilidade por casa.",
     key: "calendar",
     label: "Calendario",
     module: "calendar",

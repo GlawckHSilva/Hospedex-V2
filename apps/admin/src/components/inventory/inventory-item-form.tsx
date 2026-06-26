@@ -1,4 +1,4 @@
-import type { PropertyRow, UnitRow } from "@hospedex/types";
+import type { PropertyRow } from "@hospedex/types";
 import { Button, Input, Label } from "@hospedex/ui";
 import type { ComponentProps } from "react";
 
@@ -26,7 +26,6 @@ export type InventoryItemFormProps = {
   modo: "criar" | "editar";
   podeGerenciar: boolean;
   propriedades: PropertyRow[];
-  unidades: UnitRow[];
 };
 
 const campoClasse =
@@ -39,7 +38,6 @@ export function InventoryItemForm({
   modo,
   podeGerenciar,
   propriedades,
-  unidades
 }: InventoryItemFormProps) {
   const action = modo === "editar" ? atualizarItemInventarioAction : criarItemInventarioAction;
   const bloqueado = !podeGerenciar || propriedades.length === 0;
@@ -68,16 +66,11 @@ export function InventoryItemForm({
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <CampoPropriedade
           defaultValue={item?.property_id ?? propriedades[0]?.id ?? ""}
           disabled={bloqueado}
           propriedades={propriedades}
-        />
-        <CampoUnidade
-          defaultValue={item?.unit_id ?? ""}
-          disabled={bloqueado}
-          unidades={unidades}
         />
         <CampoSelect
           defaultValue={item?.conservation_state ?? "good"}
@@ -135,7 +128,6 @@ export function InventoryItemForm({
     </form>
   );
 }
-
 function CampoTexto({
   label,
   name,
@@ -223,29 +215,6 @@ function CampoPropriedade({
         label: propriedade.name,
         value: propriedade.id
       }))}
-    />
-  );
-}
-
-function CampoUnidade({
-  defaultValue,
-  disabled,
-  unidades
-}: {
-  defaultValue: string;
-  disabled: boolean;
-  unidades: UnitRow[];
-}) {
-  return (
-    <CampoSelect
-      defaultValue={defaultValue}
-      disabled={disabled}
-      label="Unidade"
-      name="unitId"
-      opcoes={[
-        { label: "Sem unidade especifica", value: "" },
-        ...unidades.map((unidade) => ({ label: unidade.name, value: unidade.id }))
-      ]}
     />
   );
 }

@@ -102,7 +102,7 @@ export function ProprietarioForm({
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <CampoSelect
           defaultValue={proprietario?.tenant.status ?? "trial"}
           disabled={bloqueado}
@@ -123,15 +123,6 @@ export function ProprietarioForm({
           label="Limite de propriedades"
           min={1}
           name="limitePropriedades"
-          required
-          type="number"
-        />
-        <CampoTexto
-          defaultValue={String(obterLimite(proprietario, planoPadrao, "max_units"))}
-          disabled={bloqueado}
-          label="Limite de unidades"
-          min={1}
-          name="limiteUnidades"
           required
           type="number"
         />
@@ -264,7 +255,7 @@ function obterFlagsDoPlano(planFeatures: PlanFeatureRow[], planoId: string | und
 function obterLimite(
   proprietario: ProprietarioCompleto | undefined,
   plano: PlanRow | null,
-  chave: "max_properties" | "max_units"
+  chave: "max_properties"
 ) {
   const limites = proprietario?.license?.limits;
   if (limites && typeof limites === "object" && !Array.isArray(limites)) {

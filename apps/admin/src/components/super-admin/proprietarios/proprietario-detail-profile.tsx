@@ -89,7 +89,6 @@ export function AbaLicenca({ proprietario }: { proprietario: ProprietarioComplet
             }
           />
           <Info label="Limite de casas" valor={String(limites.propriedades)} />
-          <Info label="Limite de unidades" valor={String(limites.unidades)} />
           <Info label="Limite de funcionarios" valor={limites.funcionarios} />
         </div>
       ) : (

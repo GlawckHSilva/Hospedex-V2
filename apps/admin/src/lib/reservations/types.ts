@@ -5,8 +5,7 @@ import type {
   ReservationNoteRow,
   ReservationRow,
   ReservationStatus,
-  ReservationStatusHistoryRow,
-  UnitRow
+  ReservationStatusHistoryRow
 } from "@hospedex/types";
 
 /**
@@ -19,7 +18,6 @@ import type {
 export type FiltrosReservas = {
   busca?: string;
   propriedadeId?: string;
-  unidadeId?: string;
   dataInicio?: string;
   dataFim?: string;
   status?: ReservationStatus | "todos";
@@ -27,7 +25,6 @@ export type FiltrosReservas = {
 
 export type ReservaComRelacionamentos = ReservationRow & {
   propriedade: PropertyRow | null;
-  unidade: UnitRow | null;
   hospedes: ReservationGuestRow[];
   historico: ReservationStatusHistoryRow[];
   servicosExtras: ReservationExtraServiceRow[];
@@ -47,7 +44,6 @@ export type DadosModuloReservas = {
     hospedadas: number;
     canceladas: number;
   };
-  unidades: UnitRow[];
 };
 
 export type SearchParamsReservas = {

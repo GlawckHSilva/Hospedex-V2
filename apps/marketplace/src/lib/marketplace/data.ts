@@ -12,8 +12,6 @@ import type {
   RegionalGuideCategory,
   RegionalGuideLocationRow,
   ReservationRow,
-  UnitCategoryRow,
-  UnitRow
 } from "@hospedex/types";
 
 type PropriedadeRowPublica = Pick<
@@ -43,7 +41,6 @@ type MidiaRowPublica = Pick<
   MediaAssetRow,
   | "id"
   | "property_id"
-  | "unit_id"
   | "media_type"
   | "storage_bucket"
   | "storage_path"
@@ -52,25 +49,6 @@ type MidiaRowPublica = Pick<
   | "sort_order"
   | "is_cover"
   | "status"
->;
-
-type UnidadeRowPublica = Pick<
-  UnitRow,
-  | "id"
-  | "property_id"
-  | "unit_category_id"
-  | "name"
-  | "status"
-  | "capacity"
-  | "bedrooms"
-  | "beds"
-  | "bathrooms"
-  | "base_price"
->;
-
-type CategoriaRowPublica = Pick<
-  UnitCategoryRow,
-  "id" | "property_id" | "name" | "description" | "max_guests" | "bedrooms" | "bathrooms"
 >;
 
 type ComodidadeRowPublica = Pick<AmenityRow, "id" | "code" | "name" | "category">;
@@ -140,18 +118,6 @@ export type ImagemPublica = {
   url: string;
   alt: string;
   isCover: boolean;
-};
-
-export type UnidadePublica = {
-  id: string;
-  name: string;
-  categoryName: string | null;
-  description: string | null;
-  capacity: number;
-  bedrooms: number;
-  beds: number;
-  bathrooms: number;
-  basePrice: number;
 };
 
 export type ComodidadePublica = {
@@ -272,13 +238,14 @@ export type PropriedadePublica = {
   images: ImagemPublica[];
   coverImage: ImagemPublica | null;
   amenities: ComodidadePublica[];
-  units: UnidadePublica[];
-  reservationUnitId: string | null;
   minPrice: number | null;
   maxGuests: number;
   structure: EstruturaCasaPublica;
   pricing: ValoresCasaPublica;
   availability: PeriodoDisponibilidadePublica[];
+  bedrooms: number;
+  beds: number;
+  bathrooms: number;
   rules: string[];
   checkIn: string;
   checkOut: string;
@@ -315,15 +282,11 @@ export type DestinoEmDestaque = {
 const CAMPOS_PROPRIEDADE =
   "id,tenant_id,name,slug,property_type,status,headline,description,short_description,full_description,is_public,public_details,address,structure_details,pricing_details,timezone,created_at,updated_at,deleted_at";
 const CAMPOS_MIDIA =
-  "id,property_id,unit_id,media_type,storage_bucket,storage_path,url,alt,sort_order,is_cover,status";
-const CAMPOS_UNIDADE =
-  "id,property_id,unit_category_id,name,status,capacity,bedrooms,beds,bathrooms,base_price";
-const CAMPOS_CATEGORIA =
-  "id,property_id,name,description,max_guests,bedrooms,bathrooms";
+  "id,property_id,media_type,storage_bucket,storage_path,url,alt,sort_order,is_cover,status";
 const CAMPOS_COMODIDADE = "id,code,name,category";
 const CAMPOS_VINCULO_COMODIDADE = "property_id,amenity_id";
-const CAMPOS_RESERVA_OCUPACAO = "property_id,unit_id,status,check_in,check_out";
-const CAMPOS_BLOQUEIO_OCUPACAO = "property_id,unit_id,status,starts_on,ends_on";
+const CAMPOS_RESERVA_OCUPACAO = "property_id,status,check_in,check_out";
+const CAMPOS_BLOQUEIO_OCUPACAO = "property_id,status,starts_on,ends_on";
 const CAMPOS_REGRAS_CASA =
   "tenant_id,property_id,check_in_time,check_out_time,min_nights,max_nights,allow_children,allow_pets,allow_smoking,allow_events,max_guests,min_responsible_age,additional_rules,special_instructions,cancellation_refund_until_days,cancellation_refund_until_percentage,cancellation_late_until_days,cancellation_late_refund_percentage,cancellation_no_refund_within_days,cancellation_notes";
 const CAMPOS_DISPONIBILIDADE_PUBLICA =
@@ -337,13 +300,12 @@ const TIPOS_PROPRIEDADE = new Set<PropertyType>([
   "inn",
   "small_hotel"
 ]);
-const STATUS_RESERVA_OCUPA_UNIDADE = [
+const STATUS_RESERVA_OCUPA_CASA = [
   "pending",
   "awaiting_payment",
   "confirmed",
   "checked_in"
 ];
-const STATUS_BLOQUEIA_UNIDADE = ["blocked", "unavailable", "reserved"];
 const STATUS_DISPONIBILIDADE_PUBLICA = [
   "blocked",
   "interdicted",
@@ -352,15 +314,16 @@ const STATUS_DISPONIBILIDADE_PUBLICA = [
   "unavailable",
   "reserved"
 ] as const;
+const STATUS_BLOQUEIA_CASA = ["blocked", "unavailable", "reserved"];
 
 type ReservaOcupacaoPublica = Pick<
   ReservationRow,
-  "property_id" | "unit_id" | "status" | "check_in" | "check_out"
+  "property_id" | "status" | "check_in" | "check_out"
 >;
 
 type BloqueioOcupacaoPublica = Pick<
   CalendarAvailabilityBlockRow,
-  "property_id" | "unit_id" | "status" | "starts_on" | "ends_on"
+  "property_id" | "status" | "starts_on" | "ends_on"
 >;
 
 type DisponibilidadeRowPublica = Pick<
@@ -397,7 +360,7 @@ export async function carregarPropriedadesPublicas(
 
   try {
     const limite = limitarQuantidade(filtros.limite ?? 24);
-    const limiteConsulta = possuiFiltroDeUnidade(filtros) ? Math.max(limite * 4, 48) : limite;
+    const limiteConsulta = possuiFiltroDaCasa(filtros) ? Math.max(limite * 4, 48) : limite;
     let consulta = supabase
       .from("properties")
       .select(CAMPOS_PROPRIEDADE)
@@ -427,7 +390,7 @@ export async function carregarPropriedadesPublicas(
       supabase,
       propriedadesResultado.data ?? []
     );
-    const propriedadesFiltradas = await aplicarFiltrosDeUnidade(
+    const propriedadesFiltradas = await aplicarFiltrosDaCasa(
       supabase,
       propriedades,
       filtros
@@ -447,31 +410,25 @@ export async function carregarPropriedadesPublicas(
   }
 }
 
-async function aplicarFiltrosDeUnidade(
+async function aplicarFiltrosDaCasa(
   supabase: SupabaseClient,
   propriedades: PropriedadePublica[],
   filtros: FiltrosPropriedadesPublicas
 ) {
-  if (!possuiFiltroDeUnidade(filtros)) return propriedades;
+  if (!possuiFiltroDaCasa(filtros)) return propriedades;
 
-  const unidadesIndisponiveis = await carregarUnidadesIndisponiveis(
+  const propriedadesIndisponiveis = await carregarPropriedadesIndisponiveis(
     supabase,
     propriedades,
     filtros
   );
 
-  return propriedades
-    .map((propriedade) => {
-      const unidades = propriedade.units.filter((unidade) =>
-        unidadeAtendeFiltros(unidade, filtros, unidadesIndisponiveis)
-      );
-
-      return recomporPropriedadeComUnidades(propriedade, unidades);
-    })
-    .filter((propriedade) => propriedade.units.length > 0);
+  return propriedades.filter((propriedade) =>
+    propriedadeAtendeFiltros(propriedade, filtros, propriedadesIndisponiveis)
+  );
 }
 
-async function carregarUnidadesIndisponiveis(
+async function carregarPropriedadesIndisponiveis(
   supabase: SupabaseClient,
   propriedades: PropriedadePublica[],
   filtros: FiltrosPropriedadesPublicas
@@ -486,7 +443,7 @@ async function carregarUnidadesIndisponiveis(
       .from("reservations")
       .select(CAMPOS_RESERVA_OCUPACAO)
       .in("property_id", idsPropriedades)
-      .in("status", STATUS_RESERVA_OCUPA_UNIDADE)
+      .in("status", STATUS_RESERVA_OCUPA_CASA)
       .lt("check_in", filtros.dataFim!)
       .gt("check_out", filtros.dataInicio!)
       .returns<ReservaOcupacaoPublica[]>(),
@@ -494,7 +451,7 @@ async function carregarUnidadesIndisponiveis(
       .from("calendar_availability_blocks")
       .select(CAMPOS_BLOQUEIO_OCUPACAO)
       .in("property_id", idsPropriedades)
-      .in("status", STATUS_BLOQUEIA_UNIDADE)
+      .in("status", STATUS_BLOQUEIA_CASA)
       .lt("starts_on", filtros.dataFim!)
       .gt("ends_on", filtros.dataInicio!)
       .returns<BloqueioOcupacaoPublica[]>()
@@ -505,34 +462,32 @@ async function carregarUnidadesIndisponiveis(
 
   return new Set(
     [
-      ...(reservasResultado.data ?? []).map((reserva) => reserva.unit_id),
-      ...(bloqueiosResultado.data ?? []).map((bloqueio) => bloqueio.unit_id)
-    ].filter((unitId): unitId is string => Boolean(unitId))
+      ...(reservasResultado.data ?? []).map((reserva) => reserva.property_id),
+      ...(bloqueiosResultado.data ?? []).map((bloqueio) => bloqueio.property_id)
+    ].filter((propertyId): propertyId is string => Boolean(propertyId))
   );
 }
 
-function unidadeAtendeFiltros(
-  unidade: UnidadePublica,
-  filtros: FiltrosPropriedadesPublicas,
-  unidadesIndisponiveis: Set<string>
-) {
-  if (filtros.hospedes && unidade.capacity < filtros.hospedes) return false;
-  if (filtros.precoMinimo && unidade.basePrice < filtros.precoMinimo) return false;
-  if (filtros.precoMaximo && unidade.basePrice > filtros.precoMaximo) return false;
-  if (unidadesIndisponiveis.has(unidade.id)) return false;
-  return true;
-}
-
-function recomporPropriedadeComUnidades(
+function propriedadeAtendeFiltros(
   propriedade: PropriedadePublica,
-  unidades: UnidadePublica[]
-): PropriedadePublica {
-  return {
-    ...propriedade,
-    maxGuests: obterMaiorCapacidade(unidades),
-    minPrice: obterMenorPreco(unidades),
-    units: unidades
-  };
+  filtros: FiltrosPropriedadesPublicas,
+  propriedadesIndisponiveis: Set<string>
+) {
+  if (filtros.hospedes && propriedade.maxGuests < filtros.hospedes) return false;
+  if (
+    filtros.precoMinimo &&
+    (propriedade.minPrice === null || propriedade.minPrice < filtros.precoMinimo)
+  ) {
+    return false;
+  }
+  if (
+    filtros.precoMaximo &&
+    (propriedade.minPrice === null || propriedade.minPrice > filtros.precoMaximo)
+  ) {
+    return false;
+  }
+  if (propriedadesIndisponiveis.has(propriedade.id)) return false;
+  return true;
 }
 
 export async function carregarPropriedadePublica(slugOuId: string) {
@@ -639,8 +594,7 @@ async function montarPropriedadesPublicas(
 
   const ids = propriedades.map((propriedade) => propriedade.id);
   const tenantIds = [...new Set(propriedades.map((propriedade) => propriedade.tenant_id))];
-  const [midiasResultado, unidadesResultado, categoriasResultado, vinculosResultado] =
-    await Promise.all([
+  const [midiasResultado, vinculosResultado] = await Promise.all([
       supabase
         .from("media_assets")
         .select(CAMPOS_MIDIA)
@@ -650,18 +604,6 @@ async function montarPropriedadesPublicas(
         .order("sort_order", { ascending: true })
         .returns<MidiaRowPublica[]>(),
       supabase
-        .from("units")
-        .select(CAMPOS_UNIDADE)
-        .eq("status", "active")
-        .in("property_id", ids)
-        .order("base_price", { ascending: true })
-        .returns<UnidadeRowPublica[]>(),
-      supabase
-        .from("unit_categories")
-        .select(CAMPOS_CATEGORIA)
-        .in("property_id", ids)
-        .returns<CategoriaRowPublica[]>(),
-      supabase
         .from("property_amenities")
         .select(CAMPOS_VINCULO_COMODIDADE)
         .in("property_id", ids)
@@ -669,8 +611,6 @@ async function montarPropriedadesPublicas(
     ]);
 
   registrarErroLeitura("mídias públicas", midiasResultado.error);
-  registrarErroLeitura("unidades públicas", unidadesResultado.error);
-  registrarErroLeitura("categorias públicas", categoriasResultado.error);
   registrarErroLeitura("comodidades vinculadas", vinculosResultado.error);
 
   const comodidades = await carregarComodidadesPublicas(
@@ -685,8 +625,6 @@ async function montarPropriedadesPublicas(
     montarPropriedadePublica(propriedade, {
       supabase,
       midias: midiasResultado.data ?? [],
-      unidades: unidadesResultado.data ?? [],
-      categorias: categoriasResultado.data ?? [],
       vinculosComodidades: vinculosResultado.data ?? [],
       comodidades,
       regras: detalhes.regras,
@@ -799,8 +737,6 @@ function montarPropriedadePublica(
   relacionamentos: {
     supabase: SupabaseClient;
     midias: MidiaRowPublica[];
-    unidades: UnidadeRowPublica[];
-    categorias: CategoriaRowPublica[];
     vinculosComodidades: VinculoComodidadeRowPublica[];
     comodidades: ComodidadeRowPublica[];
     regras: RegrasCasaRowPublica[];
@@ -816,18 +752,16 @@ function montarPropriedadePublica(
     ? propriedade.public_details
     : {};
   const midias = relacionamentos.midias.filter(
-    (midia) => midia.property_id === propriedade.id && !midia.unit_id
+    (midia) => midia.property_id === propriedade.id
   );
   const imagens = midias
     .map((midia) => montarImagemPublica(relacionamentos.supabase, midia))
     .filter((imagem): imagem is ImagemPublica => Boolean(imagem));
-  const unidades = montarUnidadesPublicas(propriedade.id, relacionamentos);
   const comodidades = montarComodidadesPublicas(propriedade.id, relacionamentos);
-  const minPrice = valores.dailyRate || obterMenorPreco(unidades);
-  const maxGuestsUnidades = Math.max(...unidades.map((unidade) => unidade.capacity), 1);
+  const minPrice = valores.dailyRate > 0 ? valores.dailyRate : null;
   const regrasCasa = montarRegrasCasaPublicas(
     relacionamentos.regras.find((regra) => regra.property_id === propriedade.id),
-    estrutura.maxGuests || maxGuestsUnidades
+    estrutura.maxGuests
   );
   const tituloPublico = obterTextoJson(detalhesPublicos, "publicTitle");
   const descricaoPublica = obterTextoJson(detalhesPublicos, "publicDescription");
@@ -855,8 +789,6 @@ function montarPropriedadePublica(
     images: imagens,
     coverImage: imagens.find((imagem) => imagem.isCover) ?? imagens[0] ?? null,
     amenities: comodidades,
-    units: unidades,
-    reservationUnitId: unidades[0]?.id ?? null,
     minPrice,
     maxGuests: regrasCasa.maxGuests,
     structure: {
@@ -868,6 +800,9 @@ function montarPropriedadePublica(
       propriedade.id,
       relacionamentos.disponibilidade
     ),
+    bedrooms: estrutura.bedrooms,
+    beds: estrutura.beds,
+    bathrooms: estrutura.bathrooms,
     rules: [
       ...regrasCasa.summary
     ],
@@ -884,13 +819,13 @@ function montarPropriedadePublica(
 
 function montarRegrasCasaPublicas(
   regras: RegrasCasaRowPublica | undefined,
-  maxGuestsUnidades: number
+  maxGuestsEstrutura: number
 ): RegrasCasaPublicas {
   const checkIn = `A partir das ${formatarHorarioRegra(regras?.check_in_time, "14:00")}`;
   const checkOut = `Até ${formatarHorarioRegra(regras?.check_out_time, "11:00")}`;
   const minNights = Math.max(regras?.min_nights ?? 1, 1);
   const maxNights = regras?.max_nights ?? null;
-  const maxGuests = Math.max(regras?.max_guests ?? maxGuestsUnidades, 1);
+  const maxGuests = Math.max(regras?.max_guests ?? maxGuestsEstrutura, 1);
   const minResponsibleAge = Math.max(regras?.min_responsible_age ?? 18, 0);
   const allowChildren = regras?.allow_children ?? true;
   const allowPets = regras?.allow_pets ?? false;
@@ -1056,34 +991,6 @@ function obterUrlMidia(supabase: SupabaseClient, midia: MidiaRowPublica) {
     .getPublicUrl(midia.storage_path).data.publicUrl;
 }
 
-function montarUnidadesPublicas(
-  propriedadeId: string,
-  relacionamentos: {
-    unidades: UnidadeRowPublica[];
-    categorias: CategoriaRowPublica[];
-  }
-): UnidadePublica[] {
-  return relacionamentos.unidades
-    .filter((unidade) => unidade.property_id === propriedadeId)
-    .map((unidade) => {
-      const categoria = relacionamentos.categorias.find(
-        (item) => item.id === unidade.unit_category_id
-      );
-
-      return {
-        id: unidade.id,
-        name: unidade.name,
-        categoryName: categoria?.name ?? null,
-        description: categoria?.description ?? null,
-        capacity: unidade.capacity,
-        bedrooms: unidade.bedrooms,
-        beds: unidade.beds,
-        bathrooms: unidade.bathrooms,
-        basePrice: Number(unidade.base_price)
-      };
-    });
-}
-
 function montarComodidadesPublicas(
   propriedadeId: string,
   relacionamentos: {
@@ -1194,19 +1101,7 @@ function formatarDataIso(data: Date) {
   return data.toISOString().slice(0, 10);
 }
 
-function obterMenorPreco(unidades: readonly UnidadePublica[]) {
-  const precos = unidades
-    .map((unidade) => unidade.basePrice)
-    .filter((preco) => Number.isFinite(preco) && preco > 0);
-
-  return precos.length ? Math.min(...precos) : null;
-}
-
-function obterMaiorCapacidade(unidades: readonly UnidadePublica[]) {
-  return Math.max(...unidades.map((unidade) => unidade.capacity), 0);
-}
-
-function possuiFiltroDeUnidade(filtros: FiltrosPropriedadesPublicas) {
+function possuiFiltroDaCasa(filtros: FiltrosPropriedadesPublicas) {
   return Boolean(
     filtros.hospedes ||
       filtros.precoMinimo ||

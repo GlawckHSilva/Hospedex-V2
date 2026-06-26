@@ -5,8 +5,7 @@ import type {
   ReservationGuestRow,
   ReservationNoteRow,
   ReservationRow,
-  ReservationStatusHistoryRow,
-  UnitRow
+  ReservationStatusHistoryRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -55,8 +54,7 @@ export async function carregarDadosConfirmacoes(
   const [
     reservasResultado,
     tarefasResultado,
-    propriedadesResultado,
-    unidadesResultado
+    propriedadesResultado
   ] = await Promise.all([
     supabase
       .from("reservations")
@@ -79,19 +77,16 @@ export async function carregarDadosConfirmacoes(
       .select("*")
       .eq("tenant_id", tenantId)
       .eq("owner_id", ownerId)
-      .returns<PropertyRow[]>(),
-    supabase.from("units").select("*").eq("tenant_id", tenantId).returns<UnitRow[]>()
+      .returns<PropertyRow[]>()
   ]);
 
   registrarErro("reservas", reservasResultado.error);
   registrarErro("limpezas", tarefasResultado.error);
   registrarErro("casas", propriedadesResultado.error);
-  registrarErro("unidades", unidadesResultado.error);
 
   const reservasBase = reservasResultado.data ?? [];
   const tarefasBase = tarefasResultado.data ?? [];
   const propriedades = propriedadesResultado.data ?? [];
-  const unidades = unidadesResultado.data ?? [];
   const reservaIds = reservasBase.map((reserva) => reserva.id);
   const tarefaReservaIds = tarefasBase
     .map((tarefa) => tarefa.reservation_id)
@@ -104,8 +99,8 @@ export async function carregarDadosConfirmacoes(
   ]);
   const perfis = await carregarPerfis(tenantId, ownerId, historico, notas, tarefasBase);
 
-  const reservas = montarReservas(reservasBase, propriedades, unidades, hospedes);
-  const limpezas = montarLimpezas(tarefasBase, propriedades, unidades, reservasDasTarefas);
+  const reservas = montarReservas(reservasBase, propriedades, hospedes);
+  const limpezas = montarLimpezas(tarefasBase, propriedades, reservasDasTarefas);
   const checkInsHoje = reservas.filter(
     (reserva) => reserva.check_in === hoje && reserva.status === "confirmed"
   );
@@ -240,7 +235,6 @@ async function carregarPerfis(
 function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   hospedes: ReservationGuestRow[]
 ): ReservaConfirmacao[] {
   return reservas.map((reserva) => ({
@@ -248,23 +242,20 @@ function montarReservas(
     hospedePrincipal:
       hospedes.find((hospede) => hospede.reservation_id === reserva.id) ?? null,
     propriedade:
-      propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
-    unidade: unidades.find((unidade) => unidade.id === reserva.unit_id) ?? null
+      propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null
   }));
 }
 
 function montarLimpezas(
   tarefas: CleaningTaskRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   reservas: ReservationRow[]
 ): LimpezaConfirmacao[] {
   return tarefas.map((tarefa) => ({
     ...tarefa,
     propriedade:
       propriedades.find((propriedade) => propriedade.id === tarefa.property_id) ?? null,
-    reserva: reservas.find((reserva) => reserva.id === tarefa.reservation_id) ?? null,
-    unidade: unidades.find((unidade) => unidade.id === tarefa.unit_id) ?? null
+    reserva: reservas.find((reserva) => reserva.id === tarefa.reservation_id) ?? null
   }));
 }
 

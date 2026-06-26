@@ -5,8 +5,7 @@ import type {
   ReservationGuestRow,
   ReservationRow,
   ReservationStatus,
-  TransactionRow,
-  UnitRow
+  TransactionRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -39,7 +38,6 @@ type DadosBaseRelatorios = {
   propriedades: PropertyRow[];
   reservas: ReservationRow[];
   transacoes: TransactionRow[];
-  unidades: UnitRow[];
 };
 
 export async function carregarDadosModuloRelatorios(
@@ -58,7 +56,6 @@ export async function carregarDadosModuloRelatorios(
   const periodo = obterPeriodoRelatorio(filtros);
   const [
     propriedadesResultado,
-    unidadesResultado,
     reservasResultado,
     categoriasResultado,
     transacoesResultado
@@ -71,12 +68,6 @@ export async function carregarDadosModuloRelatorios(
       .is("deleted_at", null)
       .order("name", { ascending: true })
       .returns<PropertyRow[]>(),
-    supabase
-      .from("units")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("name", { ascending: true })
-      .returns<UnitRow[]>(),
     criarConsultaReservas(tenantId, ownerId, filtros, periodo.fimExclusivo),
     supabase
       .from("expense_categories")
@@ -90,7 +81,6 @@ export async function carregarDadosModuloRelatorios(
   ]);
 
   registrarErro("propriedades", propriedadesResultado.error);
-  registrarErro("unidades", unidadesResultado.error);
   registrarErro("reservas", reservasResultado.error);
   registrarErro("categorias financeiras", categoriasResultado.error);
   registrarErro("lancamentos financeiros", transacoesResultado.error);
@@ -110,11 +100,6 @@ export async function carregarDadosModuloRelatorios(
     reservas,
     transacoes: (transacoesResultado.data ?? []).filter((transacao) =>
       transacaoPertenceAoPeriodo(transacao, filtros)
-    ),
-    unidades: filtrarUnidades(
-      unidadesResultado.data ?? [],
-      filtros.propriedadeId,
-      filtros.unidadeId
     )
   };
 
@@ -135,8 +120,7 @@ export async function carregarDadosModuloRelatorios(
     resumo,
     serieFinanceira,
     servicosExtras,
-    tenantNome: tenant.name,
-    unidades: dados.unidades
+    tenantNome: tenant.name
   };
 }
 
@@ -157,7 +141,6 @@ async function criarConsultaReservas(
     .order("check_in", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
-  if (filtros.unidadeId) consulta = consulta.eq("unit_id", filtros.unidadeId);
   if (filtros.statusReserva !== "todos") consulta = consulta.eq("status", filtros.statusReserva);
 
   return consulta.returns<ReservationRow[]>();
@@ -225,7 +208,7 @@ function montarResumo(
   const receitaReservas = somarReservasComExtras(reservasValidas, dados.extras);
   const noitesDisponiveis =
     Math.max(diferencaDias(filtros.dataInicio, fimExclusivo), 0) *
-    dados.unidades.filter((unidade) => unidade.status === "active").length;
+    dados.propriedades.filter((propriedade) => propriedade.status === "published").length;
   const noitesOcupadas = reservasValidas.reduce(
     (total, reserva) => total + calcularNoitesSobrepostas(reserva, filtros.dataInicio, fimExclusivo),
     0
@@ -424,7 +407,6 @@ export function montarFiltrosRelatorios(params: Record<string, string | string[]
   const status = lerParametro(params, "statusReserva");
   const categoriaFinanceiraId = lerParametro(params, "categoriaFinanceiraId");
   const propriedadeId = lerParametro(params, "propriedadeId");
-  const unidadeId = lerParametro(params, "unidadeId");
 
   const filtros: FiltrosRelatorios = {
     dataFim: periodo.dataFim,
@@ -437,7 +419,6 @@ export function montarFiltrosRelatorios(params: Record<string, string | string[]
 
   if (categoriaFinanceiraId) filtros.categoriaFinanceiraId = categoriaFinanceiraId;
   if (propriedadeId) filtros.propriedadeId = propriedadeId;
-  if (unidadeId) filtros.unidadeId = unidadeId;
 
   return filtros;
 }
@@ -459,14 +440,6 @@ function obterPeriodoRelatorio(filtros: FiltrosRelatorios) {
     fimExclusivo: adicionarDiasString(filtros.dataFim, 1),
     inicio: filtros.dataInicio
   };
-}
-
-function filtrarUnidades(unidades: UnitRow[], propriedadeId?: string, unidadeId?: string) {
-  return unidades.filter((unidade) => {
-    if (propriedadeId && unidade.property_id !== propriedadeId) return false;
-    if (unidadeId && unidade.id !== unidadeId) return false;
-    return true;
-  });
 }
 
 function transacaoPertenceAoPeriodo(transacao: TransactionRow, filtros: FiltrosRelatorios) {
@@ -562,8 +535,7 @@ function criarDadosVazios(
     },
     serieFinanceira: [],
     servicosExtras: [],
-    tenantNome: contexto.tenant?.name ?? "Tenant",
-    unidades: []
+    tenantNome: contexto.tenant?.name ?? "Tenant"
   };
 }
 

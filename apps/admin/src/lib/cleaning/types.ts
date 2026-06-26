@@ -4,8 +4,7 @@ import type {
   ProfileRow,
   PropertyRow,
   ReservationGuestRow,
-  ReservationRow,
-  UnitRow
+  ReservationRow
 } from "@hospedex/types";
 
 /**
@@ -17,13 +16,11 @@ import type {
 
 export type ReservaOperacional = ReservationRow & {
   propriedade: PropertyRow | null;
-  unidade: UnitRow | null;
   hospedePrincipal: ReservationGuestRow | null;
 };
 
 export type TarefaLimpezaCompleta = CleaningTaskRow & {
   propriedade: PropertyRow | null;
-  unidade: UnitRow | null;
   reserva: ReservationRow | null;
   responsavel: ProfileRow | null;
 };
@@ -40,7 +37,6 @@ export type DadosModuloLimpeza = {
   sucesso?: string | undefined;
   tarefas: TarefaLimpezaCompleta[];
   tenantNome: string;
-  unidades: UnitRow[];
 };
 
 export type SearchParamsLimpeza = {

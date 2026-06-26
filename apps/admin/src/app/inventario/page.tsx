@@ -48,13 +48,10 @@ export default async function InventarioPage({ searchParams }: PageProps) {
 function montarFiltros(params: Record<string, string | string[] | undefined>) {
   const filtros: {
     propriedadeId?: string;
-    unidadeId?: string;
   } = {};
   const propriedadeId = lerParametro(params, "propriedadeId");
-  const unidadeId = lerParametro(params, "unidadeId");
 
   if (propriedadeId) filtros.propriedadeId = propriedadeId;
-  if (unidadeId) filtros.unidadeId = unidadeId;
   return filtros;
 }
 

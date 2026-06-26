@@ -1,4 +1,4 @@
-import type { InventoryItemRow, MaintenanceTaskRow, PropertyRow, UnitRow } from "@hospedex/types";
+import type { InventoryItemRow, MaintenanceTaskRow, PropertyRow } from "@hospedex/types";
 import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
@@ -69,24 +69,6 @@ export async function carregarPropriedadeInventario(
     .maybeSingle<PropertyRow>();
 
   if (error || !data) throw new ErroRegraInventario("Propriedade nao encontrada.");
-  return data;
-}
-
-export async function carregarUnidadeInventario(
-  supabase: ClienteSupabaseServer,
-  escopo: EscopoInventario,
-  unidadeId: string,
-  propriedadeId: string
-) {
-  const { data, error } = await supabase
-    .from("units")
-    .select("*")
-    .eq("id", unidadeId)
-    .eq("tenant_id", escopo.tenantId)
-    .eq("property_id", propriedadeId)
-    .maybeSingle<UnitRow>();
-
-  if (error || !data) throw new ErroRegraInventario("Unidade nao encontrada.");
   return data;
 }
 

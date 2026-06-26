@@ -11,7 +11,6 @@ import { ErroRegraNegocio } from "./permissions";
  */
 
 export const CAMINHO_PROPRIEDADES = "/propriedades";
-export const CAMINHO_UNIDADES = "/unidades";
 
 export function textoObrigatorio(formData: FormData, chave: string, label: string): string {
   const valor = formData.get(chave)?.toString().trim();
@@ -21,12 +20,11 @@ export function textoObrigatorio(formData: FormData, chave: string, label: strin
 
 export function obterCaminhoRetorno(formData: FormData): string {
   const retorno = formData.get("retorno")?.toString();
-  return retorno === CAMINHO_PROPRIEDADES ? CAMINHO_PROPRIEDADES : CAMINHO_UNIDADES;
+  return retorno === CAMINHO_PROPRIEDADES ? retorno : CAMINHO_PROPRIEDADES;
 }
 
 export function revalidarModuloPropriedades() {
   revalidatePath(CAMINHO_PROPRIEDADES);
-  revalidatePath(CAMINHO_UNIDADES);
 }
 
 export function redirecionarComErro(

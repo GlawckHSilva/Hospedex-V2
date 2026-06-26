@@ -112,6 +112,10 @@ export function PropertyCard({
               label="Endereco"
               valor={propriedade.enderecoFormatado.linha1}
             />
+            <InfoModal
+              label="Capacidade"
+              valor={`${propriedade.estrutura.hospedesMaximos} hospede(s)`}
+            />
           </div>
 
           {propriedade.description ? (
@@ -174,7 +178,6 @@ export function PropertyCard({
               podeGerenciar={podeGerenciar}
               propriedadeId={propriedade.id}
               retorno="/propriedades"
-              tipo="propriedade"
             />
           </div>
 

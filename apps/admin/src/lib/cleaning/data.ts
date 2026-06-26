@@ -4,8 +4,7 @@ import type {
   PropertyRow,
   ReservationGuestRow,
   ReservationRow,
-  TenantMemberRow,
-  UnitRow
+  TenantMemberRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -40,7 +39,7 @@ export async function carregarDadosModuloLimpeza(
   const podeVerOperacao =
     contexto.role === "owner" || contexto.permissions.includes("reservations.read");
 
-  const [propriedadesResultado, unidadesResultado, tarefasResultado, reservasResultado] =
+  const [propriedadesResultado, tarefasResultado, reservasResultado] =
     await Promise.all([
       supabase
         .from("properties")
@@ -50,12 +49,6 @@ export async function carregarDadosModuloLimpeza(
         .is("deleted_at", null)
         .order("name", { ascending: true })
         .returns<PropertyRow[]>(),
-      supabase
-        .from("units")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .order("name", { ascending: true })
-        .returns<UnitRow[]>(),
       supabase
         .from("cleaning_tasks")
         .select("*")
@@ -74,18 +67,16 @@ export async function carregarDadosModuloLimpeza(
     ]);
 
   registrarErro("propriedades da limpeza", propriedadesResultado.error);
-  registrarErro("unidades da limpeza", unidadesResultado.error);
   registrarErro("tarefas de limpeza", tarefasResultado.error);
   registrarErro("reservas operacionais", reservasResultado.error);
 
   const propriedades = propriedadesResultado.data ?? [];
-  const unidades = unidadesResultado.data ?? [];
   const reservasBase = reservasResultado.data ?? [];
   const tarefasBase = tarefasResultado.data ?? [];
   const hospedes = await carregarHospedes(tenantId, reservasBase.map((reserva) => reserva.id));
   const responsaveis = await carregarResponsaveis(tenantId, ownerId);
 
-  const reservas = montarReservas(reservasBase, propriedades, unidades, hospedes);
+  const reservas = montarReservas(reservasBase, propriedades, hospedes);
 
   return {
     checkInsHoje: reservas.filter((reserva) => reserva.check_in === hoje),
@@ -96,9 +87,8 @@ export async function carregarDadosModuloLimpeza(
     podeGerenciarOperacao: podeGerenciarOperacao(contexto),
     propriedades,
     responsaveis,
-    tarefas: montarTarefas(tarefasBase, propriedades, unidades, reservasBase, responsaveis),
-    tenantNome: contexto.tenant?.name ?? "Tenant",
-    unidades
+    tarefas: montarTarefas(tarefasBase, propriedades, reservasBase, responsaveis),
+    tenantNome: contexto.tenant?.name ?? "Tenant"
   };
 }
 
@@ -137,7 +127,6 @@ async function carregarResponsaveis(tenantId: string, ownerId: string) {
 function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   hospedes: ReservationGuestRow[]
 ): ReservaOperacional[] {
   return reservas.map((reserva) => ({
@@ -145,15 +134,13 @@ function montarReservas(
     hospedePrincipal:
       hospedes.find((hospede) => hospede.reservation_id === reserva.id) ?? null,
     propriedade:
-      propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
-    unidade: unidades.find((unidade) => unidade.id === reserva.unit_id) ?? null
+      propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null
   }));
 }
 
 function montarTarefas(
   tarefas: CleaningTaskRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   reservas: ReservationRow[],
   responsaveis: ProfileRow[]
 ): TarefaLimpezaCompleta[] {
@@ -162,8 +149,7 @@ function montarTarefas(
     propriedade:
       propriedades.find((propriedade) => propriedade.id === tarefa.property_id) ?? null,
     reserva: reservas.find((reserva) => reserva.id === tarefa.reservation_id) ?? null,
-    responsavel: responsaveis.find((responsavel) => responsavel.id === tarefa.assigned_to) ?? null,
-    unidade: unidades.find((unidade) => unidade.id === tarefa.unit_id) ?? null
+    responsavel: responsaveis.find((responsavel) => responsavel.id === tarefa.assigned_to) ?? null
   }));
 }
 
@@ -181,8 +167,7 @@ function criarDadosVazios(
     propriedades: [],
     responsaveis: [],
     tarefas: [],
-    tenantNome: contexto.tenant?.name ?? "Tenant",
-    unidades: []
+    tenantNome: contexto.tenant?.name ?? "Tenant"
   };
 }
 

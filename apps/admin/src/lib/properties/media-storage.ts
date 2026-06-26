@@ -25,8 +25,7 @@ const TIPOS_LOGO_TENANT_PERMITIDOS = [
 export type DestinoMidia = {
   tenantId: string;
   propertyId: string;
-  unitId?: string;
-  escopo: "capa" | "galeria" | "unidade";
+  escopo: "capa" | "galeria";
 };
 
 export type DestinoLogoTenant = {
@@ -150,11 +149,7 @@ function validarLogoTenant(arquivo: File) {
 
 function montarCaminhoStorage(destino: DestinoMidia, arquivo: File): string {
   const nomeSeguro = normalizarNomeArquivo(arquivo.name);
-  const pastaEntidade = destino.unitId
-    ? `units/${destino.unitId}`
-    : `properties/${destino.propertyId}`;
-
-  return `${destino.tenantId}/${pastaEntidade}/${destino.escopo}/${Date.now()}-${nomeSeguro}`;
+  return `${destino.tenantId}/properties/${destino.propertyId}/${destino.escopo}/${Date.now()}-${nomeSeguro}`;
 }
 
 function montarCaminhoLogoTenant(destino: DestinoLogoTenant, arquivo: File): string {

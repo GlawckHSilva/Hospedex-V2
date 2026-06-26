@@ -4,8 +4,7 @@ import type {
   ReservationGuestRow,
   ReservationNoteRow,
   ReservationRow,
-  ReservationStatusHistoryRow,
-  UnitRow
+  ReservationStatusHistoryRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -48,7 +47,6 @@ export async function carregarDadosModuloReservas(
   const supabase = await criarClienteSupabaseServer();
   const [
     propriedadesResultado,
-    unidadesResultado,
     reservasResultado,
     hospedesResultado,
     historicoResultado,
@@ -62,12 +60,6 @@ export async function carregarDadosModuloReservas(
       .is("deleted_at", null)
       .order("name", { ascending: true })
       .returns<PropertyRow[]>(),
-    supabase
-      .from("units")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("name", { ascending: true })
-      .returns<UnitRow[]>(),
     criarConsultaReservas(tenantId, filtros),
     supabase
       .from("reservation_guests")
@@ -95,7 +87,6 @@ export async function carregarDadosModuloReservas(
   ]);
 
   registrarErroLeitura("propriedades", propriedadesResultado.error);
-  registrarErroLeitura("unidades", unidadesResultado.error);
   registrarErroLeitura("reservas", reservasResultado.error);
   registrarErroLeitura("hóspedes da reserva", hospedesResultado.error);
   registrarErroLeitura("histórico da reserva", historicoResultado.error);
@@ -105,7 +96,6 @@ export async function carregarDadosModuloReservas(
   const reservas = montarReservas(
     reservasResultado.data ?? [],
     propriedadesResultado.data ?? [],
-    unidadesResultado.data ?? [],
     hospedesResultado.data ?? [],
     historicoResultado.data ?? [],
     extrasResultado.data ?? [],
@@ -122,8 +112,7 @@ export async function carregarDadosModuloReservas(
       confirmadas: reservas.filter((reserva) => reserva.status === "confirmed").length,
       hospedadas: reservas.filter((reserva) => reserva.status === "checked_in").length,
       canceladas: reservas.filter((reserva) => reserva.status === "cancelled").length
-    },
-    unidades: unidadesResultado.data ?? []
+    }
   };
 }
 
@@ -143,12 +132,8 @@ async function criarConsultaReservas(tenantId: string, filtros: FiltrosReservas)
     consulta = consulta.eq("property_id", filtros.propriedadeId);
   }
 
-  if (filtros.unidadeId) {
-    consulta = consulta.eq("unit_id", filtros.unidadeId);
-  }
-
   // O periodo usa sobreposicao de datas, porque uma reserva pode comecar antes
-  // do filtro e ainda ocupar a unidade dentro da janela pesquisada.
+  // do filtro e ainda ocupar a casa dentro da janela pesquisada.
   if (filtros.dataInicio) {
     consulta = consulta.gt("check_out", filtros.dataInicio);
   }
@@ -163,7 +148,6 @@ async function criarConsultaReservas(tenantId: string, filtros: FiltrosReservas)
 function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   hospedes: ReservationGuestRow[],
   historico: ReservationStatusHistoryRow[],
   extras: ReservationExtraServiceRow[],
@@ -182,7 +166,6 @@ function montarReservas(
       ...reserva,
       propriedade:
         propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
-      unidade: unidades.find((unidade) => unidade.id === reserva.unit_id) ?? null,
       hospedes: hospedes.filter((hospede) => hospede.reservation_id === reserva.id),
       historico: historico.filter((item) => item.reservation_id === reserva.id),
       servicosExtras,
@@ -200,7 +183,6 @@ function correspondeBusca(reserva: ReservaComRelacionamentos, busca?: string): b
   const campos = [
     reserva.code,
     reserva.propriedade?.name,
-    reserva.unidade?.name,
     ...reserva.hospedes.flatMap((hospede) => [
       hospede.full_name,
       hospede.email,
@@ -223,8 +205,7 @@ function criarDadosVazios(filtros: FiltrosReservas): DadosModuloReservas {
       confirmadas: 0,
       hospedadas: 0,
       canceladas: 0
-    },
-    unidades: []
+    }
   };
 }
 

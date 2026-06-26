@@ -1,4 +1,4 @@
-import type { ProfileRow, PropertyRow, ReservationRow, UnitRow } from "@hospedex/types";
+import type { ProfileRow, PropertyRow, ReservationRow } from "@hospedex/types";
 import { Button, Input, Label } from "@hospedex/ui";
 import type { ComponentProps } from "react";
 
@@ -26,7 +26,6 @@ export type CleaningTaskFormProps = {
   reservas: ReservationRow[];
   responsaveis: ProfileRow[];
   tarefa?: TarefaLimpezaCompleta;
-  unidades: UnitRow[];
 };
 
 const campoClasse =
@@ -41,10 +40,9 @@ export function CleaningTaskForm({
   reservas,
   responsaveis,
   tarefa,
-  unidades
 }: CleaningTaskFormProps) {
   const action = modo === "editar" ? atualizarTarefaLimpezaAction : criarTarefaLimpezaAction;
-  const bloqueado = !podeGerenciar || propriedades.length === 0 || unidades.length === 0;
+  const bloqueado = !podeGerenciar || propriedades.length === 0;
 
   return (
     <form action={action} className="grid gap-4">
@@ -61,16 +59,11 @@ export function CleaningTaskForm({
         <CampoStatus defaultValue={tarefa?.status ?? "awaiting_cleaning"} disabled={bloqueado} />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <CampoPropriedade
           defaultValue={tarefa?.property_id ?? propriedades[0]?.id ?? ""}
           disabled={bloqueado}
           propriedades={propriedades}
-        />
-        <CampoUnidade
-          defaultValue={tarefa?.unit_id ?? unidades[0]?.id ?? ""}
-          disabled={bloqueado}
-          unidades={unidades}
         />
         <CampoTexto
           defaultValue={tarefa?.scheduled_for ?? ""}
@@ -182,29 +175,6 @@ function CampoPropriedade({
         {propriedades.map((propriedade) => (
           <option key={propriedade.id} value={propriedade.id}>
             {propriedade.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CampoUnidade({
-  defaultValue,
-  disabled,
-  unidades
-}: {
-  defaultValue: string;
-  disabled: boolean;
-  unidades: UnitRow[];
-}) {
-  return (
-    <div className="grid gap-2">
-      <Label htmlFor="unitId">Unidade</Label>
-      <select className={campoClasse} defaultValue={defaultValue} disabled={disabled} id="unitId" name="unitId">
-        {unidades.map((unidade) => (
-          <option key={unidade.id} value={unidade.id}>
-            {unidade.name}
           </option>
         ))}
       </select>

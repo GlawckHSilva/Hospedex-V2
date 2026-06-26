@@ -25,8 +25,7 @@ export type IconeMenuAdmin =
   | "propriedades"
   | "relatorios"
   | "reservas"
-  | "servicosExtras"
-  | "unidades";
+  | "servicosExtras";
 
 export type ItemMenuAdmin = {
   titulo: string;
@@ -63,14 +62,6 @@ const MENU_PROPRIETARIO = [
     icone: "confirmacoes",
     featureFlag: "confirmations",
     permissoes: ["reservations.read", "cleaning.read"]
-  },
-  {
-    titulo: "Unidades",
-    href: "/unidades",
-    descricao: "Base para quartos, casas e categorias.",
-    icone: "unidades",
-    featureFlag: "multi_unit",
-    permissoes: ["properties.read"]
   },
   {
     titulo: "Reservas",
@@ -246,7 +237,6 @@ export function obterMenuAdmin(
     perfil === "super_admin" ? MENU_SUPER_ADMIN : MENU_PROPRIETARIO;
 
   return itensBase
-    .filter((item) => item.href !== "/unidades" || contexto.featureFlags.multi_unit)
     .filter((item) => perfil !== "funcionario" || funcionarioPodeVerItem(item, contexto))
     .map((item) => ({
       ...item,

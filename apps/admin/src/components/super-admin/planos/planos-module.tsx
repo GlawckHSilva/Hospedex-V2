@@ -1,4 +1,4 @@
-import { CreditCard, Layers3, PackagePlus, Pencil, Plus } from "lucide-react";
+import { CreditCard, Home, PackagePlus, Pencil, Plus } from "lucide-react";
 
 import { Badge, FadeIn, GlassCard, GlassPanel, PremiumEmptyState, StatusBadge } from "@hospedex/ui";
 
@@ -40,7 +40,7 @@ export function PlanosModule({
             <Badge variant="info">Catalogo global</Badge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">Planos</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Crie e edite planos comerciais com limites de propriedades, unidades e recursos.
+              Crie e edite planos comerciais com limites de casas e recursos.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -113,9 +113,8 @@ function PlanoCard({
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-4">
-        <Info icon={<Layers3 />} label="Propriedades" valor={String(plano.plan.max_properties)} />
-        <Info icon={<Layers3 />} label="Unidades" valor={String(plano.plan.max_units)} />
+      <div className="grid gap-3 md:grid-cols-3">
+        <Info icon={<Home />} label="Casas" valor={String(plano.plan.max_properties)} />
         <Info icon={<CreditCard />} label="Assinaturas ativas" valor={String(assinaturasAtivas)} />
         <Info label="Recursos incluidos" valor={String(plano.recursos.length)} />
       </div>

@@ -18,7 +18,6 @@ import {
 import {
   carregarEscopoGerenciamento,
   carregarPropriedadeGerenciavel,
-  carregarUnidadeGerenciavel,
   ErroRegraNegocio
 } from "./permissions";
 
@@ -40,7 +39,7 @@ export async function enviarGaleriaPropriedadeAction(formData: FormData) {
 
     const supabase = await criarClienteSupabaseServer();
     await carregarPropriedadeGerenciavel(supabase, escopo, propriedadeId);
-    const proximaOrdem = await obterProximaOrdem(supabase, escopo.tenantId, propriedadeId, null);
+    const proximaOrdem = await obterProximaOrdem(supabase, escopo.tenantId, propriedadeId);
 
     await Promise.all(
       arquivos.map(async (arquivo, indice) => {
@@ -58,8 +57,7 @@ export async function enviarGaleriaPropriedadeAction(formData: FormData) {
           tenantId: escopo.tenantId,
           url: midia.url,
           storageBucket: midia.bucket,
-          storagePath: midia.path,
-          unitId: null
+          storagePath: midia.path
         });
       })
     );
@@ -67,59 +65,6 @@ export async function enviarGaleriaPropriedadeAction(formData: FormData) {
     revalidarModuloPropriedades();
   } catch (erro) {
     redirecionarComErro(caminhoRetorno, erro, "Erro ao enviar galeria da propriedade.");
-  }
-
-  redirect(`${caminhoRetorno}?sucesso=galeria-atualizada`);
-}
-
-export async function enviarImagensUnidadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
-  const caminhoRetorno = obterCaminhoRetorno(formData);
-
-  try {
-    const unidadeId = textoObrigatorio(formData, "unidadeId", "unidade");
-    const arquivos = obterArquivosImagem(formData, "imagens");
-    if (!arquivos.length) throw new ErroRegraNegocio("Selecione ao menos uma imagem.");
-
-    const supabase = await criarClienteSupabaseServer();
-    const unidade = await carregarUnidadeGerenciavel(supabase, escopo, unidadeId);
-    const proximaOrdem = await obterProximaOrdem(
-      supabase,
-      escopo.tenantId,
-      unidade.property_id,
-      unidade.id
-    );
-
-    await Promise.all(
-      arquivos.map(async (arquivo, indice) => {
-        const midia = await enviarImagemParaStorage(
-          supabase,
-          {
-            escopo: "unidade",
-            propertyId: unidade.property_id,
-            tenantId: escopo.tenantId,
-            unitId: unidade.id
-          },
-          arquivo
-        );
-
-        await inserirMidia(supabase, {
-          alt: arquivo.name,
-          isCover: false,
-          propertyId: unidade.property_id,
-          sortOrder: proximaOrdem + indice,
-          tenantId: escopo.tenantId,
-          url: midia.url,
-          storageBucket: midia.bucket,
-          storagePath: midia.path,
-          unitId: unidade.id
-        });
-      })
-    );
-
-    revalidarModuloPropriedades();
-  } catch (erro) {
-    redirecionarComErro(caminhoRetorno, erro, "Erro ao enviar imagens da unidade.");
   }
 
   redirect(`${caminhoRetorno}?sucesso=galeria-atualizada`);
@@ -134,11 +79,8 @@ export async function definirImagemPrincipalAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
     const imagem = await carregarImagemGerenciavel(supabase, escopo.tenantId, imagemId);
 
-    if (imagem.unit_id) {
-      await carregarUnidadeGerenciavel(supabase, escopo, imagem.unit_id);
-    } else if (imagem.property_id) {
-      await carregarPropriedadeGerenciavel(supabase, escopo, imagem.property_id);
-    }
+    if (!imagem.property_id) throw new ErroRegraNegocio("Imagem sem casa vinculada.");
+    await carregarPropriedadeGerenciavel(supabase, escopo, imagem.property_id);
 
     await marcarImagemPrincipal(supabase, imagem);
     revalidarModuloPropriedades();
@@ -158,11 +100,8 @@ export async function excluirImagemAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
     const imagem = await carregarImagemGerenciavel(supabase, escopo.tenantId, imagemId);
 
-    if (imagem.unit_id) {
-      await carregarUnidadeGerenciavel(supabase, escopo, imagem.unit_id);
-    } else if (imagem.property_id) {
-      await carregarPropriedadeGerenciavel(supabase, escopo, imagem.property_id);
-    }
+    if (!imagem.property_id) throw new ErroRegraNegocio("Imagem sem casa vinculada.");
+    await carregarPropriedadeGerenciavel(supabase, escopo, imagem.property_id);
 
     await removerImagemDoStorage(supabase, imagem);
     const { error } = await supabase
@@ -234,9 +173,6 @@ async function carregarImagemVizinha(
     .order("sort_order", { ascending: direcao === "descer" })
     .limit(1);
 
-  consulta = imagem.unit_id
-    ? consulta.eq("unit_id", imagem.unit_id)
-    : consulta.is("unit_id", null);
   consulta =
     direcao === "subir"
       ? consulta.lt("sort_order", imagem.sort_order)
@@ -255,7 +191,6 @@ type NovaMidia = {
   storageBucket: string;
   storagePath: string;
   tenantId: string;
-  unitId: string | null;
   url: string;
 };
 
@@ -270,7 +205,6 @@ async function inserirMidia(supabase: Awaited<ReturnType<typeof criarClienteSupa
     storage_bucket: midia.storageBucket,
     storage_path: midia.storagePath,
     tenant_id: midia.tenantId,
-    unit_id: midia.unitId,
     url: midia.url
   });
 
@@ -298,16 +232,12 @@ async function marcarImagemPrincipal(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   imagem: MediaAssetRow
 ) {
-  const consultaBase = supabase
+  const { error: erroLimpeza } = await supabase
     .from("media_assets")
     .update({ is_cover: false })
     .eq("tenant_id", imagem.tenant_id)
     .eq("property_id", imagem.property_id)
     .eq("status", "active");
-
-  const { error: erroLimpeza } = imagem.unit_id
-    ? await consultaBase.eq("unit_id", imagem.unit_id)
-    : await consultaBase.is("unit_id", null);
 
   if (erroLimpeza) throw new Error(erroLimpeza.message);
 
@@ -323,10 +253,9 @@ async function marcarImagemPrincipal(
 async function obterProximaOrdem(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   tenantId: string,
-  propriedadeId: string,
-  unidadeId: string | null
+  propriedadeId: string
 ) {
-  let consulta = supabase
+  const consulta = supabase
     .from("media_assets")
     .select("sort_order")
     .eq("tenant_id", tenantId)
@@ -334,8 +263,6 @@ async function obterProximaOrdem(
     .eq("status", "active")
     .order("sort_order", { ascending: false })
     .limit(1);
-
-  consulta = unidadeId ? consulta.eq("unit_id", unidadeId) : consulta.is("unit_id", null);
 
   const { data, error } = await consulta.maybeSingle<{ sort_order: number }>();
   if (error) throw new Error(error.message);

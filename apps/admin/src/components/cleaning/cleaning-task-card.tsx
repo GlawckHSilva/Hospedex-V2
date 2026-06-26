@@ -2,7 +2,6 @@ import type {
   ProfileRow,
   PropertyRow,
   ReservationRow,
-  UnitRow,
 } from "@hospedex/types";
 import { ClipboardCheck, Eye, Pencil } from "lucide-react";
 
@@ -29,7 +28,6 @@ export type CleaningTaskCardProps = {
   reservas: ReservationRow[];
   responsaveis: ProfileRow[];
   tarefa: TarefaLimpezaCompleta;
-  unidades: UnitRow[];
 };
 
 export function CleaningTaskCard({
@@ -38,7 +36,6 @@ export function CleaningTaskCard({
   reservas,
   responsaveis,
   tarefa,
-  unidades,
 }: CleaningTaskCardProps) {
   const responsavel =
     tarefa.responsavel?.full_name ?? tarefa.responsavel?.email ?? "Sem responsavel";
@@ -57,7 +54,7 @@ export function CleaningTaskCard({
       />
 
       <div className="grid gap-3 text-sm">
-        <Info label="Unidade" valor={tarefa.unidade?.name ?? "Unidade"} />
+        <Info label="Casa" valor={tarefa.propriedade?.name ?? "Propriedade"} />
         <Info
           label="Data prevista"
           valor={tarefa.scheduled_for ? formatarData(tarefa.scheduled_for) : "Sem data"}
@@ -74,7 +71,6 @@ export function CleaningTaskCard({
         >
           <div className="grid gap-3 md:grid-cols-2">
             <Info label="Casa" valor={tarefa.propriedade?.name ?? "Propriedade"} />
-            <Info label="Unidade" valor={tarefa.unidade?.name ?? "Unidade"} />
             <Info label="Responsavel" valor={responsavel} />
             <Info label="Status" valor={LABEL_STATUS_TAREFA_LIMPEZA[tarefa.status]} />
             <Info label="Origem" valor={tarefa.source === "checkout" ? "Check-out" : "Manual"} />
@@ -101,7 +97,6 @@ export function CleaningTaskCard({
             reservas={reservas}
             responsaveis={responsaveis}
             tarefa={tarefa}
-            unidades={unidades}
           />
         </EntityModal>
       </EntityCardActions>

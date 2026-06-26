@@ -4,8 +4,7 @@ import type {
   ReservationGuestRow,
   ReservationNoteRow,
   ReservationRow,
-  ReservationStatusHistoryRow,
-  UnitRow
+  ReservationStatusHistoryRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -43,7 +42,6 @@ export async function carregarDadosModuloHospedes(
     reservasResultado,
     hospedesReservaResultado,
     propriedadesResultado,
-    unidadesResultado,
     historicoResultado,
     observacoesResultado
   ] = await Promise.all([
@@ -60,7 +58,6 @@ export async function carregarDadosModuloHospedes(
       .eq("tenant_id", tenantId)
       .is("deleted_at", null)
       .returns<PropertyRow[]>(),
-    supabase.from("units").select("*").eq("tenant_id", tenantId).returns<UnitRow[]>(),
     supabase
       .from("reservation_status_history")
       .select("*")
@@ -77,7 +74,6 @@ export async function carregarDadosModuloHospedes(
   registrarErro("reservas", reservasResultado.error);
   registrarErro("hospedes das reservas", hospedesReservaResultado.error);
   registrarErro("propriedades", propriedadesResultado.error);
-  registrarErro("unidades", unidadesResultado.error);
   registrarErro("historico", historicoResultado.error);
   registrarErro("timeline", observacoesResultado.error);
 
@@ -87,7 +83,6 @@ export async function carregarDadosModuloHospedes(
       reservasResultado.data ?? [],
       hospedesReservaResultado.data ?? [],
       propriedadesResultado.data ?? [],
-      unidadesResultado.data ?? [],
       historicoResultado.data ?? [],
       observacoesResultado.data ?? []
     )
@@ -135,7 +130,6 @@ function montarHospedeCompleto(
   reservas: ReservationRow[],
   hospedesReserva: ReservationGuestRow[],
   propriedades: PropertyRow[],
-  unidades: UnitRow[],
   historico: ReservationStatusHistoryRow[],
   observacoes: ReservationNoteRow[]
 ): HospedeCrmCompleto {
@@ -151,8 +145,7 @@ function montarHospedeCompleto(
       historico: historico.filter((item) => item.reservation_id === reserva.id),
       observacoes: observacoes.filter((item) => item.reservation_id === reserva.id),
       propriedade:
-        propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
-      unidade: unidades.find((unidade) => unidade.id === reserva.unit_id) ?? null
+        propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null
     }))
     .sort((a, b) => b.check_in.localeCompare(a.check_in));
 

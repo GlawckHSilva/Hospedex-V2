@@ -47,7 +47,6 @@ export default async function ReservasPage({ searchParams }: PageProps) {
       <ReservationModule
         {...dados}
         erro={lerParametro(params, "erro")}
-        multiUnidadesAtivo={Boolean(contexto.featureFlags.multi_unit)}
         sucesso={lerParametro(params, "sucesso")}
         tenantNome={contexto.tenant.name}
       />
@@ -59,7 +58,6 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
   const filtros: {
     busca?: string;
     propriedadeId?: string;
-    unidadeId?: string;
     dataInicio?: string;
     dataFim?: string;
     status: ReservationStatus | "todos";
@@ -68,13 +66,11 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
   };
   const busca = lerParametro(params, "busca");
   const propriedadeId = lerParametro(params, "propriedadeId");
-  const unidadeId = lerParametro(params, "unidadeId");
   const dataInicio = lerData(params, "dataInicio");
   const dataFim = lerData(params, "dataFim");
 
   if (busca) filtros.busca = busca;
   if (propriedadeId) filtros.propriedadeId = propriedadeId;
-  if (unidadeId) filtros.unidadeId = unidadeId;
   if (dataInicio) filtros.dataInicio = dataInicio;
   if (dataFim) filtros.dataFim = dataFim;
 

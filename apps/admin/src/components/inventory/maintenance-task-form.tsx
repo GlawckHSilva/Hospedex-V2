@@ -1,4 +1,4 @@
-import type { ProfileRow, PropertyRow, UnitRow } from "@hospedex/types";
+import type { ProfileRow, PropertyRow } from "@hospedex/types";
 import { Button, Input, Label } from "@hospedex/ui";
 import type { ComponentProps } from "react";
 
@@ -31,7 +31,6 @@ export type MaintenanceTaskFormProps = {
   propriedades: PropertyRow[];
   responsaveis: ProfileRow[];
   tarefa?: TarefaManutencaoCompleta;
-  unidades: UnitRow[];
 };
 
 const campoClasse =
@@ -46,7 +45,6 @@ export function MaintenanceTaskForm({
   propriedades,
   responsaveis,
   tarefa,
-  unidades
 }: MaintenanceTaskFormProps) {
   const action = modo === "editar" ? atualizarTarefaManutencaoAction : criarTarefaManutencaoAction;
   const bloqueado = !podeGerenciar || propriedades.length === 0;
@@ -75,7 +73,7 @@ export function MaintenanceTaskForm({
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <CampoSelect
           defaultValue={tarefa?.property_id ?? propriedades[0]?.id ?? ""}
           disabled={bloqueado}
@@ -85,16 +83,6 @@ export function MaintenanceTaskForm({
             label: propriedade.name,
             value: propriedade.id
           }))}
-        />
-        <CampoSelect
-          defaultValue={tarefa?.unit_id ?? ""}
-          disabled={bloqueado}
-          label="Unidade"
-          name="unitId"
-          opcoes={[
-            { label: "Sem unidade especifica", value: "" },
-            ...unidades.map((unidade) => ({ label: unidade.name, value: unidade.id }))
-          ]}
         />
         <CampoSelect
           defaultValue={tarefa?.inventory_item_id ?? ""}

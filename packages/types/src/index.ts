@@ -8,8 +8,7 @@ export type {
   PropertyStatus,
   PropertyType,
   ReservationStatus,
-  TenantStatus,
-  UnitStatus
+  TenantStatus
 } from "./database";
 export type {
   AuditLogRow,
@@ -81,9 +80,7 @@ export type {
   TransactionStatus,
   TransactionType,
   TransactionRow,
-  UnitCategoryRow,
-  UUID,
-  UnitRow
+  UUID
 } from "./database";
 
 export type ModuleKey =
@@ -101,7 +98,6 @@ export type ModuleKey =
   | "confirmations"
   | "automations"
   | "calendar"
-  | "multi_unit"
   | "advanced_rates"
   | "feature_flags"
   | "ai";
@@ -117,7 +113,6 @@ export type FeatureFlagKey =
   | "regional_guide"
   | "calendar"
   | "advanced_rates"
-  | "multi_unit"
   | "ics_sync"
   | "cleaning"
   | "inventory"

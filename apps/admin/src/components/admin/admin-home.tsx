@@ -174,7 +174,7 @@ function EstadoVazio() {
       <StatusBadge tone="warning">Sem dados operacionais</StatusBadge>
       <h2 className="mt-3 text-lg font-semibold">Cadastre propriedades para ativar o dashboard</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        As métricas passam a ganhar valor quando existirem propriedades, unidades, reservas ou
+        As métricas passam a ganhar valor quando existirem propriedades, reservas ou
         lançamentos financeiros no tenant.
       </p>
     </GlassCard>
@@ -346,7 +346,6 @@ function ListaEventos({
                 <p className="truncate font-medium">{evento.hospede}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {evento.propriedade}
-                  {evento.unidade ? ` · ${evento.unidade}` : ""}
                 </p>
               </div>
               <StatusBadge className="justify-self-start sm:justify-self-end" tone="info">

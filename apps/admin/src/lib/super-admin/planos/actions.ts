@@ -16,7 +16,6 @@ type EntradaPlano = {
   codigo: string;
   descricao: string | null;
   limitePropriedades: number;
-  limiteUnidades: number;
   nome: string;
   recursos: string[];
   status: PlanRow["status"];
@@ -36,7 +35,6 @@ export async function criarPlanoAction(formData: FormData) {
         code: entrada.codigo,
         description: entrada.descricao,
         max_properties: entrada.limitePropriedades,
-        max_units: entrada.limiteUnidades,
         monthly_price: entrada.valorMensal,
         name: entrada.nome,
         status: entrada.status
@@ -70,7 +68,6 @@ export async function atualizarPlanoAction(formData: FormData) {
         code: entrada.codigo,
         description: entrada.descricao,
         max_properties: entrada.limitePropriedades,
-        max_units: entrada.limiteUnidades,
         monthly_price: entrada.valorMensal,
         name: entrada.nome,
         status: entrada.status
@@ -151,7 +148,6 @@ function obterEntradaPlano(formData: FormData): EntradaPlano {
     codigo: gerarCodigo(textoOpcional(formData, "codigo") ?? nome),
     descricao: textoOpcional(formData, "descricao"),
     limitePropriedades: numeroInteiro(formData, "limitePropriedades", "limite de propriedades", 1),
-    limiteUnidades: numeroInteiro(formData, "limiteUnidades", "limite de unidades", 1),
     nome,
     recursos: formData.getAll("recursos").map((valor) => valor.toString()),
     status: validarStatusPlano(textoObrigatorio(formData, "status", "status")),

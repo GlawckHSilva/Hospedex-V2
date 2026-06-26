@@ -1,4 +1,4 @@
-import type { PropertyRow, UnitRow } from "@hospedex/types";
+import type { PropertyRow } from "@hospedex/types";
 import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
@@ -63,25 +63,5 @@ export async function carregarPropriedadeGerenciavel(
     throw new ErroRegraNegocio("Propriedade não encontrada para este tenant.");
   }
 
-  return data;
-}
-
-export async function carregarUnidadeGerenciavel(
-  supabase: ClienteSupabaseServer,
-  escopo: EscopoGerenciamento,
-  unidadeId: string
-) {
-  const { data, error } = await supabase
-    .from("units")
-    .select("*")
-    .eq("id", unidadeId)
-    .eq("tenant_id", escopo.tenantId)
-    .maybeSingle<UnitRow>();
-
-  if (error || !data) {
-    throw new ErroRegraNegocio("Unidade não encontrada para este tenant.");
-  }
-
-  await carregarPropriedadeGerenciavel(supabase, escopo, data.property_id);
   return data;
 }

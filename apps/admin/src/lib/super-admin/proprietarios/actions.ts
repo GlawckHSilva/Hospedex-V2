@@ -40,7 +40,6 @@ type EntradaProprietario = {
   expiraEm: string | null;
   featureFlagIds: string[];
   limitePropriedades: number;
-  limiteUnidades: number;
   nome: string;
   planoId: string;
   senha: string | null;
@@ -408,8 +407,9 @@ async function salvarLicenca(
   const payload = {
     expires_at: entrada.expiraEm,
     limits: {
-      max_properties: entrada.limitePropriedades,
-      max_units: entrada.limiteUnidades
+      // A V2 usa a casa/propriedade como recurso reservavel. Limites legados
+      // do schema antigo nao sao mais enviados para a licenca operacional.
+      max_properties: entrada.limitePropriedades
     },
     owner_id: tenant.owner_id,
     status: statusLicenca(tenant.status),
@@ -620,7 +620,6 @@ function obterEntradaProprietario(formData: FormData, exigirSenha: boolean): Ent
     expiraEm: dataOpcional(formData, "expiraEm"),
     featureFlagIds: formData.getAll("featureFlags").map((valor) => valor.toString()),
     limitePropriedades: numeroInteiro(formData, "limitePropriedades", "limite de propriedades", 1),
-    limiteUnidades: numeroInteiro(formData, "limiteUnidades", "limite de unidades", 1),
     nome: textoObrigatorio(formData, "nome", "nome"),
     planoId,
     senha,
