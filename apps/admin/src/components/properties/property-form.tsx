@@ -25,6 +25,7 @@ import { Input, Label, cn } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
 import { AppModal } from "../management/entity-modal";
+import { WizardStepper } from "../management/wizard-stepper";
 import { PropertyAmenitiesStep } from "./property-amenities-step";
 import {
   atualizarPropriedadeAction,
@@ -243,6 +244,15 @@ function removerErrosDaEtapa(
   );
 }
 
+function obterEtapasComErro(erros: ErrosFormularioCasa): EtapaId[] {
+  const camposComErro = new Set(Object.keys(erros));
+  const etapas = CAMPOS_OBRIGATORIOS_CASA
+    .filter((campo) => camposComErro.has(campo.name))
+    .map((campo) => campo.etapa);
+
+  return Array.from(new Set(etapas));
+}
+
 export function PropertyForm({
   comodidadesDisponiveis,
   modo,
@@ -270,6 +280,8 @@ export function PropertyForm({
   const bloqueado = !podeGerenciar || Boolean(erroImagem) || salvando;
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
   const estaNaUltimaEtapa = etapaAtual === ETAPAS.length - 1;
+  const etapasConcluidas = ETAPAS.slice(0, etapaAtual).map((item) => item.id);
+  const etapasComErro = obterEtapasComErro(errosCampos);
 
   useEffect(() => {
     previewCapaRef.current = previewCapa;
@@ -497,24 +509,13 @@ export function PropertyForm({
     >
       {propriedade ? <input name="propriedadeId" type="hidden" value={propriedade.id} /> : null}
 
-      <nav className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        {ETAPAS.map((item, indice) => (
-          <button
-            className={cn(
-              "flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-semibold transition [&_svg]:h-4 [&_svg]:w-4",
-              indice === etapaAtual
-                ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-700 dark:text-cyan-200"
-                : "bg-background/45 text-muted-foreground hover:border-cyan-300/40 hover:text-foreground",
-            )}
-            key={item.id}
-            onClick={() => navegarParaEtapa(indice)}
-            type="button"
-          >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      <WizardStepper
+        etapaAtual={etapaAtual}
+        etapas={ETAPAS}
+        etapasComErro={etapasComErro}
+        etapasConcluidas={etapasConcluidas}
+        onEtapaClick={(indice) => navegarParaEtapa(indice)}
+      />
 
       <section className="rounded-2xl border bg-background/45 p-4">
         <div className="mb-4 flex items-center gap-2">
