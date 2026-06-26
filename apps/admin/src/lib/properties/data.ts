@@ -206,19 +206,54 @@ function montarPropriedades(
   comodidades: AmenityRow[],
   vinculosComodidades: PropertyAmenityRow[]
 ): PropriedadeComRelacionamentos[] {
+  const configuracoesPorPropriedade = indexarPorPropriedade(configuracoes);
+  const imagensPorPropriedade = agruparPorPropriedade(imagens);
+  const comodidadesPorPropriedade = montarComodidadesPorPropriedade(
+    comodidades,
+    vinculosComodidades
+  );
+
   return propriedades.map((propriedade) => ({
     ...propriedade,
     detalhesPublicos: normalizarDetalhesPublicos(propriedade.public_details),
     enderecoFormatado: normalizarEndereco(propriedade.address),
     estrutura: normalizarEstrutura(propriedade.structure_details),
-    imagemCapa: obterImagemPrincipal(propriedade.id, imagens),
-    imagens: imagens.filter((imagem) => imagem.property_id === propriedade.id),
-    comodidades: montarComodidades(propriedade.id, comodidades, vinculosComodidades),
+    imagemCapa: obterImagemPrincipal(imagensPorPropriedade.get(propriedade.id) ?? []),
+    imagens: imagensPorPropriedade.get(propriedade.id) ?? [],
+    comodidades: comodidadesPorPropriedade.get(propriedade.id) ?? [],
     regras:
-      configuracoes.find((configuracao) => configuracao.property_id === propriedade.id) ??
+      configuracoesPorPropriedade.get(propriedade.id) ??
       criarRegrasPadrao(propriedade),
     valores: normalizarValores(propriedade.pricing_details)
   }));
+}
+
+function indexarPorPropriedade<TItem extends { property_id: string | null }>(
+  itens: TItem[]
+) {
+  const indice = new Map<string, TItem>();
+
+  for (const item of itens) {
+    if (!item.property_id) continue;
+    indice.set(item.property_id, item);
+  }
+
+  return indice;
+}
+
+function agruparPorPropriedade<TItem extends { property_id: string | null }>(
+  itens: TItem[]
+) {
+  const grupos = new Map<string, TItem[]>();
+
+  for (const item of itens) {
+    if (!item.property_id) continue;
+    const grupo = grupos.get(item.property_id) ?? [];
+    grupo.push(item);
+    grupos.set(item.property_id, grupo);
+  }
+
+  return grupos;
 }
 
 function normalizarEstrutura(valor: JsonValue): EstruturaPropriedade {
@@ -314,33 +349,29 @@ function criarRegrasPadrao(propriedade: PropertyRow): PropertySettingRow {
   };
 }
 
-function montarComodidades(
-  propriedadeId: string,
+function montarComodidadesPorPropriedade(
   comodidades: AmenityRow[],
   vinculos: PropertyAmenityRow[]
 ) {
-  const idsAtivos = new Set(
-    vinculos
-      .filter((vinculo) => vinculo.property_id === propriedadeId)
-      .map((vinculo) => vinculo.amenity_id)
+  const comodidadesPorId = new Map(
+    comodidades.map((comodidade) => [comodidade.id, comodidade])
   );
+  const resultado = new Map<string, AmenityRow[]>();
 
-  return comodidades.filter((comodidade) => idsAtivos.has(comodidade.id));
+  for (const vinculo of vinculos) {
+    const comodidade = comodidadesPorId.get(vinculo.amenity_id);
+    if (!comodidade) continue;
+
+    const lista = resultado.get(vinculo.property_id) ?? [];
+    lista.push(comodidade);
+    resultado.set(vinculo.property_id, lista);
+  }
+
+  return resultado;
 }
 
-function obterImagemPrincipal(
-  propriedadeId: string,
-  imagens: MediaAssetRow[]
-) {
-  const imagensDaEntidade = imagens.filter(
-    (imagem) => imagem.property_id === propriedadeId
-  );
-
-  return (
-    imagensDaEntidade.find((imagem) => imagem.is_cover) ??
-    imagensDaEntidade[0] ??
-    null
-  );
+function obterImagemPrincipal(imagens: MediaAssetRow[]) {
+  return imagens.find((imagem) => imagem.is_cover) ?? imagens[0] ?? null;
 }
 
 function criarLimitesPlanoPadrao() {

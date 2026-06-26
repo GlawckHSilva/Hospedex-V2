@@ -171,6 +171,7 @@ export async function atualizarPropriedadeAction(formData: FormData) {
     const entrada = obterEntradaPropriedade(formData);
     const supabase = await criarClienteSupabaseServer();
 
+    await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
     const { data: propriedade, error } = await supabase
       .from("properties")
       .update({
@@ -196,12 +197,17 @@ export async function atualizarPropriedadeAction(formData: FormData) {
 
     if (error || !propriedade) {
       throw new ErroRegraNegocio(
-        "Propriedade não encontrada para este tenant.",
+        traduzirErroSupabase(
+          error?.message,
+          "Casa não encontrada ou sem permissão de edição para este tenant.",
+        ),
       );
     }
 
-    await salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada);
-    await salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada);
+    await Promise.all([
+      salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada),
+      salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada),
+    ]);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
     await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
     revalidarModulo();
@@ -615,7 +621,9 @@ async function salvarConfiguracoesDaCasa(
     { onConflict: "property_id" },
   );
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw erroOperacaoCasa(error.message, "Não foi possível salvar as configurações da casa.");
+  }
 }
 
 async function salvarComodidadesDaCasa(
@@ -646,7 +654,9 @@ async function salvarComodidadesDaCasa(
     .eq("tenant_id", escopo.tenantId)
     .eq("property_id", propriedadeId);
 
-  if (erroLimpeza) throw new Error(erroLimpeza.message);
+  if (erroLimpeza) {
+    throw erroOperacaoCasa(erroLimpeza.message, "Erro ao atualizar comodidades.");
+  }
   if (!idsValidos.length) return;
 
   const { error } = await supabase.from("property_amenities").insert(
@@ -657,7 +667,9 @@ async function salvarComodidadesDaCasa(
     })),
   );
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw erroOperacaoCasa(error.message, "Erro ao atualizar comodidades.");
+  }
 }
 
 async function atualizarComodidadesPersonalizadasExistentes(
@@ -677,7 +689,9 @@ async function atualizarComodidadesPersonalizadasExistentes(
       .eq("tenant_id", tenantId)
       .eq("is_system", false);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw erroOperacaoCasa(error.message, "Erro ao atualizar comodidade personalizada.");
+    }
   }
 }
 
@@ -699,7 +713,9 @@ async function obterOuCriarComodidadesPersonalizadas(
       .eq("code", code)
       .maybeSingle<{ id: string }>();
 
-    if (erroBusca) throw new Error(erroBusca.message);
+    if (erroBusca) {
+      throw erroOperacaoCasa(erroBusca.message, "Erro ao validar comodidade personalizada.");
+    }
 
     if (existente) {
       ids.push(existente.id);
@@ -719,7 +735,10 @@ async function obterOuCriarComodidadesPersonalizadas(
       .single<{ id: string }>();
 
     if (error || !criada) {
-      throw new Error(error?.message ?? "Comodidade personalizada nao criada.");
+      throw erroOperacaoCasa(
+        error?.message,
+        "Comodidade personalizada não criada.",
+      );
     }
 
     ids.push(criada.id);
@@ -742,7 +761,9 @@ async function obterComodidadesValidas(
     .in("id", idsUnicos)
     .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw erroOperacaoCasa(error.message, "Erro ao validar comodidades da casa.");
+  }
   return (data ?? []).map((comodidade) => comodidade.id);
 }
 
@@ -758,7 +779,9 @@ async function garantirLimitePropriedades(
     .is("deleted_at", null)
     .neq("status", "archived");
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw erroOperacaoCasa(error.message, "Não foi possível validar o limite de casas.");
+  }
 
   if ((count ?? 0) >= limites.maxPropriedades) {
     throw new ErroRegraNegocio(
@@ -854,7 +877,9 @@ async function obterProximaOrdemMidia(
 
   const { data, error } = await consulta.maybeSingle<{ sort_order: number }>();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw erroOperacaoCasa(error.message, "Não foi possível calcular a ordem das imagens.");
+  }
   return (data?.sort_order ?? -1) + 1;
 }
 
@@ -884,7 +909,9 @@ async function salvarImagemCapa(
     .eq("property_id", propriedadeId)
     .eq("is_cover", true);
 
-  if (erroCapaAnterior) throw new Error(erroCapaAnterior.message);
+  if (erroCapaAnterior) {
+    throw erroOperacaoCasa(erroCapaAnterior.message, "Erro ao atualizar imagem principal.");
+  }
 
   const { error } = await supabase.from("media_assets").insert({
     tenant_id: tenantId,
@@ -898,7 +925,9 @@ async function salvarImagemCapa(
     is_cover: true,
     status: "active",
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw erroOperacaoCasa(error.message, "Erro ao salvar imagem de capa.");
+  }
 }
 
 async function salvarGaleriaPropriedade(
@@ -921,7 +950,9 @@ async function salvarGaleriaPropriedade(
       .eq("property_id", propriedadeId)
       .eq("is_cover", true);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      throw erroOperacaoCasa(error.message, "Erro ao atualizar imagem principal.");
+    }
   }
 
   const proximaOrdem = await obterProximaOrdemMidia(
@@ -958,7 +989,9 @@ async function salvarGaleriaPropriedade(
         url: midia.url,
       });
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        throw erroOperacaoCasa(error.message, "Erro ao salvar imagens da galeria.");
+      }
     }),
   );
 }
@@ -1249,6 +1282,13 @@ function traduzirErroSupabase(
   }
 
   return fallback;
+}
+
+function erroOperacaoCasa(
+  mensagemTecnica: string | null | undefined,
+  fallback: string,
+) {
+  return new ErroRegraNegocio(traduzirErroSupabase(mensagemTecnica, fallback));
 }
 
 function revalidarModulo() {

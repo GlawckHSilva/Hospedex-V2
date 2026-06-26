@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 
 import { Input, Label, cn } from "@hospedex/ui";
 
@@ -265,7 +266,6 @@ export function PropertyForm({
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>([]);
-  const [salvando, setSalvando] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
@@ -277,7 +277,7 @@ export function PropertyForm({
   const valores = propriedade?.valores;
   const regras = propriedade?.regras;
   const comodidadesSelecionadas = new Set(propriedade?.comodidades.map((item) => item.id) ?? []);
-  const bloqueado = !podeGerenciar || Boolean(erroImagem) || salvando;
+  const bloqueado = !podeGerenciar || Boolean(erroImagem);
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
   const estaNaUltimaEtapa = etapaAtual === ETAPAS.length - 1;
   const etapasConcluidas = ETAPAS.slice(0, etapaAtual).map((item) => item.id);
@@ -489,13 +489,11 @@ export function PropertyForm({
     const erros = validarFormularioCasa(evento.currentTarget);
     if (Object.keys(erros).length > 0) {
       evento.preventDefault();
-      setSalvando(false);
       aplicarErrosValidacao(erros);
       return;
     }
 
     setErrosCampos({});
-    setSalvando(true);
   }
 
   return (
@@ -610,29 +608,43 @@ export function PropertyForm({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
         <div>
           {etapaAtual > 0 ? (
-            <ActionButton disabled={salvando} onClick={voltarEtapa} size="md" type="button" variant="settings">
+            <ActionButton onClick={voltarEtapa} size="md" type="button" variant="settings">
               Voltar
             </ActionButton>
           ) : null}
         </div>
 
         {!estaNaUltimaEtapa ? (
-          <ActionButton disabled={!podeGerenciar || salvando} onClick={avancarEtapa} size="lg" type="button" variant="edit">
+          <ActionButton disabled={!podeGerenciar} onClick={avancarEtapa} size="lg" type="button" variant="edit">
             Proximo
           </ActionButton>
         ) : (
-          <ActionButton
-            disabled={bloqueado}
-            icon={salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
-            size="lg"
-            type="submit"
-            variant="add"
-          >
-            {salvando ? "Salvando..." : modo === "editar" ? "Salvar casa" : "Criar casa"}
-          </ActionButton>
+          <BotaoSalvarCasa bloqueado={bloqueado} modo={modo} />
         )}
       </div>
     </form>
+  );
+}
+
+function BotaoSalvarCasa({
+  bloqueado,
+  modo,
+}: {
+  bloqueado: boolean;
+  modo: "criar" | "editar";
+}) {
+  const { pending } = useFormStatus();
+
+  return (
+    <ActionButton
+      disabled={bloqueado || pending}
+      icon={pending ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
+      size="lg"
+      type="submit"
+      variant="add"
+    >
+      {pending ? "Salvando..." : modo === "editar" ? "Salvar casa" : "Criar casa"}
+    </ActionButton>
   );
 }
 

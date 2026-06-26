@@ -56,6 +56,8 @@ export function PropertyCard({
     <img
       alt={propriedade.imagemCapa.alt ?? `Imagem de ${propriedade.name}`}
       className="h-40 w-full object-cover"
+      decoding="async"
+      loading="lazy"
       src={propriedade.imagemCapa.url}
     />
   ) : (
