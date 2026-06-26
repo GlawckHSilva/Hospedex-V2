@@ -18,6 +18,7 @@ import {
   Trash2,
   WalletCards,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -261,6 +262,8 @@ export function PropertyForm({
   propriedade,
 }: PropertyFormProps) {
   const action = modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
+  const searchParams = useSearchParams();
+  const erroServidor = searchParams.get("erro");
   const [etapaAtual, setEtapaAtual] = useState(0);
   const [errosCampos, setErrosCampos] = useState<ErrosFormularioCasa>({});
   const [erroImagem, setErroImagem] = useState<string | null>(null);
@@ -506,6 +509,12 @@ export function PropertyForm({
       ref={formRef}
     >
       {propriedade ? <input name="propriedadeId" type="hidden" value={propriedade.id} /> : null}
+
+      {erroServidor ? (
+        <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+          {erroServidor}
+        </p>
+      ) : null}
 
       <WizardStepper
         etapaAtual={etapaAtual}

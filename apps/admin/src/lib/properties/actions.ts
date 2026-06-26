@@ -128,7 +128,7 @@ export async function criarPropriedadeAction(formData: FormData) {
         full_description: entrada.descricaoCompleta,
         is_public: entrada.publica,
         marketplace_featured: entrada.destaqueMarketplace,
-        public_details: entrada.detalhesPublicos,
+        public_details: montarDetalhesPublicosBanco(entrada),
         address: entrada.endereco,
         structure_details: entrada.estrutura,
         pricing_details: entrada.valores,
@@ -184,7 +184,7 @@ export async function atualizarPropriedadeAction(formData: FormData) {
         full_description: entrada.descricaoCompleta,
         is_public: entrada.publica,
         marketplace_featured: entrada.destaqueMarketplace,
-        public_details: entrada.detalhesPublicos,
+        public_details: montarDetalhesPublicosBanco(entrada),
         address: entrada.endereco,
         structure_details: entrada.estrutura,
         pricing_details: entrada.valores,
@@ -787,6 +787,15 @@ async function garantirLimitePropriedades(
       `Limite do plano atingido: ${limites.maxPropriedades} propriedade(s).`,
     );
   }
+}
+
+function montarDetalhesPublicosBanco(entrada: EntradaPropriedade) {
+  return {
+    displayName: entrada.detalhesPublicos.nomeExibicao ?? entrada.nome,
+    publicDescription: entrada.detalhesPublicos.descricaoPublica,
+    publicTitle: entrada.detalhesPublicos.tituloPublico,
+    shareImageUrl: entrada.detalhesPublicos.imagemCompartilhamento,
+  };
 }
 
 async function garantirTenantOperacionalParaCasas(

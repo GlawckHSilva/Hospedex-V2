@@ -310,10 +310,18 @@ function normalizarDetalhesPublicos(valor: JsonValue): DetalhesPublicosProprieda
   const detalhes = valorEhObjeto(valor) ? valor : {};
 
   return {
-    descricaoPublica: obterTextoJson(detalhes, "publicDescription"),
-    imagemCompartilhamento: obterTextoJson(detalhes, "shareImageUrl"),
-    nomeExibicao: obterTextoJson(detalhes, "displayName"),
-    tituloPublico: obterTextoJson(detalhes, "publicTitle")
+    descricaoPublica:
+      obterTextoJson(detalhes, "publicDescription") ||
+      obterTextoJson(detalhes, "descricaoPublica"),
+    imagemCompartilhamento:
+      obterTextoJson(detalhes, "shareImageUrl") ||
+      obterTextoJson(detalhes, "imagemCompartilhamento"),
+    nomeExibicao:
+      obterTextoJson(detalhes, "displayName") ||
+      obterTextoJson(detalhes, "nomeExibicao"),
+    tituloPublico:
+      obterTextoJson(detalhes, "publicTitle") ||
+      obterTextoJson(detalhes, "tituloPublico")
   };
 }
 
