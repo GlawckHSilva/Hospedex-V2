@@ -128,9 +128,10 @@ async function obterEntradaBloqueio(
 
   await carregarPropriedadeDoCalendario(supabase, escopo, propriedadeId);
 
-  // O calendario usa intervalo [inicio, fim), igual ao modelo de check-in/check-out.
-  if (new Date(`${fim}T00:00:00`) <= new Date(`${inicio}T00:00:00`)) {
-    throw new ErroRegraCalendario("Data final deve ser posterior a data inicial.");
+  // Bloqueios operacionais sao inclusivos: inicio 15/07 e fim 17/07
+  // bloqueiam os dias 15, 16 e 17. Reservas continuam usando checkout exclusivo.
+  if (new Date(`${fim}T00:00:00`) < new Date(`${inicio}T00:00:00`)) {
+    throw new ErroRegraCalendario("Data final nao pode ser anterior a data inicial.");
   }
 
   return {

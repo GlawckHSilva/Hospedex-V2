@@ -196,11 +196,12 @@ export function FullCalendarBoard({
         <div className="hospedex-fullcalendar">
           <FullCalendar
             allDayText="Dia todo"
-            dayMaxEvents={3}
+            dayMaxEvents={2}
             editable={false}
             eventClick={abrirEvento}
             eventContent={renderizarEvento}
             eventDisplay="block"
+            eventMaxStack={2}
             eventStartEditable={false}
             events={eventosFullCalendar}
             expandRows

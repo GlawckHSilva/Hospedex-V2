@@ -145,8 +145,11 @@ async function criarConsultaBlocos(
     .from("calendar_availability_blocks")
     .select("*")
     .eq("tenant_id", tenantId)
+    // Reservas ja sao carregadas pela tabela reservations. Ignorar o bloco
+    // tecnico evita duplicar a mesma reserva como "Bloqueio" no calendario.
+    .neq("source", "reservation")
     .lt("starts_on", periodo.fimExclusivo)
-    .gt("ends_on", periodo.inicio)
+    .gte("ends_on", periodo.inicio)
     .order("starts_on", { ascending: true });
 
   if (filtros.propriedadeId) consulta = consulta.eq("property_id", filtros.propriedadeId);
@@ -257,7 +260,9 @@ function montarDiasCalendario(
       data,
       numero: cursor.getUTCDate(),
       foraDoMes: data.slice(0, 7) !== mes,
-      blocos: blocos.filter((bloco) => dataEstaNoIntervalo(data, bloco.starts_on, bloco.ends_on)),
+      blocos: blocos.filter((bloco) =>
+        dataEstaNoIntervaloInclusivo(data, bloco.starts_on, bloco.ends_on)
+      ),
       checkIns: reservas.filter((reserva) => reserva.check_in === data),
       checkOuts: reservas.filter((reserva) => reserva.check_out === data),
       limpezas: limpezas.filter((limpeza) => limpeza.scheduled_for === data),
@@ -326,6 +331,10 @@ type PeriodoCalendario = ReturnType<typeof obterPeriodoCalendario>;
 
 function dataEstaNoIntervalo(data: string, inicio: string, fimExclusivo: string) {
   return data >= inicio && data < fimExclusivo;
+}
+
+function dataEstaNoIntervaloInclusivo(data: string, inicio: string, fimInclusivo: string) {
+  return data >= inicio && data <= fimInclusivo;
 }
 
 function parseDate(data: string) {

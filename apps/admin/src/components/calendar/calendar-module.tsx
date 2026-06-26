@@ -216,10 +216,10 @@ function montarEventosFullCalendar(dias: DiaCalendario[]): EventoFullCalendarHos
   const eventos = dias.flatMap((dia) => [
     ...dia.reservas
       .filter((reserva) => reserva.status !== "cancelled")
-      .map((reserva) => criarEventoReserva(reserva, dia.data)),
+      .map((reserva) => criarEventoReserva(reserva)),
     ...dia.checkIns.map((reserva) => criarEventoOperacional(reserva, "checkin")),
     ...dia.checkOuts.map((reserva) => criarEventoOperacional(reserva, "checkout")),
-    ...dia.blocos.map((bloco) => criarEventoBloqueio(bloco, dia.data)),
+    ...dia.blocos.map((bloco) => criarEventoBloqueio(bloco)),
     ...dia.manutencoes.map((manutencao) => criarEventoManutencao(manutencao)),
     ...dia.limpezas.map((limpeza) => criarEventoLimpeza(limpeza))
   ]);
@@ -229,7 +229,7 @@ function montarEventosFullCalendar(dias: DiaCalendario[]): EventoFullCalendarHos
   );
 }
 
-function criarEventoReserva(reserva: ReservaCalendario, data: string): EventoFullCalendarHospedex {
+function criarEventoReserva(reserva: ReservaCalendario): EventoFullCalendarHospedex {
   const hospede = reserva.hospedePrincipal?.full_name ?? "Hospede nao informado";
 
   return {
@@ -238,8 +238,8 @@ function criarEventoReserva(reserva: ReservaCalendario, data: string): EventoFul
     detalhe: hospede,
     end: reserva.check_out,
     horario: "Diaria",
-    id: `reserva-${reserva.id}-${data}`,
-    start: data,
+    id: `reserva-${reserva.id}`,
+    start: reserva.check_in,
     tipo: "reserva",
     title: hospede
   };
@@ -263,7 +263,7 @@ function criarEventoOperacional(
   };
 }
 
-function criarEventoBloqueio(bloco: BlocoCalendario, data: string): EventoFullCalendarHospedex {
+function criarEventoBloqueio(bloco: BlocoCalendario): EventoFullCalendarHospedex {
   const configuracao = {
     cleaning: { color: "#22d3ee", tipo: "limpeza" as const, title: "Limpeza" },
     maintenance: { color: "#8b5cf6", tipo: "manutencao" as const, title: "Manutencao" },
@@ -280,10 +280,12 @@ function criarEventoBloqueio(bloco: BlocoCalendario, data: string): EventoFullCa
     allDay: true,
     color: visual.color,
     detalhe: bloco.reason ?? "Bloqueio manual",
-    end: bloco.ends_on,
+    // FullCalendar trata o fim de eventos dia-todo como exclusivo. Como o
+    // bloqueio operacional e inclusivo no negocio, somamos um dia apenas na UI.
+    end: formatDate(addDays(parseDate(bloco.ends_on), 1)),
     horario: "Dia todo",
-    id: `bloqueio-${bloco.id}-${data}`,
-    start: data,
+    id: `bloqueio-${bloco.id}`,
+    start: bloco.starts_on,
     tipo: visual.tipo,
     title: visual.title
   };
