@@ -2,10 +2,12 @@ import {
   Bath,
   BedDouble,
   Car,
+  Clock,
   ExternalLink,
   Home,
   Info,
   MapPin,
+  ShieldCheck,
   Star,
   Users,
   WalletCards
@@ -31,7 +33,8 @@ import {
 import { ShareButton } from "../../../components/properties/share-button";
 import {
   carregarPropriedadePublica,
-  type EnderecoPublico
+  type EnderecoPublico,
+  type PropriedadePublica
 } from "../../../lib/marketplace/data";
 
 type Params = Promise<{ id: string }>;
@@ -59,7 +62,7 @@ export default async function PropriedadePage({
           <GlassCard className="max-w-lg p-6 text-center">
             <Info className="mx-auto h-8 w-8 text-primary" />
             <h1 className="mt-5 text-2xl font-semibold">
-              Não foi possível carregar esta casa
+              Nao foi possivel carregar esta casa
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               {resultado.erro}
@@ -75,107 +78,93 @@ export default async function PropriedadePage({
 
   return (
     <PublicShell>
-      <section className="premium-grid-bg border-b bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.22),transparent_34%),linear-gradient(135deg,var(--background),var(--secondary))]">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:py-10">
-          <FadeIn>
-            <PropertyGallery property={propriedade} />
-          </FadeIn>
-
-          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
-            <FadeIn className="max-w-4xl">
-              <div className="flex flex-wrap gap-2">
-                <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
-                <StatusBadge tone="success">Casa publicada</StatusBadge>
-                {propriedade.reviews.total ? (
-                  <StatusBadge tone="warning">
-                    {propriedade.reviews.average?.toFixed(1)} estrelas
-                  </StatusBadge>
-                ) : null}
-              </div>
-              <h1 className="mt-4 text-4xl font-semibold tracking-normal sm:text-5xl">
-                {propriedade.name}
-              </h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground sm:text-lg">
-                {propriedade.headline}
-              </p>
-              <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  {propriedade.locationLabel}
-                </span>
-                {propriedade.reviews.total ? (
-                  <span className="inline-flex items-center gap-2">
-                    <Star className="h-4 w-4 fill-primary text-primary" />
-                    {propriedade.reviews.total} avaliações
-                  </span>
-                ) : null}
-              </div>
-            </FadeIn>
-            <FadeIn>
-              <ShareButton />
-            </FadeIn>
-          </div>
-
-          <FadeIn>
-            <GlassPanel className="p-4 sm:p-5">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                <ResumoItem
-                  icon={Users}
-                  label="Hóspedes"
-                  value={`${propriedade.maxGuests} máx.`}
-                />
-                <ResumoItem
-                  icon={Home}
-                  label="Quartos"
-                  value={formatarQuantidade(propriedade.structure.bedrooms)}
-                />
-                <ResumoItem
-                  icon={BedDouble}
-                  label="Camas"
-                  value={formatarQuantidade(propriedade.structure.beds)}
-                />
-                <ResumoItem
-                  icon={Bath}
-                  label="Banheiros"
-                  value={formatarQuantidade(propriedade.structure.bathrooms)}
-                />
-                <ResumoItem
-                  icon={Car}
-                  label="Garagem"
-                  value={formatarVagas(propriedade.structure.garageSpaces)}
-                />
-                <ResumoItem
-                  icon={WalletCards}
-                  label="Diária"
-                  value={formatarPreco(propriedade.minPrice)}
-                />
-              </div>
-            </GlassPanel>
-          </FadeIn>
-        </div>
-      </section>
+      <PropertyHero propriedade={propriedade} />
 
       <section className="bg-background">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_380px] lg:py-14">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_390px] lg:py-14">
           <div className="grid gap-8">
+            <FadeIn>
+              <GlassPanel className="p-4 sm:p-5">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                  <ResumoItem
+                    icon={Users}
+                    label="Hospedes"
+                    value={`${propriedade.maxGuests} max.`}
+                  />
+                  <ResumoItem
+                    icon={Home}
+                    label="Quartos"
+                    value={formatarQuantidade(propriedade.structure.bedrooms)}
+                  />
+                  <ResumoItem
+                    icon={BedDouble}
+                    label="Camas"
+                    value={formatarQuantidade(propriedade.structure.beds)}
+                  />
+                  <ResumoItem
+                    icon={Bath}
+                    label="Banheiros"
+                    value={formatarQuantidade(propriedade.structure.bathrooms)}
+                  />
+                  <ResumoItem
+                    icon={Car}
+                    label="Garagem"
+                    value={formatarVagas(propriedade.structure.garageSpaces)}
+                  />
+                  <ResumoItem
+                    icon={WalletCards}
+                    label="Diaria"
+                    value={formatarPreco(propriedade.minPrice)}
+                  />
+                </div>
+              </GlassPanel>
+            </FadeIn>
+
             <Secao title="Sobre a casa">
               <p className="text-sm leading-7 text-muted-foreground sm:text-base">
                 {propriedade.description}
               </p>
             </Secao>
 
-            <Secao title="Calendário de disponibilidade">
+            <Secao title="Galeria">
+              <PropertyGallery property={propriedade} />
+            </Secao>
+
+            <Secao title="Estrutura da hospedagem">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <ResumoItem
+                  icon={Users}
+                  label="Capacidade"
+                  value={`${propriedade.maxGuests} hospedes`}
+                />
+                <ResumoItem
+                  icon={Home}
+                  label="Tipo"
+                  value={propriedade.propertyTypeLabel}
+                />
+                <ResumoItem
+                  icon={Clock}
+                  label="Check-in"
+                  value={propriedade.checkIn}
+                />
+                <ResumoItem
+                  icon={Clock}
+                  label="Check-out"
+                  value={propriedade.checkOut}
+                />
+              </div>
+            </Secao>
+
+            <Secao title="Calendario de disponibilidade">
               <PropertyAvailabilityCalendar
                 availability={propriedade.availability}
                 error={propriedade.availabilityError}
               />
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                O calendário mostra apenas o status público de cada data. Detalhes
-                operacionais, motivos e observações internas não são exibidos ao hóspede.
+                O calendario mostra apenas o status publico de cada data. Motivos
+                internos, observacoes e dados administrativos nao sao exibidos ao hospede.
               </p>
             </Secao>
-
-            <PropertyReviewsSection reviews={propriedade.reviews} />
 
             <Secao title="Comodidades">
               <PropertyAmenitiesSection amenities={propriedade.amenities} />
@@ -183,32 +172,13 @@ export default async function PropriedadePage({
 
             <PropertyRulesSection rules={propriedade.houseRules} />
 
+            <PropertyLocationSection propriedade={propriedade} />
+
             <PropertyRegionalGuideSection locations={propriedade.regionalGuide} />
 
-            <Secao title="Localização">
-              <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-semibold">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    {propriedade.locationLabel}
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    {formatarEnderecoResumido(propriedade.address)}
-                  </p>
-                </div>
-                {propriedade.address.googleMapsLink ? (
-                  <a
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
-                    href={propriedade.address.googleMapsLink}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Abrir no Google Maps
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                ) : null}
-              </div>
-            </Secao>
+            <PropertyReviewsSection reviews={propriedade.reviews} />
+
+            <PropertyOwnerTrustSection property={propriedade} />
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
@@ -217,6 +187,165 @@ export default async function PropriedadePage({
         </div>
       </section>
     </PublicShell>
+  );
+}
+
+function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
+  const imagem = propriedade.coverImage;
+
+  return (
+    <section className="relative isolate overflow-hidden border-b">
+      {imagem ? (
+        <img
+          alt={imagem.alt}
+          className="absolute inset-0 -z-20 h-full w-full object-cover"
+          fetchPriority="high"
+          src={imagem.url}
+        />
+      ) : null}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.34),transparent_32%),linear-gradient(180deg,rgba(2,6,23,0.48),rgba(2,6,23,0.86))]" />
+      {!imagem ? (
+        <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
+      ) : null}
+
+      <div className="mx-auto flex min-h-[520px] max-w-7xl flex-col justify-end gap-8 px-4 pb-10 pt-28 text-white sm:px-6 lg:min-h-[620px] lg:pb-14">
+        <FadeIn className="max-w-4xl">
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge tone="success">Casa publicada</StatusBadge>
+            <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
+            <StatusBadge tone="neutral">{propriedade.maxGuests} hospedes</StatusBadge>
+            <StatusBadge tone="warning">{formatarPreco(propriedade.minPrice)}</StatusBadge>
+          </div>
+          <h1 className="mt-5 text-4xl font-semibold tracking-normal sm:text-6xl">
+            {propriedade.name}
+          </h1>
+          <p className="mt-4 max-w-3xl text-base leading-7 text-white/82 sm:text-lg">
+            {propriedade.headline}
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/78">
+            <span className="inline-flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-cyan-300" />
+              {propriedade.locationLabel}
+            </span>
+            {propriedade.reviews.total ? (
+              <span className="inline-flex items-center gap-2">
+                <Star className="h-4 w-4 fill-cyan-300 text-cyan-300" />
+                {propriedade.reviews.average?.toFixed(1)} em{" "}
+                {propriedade.reviews.total} avaliacoes
+              </span>
+            ) : null}
+          </div>
+        </FadeIn>
+        <FadeIn>
+          <div className="inline-flex rounded-xl border border-white/15 bg-black/22 p-2 backdrop-blur-xl">
+            <ShareButton />
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+function PropertyLocationSection({
+  propriedade
+}: {
+  propriedade: PropriedadePublica;
+}) {
+  const endereco = formatarEnderecoResumido(propriedade.address);
+  const urlMapa = obterUrlMapaEmbed(propriedade.address, endereco);
+
+  return (
+    <Secao title="Localizacao">
+      <div className="grid gap-5">
+        <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              <MapPin className="h-4 w-4 text-primary" />
+              {propriedade.locationLabel}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">{endereco}</p>
+          </div>
+          {propriedade.address.googleMapsLink ? (
+            <a
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+              href={propriedade.address.googleMapsLink}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Abrir no Google Maps
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          ) : null}
+        </div>
+
+        {urlMapa ? (
+          <div className="overflow-hidden rounded-lg border bg-secondary">
+            <iframe
+              className="h-72 w-full"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={urlMapa}
+              title={`Mapa de ${propriedade.name}`}
+            />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed bg-background/60 p-5 text-sm text-muted-foreground">
+            Mapa ainda nao informado pelo proprietario.
+          </div>
+        )}
+      </div>
+    </Secao>
+  );
+}
+
+function PropertyOwnerTrustSection({ property }: { property: PropriedadePublica }) {
+  const perfil = property.requestProfile;
+  const iniciais = obterIniciais(perfil.ownerName || perfil.businessName);
+  const local = [perfil.city, perfil.state].filter(Boolean).join(", ");
+
+  return (
+    <Secao title="Informacoes do proprietario">
+      <div className="grid gap-5 md:grid-cols-[auto_1fr] md:items-center">
+        {perfil.avatarUrl ? (
+          <img
+            alt={`Foto de ${perfil.ownerName}`}
+            className="h-20 w-20 rounded-2xl object-cover"
+            src={perfil.avatarUrl}
+          />
+        ) : (
+          <span className="grid h-20 w-20 place-items-center rounded-2xl bg-primary/10 text-xl font-semibold text-primary">
+            {iniciais}
+          </span>
+        )}
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-semibold">{perfil.ownerName}</h3>
+            {perfil.isVerified ? (
+              <StatusBadge tone="success">Proprietario verificado</StatusBadge>
+            ) : null}
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">{perfil.businessName}</p>
+          {local ? <p className="mt-1 text-sm text-muted-foreground">{local}</p> : null}
+          {perfil.phone || perfil.whatsapp ? (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Contato publico: {perfil.whatsapp ?? perfil.phone}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="mt-6 grid gap-3 md:grid-cols-3">
+        {[
+          "Comunique-se pelos contatos oficiais informados nesta pagina.",
+          "Confira os dados da reserva antes de realizar qualquer pagamento.",
+          "Nunca envie dados sensiveis de cartao fora de ambiente seguro."
+        ].map((texto) => (
+          <div className="rounded-lg border bg-background/70 p-4 text-sm text-muted-foreground" key={texto}>
+            <ShieldCheck className="mb-3 h-4 w-4 text-primary" />
+            {texto}
+          </div>
+        ))}
+      </div>
+    </Secao>
   );
 }
 
@@ -301,5 +430,19 @@ function formatarEnderecoResumido(endereco: EnderecoPublico) {
     .filter(Boolean)
     .join(", ");
 
-  return linha || "Endereço completo compartilhado após a solicitação.";
+  return linha || "Endereco completo compartilhado apos a solicitacao.";
+}
+
+function obterUrlMapaEmbed(endereco: EnderecoPublico, enderecoFormatado: string) {
+  if (!endereco.googleMapsLink) return null;
+  if (endereco.googleMapsLink.includes("/maps/embed")) {
+    return endereco.googleMapsLink;
+  }
+
+  return `https://www.google.com/maps?q=${encodeURIComponent(enderecoFormatado)}&output=embed`;
+}
+
+function obterIniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/).slice(0, 2);
+  return partes.map((parte) => parte[0]?.toUpperCase()).join("") || "HX";
 }

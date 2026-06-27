@@ -10,6 +10,7 @@ import type {
   PropertyType,
   RegionalGuideCategory,
   RegionalGuideLocationRow,
+  ReservationPaymentMethod,
 } from "@hospedex/types";
 
 type PropriedadeRowPublica = Pick<
@@ -145,8 +146,18 @@ export type EstruturaCasaPublica = {
 };
 
 export type ValoresCasaPublica = {
+  aceitaCartaoCredito: boolean;
+  caucao: number;
+  cobraHospedeExtra: boolean;
   cleaningFee: number;
   dailyRate: number;
+  hospedesInclusos: number;
+  jurosParcelasCartao: Array<{
+    jurosPercentual: number;
+    parcela: number;
+  }>;
+  maxParcelasCartao: number;
+  valorHospedeExtra: number;
 };
 
 export type StatusDisponibilidadePublica =
@@ -222,6 +233,24 @@ export type ResumoAvaliacoesPublicas = {
   comments: AvaliacaoPublica[];
 };
 
+export type MetodoPagamentoPublico = {
+  label: string;
+  method: ReservationPaymentMethod;
+};
+
+export type PerfilSolicitacaoPublica = {
+  avatarUrl: string | null;
+  businessName: string;
+  city: string | null;
+  isVerified: boolean;
+  ownerName: string;
+  paymentMethods: MetodoPagamentoPublico[];
+  phone: string | null;
+  shortDescription: string | null;
+  state: string | null;
+  whatsapp: string | null;
+};
+
 export type PropriedadePublica = {
   id: string;
   tenantId: string;
@@ -250,6 +279,7 @@ export type PropriedadePublica = {
   checkOut: string;
   houseRules: RegrasCasaPublicas;
   regionalGuide: LocalGuiaRegiaoPublico[];
+  requestProfile: PerfilSolicitacaoPublica;
   reviews: ResumoAvaliacoesPublicas;
 };
 
@@ -309,6 +339,24 @@ type DisponibilidadeRowPublica = {
   property_id: string;
   starts_on: string;
   status: StatusDisponibilidadePublica;
+};
+
+type PerfilSolicitacaoRowPublica = {
+  business_name: string | null;
+  city: string | null;
+  is_verified: boolean | null;
+  owner_avatar_url: string | null;
+  owner_name: string | null;
+  payment_bank_transfer: boolean | null;
+  payment_cash: boolean | null;
+  payment_credit_card: boolean | null;
+  payment_debit_card: boolean | null;
+  payment_pix: boolean | null;
+  property_id: string;
+  public_phone: string | null;
+  public_whatsapp: string | null;
+  short_description: string | null;
+  state: string | null;
 };
 
 type ResultadoDisponibilidadePublica = {
@@ -639,7 +687,8 @@ async function montarPropriedadesPublicas(
       guiaRegiao: detalhes.guiaRegiao,
       avaliacoes: detalhes.avaliacoes,
       disponibilidade: detalhes.disponibilidade,
-      disponibilidadeErro: detalhes.disponibilidadeErro
+      disponibilidadeErro: detalhes.disponibilidadeErro,
+      perfisSolicitacao: detalhes.perfisSolicitacao
     })
   );
 }
@@ -650,6 +699,7 @@ type DetalhesPublicosPropriedade = {
   avaliacoes: AvaliacaoRowPublica[];
   disponibilidade: DisponibilidadeRowPublica[];
   disponibilidadeErro: string | null;
+  perfisSolicitacao: PerfilSolicitacaoRowPublica[];
 };
 
 function criarDetalhesPublicosVazios(): DetalhesPublicosPropriedade {
@@ -658,7 +708,8 @@ function criarDetalhesPublicosVazios(): DetalhesPublicosPropriedade {
     guiaRegiao: [],
     avaliacoes: [],
     disponibilidade: [],
-    disponibilidadeErro: null
+    disponibilidadeErro: null,
+    perfisSolicitacao: []
   };
 }
 
@@ -673,48 +724,64 @@ async function carregarDetalhesPublicosPropriedade(
   const fimDisponibilidade = formatarDataIso(
     new Date(new Date().setFullYear(new Date().getFullYear() + 1))
   );
-  const [regrasResultado, guiaResultado, avaliacoesResultado, disponibilidadeResultado] =
+  const [
+    regrasResultado,
+    guiaResultado,
+    avaliacoesResultado,
+    disponibilidadeResultado,
+    perfisSolicitacaoResultado
+  ] =
     await Promise.all([
-    supabase
-      .from("property_settings")
-      .select(CAMPOS_REGRAS_CASA)
-      .in("property_id", propriedadeIds)
-      .returns<RegrasCasaRowPublica[]>(),
-    supabase
-      .from("regional_guide_locations")
-      .select(CAMPOS_GUIA_REGIAO)
-      .in("tenant_id", tenantIds)
-      .eq("status", "active")
-      .is("deleted_at", null)
-      .order("display_order", { ascending: true })
-      .order("name", { ascending: true })
-      .returns<GuiaRegiaoRowPublica[]>(),
-    supabase
-      .from("property_reviews")
-      .select(CAMPOS_AVALIACAO_PUBLICA)
-      .in("property_id", propriedadeIds)
-      .eq("status", "approved")
-      .order("reviewed_at", { ascending: false })
-      .limit(80)
-      .returns<AvaliacaoRowPublica[]>(),
-    carregarDisponibilidadePublica(
-      supabase,
-      propriedadeIds,
-      inicioDisponibilidade,
-      fimDisponibilidade
-    )
+      supabase
+        .from("property_settings")
+        .select(CAMPOS_REGRAS_CASA)
+        .in("property_id", propriedadeIds)
+        .returns<RegrasCasaRowPublica[]>(),
+      supabase
+        .from("regional_guide_locations")
+        .select(CAMPOS_GUIA_REGIAO)
+        .in("tenant_id", tenantIds)
+        .eq("status", "active")
+        .is("deleted_at", null)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true })
+        .returns<GuiaRegiaoRowPublica[]>(),
+      supabase
+        .from("property_reviews")
+        .select(CAMPOS_AVALIACAO_PUBLICA)
+        .in("property_id", propriedadeIds)
+        .eq("status", "approved")
+        .order("reviewed_at", { ascending: false })
+        .limit(80)
+        .returns<AvaliacaoRowPublica[]>(),
+      carregarDisponibilidadePublica(
+        supabase,
+        propriedadeIds,
+        inicioDisponibilidade,
+        fimDisponibilidade
+      ),
+      supabase
+        .rpc("get_public_property_request_profiles", {
+          p_property_ids: propriedadeIds
+        })
+        .returns<PerfilSolicitacaoRowPublica[]>()
     ]);
 
   registrarErroLeitura("regras publicas da propriedade", regrasResultado.error);
   registrarErroLeitura("guia publico da regiao", guiaResultado.error);
   registrarErroLeitura("avaliacoes publicas", avaliacoesResultado.error);
+  registrarErroLeitura("perfil publico de solicitacao", perfisSolicitacaoResultado.error);
+  const perfisSolicitacao = Array.isArray(perfisSolicitacaoResultado.data)
+    ? (perfisSolicitacaoResultado.data as PerfilSolicitacaoRowPublica[])
+    : [];
 
   return {
     regras: regrasResultado.data ?? [],
     guiaRegiao: guiaResultado.data ?? [],
     avaliacoes: avaliacoesResultado.data ?? [],
     disponibilidade: disponibilidadeResultado.periodos,
-    disponibilidadeErro: disponibilidadeResultado.erro
+    disponibilidadeErro: disponibilidadeResultado.erro,
+    perfisSolicitacao
   };
 }
 
@@ -748,6 +815,7 @@ function montarPropriedadePublica(
     avaliacoes: AvaliacaoRowPublica[];
     disponibilidade: DisponibilidadeRowPublica[];
     disponibilidadeErro: string | null;
+    perfisSolicitacao: PerfilSolicitacaoRowPublica[];
   }
 ): PropriedadePublica {
   const endereco = normalizarEndereco(propriedade.address);
@@ -818,6 +886,11 @@ function montarPropriedadePublica(
     regionalGuide: montarGuiaRegiaoPublico(
       propriedade.tenant_id,
       relacionamentos.guiaRegiao
+    ),
+    requestProfile: montarPerfilSolicitacaoPublica(
+      propriedade.id,
+      propriedade.name,
+      relacionamentos.perfisSolicitacao
     ),
     reviews: montarAvaliacoesPublicas(propriedade.id, relacionamentos.avaliacoes)
   };
@@ -973,6 +1046,45 @@ function montarAvaliacoesPublicas(
   };
 }
 
+function montarPerfilSolicitacaoPublica(
+  propriedadeId: string,
+  nomePropriedade: string,
+  perfis: PerfilSolicitacaoRowPublica[]
+): PerfilSolicitacaoPublica {
+  const perfil = perfis.find((item) => item.property_id === propriedadeId);
+
+  return {
+    avatarUrl: perfil?.owner_avatar_url ?? null,
+    businessName: perfil?.business_name ?? nomePropriedade,
+    city: perfil?.city ?? null,
+    isVerified: Boolean(perfil?.is_verified),
+    ownerName: perfil?.owner_name ?? "Proprietario Hospedex",
+    paymentMethods: montarMetodosPagamentoPublicos(perfil),
+    phone: perfil?.public_phone ?? null,
+    shortDescription: perfil?.short_description ?? null,
+    state: perfil?.state ?? null,
+    whatsapp: perfil?.public_whatsapp ?? null
+  };
+}
+
+function montarMetodosPagamentoPublicos(
+  perfil: PerfilSolicitacaoRowPublica | undefined
+): MetodoPagamentoPublico[] {
+  if (!perfil) return [];
+
+  const metodos: Array<[boolean | null, ReservationPaymentMethod, string]> = [
+    [perfil.payment_pix, "pix", "Pix"],
+    [perfil.payment_cash, "cash", "Dinheiro"],
+    [perfil.payment_debit_card, "debit_card", "Cartao de debito"],
+    [perfil.payment_credit_card, "credit_card", "Cartao de credito"],
+    [perfil.payment_bank_transfer, "bank_transfer", "Transferencia bancaria"]
+  ];
+
+  return metodos
+    .filter(([habilitado]) => Boolean(habilitado))
+    .map(([, method, label]) => ({ label, method }));
+}
+
 function montarImagemPublica(
   supabase: SupabaseClient,
   midia: MidiaRowPublica
@@ -1051,9 +1163,33 @@ function normalizarValoresCasa(valor: JsonValue): ValoresCasaPublica {
   const valores = valorEhObjeto(valor) ? valor : {};
 
   return {
+    aceitaCartaoCredito: obterBooleanoJson(valores, "aceitaCartaoCredito"),
+    caucao: obterNumeroJson(valores, "caucao"),
+    cobraHospedeExtra: obterBooleanoJson(valores, "cobraHospedeExtra"),
     cleaningFee: obterNumeroJson(valores, "taxaLimpeza"),
-    dailyRate: obterNumeroJson(valores, "valorDiaria")
+    dailyRate: obterNumeroJson(valores, "valorDiaria"),
+    hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
+    jurosParcelasCartao: normalizarJurosParcelasCartao(valores.jurosParcelasCartao ?? null),
+    maxParcelasCartao: obterNumeroJson(valores, "maxParcelasCartao", 1),
+    valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra")
   };
+}
+
+function normalizarJurosParcelasCartao(valor: JsonValue) {
+  if (!Array.isArray(valor)) return [];
+
+  return valor
+    .map((item) => {
+      if (!valorEhObjeto(item)) return null;
+
+      return {
+        jurosPercentual: obterNumeroJson(item, "jurosPercentual"),
+        parcela: obterNumeroJson(item, "parcela")
+      };
+    })
+    .filter((item): item is { jurosPercentual: number; parcela: number } =>
+      Boolean(item && item.parcela > 0)
+    );
 }
 
 function montarDisponibilidadePublica(
@@ -1087,6 +1223,10 @@ function obterNumeroJson(
 ) {
   const dado = valor[chave];
   return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
+}
+
+function obterBooleanoJson(valor: Record<string, JsonValue>, chave: string) {
+  return valor[chave] === true;
 }
 
 function normalizarTextoOpcional(valor: string | null | undefined) {

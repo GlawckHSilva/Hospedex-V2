@@ -35,7 +35,8 @@ export type ReservationPaymentMethod =
   | "pix"
   | "cash"
   | "debit_card"
-  | "credit_card";
+  | "credit_card"
+  | "bank_transfer";
 export type ReviewStatus = "pending" | "approved" | "hidden";
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
@@ -232,6 +233,7 @@ export type TenantSettingRow = {
   debit_card_payment_instructions: string | null;
   credit_card_payment_instructions: string | null;
   credit_card_installments_note: string | null;
+  bank_transfer_payment_instructions: string | null;
   email: string | null;
   city: string | null;
   state: string | null;

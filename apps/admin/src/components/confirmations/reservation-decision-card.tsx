@@ -55,6 +55,7 @@ const LABEL_STATUS_FINANCEIRO = {
 } as const;
 
 const LABEL_FORMA_PAGAMENTO = {
+  bank_transfer: "Transferencia bancaria",
   cash: "Dinheiro",
   credit_card: "Cartao de credito",
   debit_card: "Cartao de debito",

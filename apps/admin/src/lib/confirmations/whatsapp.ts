@@ -33,6 +33,7 @@ type BaseMensagem = {
 };
 
 const LABEL_FORMA_PAGAMENTO: Record<ReservationPaymentMethod, string> = {
+  bank_transfer: "Transferencia bancaria",
   cash: "Dinheiro",
   credit_card: "Cartao de credito",
   debit_card: "Cartao de debito",
@@ -230,6 +231,11 @@ function montarInstrucoesPagamento(
   if (formaPagamento === "debit_card") {
     return configuracoes?.debit_card_payment_instructions ??
       "Pagamento via debito conforme disponibilidade do proprietario.";
+  }
+
+  if (formaPagamento === "bank_transfer") {
+    return configuracoes?.bank_transfer_payment_instructions ??
+      "Transferencia bancaria conforme instrucoes do proprietario.";
   }
 
   return [

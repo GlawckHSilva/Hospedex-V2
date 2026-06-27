@@ -1,3 +1,5 @@
+"use client";
+
 import {
   CalendarClock,
   Cigarette,
@@ -15,8 +17,10 @@ import {
   Users,
   XCircle
 } from "lucide-react";
+import { useState } from "react";
 
 import {
+  Button,
   FadeIn,
   GlassCard,
   PremiumEmptyState,
@@ -39,6 +43,9 @@ type PropertyReviewsSectionProps = {
 };
 
 export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps) {
+  const [expandido, setExpandido] = useState(false);
+  const comentariosVisiveis = expandido ? reviews.comments : reviews.comments.slice(0, 3);
+
   return (
     <FadeIn>
       <GlassCard className="p-6">
@@ -84,7 +91,7 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
             </div>
 
             <div className="grid gap-4">
-              {reviews.comments.map((review) => (
+              {comentariosVisiveis.map((review) => (
                 <article className="rounded-lg border bg-background/70 p-4" key={review.id}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -112,14 +119,24 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
                   ) : null}
                 </article>
               ))}
+              {reviews.comments.length > 3 ? (
+                <Button
+                  className="w-fit"
+                  onClick={() => setExpandido((valor) => !valor)}
+                  type="button"
+                  variant="outline"
+                >
+                  {expandido ? "Ver menos avaliacoes" : "Ver mais avaliacoes"}
+                </Button>
+              ) : null}
             </div>
           </div>
         ) : (
           <PremiumEmptyState
             className="mt-6 border border-dashed bg-background/60"
-            description="Esta casa ainda não possui avaliações públicas aprovadas."
+            description="Esta casa ainda não possui avaliações."
             icon={<Star className="h-5 w-5" />}
-            title="Sem avaliações públicas"
+            title="Sem avaliações"
           />
         )}
       </GlassCard>
@@ -262,7 +279,9 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
 export function PropertyRegionalGuideSection({
   locations
 }: PropertyRegionalGuideSectionProps) {
-  const grupos = agruparLocaisPorCategoria(locations);
+  const [expandido, setExpandido] = useState(false);
+  const locaisVisiveis = expandido ? locations : locations.slice(0, 4);
+  const grupos = agruparLocaisPorCategoria(locaisVisiveis);
 
   return (
     <FadeIn>
@@ -348,13 +367,23 @@ export function PropertyRegionalGuideSection({
                 </div>
               </div>
             ))}
+            {locations.length > 4 ? (
+              <Button
+                className="w-fit"
+                onClick={() => setExpandido((valor) => !valor)}
+                type="button"
+                variant="outline"
+              >
+                {expandido ? "Ver menos locais" : "Ver mais locais"}
+              </Button>
+            ) : null}
           </div>
         ) : (
           <PremiumEmptyState
             className="mt-6 border border-dashed bg-background/60"
-            description="O proprietário ainda não publicou recomendações locais para esta casa."
+            description="Nenhuma recomendação cadastrada para esta região."
             icon={<MapPin className="h-5 w-5" />}
-            title="Guia da região em breve"
+            title="Sem locais cadastrados"
           />
         )}
       </GlassCard>

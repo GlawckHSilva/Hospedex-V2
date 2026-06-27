@@ -11,7 +11,13 @@ type ResultadoRpcReserva = {
   status?: string;
 };
 
-const FORMAS_PAGAMENTO = new Set(["pix", "cash", "debit_card", "credit_card"]);
+const FORMAS_PAGAMENTO = new Set([
+  "pix",
+  "cash",
+  "debit_card",
+  "credit_card",
+  "bank_transfer"
+]);
 
 export async function solicitarReservaPublicaAction(formData: FormData) {
   const slug = textoObrigatorio(formData, "propertySlug", "propriedade");
@@ -59,7 +65,13 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
       p_property_slug: slug
     });
 
-    if (error) throw new ErroRpcReserva(error.message);
+    if (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Erro tecnico ao solicitar reserva publica.", error);
+      }
+
+      throw new ErroRpcReserva(error.message);
+    }
 
     const resultado = data as ResultadoRpcReserva | null;
     codigoReserva = resultado?.code ?? "";
@@ -115,6 +127,10 @@ function obterMensagemPublica(erro: unknown) {
     [
       "a casa esta bloqueada neste periodo",
       "A casa está indisponível neste período.",
+    ],
+    [
+      "informe uma forma de pagamento valida",
+      "Escolha uma forma de pagamento.",
     ],
   ];
 

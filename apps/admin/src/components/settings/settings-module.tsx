@@ -355,6 +355,12 @@ export function SettingsModule({
                   name="debitCardPaymentInstructions"
                 />
                 <CampoTextoArea
+                  defaultValue={configuracoes.bank_transfer_payment_instructions ?? ""}
+                  disabled={!podeGerenciarConfiguracoes}
+                  label="Instrucao para transferencia bancaria"
+                  name="bankTransferPaymentInstructions"
+                />
+                <CampoTextoArea
                   defaultValue={configuracoes.credit_card_payment_instructions ?? ""}
                   disabled={!podeGerenciarConfiguracoes}
                   label="Instrucao para cartao de credito"

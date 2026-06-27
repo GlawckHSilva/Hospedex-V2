@@ -123,6 +123,7 @@ export type ConfiguracoesTenantGerenciamento = Pick<
   | "state"
   | "whatsapp"
   | "cash_payment_instructions"
+  | "bank_transfer_payment_instructions"
   | "credit_card_installments_note"
   | "credit_card_payment_instructions"
   | "debit_card_payment_instructions"

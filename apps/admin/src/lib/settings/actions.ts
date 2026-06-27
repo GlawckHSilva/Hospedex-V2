@@ -130,6 +130,10 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
         debit_card_payment_instructions:
           textoOpcional(formData, "debitCardPaymentInstructions") ??
           "Pagamento via debito conforme disponibilidade do proprietario.",
+        bank_transfer_payment_instructions: textoOpcional(
+          formData,
+          "bankTransferPaymentInstructions"
+        ),
         credit_card_payment_instructions:
           textoOpcional(formData, "creditCardPaymentInstructions") ??
           "Pagamento via credito conforme regras combinadas com o proprietario.",
