@@ -16,6 +16,7 @@ export type TipoConfirmacao =
 export type ReservaConfirmacao = ReservationRow & {
   hospedePrincipal: ReservationGuestRow | null;
   propriedade: PropertyRow | null;
+  timeline: EventoTimelineConfirmacao[];
 };
 
 export type LimpezaConfirmacao = CleaningTaskRow & {
@@ -39,6 +40,7 @@ export type NotificacaoOperacao = {
     | "checkout_hoje"
     | "limpeza_pendente"
     | "nova_reserva"
+    | "pagamento_pendente"
     | "pagamento_recebido"
     | "reserva_cancelada";
 };
@@ -50,6 +52,7 @@ export type DadosConfirmacoes = {
   hoje: string;
   limpezasPendentes: LimpezaConfirmacao[];
   notificacoes: NotificacaoOperacao[];
+  pagamentosRecebidos: ReservaConfirmacao[];
   podeGerenciarLimpeza: boolean;
   podeGerenciarOperacao: boolean;
   podeLer: boolean;
@@ -59,6 +62,7 @@ export type DadosConfirmacoes = {
     checkInsHoje: number;
     checkOutsHoje: number;
     limpezasPendentes: number;
+    pagamentosRecebidos: number;
     pendentes: number;
   };
   tenantNome: string;

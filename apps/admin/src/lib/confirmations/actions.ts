@@ -3,6 +3,7 @@
 import type {
   CleaningTaskRow,
   CleaningTaskStatus,
+  ReservationPaymentStatus,
   ReservationRow,
   ReservationStatus
 } from "@hospedex/types";
@@ -20,6 +21,8 @@ import {
 const CAMINHO_CONFIRMACOES = "/confirmacoes";
 
 class ErroConfirmacao extends Error {}
+
+const STATUS_TERMINAIS: ReservationStatus[] = ["cancelled", "completed"];
 
 type EscopoConfirmacao = {
   contexto: ContextoAutenticacao;
@@ -47,12 +50,68 @@ export async function confirmarCheckOutConfirmacaoAction(formData: FormData) {
 }
 
 export async function confirmarPagamentoConfirmacaoAction(formData: FormData) {
-  await alterarStatusReservaOperacional(formData, {
-    motivoPadrao: "Pagamento confirmado pela operacao diaria.",
-    statusAtualPermitido: "awaiting_payment",
-    statusDestino: "confirmed",
+  await alterarPagamentoReservaOperacional(formData, {
+    motivoPadrao: "Pagamento marcado como recebido pela operacao diaria.",
+    statusDestino: "received",
     sucesso: "pagamento-confirmado"
   });
+}
+
+export async function confirmarReservaConfirmacaoAction(formData: FormData) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
+    const observacao = textoOpcional(formData, "observacao");
+
+    if (STATUS_TERMINAIS.includes(reserva.status)) {
+      throw new ErroConfirmacao("Reserva encerrada nao pode ser confirmada.");
+    }
+
+    if (!["pending", "awaiting_payment"].includes(reserva.status)) {
+      throw new ErroConfirmacao("A reserva ja foi decidida.");
+    }
+
+    await atualizarReserva(
+      supabase,
+      escopo,
+      reserva,
+      "confirmed",
+      observacao ?? "Reserva confirmada pela central de confirmacoes."
+    );
+    revalidarConfirmacoes();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao confirmar reserva.");
+  }
+
+  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=reserva-confirmada`);
+}
+
+export async function marcarPagamentoPendenteConfirmacaoAction(formData: FormData) {
+  await alterarPagamentoReservaOperacional(formData, {
+    motivoPadrao: "Pagamento marcado como pendente pela operacao diaria.",
+    statusDestino: "pending",
+    sucesso: "pagamento-pendente"
+  });
+}
+
+export async function adicionarObservacaoConfirmacaoAction(formData: FormData) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const observacao = textoObrigatorio(formData, "observacao", "observacao");
+
+    await carregarReserva(supabase, escopo, reservaId);
+    await inserirNotaReserva(supabase, escopo, reservaId, observacao, "internal");
+    revalidarConfirmacoes();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao adicionar observacao.");
+  }
+
+  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=observacao-adicionada`);
 }
 
 export async function cancelarReservaConfirmacaoAction(formData: FormData) {
@@ -63,17 +122,69 @@ export async function cancelarReservaConfirmacaoAction(formData: FormData) {
     const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
     const observacao = textoOpcional(formData, "observacao");
 
-    if (["cancelled", "completed"].includes(reserva.status)) {
+    if (STATUS_TERMINAIS.includes(reserva.status)) {
       throw new ErroConfirmacao("Reserva ja encerrada.");
     }
 
     await atualizarReserva(supabase, escopo, reserva, "cancelled", observacao ?? "Reserva cancelada pela operacao diaria.");
+    await atualizarPagamentoReserva(
+      supabase,
+      escopo,
+      reserva,
+      "cancelled",
+      "Pagamento cancelado junto com a reserva."
+    );
     revalidarConfirmacoes();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao cancelar reserva.");
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?sucesso=reserva-cancelada`);
+}
+
+async function alterarPagamentoReservaOperacional(
+  formData: FormData,
+  regra: {
+    motivoPadrao: string;
+    statusDestino: ReservationPaymentStatus;
+    sucesso: string;
+  }
+) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
+    const observacao = textoOpcional(formData, "observacao");
+
+    if (STATUS_TERMINAIS.includes(reserva.status)) {
+      throw new ErroConfirmacao("Reserva encerrada nao permite alterar pagamento.");
+    }
+
+    await atualizarPagamentoReserva(
+      supabase,
+      escopo,
+      reserva,
+      regra.statusDestino,
+      observacao ?? regra.motivoPadrao
+    );
+
+    if (reserva.status === "awaiting_payment" && regra.statusDestino === "received") {
+      await atualizarReserva(
+        supabase,
+        escopo,
+        reserva,
+        "confirmed",
+        "Reserva confirmada apos pagamento recebido."
+      );
+    }
+
+    revalidarConfirmacoes();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao alterar pagamento da reserva.");
+  }
+
+  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=${regra.sucesso}`);
 }
 
 export async function confirmarLimpezaConfirmacaoAction(formData: FormData) {
@@ -253,6 +364,37 @@ async function atualizarReserva(
   await inserirNotaReserva(supabase, escopo, reserva.id, motivo);
 }
 
+async function atualizarPagamentoReserva(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  reserva: ReservationRow,
+  statusDestino: ReservationPaymentStatus,
+  motivo: string
+) {
+  const agora = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("reservations")
+    .update({
+      payment_status: statusDestino,
+      payment_status_updated_at: agora,
+      payment_status_updated_by: escopo.userId
+    } satisfies Partial<ReservationRow>)
+    .eq("id", reserva.id)
+    .eq("tenant_id", escopo.tenantId)
+    .eq("owner_id", escopo.ownerId);
+
+  if (error) throw new Error(error.message);
+
+  await inserirNotaReserva(
+    supabase,
+    escopo,
+    reserva.id,
+    motivo,
+    "system"
+  );
+}
+
 async function atualizarTarefaLimpeza(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
@@ -284,12 +426,13 @@ async function inserirNotaReserva(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
   reservaId: string,
-  conteudo: string
+  conteudo: string,
+  tipo: "internal" | "system" = "system"
 ) {
   const { error } = await supabase.from("reservation_notes").insert({
     content: conteudo,
     created_by: escopo.userId,
-    note_type: "system",
+    note_type: tipo,
     reservation_id: reservaId,
     tenant_id: escopo.tenantId
   });

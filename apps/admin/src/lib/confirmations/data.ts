@@ -99,7 +99,14 @@ export async function carregarDadosConfirmacoes(
   ]);
   const perfis = await carregarPerfis(tenantId, ownerId, historico, notas, tarefasBase);
 
-  const reservas = montarReservas(reservasBase, propriedades, hospedes);
+  const reservas = montarReservas(
+    reservasBase,
+    propriedades,
+    hospedes,
+    historico,
+    notas,
+    perfis
+  );
   const limpezas = montarLimpezas(tarefasBase, propriedades, reservasDasTarefas);
   const checkInsHoje = reservas.filter(
     (reserva) => reserva.check_in === hoje && reserva.status === "confirmed"
@@ -109,7 +116,14 @@ export async function carregarDadosConfirmacoes(
   );
   const pendentes = reservas.filter((reserva) => reserva.status === "pending");
   const aguardandoPagamento = reservas.filter(
-    (reserva) => reserva.status === "awaiting_payment"
+    (reserva) =>
+      !["pending", "cancelled", "completed"].includes(reserva.status) &&
+      reserva.payment_status === "pending"
+  );
+  const pagamentosRecebidos = reservas.filter(
+    (reserva) =>
+      !["cancelled", "completed"].includes(reserva.status) &&
+      reserva.payment_status === "received"
   );
   const notificacoes = montarNotificacoes(
     checkInsHoje,
@@ -127,6 +141,7 @@ export async function carregarDadosConfirmacoes(
     hoje,
     limpezasPendentes: limpezas,
     notificacoes,
+    pagamentosRecebidos,
     podeGerenciarLimpeza: podeGerenciarLimpezaDiaria(contexto),
     podeGerenciarOperacao: podeGerenciarOperacaoDiaria(contexto),
     podeLer: true,
@@ -136,6 +151,7 @@ export async function carregarDadosConfirmacoes(
       checkInsHoje: checkInsHoje.length,
       checkOutsHoje: checkOutsHoje.length,
       limpezasPendentes: limpezas.length,
+      pagamentosRecebidos: pagamentosRecebidos.length,
       pendentes: pendentes.length
     },
     tenantNome: contexto.tenant?.name ?? "Tenant",
@@ -235,14 +251,18 @@ async function carregarPerfis(
 function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
-  hospedes: ReservationGuestRow[]
+  hospedes: ReservationGuestRow[],
+  historico: ReservationStatusHistoryRow[],
+  notas: ReservationNoteRow[],
+  perfis: ProfileRow[]
 ): ReservaConfirmacao[] {
   return reservas.map((reserva) => ({
     ...reserva,
     hospedePrincipal:
       hospedes.find((hospede) => hospede.reservation_id === reserva.id) ?? null,
     propriedade:
-      propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null
+      propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
+    timeline: montarTimelineReserva(reserva.id, historico, notas, perfis)
   }));
 }
 
@@ -294,6 +314,22 @@ function montarTimeline(
   return eventos.sort((a, b) => b.data.localeCompare(a.data)).slice(0, 12);
 }
 
+function montarTimelineReserva(
+  reservaId: string,
+  historico: ReservationStatusHistoryRow[],
+  notas: ReservationNoteRow[],
+  perfis: ProfileRow[]
+): EventoTimelineConfirmacao[] {
+  const eventos = montarTimeline(
+    historico.filter((item) => item.reservation_id === reservaId),
+    notas.filter((nota) => nota.reservation_id === reservaId),
+    [],
+    perfis
+  );
+
+  return eventos;
+}
+
 function montarNotificacoes(
   checkInsHoje: ReservaConfirmacao[],
   checkOutsHoje: ReservaConfirmacao[],
@@ -333,8 +369,15 @@ function montarNotificacoes(
     ...aguardandoPagamento.map((reserva) => ({
       descricao: `Pagamento pendente: ${reserva.code}.`,
       id: `pagamento-${reserva.id}`,
-      tipo: "pagamento_recebido" as const
-    }))
+      tipo: "pagamento_pendente" as const
+    })),
+    ...reservas
+      .filter((reserva) => reserva.payment_status === "received")
+      .map((reserva) => ({
+        descricao: `Pagamento recebido: ${reserva.code}.`,
+        id: `pagamento-recebido-${reserva.id}`,
+        tipo: "pagamento_recebido" as const
+      }))
   ].slice(0, 12);
 }
 
@@ -349,6 +392,7 @@ function criarDadosVazios(
     hoje,
     limpezasPendentes: [],
     notificacoes: [],
+    pagamentosRecebidos: [],
     podeGerenciarLimpeza: false,
     podeGerenciarOperacao: false,
     podeLer: false,
@@ -358,6 +402,7 @@ function criarDadosVazios(
       checkInsHoje: 0,
       checkOutsHoje: 0,
       limpezasPendentes: 0,
+      pagamentosRecebidos: 0,
       pendentes: 0
     },
     tenantNome: contexto.tenant?.name ?? "Tenant",

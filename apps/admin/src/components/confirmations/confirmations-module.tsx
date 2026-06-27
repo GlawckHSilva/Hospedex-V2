@@ -5,7 +5,6 @@ import {
   DoorClosed,
   DoorOpen,
   Sparkles,
-  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -15,11 +14,9 @@ import { Badge, Button, Card, CardContent, FadeIn } from "@hospedex/ui";
 import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ConfirmDialog } from "../management/entity-modal";
 import {
-  cancelarReservaConfirmacaoAction,
   confirmarCheckInConfirmacaoAction,
   confirmarCheckOutConfirmacaoAction,
   confirmarLimpezaConfirmacaoAction,
-  confirmarPagamentoConfirmacaoAction,
 } from "../../lib/confirmations/actions";
 import type {
   DadosConfirmacoes,
@@ -28,6 +25,7 @@ import type {
   SearchParamsConfirmacoes,
 } from "../../lib/confirmations/types";
 import { ModuleToast } from "../admin/module-toast";
+import { ReservationDecisionCard } from "./reservation-decision-card";
 
 type ConfirmationsModuleProps = DadosConfirmacoes & SearchParamsConfirmacoes;
 
@@ -35,8 +33,11 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
   "checkin-confirmado": "Check-in confirmado.",
   "checkout-confirmado": "Check-out confirmado.",
   "limpeza-confirmada": "Limpeza concluida.",
-  "pagamento-confirmado": "Pagamento confirmado.",
+  "observacao-adicionada": "Observacao adicionada.",
+  "pagamento-confirmado": "Pagamento marcado como recebido.",
+  "pagamento-pendente": "Pagamento marcado como pendente.",
   "reserva-cancelada": "Reserva cancelada.",
+  "reserva-confirmada": "Reserva confirmada.",
 };
 
 export function ConfirmationsModule({
@@ -47,6 +48,7 @@ export function ConfirmationsModule({
   hoje,
   limpezasPendentes,
   notificacoes,
+  pagamentosRecebidos,
   podeGerenciarLimpeza,
   podeGerenciarOperacao,
   pendentes,
@@ -60,6 +62,7 @@ export function ConfirmationsModule({
     checkOutsHoje.length +
     pendentes.length +
     aguardandoPagamento.length +
+    pagamentosRecebidos.length +
     limpezasPendentes.length;
 
   return (
@@ -117,7 +120,7 @@ export function ConfirmationsModule({
             />
             <ResumoCard
               icon={Banknote}
-              label="Pagamentos"
+              label="Pag. pendentes"
               tone="roxo"
               valor={resumo.aguardandoPagamento}
             />
@@ -127,54 +130,57 @@ export function ConfirmationsModule({
 
       {totalItens === 0 ? (
         <EmptyState
-          description="Check-ins, check-outs, pagamentos e limpezas pendentes aparecem aqui quando exigirem acao."
+          description="Nenhuma reserva pendente de confirmação."
           icon={<CheckCircle2 className="h-5 w-5" />}
-          title="Nenhuma confirmacao pendente para hoje"
+          title="Nenhuma reserva pendente de confirmação"
         />
       ) : (
         <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
-          <EntityGrid>
-            <GrupoReservas
-              action={confirmarCheckInConfirmacaoAction}
-              cor="verde"
-              cta="Confirmar check-in"
-              icon={<DoorOpen />}
-              podeGerenciar={podeGerenciarOperacao}
-              reservas={checkInsHoje}
-              titulo="Check-ins de hoje"
-            />
-            <GrupoReservas
-              action={confirmarCheckOutConfirmacaoAction}
-              cor="laranja"
-              cta="Confirmar check-out"
-              icon={<DoorClosed />}
-              podeGerenciar={podeGerenciarOperacao}
-              reservas={checkOutsHoje}
-              titulo="Check-outs de hoje"
-            />
-            <GrupoReservas
-              action={confirmarPagamentoConfirmacaoAction}
-              cor="roxo"
-              cta="Confirmar pagamento"
-              icon={<Banknote />}
-              podeGerenciar={podeGerenciarOperacao}
-              reservas={aguardandoPagamento}
-              titulo="Aguardando pagamento"
-            />
-            <GrupoReservas
-              action={cancelarReservaConfirmacaoAction}
-              cor="vermelho"
-              cta="Cancelar reserva"
-              icon={<XCircle />}
+          <div className="space-y-5">
+            <GrupoDecisaoReservas
+              descricao="Solicitações que precisam de aceite ou recusa do proprietário."
               podeGerenciar={podeGerenciarOperacao}
               reservas={pendentes}
-              titulo="Reservas pendentes"
+              titulo="Reservas pendentes de decisão"
             />
-            <GrupoLimpeza
-              limpezas={limpezasPendentes}
-              podeGerenciar={podeGerenciarLimpeza}
+            <GrupoDecisaoReservas
+              descricao="Reservas confirmadas que ainda estão com pagamento pendente."
+              podeGerenciar={podeGerenciarOperacao}
+              reservas={aguardandoPagamento}
+              titulo="Pagamentos pendentes"
             />
-          </EntityGrid>
+            <GrupoDecisaoReservas
+              descricao="Pagamentos recebidos que podem voltar para pendente se houver ajuste operacional."
+              podeGerenciar={podeGerenciarOperacao}
+              reservas={pagamentosRecebidos}
+              titulo="Pagamentos recebidos"
+            />
+
+            <EntityGrid>
+              <GrupoReservas
+                action={confirmarCheckInConfirmacaoAction}
+                cor="verde"
+                cta="Confirmar check-in"
+                icon={<DoorOpen />}
+                podeGerenciar={podeGerenciarOperacao}
+                reservas={checkInsHoje}
+                titulo="Check-ins de hoje"
+              />
+              <GrupoReservas
+                action={confirmarCheckOutConfirmacaoAction}
+                cor="laranja"
+                cta="Confirmar check-out"
+                icon={<DoorClosed />}
+                podeGerenciar={podeGerenciarOperacao}
+                reservas={checkOutsHoje}
+                titulo="Check-outs de hoje"
+              />
+              <GrupoLimpeza
+                limpezas={limpezasPendentes}
+                podeGerenciar={podeGerenciarLimpeza}
+              />
+            </EntityGrid>
+          </div>
 
           <aside className="space-y-4">
             <Card className="admin-glass-card">
@@ -230,6 +236,38 @@ export function ConfirmationsModule({
         </section>
       )}
     </FadeIn>
+  );
+}
+
+function GrupoDecisaoReservas({
+  descricao,
+  podeGerenciar,
+  reservas,
+  titulo,
+}: {
+  descricao: string;
+  podeGerenciar: boolean;
+  reservas: ReservaConfirmacao[];
+  titulo: string;
+}) {
+  if (!reservas.length) return null;
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-base font-semibold">{titulo}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
+      </div>
+      <div className="grid gap-4 2xl:grid-cols-2">
+        {reservas.map((reserva) => (
+          <ReservationDecisionCard
+            key={reserva.id}
+            podeGerenciar={podeGerenciar}
+            reserva={reserva}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 

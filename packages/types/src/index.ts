@@ -7,6 +7,7 @@ export type UserRole = "guest" | "owner" | "staff" | "super_admin";
 export type {
   PropertyStatus,
   PropertyType,
+  ReservationPaymentStatus,
   ReservationStatus,
   TenantStatus
 } from "./database";

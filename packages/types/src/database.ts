@@ -26,6 +26,11 @@ export type ReservationStatus =
   | "checked_out"
   | "completed"
   | "cancelled";
+export type ReservationPaymentStatus =
+  | "pending"
+  | "received"
+  | "refunded"
+  | "cancelled";
 export type ReviewStatus = "pending" | "approved" | "hidden";
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
@@ -416,6 +421,9 @@ export type ReservationRow = {
   guests_count: number;
   total_amount: number;
   currency: string;
+  payment_status: ReservationPaymentStatus;
+  payment_status_updated_at: Timestamp | null;
+  payment_status_updated_by: UUID | null;
   notes: string | null;
   guest_notes: string | null;
   internal_notes: string | null;
