@@ -1408,7 +1408,14 @@ function numeroPercentualOpcional(
 function validarHoraOpcional(formData: FormData, chave: string): string | null {
   const valor = textoOpcional(formData, chave);
   if (!valor) return null;
-  if (/^\d{2}:\d{2}$/.test(valor)) return valor;
+
+  const partes = valor.match(/^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/);
+  if (partes) {
+    // Campos time do navegador e do Postgres podem alternar entre HH:MM e
+    // HH:MM:SS. Normalizamos para HH:MM para evitar falso erro ao editar casa.
+    return `${partes[1]}:${partes[2]}`;
+  }
+
   throw new ErroRegraNegocio("Informe horarios validos.");
 }
 

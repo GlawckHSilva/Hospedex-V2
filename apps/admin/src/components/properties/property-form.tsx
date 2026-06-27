@@ -3,6 +3,7 @@
 import type { AmenityRow, PropertyStatus, PropertyType } from "@hospedex/types";
 import {
   ArrowDown,
+  ArrowLeft,
   ArrowUp,
   BedDouble,
   Banknote,
@@ -873,14 +874,15 @@ export function PropertyForm({
         </div>
       </section>
 
-      <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 z-10 -mx-5 -mb-5 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:px-6">
         <div>
           {etapaAtual > 0 ? (
             <ActionButton
+              icon={<ArrowLeft className="h-4 w-4" />}
               onClick={voltarEtapa}
               size="md"
               type="button"
-              variant="settings"
+              variant="view"
             >
               Voltar
             </ActionButton>
@@ -1341,7 +1343,7 @@ function EtapaValores({
           </p>
         ) : null}
 
-        <div className="grid gap-3 xl:grid-cols-2">
+        <div className="grid gap-3">
           <CartaoFormaPagamento
             ativo={pixAtivo}
             descricao="Chave e instrucoes para pagamento manual por Pix."
@@ -1383,6 +1385,7 @@ function EtapaValores({
               />
             </div>
             <CampoArea
+              className="min-h-16"
               defaultValue={pagamentos?.pix.instrucoes ?? ""}
               disabled={disabled || !pixAtivo}
               label="Instrucao Pix"
@@ -1401,6 +1404,7 @@ function EtapaValores({
             onChange={setDinheiroAtivo}
           >
             <CampoArea
+              className="min-h-16"
               defaultValue={pagamentos?.dinheiro.instrucoes ?? ""}
               disabled={disabled || !dinheiroAtivo}
               label="Instrucao para dinheiro"
@@ -1419,6 +1423,7 @@ function EtapaValores({
             onChange={setCartaoDebitoAtivo}
           >
             <CampoArea
+              className="min-h-16"
               defaultValue={pagamentos?.cartaoDebito.instrucoes ?? ""}
               disabled={disabled || !cartaoDebitoAtivo}
               label="Instrucao para debito"
@@ -1451,6 +1456,7 @@ function EtapaValores({
                 value={maxParcelasCartao}
               />
               <CampoArea
+                className="min-h-16"
                 defaultValue={pagamentos?.cartaoCredito.instrucoes ?? ""}
                 disabled={disabled || !aceitaCartaoCredito}
                 label="Instrucao para credito"
@@ -1590,6 +1596,7 @@ function EtapaValores({
               />
             </div>
             <CampoArea
+              className="min-h-16"
               defaultValue={pagamentos?.transferenciaBancaria.instrucoes ?? ""}
               disabled={disabled || !transferenciaAtiva}
               label="Instrucao para transferencia"
@@ -1661,14 +1668,14 @@ function EtapaRegras({
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
         <CampoTexto
-          defaultValue={regras?.check_in_time ?? ""}
+          defaultValue={normalizarHoraInput(regras?.check_in_time)}
           disabled={disabled}
           label="Horario de check-in"
           name="checkInTime"
           type="time"
         />
         <CampoTexto
-          defaultValue={regras?.check_out_time ?? ""}
+          defaultValue={normalizarHoraInput(regras?.check_out_time)}
           disabled={disabled}
           label="Horario de check-out"
           name="checkOutTime"
@@ -1723,6 +1730,11 @@ function EtapaRegras({
       />
     </div>
   );
+}
+
+function normalizarHoraInput(valor?: string | null) {
+  if (!valor) return "";
+  return valor.slice(0, 5);
 }
 
 function EtapaCompartilhamento({
@@ -2012,6 +2024,7 @@ function CampoMoeda(props: CampoTextoProps) {
 }
 
 function CampoArea({
+  className,
   erro,
   label,
   name,
@@ -2037,6 +2050,7 @@ function CampoArea({
           areaClasse,
           erro &&
             "border-destructive/70 bg-destructive/5 focus-visible:ring-destructive/40",
+          className,
         )}
         id={name}
         name={name}
