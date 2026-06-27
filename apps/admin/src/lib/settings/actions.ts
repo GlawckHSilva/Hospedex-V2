@@ -110,6 +110,43 @@ export async function atualizarPreferenciasOperacionaisAction(formData: FormData
   redirect(`${CAMINHO_CONFIGURACOES}?sucesso=preferencias-atualizadas`);
 }
 
+export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
+  const escopo = await carregarEscopoConfiguracoes();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+
+    const { error } = await supabase.from("tenant_settings").upsert(
+      {
+        tenant_id: escopo.tenantId,
+        owner_id: escopo.ownerId,
+        pix_key: textoOpcional(formData, "pixKey"),
+        pix_receiver_name: textoOpcional(formData, "pixReceiverName"),
+        pix_bank_name: textoOpcional(formData, "pixBankName"),
+        pix_payment_note: textoOpcional(formData, "pixPaymentNote"),
+        cash_payment_instructions:
+          textoOpcional(formData, "cashPaymentInstructions") ??
+          "Pagamento em dinheiro no check-in, conforme combinado com o proprietario.",
+        debit_card_payment_instructions:
+          textoOpcional(formData, "debitCardPaymentInstructions") ??
+          "Pagamento via debito conforme disponibilidade do proprietario.",
+        credit_card_payment_instructions:
+          textoOpcional(formData, "creditCardPaymentInstructions") ??
+          "Pagamento via credito conforme regras combinadas com o proprietario.",
+        credit_card_installments_note: textoOpcional(formData, "creditCardInstallmentsNote")
+      },
+      { onConflict: "tenant_id" }
+    );
+
+    if (error) throw new Error(error.message);
+    revalidarConfiguracoes();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao salvar instrucoes de pagamento.");
+  }
+
+  redirect(`${CAMINHO_CONFIGURACOES}?sucesso=pagamentos-atualizados`);
+}
+
 export async function alternarModuloGerenciamentoAction(formData: FormData) {
   const escopo = await carregarEscopoModulos();
 

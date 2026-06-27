@@ -31,6 +31,11 @@ export type ReservationPaymentStatus =
   | "received"
   | "refunded"
   | "cancelled";
+export type ReservationPaymentMethod =
+  | "pix"
+  | "cash"
+  | "debit_card"
+  | "credit_card";
 export type ReviewStatus = "pending" | "approved" | "hidden";
 export type TransactionType = "income" | "expense" | "transfer";
 export type TransactionStatus = "pending" | "paid" | "cancelled" | "refunded";
@@ -219,6 +224,14 @@ export type TenantSettingRow = {
   primary_color: string;
   phone: string | null;
   whatsapp: string | null;
+  pix_key: string | null;
+  pix_receiver_name: string | null;
+  pix_bank_name: string | null;
+  pix_payment_note: string | null;
+  cash_payment_instructions: string | null;
+  debit_card_payment_instructions: string | null;
+  credit_card_payment_instructions: string | null;
+  credit_card_installments_note: string | null;
   email: string | null;
   city: string | null;
   state: string | null;
@@ -421,6 +434,7 @@ export type ReservationRow = {
   guests_count: number;
   total_amount: number;
   currency: string;
+  payment_method: ReservationPaymentMethod | null;
   payment_status: ReservationPaymentStatus;
   payment_status_updated_at: Timestamp | null;
   payment_status_updated_by: UUID | null;
@@ -532,6 +546,31 @@ export type ReservationNoteRow = {
   content: string;
   created_by: UUID | null;
   created_at: Timestamp;
+};
+
+export type ReservationWhatsappMessageStatus =
+  | "prepared"
+  | "copied"
+  | "opened"
+  | "sent_future";
+
+export type ReservationWhatsappMessageRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  reservation_id: UUID;
+  guest_phone: string | null;
+  message_body: string;
+  whatsapp_url: string | null;
+  status: ReservationWhatsappMessageStatus;
+  requires_manual_review: boolean;
+  review_reason: string | null;
+  prepared_by: UUID | null;
+  prepared_at: Timestamp;
+  copied_at: Timestamp | null;
+  opened_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 };
 
 export type PropertyReviewRow = {

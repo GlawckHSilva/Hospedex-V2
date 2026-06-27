@@ -38,6 +38,8 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
   "pagamento-pendente": "Pagamento marcado como pendente.",
   "reserva-cancelada": "Reserva cancelada.",
   "reserva-confirmada": "Reserva confirmada.",
+  "reserva-confirmada-whatsapp": "Reserva confirmada e mensagem de WhatsApp preparada.",
+  "reserva-confirmada-whatsapp-revisao": "Reserva confirmada. Revise a mensagem de WhatsApp antes de abrir.",
 };
 
 export function ConfirmationsModule({

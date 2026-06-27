@@ -4,6 +4,7 @@ import type {
   PropertyRow,
   ReservationGuestRow,
   ReservationRow,
+  ReservationWhatsappMessageRow,
   TransactionRow
 } from "@hospedex/types";
 
@@ -17,6 +18,7 @@ export type TipoConfirmacao =
 export type ReservaConfirmacao = ReservationRow & {
   hospedePrincipal: ReservationGuestRow | null;
   lancamentoFinanceiro: TransactionRow | null;
+  mensagemWhatsapp: ReservationWhatsappMessageRow | null;
   propriedade: PropertyRow | null;
   timeline: EventoTimelineConfirmacao[];
 };

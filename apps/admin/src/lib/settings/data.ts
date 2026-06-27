@@ -107,6 +107,10 @@ function normalizarConfiguracoes(
     email: configuracoes?.email ?? null,
     logo_url: configuracoes?.logo_url ?? null,
     phone: configuracoes?.phone ?? null,
+    pix_bank_name: configuracoes?.pix_bank_name ?? null,
+    pix_key: configuracoes?.pix_key ?? null,
+    pix_payment_note: configuracoes?.pix_payment_note ?? null,
+    pix_receiver_name: configuracoes?.pix_receiver_name ?? null,
     primary_color: configuracoes?.primary_color ?? "#06b6d4",
     require_checkin_confirmation: configuracoes?.require_checkin_confirmation ?? true,
     require_checkout_confirmation: configuracoes?.require_checkout_confirmation ?? true,
@@ -114,7 +118,11 @@ function normalizarConfiguracoes(
     short_description: configuracoes?.short_description ?? null,
     state: configuracoes?.state ?? null,
     tenantName: tenant.name,
-    whatsapp: configuracoes?.whatsapp ?? null
+    whatsapp: configuracoes?.whatsapp ?? null,
+    cash_payment_instructions: configuracoes?.cash_payment_instructions ?? null,
+    credit_card_installments_note: configuracoes?.credit_card_installments_note ?? null,
+    credit_card_payment_instructions: configuracoes?.credit_card_payment_instructions ?? null,
+    debit_card_payment_instructions: configuracoes?.debit_card_payment_instructions ?? null
   };
 }
 
@@ -174,6 +182,10 @@ function criarDadosVazios(tenantNome: string): DadosConfiguracoesGerenciamento {
       email: null,
       logo_url: null,
       phone: null,
+      pix_bank_name: null,
+      pix_key: null,
+      pix_payment_note: null,
+      pix_receiver_name: null,
       primary_color: "#06b6d4",
       require_checkin_confirmation: true,
       require_checkout_confirmation: true,
@@ -181,7 +193,11 @@ function criarDadosVazios(tenantNome: string): DadosConfiguracoesGerenciamento {
       short_description: null,
       state: null,
       tenantName: tenantNome,
-      whatsapp: null
+      whatsapp: null,
+      cash_payment_instructions: null,
+      credit_card_installments_note: null,
+      credit_card_payment_instructions: null,
+      debit_card_payment_instructions: null
     },
     modulos: [],
     podeGerenciarConfiguracoes: false,

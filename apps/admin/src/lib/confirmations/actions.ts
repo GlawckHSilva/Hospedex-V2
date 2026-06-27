@@ -23,6 +23,12 @@ import {
   marcarRecebimentoReservaPendente,
   registrarRecebimentoReserva
 } from "./finance";
+import {
+  ErroMensagemWhatsapp,
+  prepararMensagemWhatsappReserva,
+  registrarMensagemWhatsappAberta,
+  registrarMensagemWhatsappCopiada
+} from "./whatsapp";
 
 const CAMINHO_CONFIRMACOES = "/confirmacoes";
 
@@ -66,6 +72,7 @@ export async function confirmarPagamentoConfirmacaoAction(formData: FormData) {
 
 export async function confirmarReservaConfirmacaoAction(formData: FormData) {
   const escopo = await carregarEscopoOperacao();
+  let sucesso = "reserva-confirmada";
 
   try {
     const supabase = await criarClienteSupabaseServer();
@@ -87,6 +94,10 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
       "confirmed",
       observacao ?? "Reserva confirmada pela central de confirmacoes."
     );
+    const mensagem = await prepararMensagemWhatsappReserva(supabase, escopo, reserva);
+    sucesso = mensagem.requires_manual_review
+      ? "reserva-confirmada-whatsapp-revisao"
+      : "reserva-confirmada-whatsapp";
     revalidarConfirmacoes();
   } catch (erro) {
     redirecionarComErro(
@@ -96,7 +107,7 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
     );
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=reserva-confirmada`);
+  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=${sucesso}`);
 }
 
 export async function marcarPagamentoPendenteConfirmacaoAction(formData: FormData) {
@@ -123,6 +134,34 @@ export async function adicionarObservacaoConfirmacaoAction(formData: FormData) {
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?sucesso=observacao-adicionada`);
+}
+
+export async function registrarMensagemWhatsappCopiadaAction(mensagemId: string) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    await registrarMensagemWhatsappCopiada(supabase, escopo, mensagemId);
+    revalidarConfirmacoes();
+  } catch (erro) {
+    if (!(erro instanceof ErroMensagemWhatsapp)) {
+      console.error("Erro ao registrar copia da mensagem de WhatsApp.", erro);
+    }
+  }
+}
+
+export async function registrarMensagemWhatsappAbertaAction(mensagemId: string) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    await registrarMensagemWhatsappAberta(supabase, escopo, mensagemId);
+    revalidarConfirmacoes();
+  } catch (erro) {
+    if (!(erro instanceof ErroMensagemWhatsapp)) {
+      console.error("Erro ao registrar abertura do WhatsApp.", erro);
+    }
+  }
 }
 
 export async function cancelarReservaConfirmacaoAction(formData: FormData) {
@@ -537,10 +576,15 @@ function redirecionarComErro(
 ): never {
   const mensagem =
     erro instanceof ErroConfirmacao || erro instanceof ErroIntegracaoFinanceira
+      || erro instanceof ErroMensagemWhatsapp
       ? erro.message
       : mensagemPadrao;
 
-  if (!(erro instanceof ErroConfirmacao) && !(erro instanceof ErroIntegracaoFinanceira)) {
+  if (
+    !(erro instanceof ErroConfirmacao) &&
+    !(erro instanceof ErroIntegracaoFinanceira) &&
+    !(erro instanceof ErroMensagemWhatsapp)
+  ) {
     console.error(mensagemLog, erro);
   }
 

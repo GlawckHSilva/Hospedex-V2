@@ -22,6 +22,7 @@ import {
 } from "../../lib/confirmations/actions";
 import type { ReservaConfirmacao } from "../../lib/confirmations/types";
 import { ConfirmDialog, EntityViewModal } from "../management/entity-modal";
+import { ReservationWhatsappActions } from "./reservation-whatsapp-actions";
 
 type ReservationDecisionCardProps = {
   podeGerenciar: boolean;
@@ -51,6 +52,13 @@ const LABEL_STATUS_FINANCEIRO = {
   paid: "Lançamento pago",
   pending: "Lançamento pendente",
   refunded: "Lançamento estornado",
+} as const;
+
+const LABEL_FORMA_PAGAMENTO = {
+  cash: "Dinheiro",
+  credit_card: "Cartao de credito",
+  debit_card: "Cartao de debito",
+  pix: "Pix",
 } as const;
 
 /**
@@ -128,6 +136,11 @@ export function ReservationDecisionCard({
             label="Financeiro"
             valor={formatarLancamentoFinanceiro(reserva)}
           />
+          <Info
+            icon={<Banknote />}
+            label="Forma escolhida"
+            valor={formatarFormaPagamento(reserva)}
+          />
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2">
@@ -148,6 +161,19 @@ export function ReservationDecisionCard({
             reservaId={reserva.id}
           />
         </div>
+
+        {reserva.mensagemWhatsapp ? (
+          <EntityViewModal
+            description="Copie a mensagem ou abra o WhatsApp com texto preenchido. O sistema nao confirma envio real nesta etapa."
+            title={`WhatsApp da reserva ${reserva.code}`}
+            triggerAction="status"
+            triggerClassName="w-full"
+            triggerIcon={<MessageSquareText />}
+            triggerLabel="Ver mensagem"
+          >
+            <ReservationWhatsappActions reserva={reserva} />
+          </EntityViewModal>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -166,6 +192,7 @@ function DetalhesReserva({ reserva }: { reserva: ReservaConfirmacao }) {
           <Info label="Valor" valor={formatarMoeda(Number(reserva.total_amount))} />
           <Info label="Status" valor={LABEL_STATUS_RESERVA[reserva.status]} />
           <Info label="Pagamento" valor={LABEL_STATUS_PAGAMENTO[reserva.payment_status]} />
+          <Info label="Forma escolhida" valor={formatarFormaPagamento(reserva)} />
           <Info label="Financeiro" valor={formatarLancamentoFinanceiro(reserva)} />
         </PainelDetalhe>
 
@@ -182,6 +209,10 @@ function DetalhesReserva({ reserva }: { reserva: ReservaConfirmacao }) {
       <PainelDetalhe titulo="Observações">
         <Info label="Do hóspede" valor={reserva.guest_notes ?? "Sem observação do hóspede."} />
         <Info label="Operacional" valor={reserva.internal_notes ?? reserva.notes ?? "Sem observação operacional."} />
+      </PainelDetalhe>
+
+      <PainelDetalhe titulo="WhatsApp">
+        <ReservationWhatsappActions reserva={reserva} />
       </PainelDetalhe>
 
       <PainelDetalhe titulo="Adicionar observação operacional">
@@ -450,6 +481,11 @@ function formatarOrigem(origem: ReservaConfirmacao["source"]) {
   };
 
   return rotulos[origem];
+}
+
+function formatarFormaPagamento(reserva: ReservaConfirmacao) {
+  if (!reserva.payment_method) return "Nao escolhida";
+  return LABEL_FORMA_PAGAMENTO[reserva.payment_method];
 }
 
 function formatarLancamentoFinanceiro(reserva: ReservaConfirmacao) {

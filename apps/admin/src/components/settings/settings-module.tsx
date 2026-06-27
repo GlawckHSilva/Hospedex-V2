@@ -1,6 +1,7 @@
 import {
   Building2,
   Clock3,
+  CreditCard,
   KeyRound,
   LogOut,
   Palette,
@@ -26,6 +27,7 @@ import {
   alterarSenhaConfiguracoesAction,
   alternarModuloGerenciamentoAction,
   atualizarConfiguracoesGeraisAction,
+  atualizarInstrucoesPagamentoAction,
   atualizarPreferenciasOperacionaisAction,
 } from "../../lib/settings/actions";
 import {
@@ -49,6 +51,7 @@ type SettingsModuleProps = DadosConfiguracoesGerenciamento &
 const MENSAGENS_SUCESSO: Record<string, string> = {
   "configuracoes-atualizadas": "Configuracoes gerais atualizadas.",
   "modulo-atualizado": "Modulo atualizado.",
+  "pagamentos-atualizados": "Instrucoes de pagamento atualizadas.",
   "preferencias-atualizadas": "Preferencias operacionais atualizadas.",
   "senha-atualizada": "Senha atualizada com sucesso.",
 };
@@ -285,6 +288,86 @@ export function SettingsModule({
                 </div>
                 <Button disabled={!podeGerenciarConfiguracoes} type="submit">
                   Salvar preferencias
+                </Button>
+              </form>
+            </EntityModal>
+          </CardContent>
+        </Card>
+
+        <Card className="admin-glass-card">
+          <CardContent className="p-5">
+            <CabecalhoCard
+              icon={<CreditCard />}
+              titulo="Instrucoes de pagamento"
+            />
+            <p className="mt-3 text-sm text-muted-foreground">
+              Dados simples usados para preparar mensagens manuais ao hospede.
+            </p>
+            <EntityModal
+              description="Configure instrucoes visiveis em mensagens de confirmacao. Nenhum gateway ou dado sensivel e salvo."
+              disabled={!podeGerenciarConfiguracoes}
+              eyebrow="Pagamentos"
+              title="Instrucoes de pagamento"
+              triggerClassName="mt-5"
+              triggerLabel="Editar instrucoes"
+              triggerVariant="default"
+            >
+              <form
+                action={atualizarInstrucoesPagamentoAction}
+                className="grid gap-4"
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <CampoTexto
+                    defaultValue={configuracoes.pix_key ?? ""}
+                    disabled={!podeGerenciarConfiguracoes}
+                    label="Chave Pix"
+                    name="pixKey"
+                  />
+                  <CampoTexto
+                    defaultValue={configuracoes.pix_receiver_name ?? ""}
+                    disabled={!podeGerenciarConfiguracoes}
+                    label="Nome do recebedor"
+                    name="pixReceiverName"
+                  />
+                  <CampoTexto
+                    defaultValue={configuracoes.pix_bank_name ?? ""}
+                    disabled={!podeGerenciarConfiguracoes}
+                    label="Banco ou instituicao"
+                    name="pixBankName"
+                  />
+                </div>
+                <CampoTextoArea
+                  defaultValue={configuracoes.pix_payment_note ?? ""}
+                  disabled={!podeGerenciarConfiguracoes}
+                  label="Observacao Pix"
+                  name="pixPaymentNote"
+                />
+                <CampoTextoArea
+                  defaultValue={configuracoes.cash_payment_instructions ?? ""}
+                  disabled={!podeGerenciarConfiguracoes}
+                  label="Instrucao para dinheiro"
+                  name="cashPaymentInstructions"
+                />
+                <CampoTextoArea
+                  defaultValue={configuracoes.debit_card_payment_instructions ?? ""}
+                  disabled={!podeGerenciarConfiguracoes}
+                  label="Instrucao para cartao de debito"
+                  name="debitCardPaymentInstructions"
+                />
+                <CampoTextoArea
+                  defaultValue={configuracoes.credit_card_payment_instructions ?? ""}
+                  disabled={!podeGerenciarConfiguracoes}
+                  label="Instrucao para cartao de credito"
+                  name="creditCardPaymentInstructions"
+                />
+                <CampoTextoArea
+                  defaultValue={configuracoes.credit_card_installments_note ?? ""}
+                  disabled={!podeGerenciarConfiguracoes}
+                  label="Observacao sobre parcelamento"
+                  name="creditCardInstallmentsNote"
+                />
+                <Button disabled={!podeGerenciarConfiguracoes} type="submit">
+                  Salvar instrucoes
                 </Button>
               </form>
             </EntityModal>

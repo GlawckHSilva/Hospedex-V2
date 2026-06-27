@@ -1,4 +1,4 @@
-import { CalendarDays, CheckCircle2, Clock, Mail, Phone, User, Users } from "lucide-react";
+import { Banknote, CalendarDays, CheckCircle2, Clock, Mail, Phone, User, Users } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -128,6 +128,22 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
           />
         </Field>
 
+        <Field label="Forma de pagamento">
+          <Banknote className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <select
+            className="glass-input h-11 w-full rounded-md pl-10 pr-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            defaultValue="pix"
+            disabled={!podeSolicitarReserva}
+            name="formaPagamento"
+            required
+          >
+            <option value="pix">Pix</option>
+            <option value="cash">Dinheiro</option>
+            <option value="debit_card">Cartao de debito</option>
+            <option value="credit_card">Cartao de credito</option>
+          </select>
+        </Field>
+
         <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
           Observações
           <textarea
@@ -174,7 +190,7 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
           Solicitar reserva
         </GlassButton>
         <p className="text-center text-xs leading-5 text-muted-foreground">
-          Pagamento online, aprovação/recusa, WhatsApp e login opcional do hóspede ficam preparados para etapas futuras.
+          A forma de pagamento e apenas uma preferencia. Nao pedimos dados de cartao nem dados bancarios sensiveis.
         </p>
       </form>
     </GlassCard>

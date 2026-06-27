@@ -111,6 +111,10 @@ export type ConfiguracoesTenantGerenciamento = Pick<
   | "email"
   | "logo_url"
   | "phone"
+  | "pix_bank_name"
+  | "pix_key"
+  | "pix_payment_note"
+  | "pix_receiver_name"
   | "primary_color"
   | "require_checkin_confirmation"
   | "require_checkout_confirmation"
@@ -118,6 +122,10 @@ export type ConfiguracoesTenantGerenciamento = Pick<
   | "short_description"
   | "state"
   | "whatsapp"
+  | "cash_payment_instructions"
+  | "credit_card_installments_note"
+  | "credit_card_payment_instructions"
+  | "debit_card_payment_instructions"
 > & {
   tenantName: string;
 };

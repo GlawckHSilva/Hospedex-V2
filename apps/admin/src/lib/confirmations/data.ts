@@ -6,6 +6,7 @@ import type {
   ReservationNoteRow,
   ReservationRow,
   ReservationStatusHistoryRow,
+  ReservationWhatsappMessageRow,
   TransactionRow
 } from "@hospedex/types";
 
@@ -105,12 +106,14 @@ export async function carregarDadosConfirmacoes(
     hospedes,
     historico,
     lancamentosFinanceiros,
+    mensagensWhatsapp,
     notas,
     reservasDasTarefas
   ] = await Promise.all([
     carregarHospedes(tenantId, reservaIds),
     carregarHistorico(tenantId, reservaIds),
     carregarLancamentosFinanceiros(tenantId, reservaIds),
+    carregarMensagensWhatsapp(tenantId, reservaIds),
     carregarNotas(tenantId, reservaIds),
     carregarReservasPorId(tenantId, ownerId, tarefaReservaIds)
   ]);
@@ -121,6 +124,7 @@ export async function carregarDadosConfirmacoes(
     propriedades,
     hospedes,
     lancamentosFinanceiros,
+    mensagensWhatsapp,
     historico,
     notas,
     perfis
@@ -241,6 +245,20 @@ async function carregarLancamentosFinanceiros(tenantId: string, reservaIds: stri
   return data ?? [];
 }
 
+async function carregarMensagensWhatsapp(tenantId: string, reservaIds: string[]) {
+  if (!reservaIds.length) return [];
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("reservation_whatsapp_messages")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .in("reservation_id", reservaIds)
+    .returns<ReservationWhatsappMessageRow[]>();
+
+  registrarErro("mensagens de WhatsApp das reservas", error);
+  return data ?? [];
+}
+
 async function carregarReservasPorId(
   tenantId: string,
   ownerId: string,
@@ -288,6 +306,7 @@ function montarReservas(
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
   lancamentosFinanceiros: TransactionRow[],
+  mensagensWhatsapp: ReservationWhatsappMessageRow[],
   historico: ReservationStatusHistoryRow[],
   notas: ReservationNoteRow[],
   perfis: ProfileRow[]
@@ -299,6 +318,8 @@ function montarReservas(
     lancamentoFinanceiro:
       lancamentosFinanceiros.find((lancamento) => lancamento.reservation_id === reserva.id) ??
       null,
+    mensagemWhatsapp:
+      mensagensWhatsapp.find((mensagem) => mensagem.reservation_id === reserva.id) ?? null,
     propriedade:
       propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
     timeline: montarTimelineReserva(reserva.id, historico, notas, perfis)

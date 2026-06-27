@@ -11,6 +11,8 @@ type ResultadoRpcReserva = {
   status?: string;
 };
 
+const FORMAS_PAGAMENTO = new Set(["pix", "cash", "debit_card", "credit_card"]);
+
 export async function solicitarReservaPublicaAction(formData: FormData) {
   const slug = textoObrigatorio(formData, "propertySlug", "propriedade");
   const destino = `/propriedades/${encodeURIComponent(slug)}`;
@@ -27,6 +29,7 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
     const checkIn = dataObrigatoria(formData, "checkIn", "check-in");
     const checkOut = dataObrigatoria(formData, "checkOut", "check-out");
     const quantidadeHospedes = numeroInteiro(formData, "quantidadeHospedes", "hóspedes", 1);
+    const formaPagamento = formaPagamentoObrigatoria(formData);
 
     if (checkOut <= checkIn) {
       throw new ErroSolicitacao("Check-out deve ser depois do check-in.");
@@ -52,6 +55,7 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
       p_guest_notes: textoOpcional(formData, "observacoes"),
       p_guest_phone: textoObrigatorio(formData, "hospedeTelefone", "telefone"),
       p_guests_count: quantidadeHospedes,
+      p_payment_method: formaPagamento,
       p_property_slug: slug
     });
 
@@ -136,6 +140,13 @@ function textoObrigatorio(formData: FormData, chave: string, label: string) {
 function textoOpcional(formData: FormData, chave: string) {
   const valor = formData.get(chave)?.toString().trim();
   return valor || null;
+}
+
+function formaPagamentoObrigatoria(formData: FormData) {
+  const valor = textoObrigatorio(formData, "formaPagamento", "forma de pagamento");
+  if (FORMAS_PAGAMENTO.has(valor)) return valor;
+
+  throw new ErroSolicitacao("Escolha uma forma de pagamento valida.");
 }
 
 function dataObrigatoria(formData: FormData, chave: string, label: string) {

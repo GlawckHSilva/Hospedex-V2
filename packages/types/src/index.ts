@@ -7,6 +7,7 @@ export type UserRole = "guest" | "owner" | "staff" | "super_admin";
 export type {
   PropertyStatus,
   PropertyType,
+  ReservationPaymentMethod,
   ReservationPaymentStatus,
   ReservationStatus,
   TenantStatus
@@ -63,6 +64,8 @@ export type {
   ReservationNoteRow,
   ReservationRow,
   ReservationStatusHistoryRow,
+  ReservationWhatsappMessageRow,
+  ReservationWhatsappMessageStatus,
   ReviewStatus,
   RoleRow,
   RolePermissionRow,
