@@ -13,6 +13,7 @@ import {
   type DiaCalendario,
   type LimpezaCalendario,
   type ManutencaoCalendario,
+  type MotivoBloqueioCalendario,
   type ReservaCalendario,
   type SearchParamsCalendario
 } from "../../lib/calendar/types";
@@ -29,8 +30,11 @@ export type CalendarModuleProps = DadosModuloCalendario &
   };
 
 const MENSAGENS_SUCESSO_CALENDARIO: Record<string, string> = {
+  "bloqueio-atualizado": "Periodo atualizado com sucesso.",
   "bloqueio-criado": "Periodo bloqueado com sucesso.",
-  "periodo-liberado": "Periodo liberado com sucesso."
+  "periodo-liberado": "Periodo liberado com sucesso.",
+  "reserva-calendario-atualizada": "Reserva atualizada pelo calendario.",
+  "reserva-calendario-cancelada": "Reserva cancelada e calendario liberado."
 };
 
 const campoClasse =
@@ -146,6 +150,7 @@ export function CalendarModule({
             hrefPeriodoAnterior={montarHref(filtros, navegarPeriodo(filtros, -1))}
             hrefPeriodoProximo={montarHref(filtros, navegarPeriodo(filtros, 1))}
             key={`${filtros.propriedadeId ?? "sem-casa"}-${filtros.visao}-${filtros.mes}-${filtros.semana}`}
+            podeGerenciar={podeGerenciar}
           />
         </>
       )}
@@ -217,8 +222,12 @@ function montarEventosFullCalendar(dias: DiaCalendario[]): EventoFullCalendarHos
     ...dia.reservas
       .filter((reserva) => reserva.status !== "cancelled")
       .map((reserva) => criarEventoReserva(reserva)),
-    ...dia.checkIns.map((reserva) => criarEventoOperacional(reserva, "checkin")),
-    ...dia.checkOuts.map((reserva) => criarEventoOperacional(reserva, "checkout")),
+    ...dia.checkIns
+      .filter((reserva) => reserva.status !== "cancelled")
+      .map((reserva) => criarEventoOperacional(reserva, "checkin")),
+    ...dia.checkOuts
+      .filter((reserva) => reserva.status !== "cancelled")
+      .map((reserva) => criarEventoOperacional(reserva, "checkout")),
     ...dia.blocos.map((bloco) => criarEventoBloqueio(bloco)),
     ...dia.manutencoes.map((manutencao) => criarEventoManutencao(manutencao)),
     ...dia.limpezas.map((limpeza) => criarEventoLimpeza(limpeza))
@@ -235,13 +244,20 @@ function criarEventoReserva(reserva: ReservaCalendario): EventoFullCalendarHospe
   return {
     allDay: true,
     color: "#10b981",
+    dataFim: reserva.check_out,
+    dataInicio: reserva.check_in,
     detalhe: hospede,
     end: reserva.check_out,
     horario: "Diaria",
     id: `reserva-${reserva.id}`,
+    origem: "reserva",
+    propriedadeId: reserva.property_id,
+    registroId: reserva.id,
     start: reserva.check_in,
+    status: reserva.status,
     tipo: "reserva",
-    title: hospede
+    title: hospede,
+    valorTotal: Number(reserva.total_amount)
   };
 }
 
@@ -254,12 +270,19 @@ function criarEventoOperacional(
 
   return {
     color: entrada ? "#f97316" : "#0ea5e9",
+    dataFim: reserva.check_out,
+    dataInicio: reserva.check_in,
     detalhe: reserva.hospedePrincipal?.full_name ?? "Hospede nao informado",
     horario: entrada ? "14h" : "10h",
     id: `${tipo}-${reserva.id}`,
+    origem: "reserva",
+    propriedadeId: reserva.property_id,
+    registroId: reserva.id,
     start: `${data}T${entrada ? "14:00:00" : "10:00:00"}`,
+    status: reserva.status,
     tipo,
-    title: entrada ? "Check-in" : "Check-out"
+    title: entrada ? "Check-in" : "Check-out",
+    valorTotal: Number(reserva.total_amount)
   };
 }
 
@@ -278,14 +301,24 @@ function criarEventoBloqueio(bloco: BlocoCalendario): EventoFullCalendarHospedex
 
   return {
     allDay: true,
+    bloqueiaDisponibilidade: bloco.blocks_availability,
     color: visual.color,
+    dataFim: bloco.ends_on,
+    dataInicio: bloco.starts_on,
     detalhe: bloco.reason ?? "Bloqueio manual",
     // FullCalendar trata o fim de eventos dia-todo como exclusivo. Como o
     // bloqueio operacional e inclusivo no negocio, somamos um dia apenas na UI.
     end: formatDate(addDays(parseDate(bloco.ends_on), 1)),
     horario: "Dia todo",
     id: `bloqueio-${bloco.id}`,
+    motivoCodigo: obterMotivoCodigoBloco(bloco),
+    motivoDetalhe: obterDetalheMotivoBloco(bloco),
+    observacoes: bloco.notes,
+    origem: "bloqueio",
+    propriedadeId: bloco.property_id,
+    registroId: bloco.id,
     start: bloco.starts_on,
+    status: bloco.status,
     tipo: visual.tipo,
     title: visual.title
   };
@@ -296,10 +329,16 @@ function criarEventoManutencao(manutencao: ManutencaoCalendario): EventoFullCale
 
   return {
     color: "#8b5cf6",
+    dataFim: data,
+    dataInicio: data,
     detalhe: manutencao.notes ?? manutencao.priority,
     horario: "08h",
     id: `manutencao-${manutencao.id}`,
+    origem: "manutencao",
+    propriedadeId: manutencao.property_id,
+    registroId: manutencao.id,
     start: `${data}T08:00:00`,
+    status: manutencao.status,
     tipo: "manutencao",
     title: manutencao.title
   };
@@ -310,13 +349,49 @@ function criarEventoLimpeza(limpeza: LimpezaCalendario): EventoFullCalendarHospe
 
   return {
     color: "#22d3ee",
+    dataFim: data,
+    dataInicio: data,
     detalhe: limpeza.status,
     horario: "11h",
     id: `limpeza-${limpeza.id}`,
+    origem: "limpeza",
+    propriedadeId: limpeza.property_id,
+    registroId: limpeza.id,
     start: `${data}T11:00:00`,
+    status: limpeza.status,
     tipo: "limpeza",
     title: limpeza.title
   };
+}
+
+function obterMotivoCodigoBloco(bloco: BlocoCalendario): MotivoBloqueioCalendario {
+  const metadata = bloco.metadata;
+
+  // O codigo em metadata preserva filtros e edicao futura mesmo quando o texto
+  // humano do motivo muda por ajustes de produto.
+  if (metadata && typeof metadata === "object" && !Array.isArray(metadata)) {
+    const motivo = metadata["motivoCodigo"];
+    if (
+      typeof motivo === "string" &&
+      MOTIVOS_BLOQUEIO_CALENDARIO.includes(motivo as MotivoBloqueioCalendario)
+    ) {
+      return motivo as MotivoBloqueioCalendario;
+    }
+  }
+
+  if (bloco.block_type === "maintenance") return "maintenance";
+  if (bloco.block_type === "interdicted") return "interdicted";
+  if (bloco.block_type === "cleaning") return "cleaning";
+  if (bloco.block_type === "temporary_unavailable") return "unavailable";
+  return "other";
+}
+
+function obterDetalheMotivoBloco(bloco: BlocoCalendario) {
+  const motivo = obterMotivoCodigoBloco(bloco);
+  const label = LABEL_MOTIVO_BLOQUEIO[motivo];
+  const reason = bloco.reason ?? "";
+
+  return reason.startsWith(`${label}: `) ? reason.slice(label.length + 2) : reason;
 }
 
 function CampoPropriedade({

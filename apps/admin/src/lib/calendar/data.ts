@@ -148,6 +148,7 @@ async function criarConsultaBlocos(
     // Reservas ja sao carregadas pela tabela reservations. Ignorar o bloco
     // tecnico evita duplicar a mesma reserva como "Bloqueio" no calendario.
     .neq("source", "reservation")
+    .neq("status", "released")
     .lt("starts_on", periodo.fimExclusivo)
     .gte("ends_on", periodo.inicio)
     .order("starts_on", { ascending: true });
@@ -168,6 +169,7 @@ async function criarConsultaReservas(
     .select("*")
     .eq("tenant_id", tenantId)
     .eq("owner_id", ownerId)
+    .neq("status", "cancelled")
     .lt("check_in", periodo.fimExclusivo)
     .gt("check_out", periodo.inicio)
     .order("check_in", { ascending: true });

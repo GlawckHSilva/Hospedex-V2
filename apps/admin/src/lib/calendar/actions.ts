@@ -2,7 +2,8 @@
 
 import type {
   CalendarAvailabilityBlockRow,
-  CalendarAvailabilityStatus
+  CalendarAvailabilityStatus,
+  ReservationRow
 } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -113,6 +114,156 @@ export async function liberarPeriodoCalendarioAction(formData: FormData) {
   redirect(`${retorno}&sucesso=periodo-liberado`);
 }
 
+export async function editarBloqueioCalendarioAction(formData: FormData) {
+  const escopo = await carregarEscopoCalendario();
+  const retorno = montarRetornoCalendario(formData);
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const bloqueioId = textoObrigatorio(formData, "bloqueioId", "bloqueio");
+    const bloqueio = await carregarBloqueioGerenciavel(supabase, escopo, bloqueioId);
+    const entrada = await obterEntradaBloqueio(supabase, escopo, formData);
+
+    if (bloqueio.status === "released") {
+      throw new ErroRegraCalendario("Este periodo ja esta liberado.");
+    }
+
+    const { error } = await supabase
+      .from("calendar_availability_blocks")
+      .update({
+        block_type: entrada.blocoTipo,
+        blocks_availability: entrada.bloqueiaDisponibilidade,
+        ends_on: entrada.fim,
+        metadata: {
+          motivoCodigo: entrada.motivoCodigo,
+          preparadoParaIcs: true,
+          preparadoParaTarifario: true
+        },
+        notes: entrada.observacoes,
+        property_id: entrada.propriedadeId,
+        reason: entrada.motivo,
+        starts_on: entrada.inicio,
+        status: entrada.status
+      })
+      .eq("id", bloqueio.id)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId)
+      .neq("source", "reservation");
+
+    if (error) throw new Error(error.message);
+    revalidarCalendario();
+  } catch (erro) {
+    redirecionarComErro(retorno, erro, "Erro ao editar bloqueio do calendario.");
+  }
+
+  redirect(`${retorno}&sucesso=bloqueio-atualizado`);
+}
+
+export async function editarReservaCalendarioAction(formData: FormData) {
+  const escopo = await carregarEscopoCalendario();
+  const retorno = montarRetornoCalendario(formData);
+
+  try {
+    exigirConfirmacaoImpactoReserva(formData);
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const reserva = await carregarReservaCalendario(supabase, escopo, reservaId);
+    const entrada = obterEntradaReservaCalendario(formData, reserva.property_id);
+
+    if (["cancelled", "completed"].includes(reserva.status)) {
+      throw new ErroRegraCalendario("Reserva encerrada nao pode ser editada pelo calendario.");
+    }
+
+    await validarDisponibilidadeReservaCalendario(supabase, escopo, entrada, reserva.id);
+
+    const { data: reservaAtualizada, error } = await supabase
+      .from("reservations")
+      .update({
+        check_in: entrada.checkIn,
+        check_out: entrada.checkOut,
+        property_id: entrada.propriedadeId,
+        total_amount: entrada.valorTotal
+      })
+      .eq("id", reserva.id)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId)
+      .select("*")
+      .single<ReservationRow>();
+
+    if (error || !reservaAtualizada) {
+      throw new Error(error?.message ?? "Reserva nao retornada apos atualizacao.");
+    }
+
+    await atualizarLancamentoFinanceiroDaReserva(
+      supabase,
+      escopo,
+      reservaAtualizada,
+      entrada.valorTotal
+    );
+    await registrarNotaReservaCalendario(
+      supabase,
+      escopo,
+      reserva.id,
+      montarNotaEdicaoReserva(reserva, reservaAtualizada, entrada.observacoes)
+    );
+    revalidarCalendario();
+  } catch (erro) {
+    redirecionarComErro(retorno, erro, "Erro ao editar reserva pelo calendario.");
+  }
+
+  redirect(`${retorno}&sucesso=reserva-calendario-atualizada`);
+}
+
+export async function cancelarReservaCalendarioAction(formData: FormData) {
+  const escopo = await carregarEscopoCalendario();
+  const retorno = montarRetornoCalendario(formData);
+
+  try {
+    exigirConfirmacaoImpactoReserva(formData);
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const motivo =
+      textoOpcional(formData, "motivoCancelamento") ??
+      "Reserva cancelada pelo calendario.";
+    const reserva = await carregarReservaCalendario(supabase, escopo, reservaId);
+
+    if (["cancelled", "completed"].includes(reserva.status)) {
+      throw new ErroRegraCalendario("Reserva encerrada nao pode ser cancelada pelo calendario.");
+    }
+
+    const { error } = await supabase
+      .from("reservations")
+      .update({
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: escopo.userId,
+        cancellation_reason: motivo,
+        payment_status: "cancelled",
+        payment_status_updated_at: new Date().toISOString(),
+        payment_status_updated_by: escopo.userId,
+        status: "cancelled"
+      })
+      .eq("id", reserva.id)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId);
+
+    if (error) throw new Error(error.message);
+
+    await cancelarLancamentoFinanceiroDaReserva(supabase, escopo, reserva);
+    await registrarHistoricoCancelamentoReserva(supabase, escopo, reserva, motivo);
+    await registrarNotaReservaCalendario(
+      supabase,
+      escopo,
+      reserva.id,
+      `Reserva cancelada pelo calendario. Motivo: ${motivo}`
+    );
+    revalidarCalendario();
+  } catch (erro) {
+    redirecionarComErro(retorno, erro, "Erro ao cancelar reserva pelo calendario.");
+  }
+
+  redirect(`${retorno}&sucesso=reserva-calendario-cancelada`);
+}
+
 async function obterEntradaBloqueio(
   supabase: ClienteSupabaseServer,
   escopo: EscopoCalendario,
@@ -211,6 +362,218 @@ function checkboxAtivo(formData: FormData, chave: string): boolean {
   return formData.get(chave) === "on";
 }
 
+type EntradaReservaCalendario = {
+  checkIn: string;
+  checkOut: string;
+  observacoes: string | null;
+  propriedadeId: string;
+  valorTotal: number;
+};
+
+async function carregarReservaCalendario(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoCalendario,
+  reservaId: string
+) {
+  const { data, error } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("id", reservaId)
+    .eq("tenant_id", escopo.tenantId)
+    .eq("owner_id", escopo.ownerId)
+    .maybeSingle<ReservationRow>();
+
+  if (error || !data) {
+    throw new ErroRegraCalendario("Reserva nao encontrada para este tenant.");
+  }
+
+  return data;
+}
+
+function obterEntradaReservaCalendario(
+  formData: FormData,
+  propriedadePadraoId: string
+): EntradaReservaCalendario {
+  const checkIn = dataObrigatoria(formData, "checkIn", "check-in");
+  const checkOut = dataObrigatoria(formData, "checkOut", "check-out");
+
+  if (new Date(`${checkOut}T00:00:00`) <= new Date(`${checkIn}T00:00:00`)) {
+    throw new ErroRegraCalendario("Check-out deve ser posterior ao check-in.");
+  }
+
+  return {
+    checkIn,
+    checkOut,
+    observacoes: textoOpcional(formData, "observacoesImpacto"),
+    propriedadeId: textoOpcional(formData, "propriedadeId") ?? propriedadePadraoId,
+    valorTotal: numeroMoeda(formData, "valorTotal", "valor total da reserva")
+  };
+}
+
+async function validarDisponibilidadeReservaCalendario(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoCalendario,
+  entrada: EntradaReservaCalendario,
+  reservaIgnoradaId: string
+) {
+  await carregarPropriedadeDoCalendario(supabase, escopo, entrada.propriedadeId);
+
+  const [reservasResultado, bloqueiosResultado] = await Promise.all([
+    supabase
+      .from("reservations")
+      .select("id, code")
+      .eq("tenant_id", escopo.tenantId)
+      .eq("property_id", entrada.propriedadeId)
+      .neq("id", reservaIgnoradaId)
+      .neq("status", "cancelled")
+      .lt("check_in", entrada.checkOut)
+      .gt("check_out", entrada.checkIn)
+      .limit(1)
+      .returns<Array<{ code: string; id: string }>>(),
+    supabase
+      .from("calendar_availability_blocks")
+      .select("id, reason")
+      .eq("tenant_id", escopo.tenantId)
+      .eq("property_id", entrada.propriedadeId)
+      .neq("source", "reservation")
+      .in("status", ["blocked", "interdicted", "maintenance", "cleaning", "unavailable", "reserved"])
+      .lt("starts_on", entrada.checkOut)
+      .gte("ends_on", entrada.checkIn)
+      .limit(1)
+      .returns<Array<{ id: string; reason: string | null }>>()
+  ]);
+
+  if (reservasResultado.error) throw new Error(reservasResultado.error.message);
+  if (bloqueiosResultado.error) throw new Error(bloqueiosResultado.error.message);
+
+  const reservaConflitante = reservasResultado.data?.[0];
+  if (reservaConflitante) {
+    throw new ErroRegraCalendario(
+      `A casa ja possui reserva no periodo selecionado (${reservaConflitante.code}).`
+    );
+  }
+
+  const bloqueioConflitante = bloqueiosResultado.data?.[0];
+  if (bloqueioConflitante) {
+    throw new ErroRegraCalendario(
+      `A casa esta indisponivel no periodo selecionado${
+        bloqueioConflitante.reason ? `: ${bloqueioConflitante.reason}` : "."
+      }`
+    );
+  }
+}
+
+async function atualizarLancamentoFinanceiroDaReserva(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoCalendario,
+  reserva: ReservationRow,
+  valorTotal: number
+) {
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      amount: valorTotal,
+      due_date: reserva.check_in,
+      property_id: reserva.property_id
+    })
+    .eq("tenant_id", escopo.tenantId)
+    .eq("reservation_id", reserva.id)
+    .eq("transaction_type", "income");
+
+  if (error) throw new Error(error.message);
+}
+
+async function cancelarLancamentoFinanceiroDaReserva(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoCalendario,
+  reserva: ReservationRow
+) {
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      paid_at: null,
+      status: "cancelled"
+    })
+    .eq("tenant_id", escopo.tenantId)
+    .eq("reservation_id", reserva.id)
+    .eq("transaction_type", "income");
+
+  if (error) throw new Error(error.message);
+}
+
+async function registrarHistoricoCancelamentoReserva(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoCalendario,
+  reserva: ReservationRow,
+  motivo: string
+) {
+  const { error } = await supabase.from("reservation_status_history").insert({
+    changed_by: escopo.userId,
+    from_status: reserva.status,
+    metadata: { origem: "calendario" },
+    reason: motivo,
+    reservation_id: reserva.id,
+    tenant_id: escopo.tenantId,
+    to_status: "cancelled"
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+async function registrarNotaReservaCalendario(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoCalendario,
+  reservaId: string,
+  conteudo: string
+) {
+  const { error } = await supabase.from("reservation_notes").insert({
+    content: conteudo,
+    created_by: escopo.userId,
+    note_type: "system",
+    reservation_id: reservaId,
+    tenant_id: escopo.tenantId
+  });
+
+  if (error) throw new Error(error.message);
+}
+
+function montarNotaEdicaoReserva(
+  anterior: ReservationRow,
+  atualizada: ReservationRow,
+  observacoes: string | null
+) {
+  const partes = [
+    `Reserva editada pelo calendario: ${anterior.check_in} - ${anterior.check_out} para ${atualizada.check_in} - ${atualizada.check_out}.`,
+    `Valor alterado de ${formatarMoeda(Number(anterior.total_amount))} para ${formatarMoeda(Number(atualizada.total_amount))}.`
+  ];
+
+  if (observacoes) partes.push(`Observacao: ${observacoes}`);
+  return partes.join(" ");
+}
+
+function exigirConfirmacaoImpactoReserva(formData: FormData) {
+  if (!checkboxAtivo(formData, "confirmarImpactoReserva")) {
+    throw new ErroRegraCalendario(
+      "Confirme que esta alteracao impacta a reserva, o calendario e o valor."
+    );
+  }
+}
+
+function numeroMoeda(formData: FormData, chave: string, label: string): number {
+  const valor = Number.parseFloat(textoObrigatorio(formData, chave, label).replace(",", "."));
+  if (!Number.isFinite(valor) || valor < 0) {
+    throw new ErroRegraCalendario(`Informe ${label} valido.`);
+  }
+  return valor;
+}
+
+function formatarMoeda(valor: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency"
+  }).format(valor);
+}
+
 function montarRetornoCalendario(formData: FormData) {
   const params = new URLSearchParams();
   const mes = textoOpcional(formData, "mes");
@@ -242,4 +605,5 @@ function redirecionarComErro(retorno: string, erro: unknown, mensagemLog: string
 function revalidarCalendario() {
   revalidatePath(CAMINHO_CALENDARIO);
   revalidatePath("/reservas");
+  revalidatePath("/financeiro");
 }

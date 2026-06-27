@@ -12,25 +12,46 @@ import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertTriangle, CalendarRange, ChevronLeft, ChevronRight, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentProps } from "react";
 
-import { Badge, Card, CardContent, cn } from "@hospedex/ui";
+import { Badge, Button, Card, CardContent, Input, Label, cn } from "@hospedex/ui";
 
+import {
+  cancelarReservaCalendarioAction,
+  editarBloqueioCalendarioAction,
+  editarReservaCalendarioAction,
+  liberarPeriodoCalendarioAction
+} from "../../lib/calendar/actions";
 import type {
   FiltrosCalendario,
+  MotivoBloqueioCalendario,
   VisaoCalendario,
+} from "../../lib/calendar/types";
+import {
+  LABEL_MOTIVO_BLOQUEIO,
+  MOTIVOS_BLOQUEIO_CALENDARIO
 } from "../../lib/calendar/types";
 import { AppModal } from "../management/entity-modal";
 
 export type EventoFullCalendarHospedex = {
   allDay?: boolean;
+  bloqueiaDisponibilidade?: boolean;
   color: string;
+  dataFim: string;
+  dataInicio: string;
   detalhe: string;
   end?: string;
   horario: string;
   id: string;
+  motivoCodigo?: MotivoBloqueioCalendario;
+  motivoDetalhe?: string;
+  observacoes?: string | null;
+  origem: "bloqueio" | "limpeza" | "manutencao" | "reserva";
+  propriedadeId: string;
+  registroId: string;
+  status?: string;
   start: string;
   tipo:
     | "reserva"
@@ -40,6 +61,7 @@ export type EventoFullCalendarHospedex = {
     | "manutencao"
     | "limpeza";
   title: string;
+  valorTotal?: number;
 };
 
 type FullCalendarBoardProps = {
@@ -48,6 +70,7 @@ type FullCalendarBoardProps = {
   hrefHoje: string;
   hrefPeriodoAnterior: string;
   hrefPeriodoProximo: string;
+  podeGerenciar: boolean;
 };
 
 type ModalEventosDia = {
@@ -79,6 +102,7 @@ export function FullCalendarBoard({
   hrefHoje,
   hrefPeriodoAnterior,
   hrefPeriodoProximo,
+  podeGerenciar,
 }: FullCalendarBoardProps) {
   const [eventoSelecionado, setEventoSelecionado] =
     useState<EventoFullCalendarHospedex | null>(null);
@@ -234,9 +258,11 @@ export function FullCalendarBoard({
 
         <ModalEvento
           evento={eventoSelecionado}
+          filtros={filtros}
           onOpenChange={(aberto) => {
             if (!aberto) setEventoSelecionado(null);
           }}
+          podeGerenciar={podeGerenciar}
         />
 
         <AppModal
@@ -250,7 +276,14 @@ export function FullCalendarBoard({
         >
           <div className="space-y-3">
             {eventosDoDia?.eventos.map((evento) => (
-              <EventoResumo evento={evento} key={evento.id} />
+              <EventoResumo
+                evento={evento}
+                key={evento.id}
+                onClick={() => {
+                  setEventoSelecionado(evento);
+                  setEventosDoDia(null);
+                }}
+              />
             ))}
           </div>
         </AppModal>
@@ -287,10 +320,14 @@ function renderizarEvento(info: EventContentArg) {
 
 function ModalEvento({
   evento,
+  filtros,
   onOpenChange,
+  podeGerenciar,
 }: {
   evento: EventoFullCalendarHospedex | null;
+  filtros: FiltrosCalendario;
   onOpenChange: (open: boolean) => void;
+  podeGerenciar: boolean;
 }) {
   return (
     <AppModal
@@ -301,19 +338,44 @@ function ModalEvento({
       size="md"
       title={evento?.title ?? "Evento"}
     >
-      {evento ? <EventoResumo evento={evento} /> : null}
+      {evento ? (
+        <div className="space-y-4">
+          <EventoResumo evento={evento} />
+          {!podeGerenciar ? (
+            <AvisoImpacto texto="Seu perfil pode visualizar este evento, mas nao tem permissao para alterar o calendario." />
+          ) : null}
+          {podeGerenciar && evento.origem === "bloqueio" ? (
+            <FormularioBloqueio evento={evento} filtros={filtros} />
+          ) : null}
+          {podeGerenciar && evento.origem === "reserva" ? (
+            <FormularioReserva evento={evento} filtros={filtros} />
+          ) : null}
+          {podeGerenciar && ["limpeza", "manutencao"].includes(evento.origem) ? (
+            <AvisoImpacto texto="Este evento vem de outro modulo operacional. Edite a tarefa no modulo correspondente para preservar o historico." />
+          ) : null}
+        </div>
+      ) : null}
     </AppModal>
   );
 }
 
-function EventoResumo({ evento }: { evento: EventoFullCalendarHospedex }) {
-  return (
-    <div className="rounded-2xl border bg-background/70 p-4 shadow-sm">
+function EventoResumo({
+  evento,
+  onClick
+}: {
+  evento: EventoFullCalendarHospedex;
+  onClick?: () => void;
+}) {
+  const conteudo = (
+    <>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">{evento.title}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {evento.detalhe}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {formatarData(evento.dataInicio)} ate {formatarData(evento.dataFim)}
           </p>
         </div>
         <Badge
@@ -328,6 +390,213 @@ function EventoResumo({ evento }: { evento: EventoFullCalendarHospedex }) {
           {evento.horario || "Dia todo"}
         </Badge>
       </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        className="w-full rounded-2xl border bg-background/70 p-4 text-left shadow-sm transition hover:border-primary/45 hover:bg-primary/5"
+        onClick={onClick}
+        type="button"
+      >
+        {conteudo}
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border bg-background/70 p-4 shadow-sm">
+      {conteudo}
+    </div>
+  );
+}
+
+function FormularioBloqueio({
+  evento,
+  filtros
+}: {
+  evento: EventoFullCalendarHospedex;
+  filtros: FiltrosCalendario;
+}) {
+  return (
+    <div className="space-y-4">
+      <AvisoImpacto texto="Editar ou liberar este periodo altera imediatamente a disponibilidade da casa no calendario e no Marketplace." />
+      <form action={editarBloqueioCalendarioAction} className="grid gap-3">
+        <CamposRetorno filtros={filtros} />
+        <input name="bloqueioId" type="hidden" value={evento.registroId} />
+        <input name="propriedadeId" type="hidden" value={evento.propriedadeId} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <CampoModal label="Inicio" name="inicio" required type="date" defaultValue={evento.dataInicio} />
+          <CampoModal label="Fim" name="fim" required type="date" defaultValue={evento.dataFim} />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <Label htmlFor="motivoTipo">Tipo</Label>
+            <select
+              className="h-10 rounded-md border bg-background px-3 text-sm"
+              defaultValue={evento.motivoCodigo ?? "other"}
+              id="motivoTipo"
+              name="motivoTipo"
+            >
+              {MOTIVOS_BLOQUEIO_CALENDARIO.map((motivo) => (
+                <option key={motivo} value={motivo}>
+                  {LABEL_MOTIVO_BLOQUEIO[motivo]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <CampoModal
+            label="Detalhe"
+            name="motivoDetalhe"
+            defaultValue={evento.motivoDetalhe ?? ""}
+          />
+        </div>
+        <label className="grid gap-2 text-sm">
+          Observacoes internas
+          <textarea
+            className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm"
+            defaultValue={evento.observacoes ?? ""}
+            name="observacoes"
+          />
+        </label>
+        <label className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm">
+          <input
+            defaultChecked={evento.bloqueiaDisponibilidade ?? true}
+            name="bloqueiaDisponibilidade"
+            type="checkbox"
+          />
+          Bloquear disponibilidade da casa
+        </label>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="submit">
+            <Save className="h-4 w-4" />
+            Salvar alteracoes
+          </Button>
+        </div>
+      </form>
+
+      <form action={liberarPeriodoCalendarioAction} className="rounded-xl border border-destructive/25 bg-destructive/10 p-3">
+        <CamposRetorno filtros={filtros} />
+        <input name="bloqueioId" type="hidden" value={evento.registroId} />
+        <p className="text-sm text-destructive">
+          Liberar remove este bloqueio da agenda e deixa o periodo disponivel novamente.
+        </p>
+        <Button className="mt-3" type="submit" variant="destructive">
+          <Trash2 className="h-4 w-4" />
+          Liberar periodo
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+function FormularioReserva({
+  evento,
+  filtros
+}: {
+  evento: EventoFullCalendarHospedex;
+  filtros: FiltrosCalendario;
+}) {
+  return (
+    <div className="space-y-4">
+      <AvisoImpacto texto="Alterar uma reserva pelo calendario muda as datas da hospedagem, o bloqueio da casa e o valor usado no financeiro quando houver lancamento vinculado." />
+      <form action={editarReservaCalendarioAction} className="grid gap-3">
+        <CamposRetorno filtros={filtros} />
+        <input name="reservaId" type="hidden" value={evento.registroId} />
+        <input name="propriedadeId" type="hidden" value={evento.propriedadeId} />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <CampoModal label="Check-in" name="checkIn" required type="date" defaultValue={evento.dataInicio} />
+          <CampoModal label="Check-out" name="checkOut" required type="date" defaultValue={evento.dataFim} />
+          <CampoModal
+            label="Valor total"
+            name="valorTotal"
+            required
+            type="number"
+            min="0"
+            step="0.01"
+            defaultValue={String(evento.valorTotal ?? 0)}
+          />
+        </div>
+        <label className="grid gap-2 text-sm">
+          Observacao da alteracao
+          <textarea
+            className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm"
+            name="observacoesImpacto"
+            placeholder="Explique por que a reserva foi alterada pelo calendario."
+          />
+        </label>
+        <ConfirmacaoImpacto />
+        <div className="flex justify-end">
+          <Button type="submit">
+            <CalendarRange className="h-4 w-4" />
+            Atualizar reserva
+          </Button>
+        </div>
+      </form>
+
+      <form action={cancelarReservaCalendarioAction} className="rounded-xl border border-destructive/25 bg-destructive/10 p-3">
+        <CamposRetorno filtros={filtros} />
+        <input name="reservaId" type="hidden" value={evento.registroId} />
+        <label className="grid gap-2 text-sm">
+          Motivo do cancelamento
+          <textarea
+            className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm"
+            name="motivoCancelamento"
+            placeholder="Explique o cancelamento. Isso aparece na timeline interna."
+          />
+        </label>
+        <ConfirmacaoImpacto />
+        <Button className="mt-3" type="submit" variant="destructive">
+          <Trash2 className="h-4 w-4" />
+          Cancelar reserva e liberar calendario
+        </Button>
+      </form>
+    </div>
+  );
+}
+
+function CampoModal({
+  label,
+  name,
+  ...props
+}: {
+  label: string;
+  name: string;
+} & ComponentProps<typeof Input>) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={name}>{label}</Label>
+      <Input id={name} name={name} {...props} />
+    </div>
+  );
+}
+
+function CamposRetorno({ filtros }: { filtros: FiltrosCalendario }) {
+  return (
+    <>
+      <input name="mes" type="hidden" value={filtros.mes} />
+      <input name="semana" type="hidden" value={filtros.semana} />
+      <input name="visao" type="hidden" value={filtros.visao} />
+      <input name="filtroPropriedadeId" type="hidden" value={filtros.propriedadeId ?? ""} />
+    </>
+  );
+}
+
+function ConfirmacaoImpacto() {
+  return (
+    <label className="flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+      <input className="mt-1" name="confirmarImpactoReserva" required type="checkbox" />
+      Entendo que esta acao altera a reserva do hospede, a disponibilidade da casa e pode afetar o valor/financeiro.
+    </label>
+  );
+}
+
+function AvisoImpacto({ texto }: { texto: string }) {
+  return (
+    <div className="flex gap-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-950 dark:text-amber-100">
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+      <p>{texto}</p>
     </div>
   );
 }
