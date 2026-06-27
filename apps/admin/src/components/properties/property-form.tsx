@@ -5,15 +5,18 @@ import {
   ArrowDown,
   ArrowUp,
   BedDouble,
+  Banknote,
   Camera,
   Clock3,
   CreditCard,
   Home,
   ImagePlus,
+  Landmark,
   MapPin,
   Share2,
   Sparkles,
   Star,
+  Smartphone,
   Trash2,
   WalletCards,
 } from "lucide-react";
@@ -62,15 +65,60 @@ type EtapaId =
   | "comodidades"
   | "compartilhamento";
 
-const ETAPAS: Array<{ descricao: string; icon: ReactNode; id: EtapaId; label: string }> = [
-  { descricao: "Identificacao, status e textos principais da casa.", icon: <Home />, id: "basico", label: "Basico" },
-  { descricao: "Endereco operacional e referencias para localizacao.", icon: <MapPin />, id: "localizacao", label: "Localizacao" },
-  { descricao: "Capacidade, quartos e estrutura fisica da hospedagem.", icon: <BedDouble />, id: "estrutura", label: "Estrutura" },
-  { descricao: "Diaria, taxas e configuracao futura de cartao.", icon: <WalletCards />, id: "valores", label: "Valores" },
-  { descricao: "Horarios, regras e observacoes internas.", icon: <Clock3 />, id: "regras", label: "Regras" },
-  { descricao: "Capa e novas fotos da galeria.", icon: <Camera />, id: "imagens", label: "Imagens" },
-  { descricao: "Comodidades padrao e personalizadas.", icon: <Sparkles />, id: "comodidades", label: "Comodidades" },
-  { descricao: "Dados publicos usados no Marketplace.", icon: <Share2 />, id: "compartilhamento", label: "Publicacao" },
+const ETAPAS: Array<{
+  descricao: string;
+  icon: ReactNode;
+  id: EtapaId;
+  label: string;
+}> = [
+  {
+    descricao: "Identificacao, status e textos principais da casa.",
+    icon: <Home />,
+    id: "basico",
+    label: "Basico",
+  },
+  {
+    descricao: "Endereco operacional e referencias para localizacao.",
+    icon: <MapPin />,
+    id: "localizacao",
+    label: "Localizacao",
+  },
+  {
+    descricao: "Capacidade, quartos e estrutura fisica da hospedagem.",
+    icon: <BedDouble />,
+    id: "estrutura",
+    label: "Estrutura",
+  },
+  {
+    descricao: "Diaria, taxas e configuracao futura de cartao.",
+    icon: <WalletCards />,
+    id: "valores",
+    label: "Valores",
+  },
+  {
+    descricao: "Horarios, regras e observacoes internas.",
+    icon: <Clock3 />,
+    id: "regras",
+    label: "Regras",
+  },
+  {
+    descricao: "Capa e novas fotos da galeria.",
+    icon: <Camera />,
+    id: "imagens",
+    label: "Imagens",
+  },
+  {
+    descricao: "Comodidades padrao e personalizadas.",
+    icon: <Sparkles />,
+    id: "comodidades",
+    label: "Comodidades",
+  },
+  {
+    descricao: "Dados publicos usados no Marketplace.",
+    icon: <Share2 />,
+    id: "compartilhamento",
+    label: "Publicacao",
+  },
 ];
 
 const TIPOS: Array<{ label: string; valor: PropertyType }> = [
@@ -83,6 +131,14 @@ const STATUS: Array<{ label: string; valor: PropertyStatus }> = [
   { valor: "draft", label: "Rascunho" },
   { valor: "published", label: "Ativa" },
   { valor: "paused", label: "Pausada" },
+];
+
+const TIPOS_CHAVE_PIX = [
+  { label: "CPF", valor: "cpf" },
+  { label: "CNPJ", valor: "cnpj" },
+  { label: "E-mail", valor: "email" },
+  { label: "Telefone", valor: "telefone" },
+  { label: "Chave aleatoria", valor: "aleatoria" },
 ];
 
 const campoClasse =
@@ -103,17 +159,42 @@ type CampoObrigatorioCasa = {
 };
 
 const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
-  { etapa: "basico", mensagem: "Informe o nome da casa.", name: "nome", tipo: "texto" },
-  { etapa: "basico", mensagem: "Informe o tipo da casa.", name: "tipo", tipo: "texto" },
+  {
+    etapa: "basico",
+    mensagem: "Informe o nome da casa.",
+    name: "nome",
+    tipo: "texto",
+  },
+  {
+    etapa: "basico",
+    mensagem: "Informe o tipo da casa.",
+    name: "tipo",
+    tipo: "texto",
+  },
   {
     etapa: "basico",
     mensagem: "Informe a descricao curta da casa.",
     name: "descricaoCurta",
     tipo: "texto",
   },
-  { etapa: "localizacao", mensagem: "Informe o endereco.", name: "endereco", tipo: "texto" },
-  { etapa: "localizacao", mensagem: "Informe a cidade.", name: "cidade", tipo: "texto" },
-  { etapa: "localizacao", mensagem: "Informe o estado.", name: "estado", tipo: "texto" },
+  {
+    etapa: "localizacao",
+    mensagem: "Informe o endereco.",
+    name: "endereco",
+    tipo: "texto",
+  },
+  {
+    etapa: "localizacao",
+    mensagem: "Informe a cidade.",
+    name: "cidade",
+    tipo: "texto",
+  },
+  {
+    etapa: "localizacao",
+    mensagem: "Informe o estado.",
+    name: "estado",
+    tipo: "texto",
+  },
   {
     etapa: "estrutura",
     mensagem: "Informe a quantidade maxima de hospedes.",
@@ -143,6 +224,28 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     tipo: "numero",
   },
   {
+    etapa: "valores",
+    mensagem: "Informe a chave Pix.",
+    name: "pixChave",
+    tipo: "texto",
+    validarQuando: (dados) => dados.get("pagamentoPixAtivo") === "on",
+  },
+  {
+    etapa: "valores",
+    mensagem: "Informe o nome do recebedor do Pix.",
+    name: "pixRecebedor",
+    tipo: "texto",
+    validarQuando: (dados) => dados.get("pagamentoPixAtivo") === "on",
+  },
+  {
+    etapa: "valores",
+    mensagem: "Informe a quantidade maxima de parcelas.",
+    minimo: 1,
+    name: "maxParcelasCartao",
+    tipo: "numero",
+    validarQuando: (dados) => dados.get("aceitaCartaoCredito") === "on",
+  },
+  {
     etapa: "imagens",
     mensagem: "Adicione uma foto principal para publicar a casa.",
     name: "imagemCapaArquivo",
@@ -165,7 +268,8 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
 ];
 
-type JurosParcelaCartao = PropriedadeComRelacionamentos["valores"]["jurosParcelasCartao"][number];
+type JurosParcelaCartao =
+  PropriedadeComRelacionamentos["valores"]["jurosParcelasCartao"][number];
 
 function limitarParcelasCartao(valor: number) {
   if (!Number.isFinite(valor)) return 1;
@@ -196,7 +300,10 @@ function criarJurosParcelasIniciais(
 
   return Array.from({ length: maxParcelas }, (_, indice) => {
     const parcela = indice + 1;
-    return [parcela, normalizarValorJuros(jurosPorParcela.get(parcela) ?? 0)] as const;
+    return [
+      parcela,
+      normalizarValorJuros(jurosPorParcela.get(parcela) ?? 0),
+    ] as const;
   }).reduce<Record<number, string>>((resultado, [parcela, juros]) => {
     resultado[parcela] = juros;
     return resultado;
@@ -213,7 +320,11 @@ type PreviewGaleria = {
   url: string;
 };
 
-function criarPreviewGaleria(arquivo: File, ordem: number, principal: boolean): PreviewGaleria {
+function criarPreviewGaleria(
+  arquivo: File,
+  ordem: number,
+  principal: boolean,
+): PreviewGaleria {
   return {
     arquivo,
     id: `${arquivo.name}-${arquivo.lastModified}-${arquivo.size}-${crypto.randomUUID()}`,
@@ -249,7 +360,9 @@ function indiceDaEtapa(etapaId: EtapaId) {
 function validarFormularioCasa(
   formulario: HTMLFormElement,
   etapasPermitidas?: Set<EtapaId>,
-  contexto: { possuiImagemPrincipal: boolean } = { possuiImagemPrincipal: false },
+  contexto: { possuiImagemPrincipal: boolean } = {
+    possuiImagemPrincipal: false,
+  },
 ): ErrosFormularioCasa {
   const dados = new FormData(formulario);
   const erros: ErrosFormularioCasa = {};
@@ -297,9 +410,9 @@ function removerErrosDaEtapa(
 
 function obterEtapasComErro(erros: ErrosFormularioCasa): EtapaId[] {
   const camposComErro = new Set(Object.keys(erros));
-  const etapas = CAMPOS_OBRIGATORIOS_CASA
-    .filter((campo) => camposComErro.has(campo.name))
-    .map((campo) => campo.etapa);
+  const etapas = CAMPOS_OBRIGATORIOS_CASA.filter((campo) =>
+    camposComErro.has(campo.name),
+  ).map((campo) => campo.etapa);
 
   return Array.from(new Set(etapas));
 }
@@ -310,7 +423,8 @@ export function PropertyForm({
   podeGerenciar,
   propriedade,
 }: PropertyFormProps) {
-  const action = modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
+  const action =
+    modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const searchParams = useSearchParams();
   const erroServidor = searchParams.get("erro");
   const [etapaAtual, setEtapaAtual] = useState(0);
@@ -331,9 +445,13 @@ export function PropertyForm({
   const estrutura = propriedade?.estrutura;
   const valores = propriedade?.valores;
   const regras = propriedade?.regras;
-  const comodidadesSelecionadas = new Set(propriedade?.comodidades.map((item) => item.id) ?? []);
+  const comodidadesSelecionadas = new Set(
+    propriedade?.comodidades.map((item) => item.id) ?? [],
+  );
   const bloqueado =
-    !podeGerenciar || Boolean(erroImagem) || Object.keys(errosCampos).length > 0;
+    !podeGerenciar ||
+    Boolean(erroImagem) ||
+    Object.keys(errosCampos).length > 0;
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
   const estaNaUltimaEtapa = etapaAtual === ETAPAS.length - 1;
   const etapasConcluidas = ETAPAS.slice(0, etapaAtual).map((item) => item.id);
@@ -350,7 +468,9 @@ export function PropertyForm({
   useEffect(() => {
     return () => {
       if (previewCapaRef.current) URL.revokeObjectURL(previewCapaRef.current);
-      previewsGaleriaRef.current.forEach((preview) => URL.revokeObjectURL(preview.url));
+      previewsGaleriaRef.current.forEach((preview) =>
+        URL.revokeObjectURL(preview.url),
+      );
     };
   }, []);
 
@@ -388,7 +508,9 @@ export function PropertyForm({
 
     if (novasImagens.length === 0) return;
 
-    const erro = novasImagens.map((arquivo) => validarImagem(arquivo)).find(Boolean) ?? null;
+    const erro =
+      novasImagens.map((arquivo) => validarImagem(arquivo)).find(Boolean) ??
+      null;
     setErroImagem(erro);
 
     if (erro) {
@@ -398,7 +520,10 @@ export function PropertyForm({
 
     // O input file do navegador substitui a selecao a cada upload.
     // A ref preserva a colecao real para que novas fotos sejam adicionadas sem apagar as anteriores.
-    sincronizarArquivosGaleria([...arquivosGaleriaRef.current, ...novasImagens]);
+    sincronizarArquivosGaleria([
+      ...arquivosGaleriaRef.current,
+      ...novasImagens,
+    ]);
     removerErrosDosCampos(["imagemCapaArquivo"]);
 
     setPreviewsGaleria((previewsAtuais) =>
@@ -431,7 +556,8 @@ export function PropertyForm({
   function moverGaleria(indiceAtual: number, deslocamento: -1 | 1) {
     setPreviewsGaleria((previewsAtuais) => {
       const indiceDestino = indiceAtual + deslocamento;
-      if (indiceDestino < 0 || indiceDestino >= previewsAtuais.length) return previewsAtuais;
+      if (indiceDestino < 0 || indiceDestino >= previewsAtuais.length)
+        return previewsAtuais;
 
       const atualizados = [...previewsAtuais];
       const itemAtual = atualizados[indiceAtual];
@@ -441,7 +567,9 @@ export function PropertyForm({
       atualizados[indiceAtual] = itemDestino;
       atualizados[indiceDestino] = itemAtual;
       const normalizados = normalizarGaleria(atualizados);
-      sincronizarArquivosGaleria(normalizados.map((preview) => preview.arquivo));
+      sincronizarArquivosGaleria(
+        normalizados.map((preview) => preview.arquivo),
+      );
       return normalizados;
     });
   }
@@ -465,14 +593,18 @@ export function PropertyForm({
 
   function focarCampoInvalido(nome: string) {
     window.setTimeout(() => {
-      const campo = formRef.current?.querySelector<HTMLElement>(`[name="${nome}"]`);
+      const campo = formRef.current?.querySelector<HTMLElement>(
+        `[name="${nome}"]`,
+      );
       campo?.scrollIntoView({ behavior: "smooth", block: "center" });
       campo?.focus({ preventScroll: true });
     }, 80);
   }
 
   function aplicarErrosValidacao(erros: ErrosFormularioCasa) {
-    const primeiroCampo = CAMPOS_OBRIGATORIOS_CASA.find((campo) => erros[campo.name]);
+    const primeiroCampo = CAMPOS_OBRIGATORIOS_CASA.find(
+      (campo) => erros[campo.name],
+    );
     setErrosCampos(erros);
 
     if (!primeiroCampo) return;
@@ -484,7 +616,10 @@ export function PropertyForm({
   }
 
   function limparErroDoCampo(evento: FormEvent<HTMLFormElement>) {
-    const alvo = evento.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    const alvo = evento.target as
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement;
     if (!alvo.name || !errosCampos[alvo.name]) return;
 
     setErrosCampos((errosAtuais) => {
@@ -507,7 +642,11 @@ export function PropertyForm({
   function atualizarVisibilidadePublica(ativo: boolean) {
     setPublicaSelecionada(ativo);
     if (!ativo) {
-      removerErrosDosCampos(["tituloPublico", "descricaoPublica", "imagemCapaArquivo"]);
+      removerErrosDosCampos([
+        "tituloPublico",
+        "descricaoPublica",
+        "imagemCapaArquivo",
+      ]);
     }
   }
 
@@ -560,7 +699,9 @@ export function PropertyForm({
     }
 
     setErrosCampos((errosAtuais) => removerErrosDaEtapa(errosAtuais, etapa.id));
-    setEtapaAtual((indiceAtual) => Math.min(indiceAtual + 1, ETAPAS.length - 1));
+    setEtapaAtual((indiceAtual) =>
+      Math.min(indiceAtual + 1, ETAPAS.length - 1),
+    );
   }
 
   function validarEnvio(evento: FormEvent<HTMLFormElement>) {
@@ -587,8 +728,8 @@ export function PropertyForm({
     return {
       possuiImagemPrincipal: Boolean(
         previewCapa ||
-          propriedade?.imagemCapa?.url ||
-          previewsGaleria.some((preview) => preview.principal),
+        propriedade?.imagemCapa?.url ||
+        previewsGaleria.some((preview) => preview.principal),
       ),
     };
   }
@@ -602,7 +743,9 @@ export function PropertyForm({
       onSubmit={validarEnvio}
       ref={formRef}
     >
-      {propriedade ? <input name="propriedadeId" type="hidden" value={propriedade.id} /> : null}
+      {propriedade ? (
+        <input name="propriedadeId" type="hidden" value={propriedade.id} />
+      ) : null}
 
       {erroServidor ? (
         <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
@@ -628,7 +771,9 @@ export function PropertyForm({
               Etapa {etapaAtual + 1} de {ETAPAS.length}
             </p>
             <h3 className="font-semibold">{etapa.label}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{etapa.descricao}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {etapa.descricao}
+            </p>
           </div>
         </div>
 
@@ -639,12 +784,18 @@ export function PropertyForm({
         */}
         <div hidden={etapa.id !== "basico"}>
           <EtapaBasico
-            defaultDescricaoCompleta={propriedade?.full_description ?? propriedade?.description ?? ""}
-            defaultDescricaoCurta={propriedade?.short_description ?? propriedade?.headline ?? ""}
+            defaultDescricaoCompleta={
+              propriedade?.full_description ?? propriedade?.description ?? ""
+            }
+            defaultDescricaoCurta={
+              propriedade?.short_description ?? propriedade?.headline ?? ""
+            }
             defaultDestaque={propriedade?.marketplace_featured ?? false}
             defaultNome={propriedade?.name}
             defaultNomeExibicao={
-              propriedade?.detalhesPublicos.nomeExibicao || propriedade?.name || ""
+              propriedade?.detalhesPublicos.nomeExibicao ||
+              propriedade?.name ||
+              ""
             }
             defaultPublica={propriedade?.is_public ?? false}
             defaultStatus={propriedade?.status ?? "draft"}
@@ -656,7 +807,11 @@ export function PropertyForm({
         </div>
 
         <div hidden={etapa.id !== "localizacao"}>
-          <EtapaLocalizacao endereco={endereco} disabled={!podeGerenciar} erros={errosCampos} />
+          <EtapaLocalizacao
+            endereco={endereco}
+            disabled={!podeGerenciar}
+            erros={errosCampos}
+          />
         </div>
 
         <div hidden={etapa.id !== "estrutura"}>
@@ -668,7 +823,11 @@ export function PropertyForm({
         </div>
 
         <div hidden={etapa.id !== "valores"}>
-          <EtapaValores disabled={!podeGerenciar} erros={errosCampos} valores={valores} />
+          <EtapaValores
+            disabled={!podeGerenciar}
+            erros={errosCampos}
+            valores={valores}
+          />
         </div>
 
         <div hidden={etapa.id !== "regras"}>
@@ -717,14 +876,25 @@ export function PropertyForm({
       <div className="sticky bottom-0 z-10 -mx-5 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:px-6">
         <div>
           {etapaAtual > 0 ? (
-            <ActionButton onClick={voltarEtapa} size="md" type="button" variant="settings">
+            <ActionButton
+              onClick={voltarEtapa}
+              size="md"
+              type="button"
+              variant="settings"
+            >
               Voltar
             </ActionButton>
           ) : null}
         </div>
 
         {!estaNaUltimaEtapa ? (
-          <ActionButton disabled={!podeGerenciar} onClick={avancarEtapa} size="lg" type="button" variant="edit">
+          <ActionButton
+            disabled={!podeGerenciar}
+            onClick={avancarEtapa}
+            size="lg"
+            type="button"
+            variant="edit"
+          >
             Proximo
           </ActionButton>
         ) : (
@@ -782,7 +952,14 @@ function EtapaBasico({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoTexto defaultValue={defaultNome} disabled={disabled} erro={erros.nome} label="Nome da casa" name="nome" obrigatorio />
+        <CampoTexto
+          defaultValue={defaultNome}
+          disabled={disabled}
+          erro={erros.nome}
+          label="Nome da casa"
+          name="nome"
+          obrigatorio
+        />
         <CampoTexto
           defaultValue={defaultNomeExibicao}
           disabled={disabled}
@@ -790,7 +967,15 @@ function EtapaBasico({
           name="nomeExibicao"
           placeholder="Nome apresentado futuramente ao hospede."
         />
-        <CampoSelect defaultValue={defaultTipo} disabled={disabled} erro={erros.tipo} label="Tipo" name="tipo" obrigatorio options={TIPOS} />
+        <CampoSelect
+          defaultValue={defaultTipo}
+          disabled={disabled}
+          erro={erros.tipo}
+          label="Tipo"
+          name="tipo"
+          obrigatorio
+          options={TIPOS}
+        />
       </div>
       <CampoTexto
         defaultValue={defaultDescricaoCurta}
@@ -809,7 +994,13 @@ function EtapaBasico({
         placeholder="Descreva a experiencia completa da casa."
       />
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoSelect defaultValue={defaultStatus} disabled={disabled} label="Status" name="status" options={STATUS} />
+        <CampoSelect
+          defaultValue={defaultStatus}
+          disabled={disabled}
+          label="Status"
+          name="status"
+          options={STATUS}
+        />
         <CampoCheckbox
           defaultChecked={defaultPublica}
           disabled={disabled}
@@ -817,7 +1008,12 @@ function EtapaBasico({
           name="visibilidadePublica"
           onChange={(evento) => onPublicaChange(evento.currentTarget.checked)}
         />
-        <CampoCheckbox defaultChecked={defaultDestaque} disabled={disabled} label="Destaque no marketplace" name="destaqueMarketplace" />
+        <CampoCheckbox
+          defaultChecked={defaultDestaque}
+          disabled={disabled}
+          label="Destaque no marketplace"
+          name="destaqueMarketplace"
+        />
       </div>
     </div>
   );
@@ -835,18 +1031,65 @@ function EtapaLocalizacao({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-[1.4fr_0.5fr]">
-        <CampoTexto defaultValue={endereco?.linha1} disabled={disabled} erro={erros.endereco} label="Endereco" name="endereco" obrigatorio />
-        <CampoTexto defaultValue={endereco?.numero} disabled={disabled} label="Numero" name="numero" />
+        <CampoTexto
+          defaultValue={endereco?.linha1}
+          disabled={disabled}
+          erro={erros.endereco}
+          label="Endereco"
+          name="endereco"
+          obrigatorio
+        />
+        <CampoTexto
+          defaultValue={endereco?.numero}
+          disabled={disabled}
+          label="Numero"
+          name="numero"
+        />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoTexto defaultValue={endereco?.bairro} disabled={disabled} label="Bairro" name="bairro" />
-        <CampoTexto defaultValue={endereco?.cidade} disabled={disabled} erro={erros.cidade} label="Cidade" name="cidade" obrigatorio />
-        <CampoTexto defaultValue={endereco?.estado} disabled={disabled} erro={erros.estado} label="Estado" maxLength={2} name="estado" obrigatorio />
+        <CampoTexto
+          defaultValue={endereco?.bairro}
+          disabled={disabled}
+          label="Bairro"
+          name="bairro"
+        />
+        <CampoTexto
+          defaultValue={endereco?.cidade}
+          disabled={disabled}
+          erro={erros.cidade}
+          label="Cidade"
+          name="cidade"
+          obrigatorio
+        />
+        <CampoTexto
+          defaultValue={endereco?.estado}
+          disabled={disabled}
+          erro={erros.estado}
+          label="Estado"
+          maxLength={2}
+          name="estado"
+          obrigatorio
+        />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoTexto defaultValue={endereco?.cep} disabled={disabled} label="CEP" name="cep" />
-        <CampoTexto defaultValue={endereco?.complemento} disabled={disabled} label="Complemento" name="complemento" />
-        <CampoTexto defaultValue={endereco?.referencia} disabled={disabled} label="Referencia" name="referencia" />
+        <CampoTexto
+          defaultValue={endereco?.cep}
+          disabled={disabled}
+          label="CEP"
+          name="cep"
+        />
+        <CampoTexto
+          defaultValue={endereco?.complemento}
+          disabled={disabled}
+          label="Complemento"
+          name="complemento"
+        />
+        <CampoTexto
+          defaultValue={endereco?.referencia}
+          disabled={disabled}
+          label="Referencia"
+          name="referencia"
+        />
       </div>
       <CampoTexto
         defaultValue={endereco?.googleMapsLink}
@@ -891,16 +1134,67 @@ function EtapaEstrutura({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoNumero defaultValue={estrutura?.hospedesMaximos ?? 1} disabled={disabled} erro={erros.hospedesMaximos} label="Quantidade maxima de hospedes" min={1} name="hospedesMaximos" obrigatorio />
-        <CampoNumero defaultValue={estrutura?.quartos ?? 1} disabled={disabled} erro={erros.quartosCasa} label="Quartos" min={1} name="quartosCasa" obrigatorio />
-        <CampoNumero defaultValue={estrutura?.camas ?? 1} disabled={disabled} label="Camas" min={1} name="camasCasa" />
-        <CampoNumero defaultValue={estrutura?.banheiros ?? 1} disabled={disabled} erro={erros.banheirosCasa} label="Banheiros" min={1} name="banheirosCasa" obrigatorio />
-        <CampoNumero defaultValue={estrutura?.garagemVagas ?? 0} disabled={disabled} label="Garagem/vagas" min={0} name="garagemVagas" />
+        <CampoNumero
+          defaultValue={estrutura?.hospedesMaximos ?? 1}
+          disabled={disabled}
+          erro={erros.hospedesMaximos}
+          label="Quantidade maxima de hospedes"
+          min={1}
+          name="hospedesMaximos"
+          obrigatorio
+        />
+        <CampoNumero
+          defaultValue={estrutura?.quartos ?? 1}
+          disabled={disabled}
+          erro={erros.quartosCasa}
+          label="Quartos"
+          min={1}
+          name="quartosCasa"
+          obrigatorio
+        />
+        <CampoNumero
+          defaultValue={estrutura?.camas ?? 1}
+          disabled={disabled}
+          label="Camas"
+          min={1}
+          name="camasCasa"
+        />
+        <CampoNumero
+          defaultValue={estrutura?.banheiros ?? 1}
+          disabled={disabled}
+          erro={erros.banheirosCasa}
+          label="Banheiros"
+          min={1}
+          name="banheirosCasa"
+          obrigatorio
+        />
+        <CampoNumero
+          defaultValue={estrutura?.garagemVagas ?? 0}
+          disabled={disabled}
+          label="Garagem/vagas"
+          min={0}
+          name="garagemVagas"
+        />
       </div>
       <div className="grid gap-3 md:grid-cols-3">
-        <CampoCheckbox defaultChecked={estrutura?.areaExterna ?? false} disabled={disabled} label="Area externa" name="areaExterna" />
-        <CampoCheckbox defaultChecked={estrutura?.piscina ?? false} disabled={disabled} label="Piscina" name="piscina" />
-        <CampoCheckbox defaultChecked={estrutura?.churrasqueira ?? false} disabled={disabled} label="Churrasqueira" name="churrasqueira" />
+        <CampoCheckbox
+          defaultChecked={estrutura?.areaExterna ?? false}
+          disabled={disabled}
+          label="Area externa"
+          name="areaExterna"
+        />
+        <CampoCheckbox
+          defaultChecked={estrutura?.piscina ?? false}
+          disabled={disabled}
+          label="Piscina"
+          name="piscina"
+        />
+        <CampoCheckbox
+          defaultChecked={estrutura?.churrasqueira ?? false}
+          disabled={disabled}
+          label="Churrasqueira"
+          name="churrasqueira"
+        />
       </div>
     </div>
   );
@@ -915,17 +1209,43 @@ function EtapaValores({
   erros: ErrosFormularioCasa;
   valores?: PropriedadeComRelacionamentos["valores"] | undefined;
 }) {
-  const maxParcelasInicial = limitarParcelasCartao(valores?.maxParcelasCartao ?? 1);
-  const [aceitaCartaoCredito, setAceitaCartaoCredito] = useState(
-    valores?.aceitaCartaoCredito ?? false,
+  const pagamentos = valores?.formasPagamento;
+  const maxParcelasInicial = limitarParcelasCartao(
+    pagamentos?.cartaoCredito.maxParcelas ?? valores?.maxParcelasCartao ?? 1,
   );
-  const [maxParcelasCartao, setMaxParcelasCartao] = useState(maxParcelasInicial);
+  const [pixAtivo, setPixAtivo] = useState(pagamentos?.pix.ativo ?? false);
+  const [dinheiroAtivo, setDinheiroAtivo] = useState(
+    pagamentos?.dinheiro.ativo ?? false,
+  );
+  const [cartaoDebitoAtivo, setCartaoDebitoAtivo] = useState(
+    pagamentos?.cartaoDebito.ativo ?? false,
+  );
+  const [aceitaCartaoCredito, setAceitaCartaoCredito] = useState(
+    pagamentos?.cartaoCredito.ativo ?? valores?.aceitaCartaoCredito ?? false,
+  );
+  const [transferenciaAtiva, setTransferenciaAtiva] = useState(
+    pagamentos?.transferenciaBancaria.ativo ?? false,
+  );
+  const [maxParcelasCartao, setMaxParcelasCartao] =
+    useState(maxParcelasInicial);
   const [jurosCartao, setJurosCartao] = useState(() =>
-    criarJurosParcelasIniciais(maxParcelasInicial, valores?.jurosParcelasCartao),
+    criarJurosParcelasIniciais(
+      maxParcelasInicial,
+      pagamentos?.cartaoCredito.jurosParcelas ?? valores?.jurosParcelasCartao,
+    ),
   );
   const [parcelaEmEdicao, setParcelaEmEdicao] = useState<number | null>(null);
   const [jurosEmEdicao, setJurosEmEdicao] = useState("0");
-  const parcelasCartao = Array.from({ length: maxParcelasCartao }, (_, indice) => indice + 1);
+  const parcelasCartao = Array.from(
+    { length: maxParcelasCartao },
+    (_, indice) => indice + 1,
+  );
+  const possuiPagamentoAtivo =
+    pixAtivo ||
+    dinheiroAtivo ||
+    cartaoDebitoAtivo ||
+    aceitaCartaoCredito ||
+    transferenciaAtiva;
 
   function alterarMaxParcelasCartao(valor: string) {
     const novoLimite = limitarParcelasCartao(Number.parseInt(valor || "1", 10));
@@ -964,11 +1284,39 @@ function EtapaValores({
   return (
     <div className="grid gap-5">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoMoeda defaultValue={valores?.valorDiaria ?? 0} disabled={disabled} erro={erros.valorDiaria} label="Valor da diaria" name="valorDiaria" obrigatorio />
-        <CampoMoeda defaultValue={valores?.taxaLimpeza ?? 0} disabled={disabled} label="Taxa de limpeza" name="taxaLimpeza" />
-        <CampoMoeda defaultValue={valores?.caucao ?? 0} disabled={disabled} label="Caucao" name="caucao" />
-        <CampoMoeda defaultValue={valores?.valorHospedeExtra ?? 0} disabled={disabled} label="Valor por hospede extra" name="valorHospedeExtra" />
-        <CampoNumero defaultValue={valores?.hospedesInclusos ?? 1} disabled={disabled} label="Hospedes inclusos no valor base" min={1} name="hospedesInclusos" />
+        <CampoMoeda
+          defaultValue={valores?.valorDiaria ?? 0}
+          disabled={disabled}
+          erro={erros.valorDiaria}
+          label="Valor da diaria"
+          name="valorDiaria"
+          obrigatorio
+        />
+        <CampoMoeda
+          defaultValue={valores?.taxaLimpeza ?? 0}
+          disabled={disabled}
+          label="Taxa de limpeza"
+          name="taxaLimpeza"
+        />
+        <CampoMoeda
+          defaultValue={valores?.caucao ?? 0}
+          disabled={disabled}
+          label="Caucao"
+          name="caucao"
+        />
+        <CampoMoeda
+          defaultValue={valores?.valorHospedeExtra ?? 0}
+          disabled={disabled}
+          label="Valor por hospede extra"
+          name="valorHospedeExtra"
+        />
+        <CampoNumero
+          defaultValue={valores?.hospedesInclusos ?? 1}
+          disabled={disabled}
+          label="Hospedes inclusos no valor base"
+          min={1}
+          name="hospedesInclusos"
+        />
       </div>
       <CampoCheckbox
         defaultChecked={valores?.cobraHospedeExtra ?? false}
@@ -977,135 +1325,328 @@ function EtapaValores({
         name="cobraHospedeExtra"
       />
 
-      <section className="rounded-xl border bg-background/45 p-4">
-        <div className="mb-4 flex items-center gap-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200">
-            <CreditCard className="h-4 w-4" />
-          </span>
-          <div>
-            <h4 className="font-semibold">Cartao de credito</h4>
-            <p className="text-sm text-muted-foreground">
-              Estrutura preparada para pagamento futuro, sem gateway nesta etapa.
-            </p>
-          </div>
+      <section className="grid gap-4 rounded-xl border bg-background/45 p-4">
+        <div>
+          <h4 className="font-semibold">Pagamento da hospedagem</h4>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Configure apenas os metodos aceitos pelo proprietario. Nao salve
+            dados de cartao, tokens ou senhas.
+          </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="flex items-center gap-2 rounded-xl border bg-background/55 px-3 py-2 text-sm">
-            <input
-              checked={aceitaCartaoCredito}
-              disabled={disabled}
-              name="aceitaCartaoCredito"
-              onChange={(evento) => setAceitaCartaoCredito(evento.currentTarget.checked)}
-              type="checkbox"
-            />
-            Aceita cartao de credito
-          </label>
+        {!possuiPagamentoAtivo ? (
+          <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-900 dark:text-amber-100">
+            Nenhuma forma de pagamento foi configurada. O hospede nao vera
+            opcoes de pagamento no Marketplace.
+          </p>
+        ) : null}
 
-          <CampoNumero
-            disabled={disabled || !aceitaCartaoCredito}
-            label="Quantidade maxima de parcelas"
-            max={MAX_PARCELAS_CARTAO}
-            min={1}
-            name="maxParcelasCartao"
-            onChange={(evento) => alterarMaxParcelasCartao(evento.currentTarget.value)}
-            value={maxParcelasCartao}
-          />
-        </div>
-
-        {aceitaCartaoCredito ? (
-          <>
-            {/*
-              Mantemos os campos ocultos com o contrato atual da server action.
-              A UI fica limpa, mas cada parcela continua sendo salva individualmente.
-            */}
-            {parcelasCartao.map((parcela) => (
-              <input
-                key={parcela}
-                name={`jurosParcela${parcela}`}
-                type="hidden"
-                value={jurosCartao[parcela] ?? "0"}
+        <div className="grid gap-3 xl:grid-cols-2">
+          <CartaoFormaPagamento
+            ativo={pixAtivo}
+            descricao="Chave e instrucoes para pagamento manual por Pix."
+            disabled={disabled}
+            icon={<Smartphone className="h-4 w-4" />}
+            label="Pix"
+            name="pagamentoPixAtivo"
+            onChange={setPixAtivo}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <CampoSelect
+                defaultValue={pagamentos?.pix.tipoChave ?? "aleatoria"}
+                disabled={disabled || !pixAtivo}
+                label="Tipo da chave Pix"
+                name="pixTipoChave"
+                options={TIPOS_CHAVE_PIX}
               />
-            ))}
+              <CampoTexto
+                defaultValue={pagamentos?.pix.chave ?? ""}
+                disabled={disabled || !pixAtivo}
+                erro={erros.pixChave}
+                label="Chave Pix"
+                name="pixChave"
+                obrigatorio={pixAtivo}
+              />
+              <CampoTexto
+                defaultValue={pagamentos?.pix.recebedor ?? ""}
+                disabled={disabled || !pixAtivo}
+                erro={erros.pixRecebedor}
+                label="Nome do recebedor"
+                name="pixRecebedor"
+                obrigatorio={pixAtivo}
+              />
+              <CampoTexto
+                defaultValue={pagamentos?.pix.banco ?? ""}
+                disabled={disabled || !pixAtivo}
+                label="Banco/instituicao"
+                name="pixBanco"
+              />
+            </div>
+            <CampoArea
+              defaultValue={pagamentos?.pix.instrucoes ?? ""}
+              disabled={disabled || !pixAtivo}
+              label="Instrucao Pix"
+              name="pixInstrucoes"
+              placeholder="Ex.: Enviar comprovante apos o pagamento."
+            />
+          </CartaoFormaPagamento>
 
-            <div className="mt-4 overflow-hidden rounded-xl border bg-background/55">
-              <div className="grid grid-cols-[0.7fr_1fr_auto] gap-3 border-b bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
-                <span>Parcela</span>
-                <span>Juros</span>
-                <span className="text-right">Acao</span>
-              </div>
-              <div className="divide-y">
-                {parcelasCartao.map((parcela) => (
-                  <div
-                    className="grid grid-cols-[0.7fr_1fr_auto] items-center gap-3 px-3 py-3 text-sm"
-                    key={parcela}
-                  >
-                    <span className="font-semibold">{parcela}x</span>
-                    <span className="text-muted-foreground">
-                      {formatarJuros(jurosCartao[parcela])}
-                    </span>
-                    <ActionButton
-                      disabled={disabled}
-                      onClick={() => abrirEdicaoJuros(parcela)}
-                      size="sm"
-                      type="button"
-                      variant="edit"
-                    >
-                      Editar
-                    </ActionButton>
-                  </div>
-                ))}
-              </div>
+          <CartaoFormaPagamento
+            ativo={dinheiroAtivo}
+            descricao="Instrucao simples para pagamento presencial ou combinado."
+            disabled={disabled}
+            icon={<Banknote className="h-4 w-4" />}
+            label="Dinheiro"
+            name="pagamentoDinheiroAtivo"
+            onChange={setDinheiroAtivo}
+          >
+            <CampoArea
+              defaultValue={pagamentos?.dinheiro.instrucoes ?? ""}
+              disabled={disabled || !dinheiroAtivo}
+              label="Instrucao para dinheiro"
+              name="dinheiroInstrucoes"
+              placeholder="Ex.: Pagamento no check-in."
+            />
+          </CartaoFormaPagamento>
+
+          <CartaoFormaPagamento
+            ativo={cartaoDebitoAtivo}
+            descricao="Instrucao operacional sem coletar dados de cartao."
+            disabled={disabled}
+            icon={<CreditCard className="h-4 w-4" />}
+            label="Cartao de debito"
+            name="pagamentoCartaoDebitoAtivo"
+            onChange={setCartaoDebitoAtivo}
+          >
+            <CampoArea
+              defaultValue={pagamentos?.cartaoDebito.instrucoes ?? ""}
+              disabled={disabled || !cartaoDebitoAtivo}
+              label="Instrucao para debito"
+              name="cartaoDebitoInstrucoes"
+              placeholder="Ex.: Pagamento via maquininha no local."
+            />
+          </CartaoFormaPagamento>
+
+          <CartaoFormaPagamento
+            ativo={aceitaCartaoCredito}
+            descricao="Parcelamento manual preparado para calculo futuro."
+            disabled={disabled}
+            icon={<CreditCard className="h-4 w-4" />}
+            label="Cartao de credito"
+            name="aceitaCartaoCredito"
+            onChange={setAceitaCartaoCredito}
+          >
+            <div className="grid gap-4 md:grid-cols-2">
+              <CampoNumero
+                disabled={disabled || !aceitaCartaoCredito}
+                erro={erros.maxParcelasCartao}
+                label="Quantidade maxima de parcelas"
+                max={MAX_PARCELAS_CARTAO}
+                min={1}
+                name="maxParcelasCartao"
+                obrigatorio={aceitaCartaoCredito}
+                onChange={(evento) =>
+                  alterarMaxParcelasCartao(evento.currentTarget.value)
+                }
+                value={maxParcelasCartao}
+              />
+              <CampoArea
+                defaultValue={pagamentos?.cartaoCredito.instrucoes ?? ""}
+                disabled={disabled || !aceitaCartaoCredito}
+                label="Instrucao para credito"
+                name="cartaoCreditoInstrucoes"
+                placeholder="Ex.: Link enviado pelo proprietario."
+              />
             </div>
 
-            <AppModal
-              description="Informe o percentual aplicado a esta parcela."
-              eyebrow="Cartao de credito"
-              onOpenChange={(open) => {
-                if (!open) setParcelaEmEdicao(null);
-              }}
-              open={parcelaEmEdicao !== null}
-              size="sm"
-              title="Editar juros da parcela"
-            >
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="parcelaCartaoSelecionada">Parcela</Label>
-                  <Input
-                    id="parcelaCartaoSelecionada"
-                    readOnly
-                    value={parcelaEmEdicao ? `${parcelaEmEdicao}x` : ""}
+            {aceitaCartaoCredito ? (
+              <>
+                {/*
+                  Mantemos os campos ocultos com o contrato atual da server action.
+                  A UI fica limpa, mas cada parcela continua sendo salva individualmente.
+                */}
+                {parcelasCartao.map((parcela) => (
+                  <input
+                    key={parcela}
+                    name={`jurosParcela${parcela}`}
+                    type="hidden"
+                    value={jurosCartao[parcela] ?? "0"}
                   />
+                ))}
+
+                <div className="mt-4 overflow-hidden rounded-xl border bg-background/55">
+                  <div className="grid grid-cols-[0.7fr_1fr_auto] gap-3 border-b bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
+                    <span>Parcela</span>
+                    <span>Juros</span>
+                    <span className="text-right">Acao</span>
+                  </div>
+                  <div className="divide-y">
+                    {parcelasCartao.map((parcela) => (
+                      <div
+                        className="grid grid-cols-[0.7fr_1fr_auto] items-center gap-3 px-3 py-3 text-sm"
+                        key={parcela}
+                      >
+                        <span className="font-semibold">{parcela}x</span>
+                        <span className="text-muted-foreground">
+                          {formatarJuros(jurosCartao[parcela])}
+                        </span>
+                        <ActionButton
+                          disabled={disabled}
+                          onClick={() => abrirEdicaoJuros(parcela)}
+                          size="sm"
+                          type="button"
+                          variant="edit"
+                        >
+                          Editar
+                        </ActionButton>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="jurosCartaoSelecionado">Juros (%)</Label>
-                  <Input
-                    disabled={disabled}
-                    id="jurosCartaoSelecionado"
-                    min={0}
-                    onChange={(evento) => setJurosEmEdicao(evento.currentTarget.value)}
-                    step="0.01"
-                    type="number"
-                    value={jurosEmEdicao}
-                  />
-                </div>
-                <div className="flex justify-end border-t pt-4">
-                  <ActionButton
-                    disabled={disabled}
-                    onClick={salvarJurosParcela}
-                    size="md"
-                    type="button"
-                    variant="add"
-                  >
-                    Salvar
-                  </ActionButton>
-                </div>
-              </div>
-            </AppModal>
-          </>
-        ) : null}
+
+                <AppModal
+                  description="Informe o percentual aplicado a esta parcela."
+                  eyebrow="Cartao de credito"
+                  onOpenChange={(open) => {
+                    if (!open) setParcelaEmEdicao(null);
+                  }}
+                  open={parcelaEmEdicao !== null}
+                  size="sm"
+                  title="Editar juros da parcela"
+                >
+                  <div className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="parcelaCartaoSelecionada">Parcela</Label>
+                      <Input
+                        id="parcelaCartaoSelecionada"
+                        readOnly
+                        value={parcelaEmEdicao ? `${parcelaEmEdicao}x` : ""}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="jurosCartaoSelecionado">Juros (%)</Label>
+                      <Input
+                        disabled={disabled}
+                        id="jurosCartaoSelecionado"
+                        min={0}
+                        onChange={(evento) =>
+                          setJurosEmEdicao(evento.currentTarget.value)
+                        }
+                        step="0.01"
+                        type="number"
+                        value={jurosEmEdicao}
+                      />
+                    </div>
+                    <div className="flex justify-end border-t pt-4">
+                      <ActionButton
+                        disabled={disabled}
+                        onClick={salvarJurosParcela}
+                        size="md"
+                        type="button"
+                        variant="add"
+                      >
+                        Salvar
+                      </ActionButton>
+                    </div>
+                  </div>
+                </AppModal>
+              </>
+            ) : null}
+          </CartaoFormaPagamento>
+
+          <CartaoFormaPagamento
+            ativo={transferenciaAtiva}
+            descricao="Dados opcionais para transferencia manual."
+            disabled={disabled}
+            icon={<Landmark className="h-4 w-4" />}
+            label="Transferencia bancaria"
+            name="pagamentoTransferenciaAtivo"
+            onChange={setTransferenciaAtiva}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <CampoTexto
+                defaultValue={pagamentos?.transferenciaBancaria.banco ?? ""}
+                disabled={disabled || !transferenciaAtiva}
+                label="Banco"
+                name="transferenciaBanco"
+              />
+              <CampoTexto
+                defaultValue={pagamentos?.transferenciaBancaria.recebedor ?? ""}
+                disabled={disabled || !transferenciaAtiva}
+                label="Nome do recebedor"
+                name="transferenciaRecebedor"
+              />
+              <CampoTexto
+                defaultValue={pagamentos?.transferenciaBancaria.agencia ?? ""}
+                disabled={disabled || !transferenciaAtiva}
+                label="Agencia"
+                name="transferenciaAgencia"
+              />
+              <CampoTexto
+                defaultValue={pagamentos?.transferenciaBancaria.conta ?? ""}
+                disabled={disabled || !transferenciaAtiva}
+                label="Conta"
+                name="transferenciaConta"
+              />
+            </div>
+            <CampoArea
+              defaultValue={pagamentos?.transferenciaBancaria.instrucoes ?? ""}
+              disabled={disabled || !transferenciaAtiva}
+              label="Instrucao para transferencia"
+              name="transferenciaInstrucoes"
+              placeholder="Ex.: Dados enviados apos confirmacao da reserva."
+            />
+          </CartaoFormaPagamento>
+        </div>
       </section>
     </div>
+  );
+}
+
+function CartaoFormaPagamento({
+  ativo,
+  children,
+  descricao,
+  disabled,
+  icon,
+  label,
+  name,
+  onChange,
+}: {
+  ativo: boolean;
+  children: ReactNode;
+  descricao: string;
+  disabled: boolean;
+  icon: ReactNode;
+  label: string;
+  name: string;
+  onChange: (ativo: boolean) => void;
+}) {
+  return (
+    <section className="grid gap-3 rounded-xl border bg-background/55 p-3">
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          checked={ativo}
+          className="mt-1"
+          disabled={disabled}
+          name={name}
+          onChange={(evento) => onChange(evento.currentTarget.checked)}
+          type="checkbox"
+        />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200">
+          {icon}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold">{label}</span>
+          <span className="mt-0.5 block text-xs text-muted-foreground">
+            {descricao}
+          </span>
+        </span>
+      </label>
+      {ativo ? (
+        <div className="grid gap-3 border-t pt-3">{children}</div>
+      ) : null}
+    </section>
   );
 }
 
@@ -1119,16 +1660,53 @@ function EtapaRegras({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <CampoTexto defaultValue={regras?.check_in_time ?? ""} disabled={disabled} label="Horario de check-in" name="checkInTime" type="time" />
-        <CampoTexto defaultValue={regras?.check_out_time ?? ""} disabled={disabled} label="Horario de check-out" name="checkOutTime" type="time" />
+        <CampoTexto
+          defaultValue={regras?.check_in_time ?? ""}
+          disabled={disabled}
+          label="Horario de check-in"
+          name="checkInTime"
+          type="time"
+        />
+        <CampoTexto
+          defaultValue={regras?.check_out_time ?? ""}
+          disabled={disabled}
+          label="Horario de check-out"
+          name="checkOutTime"
+          type="time"
+        />
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <CampoCheckbox defaultChecked={regras?.allow_pets ?? false} disabled={disabled} label="Permite pets" name="allowPets" />
-        <CampoCheckbox defaultChecked={regras?.allow_children ?? true} disabled={disabled} label="Aceita criancas" name="allowChildren" />
-        <CampoCheckbox defaultChecked={regras?.allow_smoking ?? false} disabled={disabled} label="Permite fumantes" name="allowSmoking" />
-        <CampoCheckbox defaultChecked={regras?.allow_events ?? false} disabled={disabled} label="Permite festas/eventos" name="allowEvents" />
+        <CampoCheckbox
+          defaultChecked={regras?.allow_pets ?? false}
+          disabled={disabled}
+          label="Permite pets"
+          name="allowPets"
+        />
+        <CampoCheckbox
+          defaultChecked={regras?.allow_children ?? true}
+          disabled={disabled}
+          label="Aceita criancas"
+          name="allowChildren"
+        />
+        <CampoCheckbox
+          defaultChecked={regras?.allow_smoking ?? false}
+          disabled={disabled}
+          label="Permite fumantes"
+          name="allowSmoking"
+        />
+        <CampoCheckbox
+          defaultChecked={regras?.allow_events ?? false}
+          disabled={disabled}
+          label="Permite festas/eventos"
+          name="allowEvents"
+        />
       </div>
-      <CampoArea defaultValue={regras?.additional_rules ?? ""} disabled={disabled} label="Regras gerais" name="additionalRules" />
+      <CampoArea
+        defaultValue={regras?.additional_rules ?? ""}
+        disabled={disabled}
+        label="Regras gerais"
+        name="additionalRules"
+      />
       <CampoArea
         defaultValue={regras?.special_instructions ?? ""}
         disabled={disabled}
@@ -1161,7 +1739,8 @@ function EtapaCompartilhamento({
   return (
     <div className="grid gap-4">
       <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
-        Campos opcionais preparados para publicacao e compartilhamento futuros. Nenhuma regra de SEO e aplicada agora.
+        Campos opcionais preparados para publicacao e compartilhamento futuros.
+        Nenhuma regra de SEO e aplicada agora.
       </p>
       <CampoTexto
         defaultValue={detalhes?.tituloPublico}
@@ -1260,7 +1839,9 @@ function EtapaImagens({
         ) : null}
         {previewCapa || imagemCapaAtual ? (
           <PreviewImagem
-            titulo={previewCapa ? "Nova imagem principal" : "Imagem principal atual"}
+            titulo={
+              previewCapa ? "Nova imagem principal" : "Imagem principal atual"
+            }
             url={previewCapa ?? imagemCapaAtual ?? ""}
           />
         ) : null}
@@ -1269,19 +1850,43 @@ function EtapaImagens({
           {previewsGaleria.length ? (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {previewsGaleria.map((preview, indice) => (
-                <div className="grid gap-3 overflow-hidden rounded-lg border bg-background/55 p-3" key={preview.id}>
-                  <input name="titulosGaleria" readOnly type="hidden" value={preview.titulo} />
-                  <input name="ordensGaleria" readOnly type="hidden" value={preview.ordem} />
+                <div
+                  className="grid gap-3 overflow-hidden rounded-lg border bg-background/55 p-3"
+                  key={preview.id}
+                >
+                  <input
+                    name="titulosGaleria"
+                    readOnly
+                    type="hidden"
+                    value={preview.titulo}
+                  />
+                  <input
+                    name="ordensGaleria"
+                    readOnly
+                    type="hidden"
+                    value={preview.ordem}
+                  />
                   {preview.principal ? (
-                    <input name="imagemPrincipalGaleriaIndice" readOnly type="hidden" value={indice} />
+                    <input
+                      name="imagemPrincipalGaleriaIndice"
+                      readOnly
+                      type="hidden"
+                      value={indice}
+                    />
                   ) : null}
 
-                  <img alt={preview.titulo || preview.nome} className="h-28 w-full rounded-lg object-cover" src={preview.url} />
+                  <img
+                    alt={preview.titulo || preview.nome}
+                    className="h-28 w-full rounded-lg object-cover"
+                    src={preview.url}
+                  />
                   <CampoTexto
                     disabled={disabled}
                     label="Nome/titulo da foto"
                     name={`tituloGaleriaVisual${indice}`}
-                    onChange={(evento) => atualizarTituloGaleria(indice, evento.currentTarget.value)}
+                    onChange={(evento) =>
+                      atualizarTituloGaleria(indice, evento.currentTarget.value)
+                    }
                     value={preview.titulo}
                   />
                   <div className="flex flex-wrap items-center gap-2">
@@ -1308,7 +1913,9 @@ function EtapaImagens({
                     </ActionButton>
                     <ActionButton
                       aria-label="Mover foto para baixo"
-                      disabled={disabled || indice === previewsGaleria.length - 1}
+                      disabled={
+                        disabled || indice === previewsGaleria.length - 1
+                      }
                       icon={<ArrowDown className="h-4 w-4" />}
                       onClick={() => moverGaleria(indice, 1)}
                       size="icon"
@@ -1341,7 +1948,8 @@ function EtapaImagens({
                     : "Nenhuma foto cadastrada"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Adicione novas fotos aqui. A galeria salva permite definir capa, reordenar e excluir.
+                  Adicione novas fotos aqui. A galeria salva permite definir
+                  capa, reordenar e excluir.
                 </p>
               </div>
             </div>
@@ -1595,12 +2203,22 @@ function LabelCampo({
   );
 }
 
-function PreviewImagem({ titulo, url }: { titulo: string; url: string | null }) {
+function PreviewImagem({
+  titulo,
+  url,
+}: {
+  titulo: string;
+  url: string | null;
+}) {
   return (
     <div className="rounded-xl border bg-background/45 p-3">
       <p className="mb-3 text-sm font-semibold">{titulo}</p>
       {url ? (
-        <img alt={titulo} className="h-40 w-full rounded-lg object-cover" src={url} />
+        <img
+          alt={titulo}
+          className="h-40 w-full rounded-lg object-cover"
+          src={url}
+        />
       ) : (
         <div className="flex h-40 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
           <ImagePlus className="mr-2 h-4 w-4" />

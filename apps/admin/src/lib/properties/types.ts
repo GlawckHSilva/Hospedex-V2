@@ -2,7 +2,7 @@ import type {
   AmenityRow,
   MediaAssetRow,
   PropertyRow,
-  PropertySettingRow
+  PropertySettingRow,
 } from "@hospedex/types";
 
 /**
@@ -44,15 +44,62 @@ export type EstruturaPropriedade = {
   quartos: number;
 };
 
+export type TipoChavePixPropriedade =
+  | "cpf"
+  | "cnpj"
+  | "email"
+  | "telefone"
+  | "aleatoria";
+
+export type FormasPagamentoPropriedade = {
+  cartaoCredito: {
+    ativo: boolean;
+    instrucoes: string;
+    jurosParcelas: Array<{
+      jurosPercentual: number;
+      parcela: number;
+    }>;
+    maxParcelas: number;
+  };
+  cartaoDebito: {
+    ativo: boolean;
+    instrucoes: string;
+  };
+  dinheiro: {
+    ativo: boolean;
+    instrucoes: string;
+  };
+  pix: {
+    ativo: boolean;
+    banco: string;
+    chave: string;
+    instrucoes: string;
+    recebedor: string;
+    tipoChave: TipoChavePixPropriedade;
+  };
+  transferenciaBancaria: {
+    agencia: string;
+    ativo: boolean;
+    banco: string;
+    conta: string;
+    instrucoes: string;
+    recebedor: string;
+  };
+};
+
 export type ValoresPropriedade = {
+  /** @deprecated Mantido para compatibilidade com funcoes publicas antigas. */
   aceitaCartaoCredito: boolean;
   caucao: number;
   cobraHospedeExtra: boolean;
+  formasPagamento: FormasPagamentoPropriedade;
   hospedesInclusos: number;
+  /** @deprecated Usar formasPagamento.cartaoCredito.jurosParcelas. */
   jurosParcelasCartao: Array<{
     jurosPercentual: number;
     parcela: number;
   }>;
+  /** @deprecated Usar formasPagamento.cartaoCredito.maxParcelas. */
   maxParcelasCartao: number;
   taxaLimpeza: number;
   valorDiaria: number;

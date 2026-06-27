@@ -6,7 +6,7 @@ import type {
   PlanRow,
   PropertyAmenityRow,
   PropertyRow,
-  PropertySettingRow
+  PropertySettingRow,
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -16,9 +16,11 @@ import type {
   DetalhesPublicosPropriedade,
   EnderecoPropriedade,
   EstruturaPropriedade,
+  FormasPagamentoPropriedade,
   LimitesPlanoPropriedades,
   PropriedadeComRelacionamentos,
-  ValoresPropriedade
+  TipoChavePixPropriedade,
+  ValoresPropriedade,
 } from "./types";
 
 /**
@@ -43,13 +45,15 @@ export function podeLerPropriedades(contexto: ContextoAutenticacao): boolean {
   return contexto.permissions.includes("properties.read");
 }
 
-export function podeGerenciarPropriedades(contexto: ContextoAutenticacao): boolean {
+export function podeGerenciarPropriedades(
+  contexto: ContextoAutenticacao,
+): boolean {
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("properties.manage");
 }
 
 export async function carregarDadosModuloPropriedades(
-  contexto: ContextoAutenticacao
+  contexto: ContextoAutenticacao,
 ): Promise<DadosModuloPropriedades> {
   const tenantId = contexto.tenant?.id;
 
@@ -58,7 +62,7 @@ export async function carregarDadosModuloPropriedades(
       propriedades: [],
       comodidadesDisponiveis: [],
       limitesPlano: criarLimitesPlanoPadrao(),
-      podeGerenciar: false
+      podeGerenciar: false,
     };
   }
 
@@ -69,7 +73,7 @@ export async function carregarDadosModuloPropriedades(
     imagensResultado,
     comodidadesResultado,
     vinculosComodidadesResultado,
-    limitesPlano
+    limitesPlano,
   ] = await Promise.all([
     supabase
       .from("properties")
@@ -102,21 +106,24 @@ export async function carregarDadosModuloPropriedades(
       .select("*")
       .eq("tenant_id", tenantId)
       .returns<PropertyAmenityRow[]>(),
-    carregarLimitesPlano(tenantId)
+    carregarLimitesPlano(tenantId),
   ]);
 
   registrarErroLeitura("propriedades", propriedadesResultado.error);
   registrarErroLeitura("regras das casas", configuracoesResultado.error);
   registrarErroLeitura("imagens", imagensResultado.error);
   registrarErroLeitura("comodidades", comodidadesResultado.error);
-  registrarErroLeitura("vínculos de comodidades", vinculosComodidadesResultado.error);
+  registrarErroLeitura(
+    "vínculos de comodidades",
+    vinculosComodidadesResultado.error,
+  );
 
   const propriedades = montarPropriedades(
     propriedadesResultado.data ?? [],
     configuracoesResultado.data ?? [],
     imagensResultado.data ?? [],
     comodidadesResultado.data ?? [],
-    vinculosComodidadesResultado.data ?? []
+    vinculosComodidadesResultado.data ?? [],
   );
 
   return {
@@ -124,14 +131,14 @@ export async function carregarDadosModuloPropriedades(
     comodidadesDisponiveis: comodidadesResultado.data ?? [],
     limitesPlano: {
       ...limitesPlano,
-      propriedadesUsadas: propriedades.length
+      propriedadesUsadas: propriedades.length,
     },
-    podeGerenciar: podeGerenciarPropriedades(contexto)
+    podeGerenciar: podeGerenciarPropriedades(contexto),
   };
 }
 
 export async function carregarLimitesPlano(
-  tenantId: string
+  tenantId: string,
 ): Promise<Omit<LimitesPlanoPropriedades, "propriedadesUsadas">> {
   const supabase = await criarClienteSupabaseServer();
   const hoje = new Date().toISOString().slice(0, 10);
@@ -153,7 +160,7 @@ export async function carregarLimitesPlano(
       .or(`expires_at.is.null,expires_at.gte.${hoje}`)
       .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle<LicencaLimiteRow>()
+      .maybeSingle<LicencaLimiteRow>(),
   ]);
 
   if (assinaturaResultado.error) {
@@ -164,7 +171,9 @@ export async function carregarLimitesPlano(
   }
 
   const assinatura = assinaturaResultado.data;
-  const limiteLicenca = obterLimitePropriedadesLicenca(licencaResultado.data?.limits);
+  const limiteLicenca = obterLimitePropriedadesLicenca(
+    licencaResultado.data?.limits,
+  );
 
   if (!assinatura?.plan_id) return criarLimitesPlanoPadrao();
 
@@ -180,7 +189,8 @@ export async function carregarLimitesPlano(
 
   return {
     nomePlano: plano?.name ?? "Plano padrão",
-    maxPropriedades: limiteLicenca ?? plano?.max_properties ?? LIMITE_PADRAO_PLANO
+    maxPropriedades:
+      limiteLicenca ?? plano?.max_properties ?? LIMITE_PADRAO_PLANO,
   };
 }
 
@@ -198,7 +208,7 @@ export function normalizarEndereco(valor: JsonValue): EnderecoPropriedade {
     linha1: obterTextoJson(endereco, "linha1"),
     longitude: obterNumeroJsonOuNulo(endereco, "longitude"),
     numero: obterTextoJson(endereco, "numero"),
-    referencia: obterTextoJson(endereco, "referencia")
+    referencia: obterTextoJson(endereco, "referencia"),
   };
 }
 
@@ -207,13 +217,13 @@ function montarPropriedades(
   configuracoes: PropertySettingRow[],
   imagens: MediaAssetRow[],
   comodidades: AmenityRow[],
-  vinculosComodidades: PropertyAmenityRow[]
+  vinculosComodidades: PropertyAmenityRow[],
 ): PropriedadeComRelacionamentos[] {
   const configuracoesPorPropriedade = indexarPorPropriedade(configuracoes);
   const imagensPorPropriedade = agruparPorPropriedade(imagens);
   const comodidadesPorPropriedade = montarComodidadesPorPropriedade(
     comodidades,
-    vinculosComodidades
+    vinculosComodidades,
   );
 
   return propriedades.map((propriedade) => ({
@@ -221,18 +231,20 @@ function montarPropriedades(
     detalhesPublicos: normalizarDetalhesPublicos(propriedade.public_details),
     enderecoFormatado: normalizarEndereco(propriedade.address),
     estrutura: normalizarEstrutura(propriedade.structure_details),
-    imagemCapa: obterImagemPrincipal(imagensPorPropriedade.get(propriedade.id) ?? []),
+    imagemCapa: obterImagemPrincipal(
+      imagensPorPropriedade.get(propriedade.id) ?? [],
+    ),
     imagens: imagensPorPropriedade.get(propriedade.id) ?? [],
     comodidades: comodidadesPorPropriedade.get(propriedade.id) ?? [],
     regras:
       configuracoesPorPropriedade.get(propriedade.id) ??
       criarRegrasPadrao(propriedade),
-    valores: normalizarValores(propriedade.pricing_details)
+    valores: normalizarValores(propriedade.pricing_details),
   }));
 }
 
 function indexarPorPropriedade<TItem extends { property_id: string | null }>(
-  itens: TItem[]
+  itens: TItem[],
 ) {
   const indice = new Map<string, TItem>();
 
@@ -245,7 +257,7 @@ function indexarPorPropriedade<TItem extends { property_id: string | null }>(
 }
 
 function agruparPorPropriedade<TItem extends { property_id: string | null }>(
-  itens: TItem[]
+  itens: TItem[],
 ) {
   const grupos = new Map<string, TItem[]>();
 
@@ -270,24 +282,112 @@ function normalizarEstrutura(valor: JsonValue): EstruturaPropriedade {
     garagemVagas: obterNumeroJson(estrutura, "garagemVagas"),
     hospedesMaximos: obterNumeroJson(estrutura, "hospedesMaximos", 1),
     piscina: obterBooleanoJson(estrutura, "piscina"),
-    quartos: obterNumeroJson(estrutura, "quartos")
+    quartos: obterNumeroJson(estrutura, "quartos"),
   };
 }
 
 function normalizarValores(valor: JsonValue): ValoresPropriedade {
   const valores = valorEhObjeto(valor) ? valor : {};
+  const formasPagamento = normalizarFormasPagamento(valores);
+  const jurosCartao =
+    formasPagamento.cartaoCredito.jurosParcelas.length > 0
+      ? formasPagamento.cartaoCredito.jurosParcelas
+      : normalizarJurosParcelas(valores.jurosParcelasCartao ?? null);
+  const maxParcelasCartao =
+    formasPagamento.cartaoCredito.maxParcelas ||
+    obterNumeroJson(valores, "maxParcelasCartao", 1);
 
   return {
-    aceitaCartaoCredito: obterBooleanoJson(valores, "aceitaCartaoCredito"),
+    aceitaCartaoCredito:
+      formasPagamento.cartaoCredito.ativo ||
+      obterBooleanoJson(valores, "aceitaCartaoCredito"),
     caucao: obterNumeroJson(valores, "caucao"),
     cobraHospedeExtra: obterBooleanoJson(valores, "cobraHospedeExtra"),
+    formasPagamento,
     hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
-    jurosParcelasCartao: normalizarJurosParcelas(valores.jurosParcelasCartao ?? null),
-    maxParcelasCartao: obterNumeroJson(valores, "maxParcelasCartao", 1),
+    jurosParcelasCartao: jurosCartao,
+    maxParcelasCartao,
     taxaLimpeza: obterNumeroJson(valores, "taxaLimpeza"),
     valorDiaria: obterNumeroJson(valores, "valorDiaria"),
-    valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra")
+    valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra"),
   };
+}
+
+function normalizarFormasPagamento(
+  valores: Record<string, JsonValue>,
+): FormasPagamentoPropriedade {
+  const formasValor = valores.formasPagamento ?? null;
+  const formas = valorEhObjeto(formasValor) ? formasValor : {};
+  const pixValor = formas.pix ?? null;
+  const dinheiroValor = formas.dinheiro ?? null;
+  const cartaoDebitoValor = formas.cartaoDebito ?? null;
+  const cartaoCreditoValor = formas.cartaoCredito ?? null;
+  const transferenciaBancariaValor = formas.transferenciaBancaria ?? null;
+  const pix = valorEhObjeto(pixValor) ? pixValor : {};
+  const dinheiro = valorEhObjeto(dinheiroValor) ? dinheiroValor : {};
+  const cartaoDebito = valorEhObjeto(cartaoDebitoValor)
+    ? cartaoDebitoValor
+    : {};
+  const cartaoCredito = valorEhObjeto(cartaoCreditoValor)
+    ? cartaoCreditoValor
+    : {};
+  const transferenciaBancaria = valorEhObjeto(transferenciaBancariaValor)
+    ? transferenciaBancariaValor
+    : {};
+  const maxParcelas = Math.max(
+    1,
+    obterNumeroJson(
+      cartaoCredito,
+      "maxParcelas",
+      obterNumeroJson(valores, "maxParcelasCartao", 1),
+    ),
+  );
+  const jurosParcelas = normalizarJurosParcelas(
+    cartaoCredito.jurosParcelas ?? valores.jurosParcelasCartao ?? null,
+  );
+
+  return {
+    cartaoCredito: {
+      ativo:
+        obterBooleanoJson(cartaoCredito, "ativo") ||
+        obterBooleanoJson(valores, "aceitaCartaoCredito"),
+      instrucoes: obterTextoJson(cartaoCredito, "instrucoes"),
+      jurosParcelas,
+      maxParcelas,
+    },
+    cartaoDebito: {
+      ativo: obterBooleanoJson(cartaoDebito, "ativo"),
+      instrucoes: obterTextoJson(cartaoDebito, "instrucoes"),
+    },
+    dinheiro: {
+      ativo: obterBooleanoJson(dinheiro, "ativo"),
+      instrucoes: obterTextoJson(dinheiro, "instrucoes"),
+    },
+    pix: {
+      ativo: obterBooleanoJson(pix, "ativo"),
+      banco: obterTextoJson(pix, "banco"),
+      chave: obterTextoJson(pix, "chave"),
+      instrucoes: obterTextoJson(pix, "instrucoes"),
+      recebedor: obterTextoJson(pix, "recebedor"),
+      tipoChave: normalizarTipoChavePix(obterTextoJson(pix, "tipoChave")),
+    },
+    transferenciaBancaria: {
+      agencia: obterTextoJson(transferenciaBancaria, "agencia"),
+      ativo: obterBooleanoJson(transferenciaBancaria, "ativo"),
+      banco: obterTextoJson(transferenciaBancaria, "banco"),
+      conta: obterTextoJson(transferenciaBancaria, "conta"),
+      instrucoes: obterTextoJson(transferenciaBancaria, "instrucoes"),
+      recebedor: obterTextoJson(transferenciaBancaria, "recebedor"),
+    },
+  };
+}
+
+function normalizarTipoChavePix(valor: string): TipoChavePixPropriedade {
+  if (["cpf", "cnpj", "email", "telefone", "aleatoria"].includes(valor)) {
+    return valor as TipoChavePixPropriedade;
+  }
+
+  return "aleatoria";
 }
 
 function normalizarJurosParcelas(valor: JsonValue) {
@@ -298,15 +398,17 @@ function normalizarJurosParcelas(valor: JsonValue) {
       if (!valorEhObjeto(item)) return null;
       return {
         jurosPercentual: obterNumeroJson(item, "jurosPercentual"),
-        parcela: obterNumeroJson(item, "parcela")
+        parcela: obterNumeroJson(item, "parcela"),
       };
     })
     .filter((item): item is { jurosPercentual: number; parcela: number } =>
-      Boolean(item && item.parcela > 0)
+      Boolean(item && item.parcela > 0),
     );
 }
 
-function normalizarDetalhesPublicos(valor: JsonValue): DetalhesPublicosPropriedade {
+function normalizarDetalhesPublicos(
+  valor: JsonValue,
+): DetalhesPublicosPropriedade {
   const detalhes = valorEhObjeto(valor) ? valor : {};
 
   return {
@@ -321,12 +423,14 @@ function normalizarDetalhesPublicos(valor: JsonValue): DetalhesPublicosProprieda
       obterTextoJson(detalhes, "nomeExibicao"),
     tituloPublico:
       obterTextoJson(detalhes, "publicTitle") ||
-      obterTextoJson(detalhes, "tituloPublico")
+      obterTextoJson(detalhes, "tituloPublico"),
   };
 }
 
 function criarRegrasPadrao(propriedade: PropertyRow): PropertySettingRow {
-  const capacidade = normalizarEstrutura(propriedade.structure_details).hospedesMaximos;
+  const capacidade = normalizarEstrutura(
+    propriedade.structure_details,
+  ).hospedesMaximos;
 
   return {
     additional_rules: null,
@@ -356,16 +460,16 @@ function criarRegrasPadrao(propriedade: PropertyRow): PropertySettingRow {
     settings: {},
     special_instructions: null,
     tenant_id: propriedade.tenant_id,
-    updated_at: propriedade.updated_at
+    updated_at: propriedade.updated_at,
   };
 }
 
 function montarComodidadesPorPropriedade(
   comodidades: AmenityRow[],
-  vinculos: PropertyAmenityRow[]
+  vinculos: PropertyAmenityRow[],
 ) {
   const comodidadesPorId = new Map(
-    comodidades.map((comodidade) => [comodidade.id, comodidade])
+    comodidades.map((comodidade) => [comodidade.id, comodidade]),
   );
   const resultado = new Map<string, AmenityRow[]>();
 
@@ -389,15 +493,20 @@ function criarLimitesPlanoPadrao() {
   return {
     nomePlano: "Plano padrão",
     maxPropriedades: LIMITE_PADRAO_PLANO,
-    propriedadesUsadas: 0
+    propriedadesUsadas: 0,
   };
 }
 
-function obterLimitePropriedadesLicenca(limites: JsonValue | undefined): number | null {
+function obterLimitePropriedadesLicenca(
+  limites: JsonValue | undefined,
+): number | null {
   if (!limites || !valorEhObjeto(limites)) return null;
 
   const maxPropriedades = limites.max_properties;
-  if (typeof maxPropriedades !== "number" || !Number.isFinite(maxPropriedades)) {
+  if (
+    typeof maxPropriedades !== "number" ||
+    !Number.isFinite(maxPropriedades)
+  ) {
     return null;
   }
 
@@ -406,7 +515,10 @@ function obterLimitePropriedadesLicenca(limites: JsonValue | undefined): number 
   return Math.max(1, Math.trunc(maxPropriedades));
 }
 
-function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string {
+function obterTextoJson(
+  valor: Record<string, JsonValue>,
+  chave: string,
+): string {
   const dado = valor[chave];
   return typeof dado === "string" ? dado : "";
 }
@@ -414,7 +526,7 @@ function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string
 function obterNumeroJson(
   valor: Record<string, JsonValue>,
   chave: string,
-  padrao = 0
+  padrao = 0,
 ): number {
   const dado = valor[chave];
   return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
@@ -422,13 +534,16 @@ function obterNumeroJson(
 
 function obterNumeroJsonOuNulo(
   valor: Record<string, JsonValue>,
-  chave: string
+  chave: string,
 ): number | null {
   const dado = valor[chave];
   return typeof dado === "number" && Number.isFinite(dado) ? dado : null;
 }
 
-function obterBooleanoJson(valor: Record<string, JsonValue>, chave: string): boolean {
+function obterBooleanoJson(
+  valor: Record<string, JsonValue>,
+  chave: string,
+): boolean {
   return valor[chave] === true;
 }
 
@@ -436,7 +551,10 @@ function valorEhObjeto(valor: JsonValue): valor is Record<string, JsonValue> {
   return Boolean(valor) && typeof valor === "object" && !Array.isArray(valor);
 }
 
-function registrarErroLeitura(modulo: string, erro: { message: string } | null) {
+function registrarErroLeitura(
+  modulo: string,
+  erro: { message: string } | null,
+) {
   if (!erro) return;
   console.error(`Erro ao carregar ${modulo} do tenant.`, erro.message);
 }

@@ -24,6 +24,10 @@ import {
   type EscopoGerenciamento,
 } from "./permissions";
 import type { EnderecoPropriedade } from "./types";
+import type {
+  FormasPagamentoPropriedade,
+  TipoChavePixPropriedade,
+} from "./types";
 
 /**
  * Server actions do módulo de Casas.
@@ -94,6 +98,7 @@ type EntradaPropriedade = {
     aceitaCartaoCredito: boolean;
     caucao: number;
     cobraHospedeExtra: boolean;
+    formasPagamento: FormasPagamentoPropriedade;
     hospedesInclusos: number;
     jurosParcelasCartao: Array<{
       jurosPercentual: number;
@@ -119,29 +124,27 @@ export async function criarPropriedadeAction(formData: FormData) {
     // Em RLS, o cadastro pode ser permitido pelo WITH CHECK enquanto o retorno da linha
     // ainda e bloqueado por policy de leitura; usar o id local evita falso erro de permissao.
     const propriedadeId = randomUUID();
-    const { error } = await supabase
-      .from("properties")
-      .insert({
-        id: propriedadeId,
-        tenant_id: escopo.tenantId,
-        // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
-        owner_id: escopo.ownerId,
-        name: entrada.nome,
-        slug: gerarIdentificadorUrl(entrada.nome),
-        property_type: entrada.tipo,
-        status: entrada.status,
-        headline: entrada.descricaoCurta ?? entrada.nome,
-        description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
-        short_description: entrada.descricaoCurta,
-        full_description: entrada.descricaoCompleta,
-        is_public: entrada.publica,
-        marketplace_featured: entrada.destaqueMarketplace,
-        public_details: montarDetalhesPublicosBanco(entrada),
-        address: entrada.endereco,
-        structure_details: entrada.estrutura,
-        pricing_details: entrada.valores,
-        timezone: "America/Sao_Paulo",
-      });
+    const { error } = await supabase.from("properties").insert({
+      id: propriedadeId,
+      tenant_id: escopo.tenantId,
+      // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
+      owner_id: escopo.ownerId,
+      name: entrada.nome,
+      slug: gerarIdentificadorUrl(entrada.nome),
+      property_type: entrada.tipo,
+      status: entrada.status,
+      headline: entrada.descricaoCurta ?? entrada.nome,
+      description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
+      short_description: entrada.descricaoCurta,
+      full_description: entrada.descricaoCompleta,
+      is_public: entrada.publica,
+      marketplace_featured: entrada.destaqueMarketplace,
+      public_details: montarDetalhesPublicosBanco(entrada),
+      address: entrada.endereco,
+      structure_details: entrada.estrutura,
+      pricing_details: entrada.valores,
+      timezone: "America/Sao_Paulo",
+    });
 
     if (error) {
       if (process.env.NODE_ENV !== "production") {
@@ -152,16 +155,18 @@ export async function criarPropriedadeAction(formData: FormData) {
           mensagemTecnica: error.message,
         });
       }
-      throw erroOperacaoCasa(
-        error.message,
-        ERRO_PERMISSAO_CASAS,
-      );
+      throw erroOperacaoCasa(error.message, ERRO_PERMISSAO_CASAS);
     }
 
     await salvarConfiguracoesDaCasa(supabase, escopo, propriedadeId, entrada);
     await salvarComodidadesDaCasa(supabase, escopo, propriedadeId, entrada);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedadeId, entrada);
-    await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedadeId, entrada);
+    await salvarGaleriaPropriedade(
+      supabase,
+      escopo.tenantId,
+      propriedadeId,
+      entrada,
+    );
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(
@@ -224,7 +229,12 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada),
     ]);
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
-    await salvarGaleriaPropriedade(supabase, escopo.tenantId, propriedade.id, entrada);
+    await salvarGaleriaPropriedade(
+      supabase,
+      escopo.tenantId,
+      propriedade.id,
+      entrada,
+    );
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(
@@ -319,7 +329,11 @@ export async function atualizarRegrasCasaAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
 
   try {
-    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
     const supabase = await criarClienteSupabaseServer();
     await carregarPropriedadeGerenciavel(supabase, escopo, propriedadeId);
 
@@ -332,22 +346,31 @@ export async function atualizarRegrasCasaAction(formData: FormData) {
         allow_pets: checkboxAtivo(formData, "allowPets"),
         allow_smoking: checkboxAtivo(formData, "allowSmoking"),
         allow_events: checkboxAtivo(formData, "allowEvents"),
-        max_guests: numeroInteiro(formData, "maxGuests", "capacidade maxima", 1),
+        max_guests: numeroInteiro(
+          formData,
+          "maxGuests",
+          "capacidade maxima",
+          1,
+        ),
         min_responsible_age: numeroInteiro(
           formData,
           "minResponsibleAge",
           "idade minima",
-          0
+          0,
         ),
-        additional_rules: textoOpcional(formData, "additionalRules")
+        additional_rules: textoOpcional(formData, "additionalRules"),
       },
-      { onConflict: "property_id" }
+      { onConflict: "property_id" },
     );
 
     if (error) throw new Error(error.message);
     revalidarModulo();
   } catch (erro) {
-    redirecionarComErro(CAMINHO_PROPRIEDADES, erro, "Erro ao atualizar regras da casa.");
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao atualizar regras da casa.",
+    );
   }
 
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=regras-casa-atualizadas`);
@@ -357,7 +380,11 @@ export async function atualizarPoliticaCancelamentoAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
 
   try {
-    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
     const supabase = await criarClienteSupabaseServer();
     await carregarPropriedadeGerenciavel(supabase, escopo, propriedadeId);
 
@@ -369,33 +396,33 @@ export async function atualizarPoliticaCancelamentoAction(formData: FormData) {
           formData,
           "refundUntilDays",
           "dias para reembolso",
-          0
+          0,
         ),
         cancellation_refund_until_percentage: numeroPercentual(
           formData,
           "refundUntilPercentage",
-          "percentual de reembolso"
+          "percentual de reembolso",
         ),
         cancellation_late_until_days: numeroInteiro(
           formData,
           "lateUntilDays",
           "dias para reembolso tardio",
-          0
+          0,
         ),
         cancellation_late_refund_percentage: numeroPercentual(
           formData,
           "lateRefundPercentage",
-          "percentual tardio"
+          "percentual tardio",
         ),
         cancellation_no_refund_within_days: numeroInteiro(
           formData,
           "noRefundWithinDays",
           "periodo sem reembolso",
-          0
+          0,
         ),
-        cancellation_notes: textoOpcional(formData, "cancellationNotes")
+        cancellation_notes: textoOpcional(formData, "cancellationNotes"),
       },
-      { onConflict: "property_id" }
+      { onConflict: "property_id" },
     );
 
     if (error) throw new Error(error.message);
@@ -404,7 +431,7 @@ export async function atualizarPoliticaCancelamentoAction(formData: FormData) {
     redirecionarComErro(
       CAMINHO_PROPRIEDADES,
       erro,
-      "Erro ao atualizar politica de cancelamento."
+      "Erro ao atualizar politica de cancelamento.",
     );
   }
 
@@ -415,27 +442,45 @@ export async function atualizarRegrasReservaAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
 
   try {
-    const propriedadeId = textoObrigatorio(formData, "propriedadeId", "propriedade");
-    const minNights = numeroInteiro(formData, "minNights", "minimo de diarias", 1);
-    const maxNights = numeroInteiroOuNulo(formData, "maxNights", "maximo de diarias", 1);
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
+    const minNights = numeroInteiro(
+      formData,
+      "minNights",
+      "minimo de diarias",
+      1,
+    );
+    const maxNights = numeroInteiroOuNulo(
+      formData,
+      "maxNights",
+      "maximo de diarias",
+      1,
+    );
     const minAdvanceDays = numeroInteiro(
       formData,
       "minAdvanceDays",
       "antecedencia minima",
-      0
+      0,
     );
     const maxAdvanceDays = numeroInteiroOuNulo(
       formData,
       "maxAdvanceDays",
       "antecedencia maxima",
-      0
+      0,
     );
 
     if (maxNights !== null && maxNights < minNights) {
-      throw new ErroRegraNegocio("Maximo de diarias deve ser maior ou igual ao minimo.");
+      throw new ErroRegraNegocio(
+        "Maximo de diarias deve ser maior ou igual ao minimo.",
+      );
     }
     if (maxAdvanceDays !== null && maxAdvanceDays < minAdvanceDays) {
-      throw new ErroRegraNegocio("Antecedencia maxima deve ser maior ou igual a minima.");
+      throw new ErroRegraNegocio(
+        "Antecedencia maxima deve ser maior ou igual a minima.",
+      );
     }
 
     const supabase = await criarClienteSupabaseServer();
@@ -449,9 +494,11 @@ export async function atualizarRegrasReservaAction(formData: FormData) {
         max_nights: maxNights,
         min_advance_days: minAdvanceDays,
         max_advance_days: maxAdvanceDays,
-        booking_mode: validarModoReserva(textoObrigatorio(formData, "bookingMode", "modo de reserva"))
+        booking_mode: validarModoReserva(
+          textoObrigatorio(formData, "bookingMode", "modo de reserva"),
+        ),
       },
-      { onConflict: "property_id" }
+      { onConflict: "property_id" },
     );
 
     if (error) throw new Error(error.message);
@@ -460,7 +507,7 @@ export async function atualizarRegrasReservaAction(formData: FormData) {
     redirecionarComErro(
       CAMINHO_PROPRIEDADES,
       erro,
-      "Erro ao atualizar regras de reserva."
+      "Erro ao atualizar regras de reserva.",
     );
   }
 
@@ -480,7 +527,12 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     "quantidade maxima de hospedes",
     1,
   );
-  const quartos = numeroInteiro(formData, "quartosCasa", "quantidade de quartos", 1);
+  const quartos = numeroInteiro(
+    formData,
+    "quartosCasa",
+    "quantidade de quartos",
+    1,
+  );
   const camas = numeroInteiroOpcional(formData, "camasCasa", 1, 1);
   const banheiros = numeroInteiro(
     formData,
@@ -488,12 +540,21 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     "quantidade de banheiros",
     1,
   );
-  const valorDiaria = numeroMoedaObrigatoria(formData, "valorDiaria", "valor da diaria", 0.01);
+  const valorDiaria = numeroMoedaObrigatoria(
+    formData,
+    "valorDiaria",
+    "valor da diaria",
+    0.01,
+  );
   const tituloPublico = textoOpcional(formData, "tituloPublico");
   const descricaoPublica = textoOpcional(formData, "descricaoPublica");
   const publica = checkboxAtivo(formData, "visibilidadePublica");
   const imagemCapaArquivo = obterArquivoImagem(formData, "imagemCapaArquivo");
-  const galeriaArquivos = obterArquivosImagem(formData, "imagensGaleriaArquivos");
+  const galeriaArquivos = obterArquivosImagem(
+    formData,
+    "imagensGaleriaArquivos",
+  );
+  const formasPagamento = obterFormasPagamento(formData);
 
   validarPublicacaoObrigatoria({
     descricaoPublica,
@@ -507,7 +568,10 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   return {
     detalhesPublicos: {
       descricaoPublica,
-      imagemCompartilhamento: validarUrlOpcional(formData, "imagemCompartilhamento"),
+      imagemCompartilhamento: validarUrlOpcional(
+        formData,
+        "imagemCompartilhamento",
+      ),
       nomeExibicao: textoOpcional(formData, "nomeExibicao") ?? nome,
       tituloPublico,
     },
@@ -568,15 +632,18 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     ),
     tipo: validarTipoPropriedade(textoObrigatorio(formData, "tipo", "tipo")),
     valores: {
-      aceitaCartaoCredito: checkboxAtivo(formData, "aceitaCartaoCredito"),
+      aceitaCartaoCredito: formasPagamento.cartaoCredito.ativo,
       caucao: numeroMoedaOpcional(formData, "caucao", 0),
       cobraHospedeExtra: checkboxAtivo(formData, "cobraHospedeExtra"),
-      hospedesInclusos: numeroInteiroOpcional(formData, "hospedesInclusos", 1, 1),
-      jurosParcelasCartao: obterJurosParcelasCartao(formData),
-      maxParcelasCartao: Math.min(
-        numeroInteiroOpcional(formData, "maxParcelasCartao", 1, 1),
-        MAX_PARCELAS_CARTAO,
+      formasPagamento,
+      hospedesInclusos: numeroInteiroOpcional(
+        formData,
+        "hospedesInclusos",
+        1,
+        1,
       ),
+      jurosParcelasCartao: formasPagamento.cartaoCredito.jurosParcelas,
+      maxParcelasCartao: formasPagamento.cartaoCredito.maxParcelas,
       taxaLimpeza: numeroMoedaOpcional(formData, "taxaLimpeza", 0),
       valorDiaria,
       valorHospedeExtra: numeroMoedaOpcional(formData, "valorHospedeExtra", 0),
@@ -602,11 +669,15 @@ function validarPublicacaoObrigatoria({
   if (!publica) return;
 
   if (!tituloPublico) {
-    throw new ErroRegraNegocio("Informe o título público para publicar a casa.");
+    throw new ErroRegraNegocio(
+      "Informe o título público para publicar a casa.",
+    );
   }
 
   if (!descricaoPublica) {
-    throw new ErroRegraNegocio("Informe a descrição pública para publicar a casa.");
+    throw new ErroRegraNegocio(
+      "Informe a descrição pública para publicar a casa.",
+    );
   }
 
   const possuiImagemAtual =
@@ -617,8 +688,74 @@ function validarPublicacaoObrigatoria({
     galeriaArquivos.length > 0 && formData.has("imagemPrincipalGaleriaIndice");
 
   if (!possuiImagemAtual && !possuiImagemNova && !galeriaDefinePrincipal) {
-    throw new ErroRegraNegocio("Adicione uma foto principal para publicar a casa.");
+    throw new ErroRegraNegocio(
+      "Adicione uma foto principal para publicar a casa.",
+    );
   }
+}
+
+function obterFormasPagamento(formData: FormData): FormasPagamentoPropriedade {
+  const pixAtivo = checkboxAtivo(formData, "pagamentoPixAtivo");
+  const cartaoCreditoAtivo = checkboxAtivo(formData, "aceitaCartaoCredito");
+  const pixChave = textoOpcional(formData, "pixChave") ?? "";
+  const pixRecebedor = textoOpcional(formData, "pixRecebedor") ?? "";
+
+  if (pixAtivo && !pixChave) {
+    throw new ErroRegraNegocio(
+      "Informe a chave Pix para ativar pagamento por Pix.",
+    );
+  }
+  if (pixAtivo && !pixRecebedor) {
+    throw new ErroRegraNegocio("Informe o nome do recebedor do Pix.");
+  }
+
+  return {
+    cartaoCredito: {
+      ativo: cartaoCreditoAtivo,
+      instrucoes: textoOpcional(formData, "cartaoCreditoInstrucoes") ?? "",
+      jurosParcelas: obterJurosParcelasCartao(formData),
+      maxParcelas: cartaoCreditoAtivo
+        ? Math.min(
+            numeroInteiroOpcional(formData, "maxParcelasCartao", 1, 1),
+            MAX_PARCELAS_CARTAO,
+          )
+        : 1,
+    },
+    cartaoDebito: {
+      ativo: checkboxAtivo(formData, "pagamentoCartaoDebitoAtivo"),
+      instrucoes: textoOpcional(formData, "cartaoDebitoInstrucoes") ?? "",
+    },
+    dinheiro: {
+      ativo: checkboxAtivo(formData, "pagamentoDinheiroAtivo"),
+      instrucoes: textoOpcional(formData, "dinheiroInstrucoes") ?? "",
+    },
+    pix: {
+      ativo: pixAtivo,
+      banco: textoOpcional(formData, "pixBanco") ?? "",
+      chave: pixChave,
+      instrucoes: textoOpcional(formData, "pixInstrucoes") ?? "",
+      recebedor: pixRecebedor,
+      tipoChave: validarTipoChavePix(
+        textoOpcional(formData, "pixTipoChave") ?? "aleatoria",
+      ),
+    },
+    transferenciaBancaria: {
+      agencia: textoOpcional(formData, "transferenciaAgencia") ?? "",
+      ativo: checkboxAtivo(formData, "pagamentoTransferenciaAtivo"),
+      banco: textoOpcional(formData, "transferenciaBanco") ?? "",
+      conta: textoOpcional(formData, "transferenciaConta") ?? "",
+      instrucoes: textoOpcional(formData, "transferenciaInstrucoes") ?? "",
+      recebedor: textoOpcional(formData, "transferenciaRecebedor") ?? "",
+    },
+  };
+}
+
+function validarTipoChavePix(valor: string): TipoChavePixPropriedade {
+  if (["cpf", "cnpj", "email", "telefone", "aleatoria"].includes(valor)) {
+    return valor as TipoChavePixPropriedade;
+  }
+
+  throw new ErroRegraNegocio("Tipo de chave Pix invalido.");
 }
 
 function obterJurosParcelasCartao(formData: FormData) {
@@ -647,7 +784,9 @@ function obterComodidadesPersonalizadas(formData: FormData): string[] {
 
   return Array.from(new Set(nomes)).map((nome) => {
     if (nome.length > 80) {
-      throw new ErroRegraNegocio("Comodidade personalizada deve ter no maximo 80 caracteres.");
+      throw new ErroRegraNegocio(
+        "Comodidade personalizada deve ter no maximo 80 caracteres.",
+      );
     }
     return nome;
   });
@@ -699,7 +838,10 @@ async function salvarConfiguracoesDaCasa(
   );
 
   if (error) {
-    throw erroOperacaoCasa(error.message, "Não foi possível salvar as configurações da casa.");
+    throw erroOperacaoCasa(
+      error.message,
+      "Não foi possível salvar as configurações da casa.",
+    );
   }
 }
 
@@ -719,11 +861,10 @@ async function salvarComodidadesDaCasa(
     escopo.tenantId,
     entrada.comodidadesPersonalizadas,
   );
-  const idsValidos = await obterComodidadesValidas(
-    supabase,
-    escopo.tenantId,
-    [...entrada.comodidadeIds, ...idsPersonalizados],
-  );
+  const idsValidos = await obterComodidadesValidas(supabase, escopo.tenantId, [
+    ...entrada.comodidadeIds,
+    ...idsPersonalizados,
+  ]);
 
   const { error: erroLimpeza } = await supabase
     .from("property_amenities")
@@ -732,7 +873,10 @@ async function salvarComodidadesDaCasa(
     .eq("property_id", propriedadeId);
 
   if (erroLimpeza) {
-    throw erroOperacaoCasa(erroLimpeza.message, "Erro ao atualizar comodidades.");
+    throw erroOperacaoCasa(
+      erroLimpeza.message,
+      "Erro ao atualizar comodidades.",
+    );
   }
   if (!idsValidos.length) return;
 
@@ -767,7 +911,10 @@ async function atualizarComodidadesPersonalizadasExistentes(
       .eq("is_system", false);
 
     if (error) {
-      throw erroOperacaoCasa(error.message, "Erro ao atualizar comodidade personalizada.");
+      throw erroOperacaoCasa(
+        error.message,
+        "Erro ao atualizar comodidade personalizada.",
+      );
     }
   }
 }
@@ -791,7 +938,10 @@ async function obterOuCriarComodidadesPersonalizadas(
       .maybeSingle<{ id: string }>();
 
     if (erroBusca) {
-      throw erroOperacaoCasa(erroBusca.message, "Erro ao validar comodidade personalizada.");
+      throw erroOperacaoCasa(
+        erroBusca.message,
+        "Erro ao validar comodidade personalizada.",
+      );
     }
 
     if (existente) {
@@ -839,7 +989,10 @@ async function obterComodidadesValidas(
     .or(`tenant_id.is.null,tenant_id.eq.${tenantId}`);
 
   if (error) {
-    throw erroOperacaoCasa(error.message, "Erro ao validar comodidades da casa.");
+    throw erroOperacaoCasa(
+      error.message,
+      "Erro ao validar comodidades da casa.",
+    );
   }
   return (data ?? []).map((comodidade) => comodidade.id);
 }
@@ -857,7 +1010,10 @@ async function garantirLimitePropriedades(
     .neq("status", "archived");
 
   if (error) {
-    throw erroOperacaoCasa(error.message, "Não foi possível validar o limite de casas.");
+    throw erroOperacaoCasa(
+      error.message,
+      "Não foi possível validar o limite de casas.",
+    );
   }
 
   if ((count ?? 0) >= limites.maxPropriedades) {
@@ -890,11 +1046,16 @@ async function garantirTenantOperacionalParaCasas(
 
   if (erroTenant) {
     throw new ErroRegraNegocio(
-      traduzirErroSupabase(erroTenant.message, "Não foi possível validar o tenant."),
+      traduzirErroSupabase(
+        erroTenant.message,
+        "Não foi possível validar o tenant.",
+      ),
     );
   }
   if (!tenant || !["trial", "active", "past_due"].includes(tenant.status)) {
-    throw new ErroRegraNegocio("Tenant inativo. Verifique o status da conta no Super Admin.");
+    throw new ErroRegraNegocio(
+      "Tenant inativo. Verifique o status da conta no Super Admin.",
+    );
   }
 
   const hoje = new Date().toISOString().slice(0, 10);
@@ -907,11 +1068,18 @@ async function garantirTenantOperacionalParaCasas(
     .or(`expires_at.is.null,expires_at.gte.${hoje}`)
     .order("created_at", { ascending: false })
     .limit(1)
-    .maybeSingle<{ expires_at: string | null; starts_at: string; status: string }>();
+    .maybeSingle<{
+      expires_at: string | null;
+      starts_at: string;
+      status: string;
+    }>();
 
   if (erroLicenca) {
     throw new ErroRegraNegocio(
-      traduzirErroSupabase(erroLicenca.message, "Não foi possível validar a licença."),
+      traduzirErroSupabase(
+        erroLicenca.message,
+        "Não foi possível validar a licença.",
+      ),
     );
   }
   if (!licenca) {
@@ -959,7 +1127,10 @@ async function obterProximaOrdemMidia(
   const { data, error } = await consulta.maybeSingle<{ sort_order: number }>();
 
   if (error) {
-    throw erroOperacaoCasa(error.message, "Não foi possível calcular a ordem das imagens.");
+    throw erroOperacaoCasa(
+      error.message,
+      "Não foi possível calcular a ordem das imagens.",
+    );
   }
   return (data?.sort_order ?? -1) + 1;
 }
@@ -995,7 +1166,10 @@ async function salvarImagemCapa(
     .eq("is_cover", true);
 
   if (erroCapaAnterior) {
-    throw erroOperacaoCasa(erroCapaAnterior.message, "Erro ao atualizar imagem principal.");
+    throw erroOperacaoCasa(
+      erroCapaAnterior.message,
+      "Erro ao atualizar imagem principal.",
+    );
   }
 
   const { error } = await supabase.from("media_assets").insert({
@@ -1036,7 +1210,10 @@ async function salvarGaleriaPropriedade(
       .eq("is_cover", true);
 
     if (error) {
-      throw erroOperacaoCasa(error.message, "Erro ao atualizar imagem principal.");
+      throw erroOperacaoCasa(
+        error.message,
+        "Erro ao atualizar imagem principal.",
+      );
     }
   }
 
@@ -1067,7 +1244,8 @@ async function salvarGaleriaPropriedade(
 
       const { error } = await supabase.from("media_assets").insert({
         alt: titulo,
-        is_cover: galeriaDefineCapa && entrada.galeriaIndicePrincipal === indice,
+        is_cover:
+          galeriaDefineCapa && entrada.galeriaIndicePrincipal === indice,
         media_type: "image",
         property_id: propriedadeId,
         sort_order: ordemInformada ?? proximaOrdem + indice,
@@ -1079,7 +1257,10 @@ async function salvarGaleriaPropriedade(
       });
 
       if (error) {
-        throw erroOperacaoCasa(error.message, "Erro ao salvar imagens da galeria.");
+        throw erroOperacaoCasa(
+          error.message,
+          "Erro ao salvar imagens da galeria.",
+        );
       }
     }),
   );
@@ -1107,7 +1288,10 @@ function obterValoresMultiplos(formData: FormData, chave: string): string[] {
     .filter(Boolean);
 }
 
-function obterNumerosInteirosMultiplos(formData: FormData, chave: string): number[] {
+function obterNumerosInteirosMultiplos(
+  formData: FormData,
+  chave: string,
+): number[] {
   return formData
     .getAll(chave)
     .map((valor) => Number.parseInt(valor.toString(), 10))
@@ -1192,7 +1376,11 @@ function numeroInteiroOuNulo(
   return valor;
 }
 
-function numeroPercentual(formData: FormData, chave: string, label: string): number {
+function numeroPercentual(
+  formData: FormData,
+  chave: string,
+  label: string,
+): number {
   const valor = Number.parseFloat(
     textoObrigatorio(formData, chave, label).replace(",", "."),
   );
@@ -1264,7 +1452,9 @@ function numeroMoedaObrigatoria(
   label: string,
   minimo: number,
 ): number {
-  const valor = Number.parseFloat(textoObrigatorio(formData, chave, label).replace(",", "."));
+  const valor = Number.parseFloat(
+    textoObrigatorio(formData, chave, label).replace(",", "."),
+  );
   if (!Number.isFinite(valor) || valor < minimo) {
     throw new ErroRegraNegocio(`Informe ${label} valido.`);
   }
@@ -1285,7 +1475,9 @@ function validarStatusPropriedade(valor: string): PropertyStatus {
   throw new ErroRegraNegocio("Status da propriedade inválido.");
 }
 
-function validarModoReserva(valor: string): "manual_approval" | "instant_booking" {
+function validarModoReserva(
+  valor: string,
+): "manual_approval" | "instant_booking" {
   if (valor === "manual_approval" || valor === "instant_booking") return valor;
   throw new ErroRegraNegocio("Modo de reserva inválido.");
 }
@@ -1355,7 +1547,10 @@ function traduzirErroSupabase(
   if (mensagem.includes("row-level security") || mensagem.includes("rls")) {
     return fallbackEhSeguro(fallback) ? fallback : ERRO_PERMISSAO_CASAS;
   }
-  if (mensagem.includes("duplicate key") && mensagem.includes("properties_slug")) {
+  if (
+    mensagem.includes("duplicate key") &&
+    mensagem.includes("properties_slug")
+  ) {
     return "Já existe uma casa com identificador semelhante. Tente novamente.";
   }
   if (mensagem.includes("violates not-null constraint")) {
@@ -1364,10 +1559,18 @@ function traduzirErroSupabase(
   if (mensagem.includes("violates check constraint")) {
     return "Existe um valor inválido no cadastro da casa. Revise os dados e tente novamente.";
   }
-  if (mensagem.includes("storage") || mensagem.includes("imagem") || mensagem.includes("mime")) {
+  if (
+    mensagem.includes("storage") ||
+    mensagem.includes("imagem") ||
+    mensagem.includes("mime")
+  ) {
     return "Não foi possível salvar a imagem. Verifique o formato e tente novamente.";
   }
-  if (mensagem.includes("jwt") || mensagem.includes("session") || mensagem.includes("auth")) {
+  if (
+    mensagem.includes("jwt") ||
+    mensagem.includes("session") ||
+    mensagem.includes("auth")
+  ) {
     return "Sessão expirada. Entre novamente.";
   }
   if (mensagem.includes("network") || mensagem.includes("fetch failed")) {
