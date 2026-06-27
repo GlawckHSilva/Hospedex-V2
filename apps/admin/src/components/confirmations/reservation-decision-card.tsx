@@ -25,6 +25,7 @@ import { ConfirmDialog, EntityViewModal } from "../management/entity-modal";
 
 type ReservationDecisionCardProps = {
   podeGerenciar: boolean;
+  podeGerenciarPagamento: boolean;
   reserva: ReservaConfirmacao;
 };
 
@@ -45,6 +46,13 @@ const LABEL_STATUS_PAGAMENTO = {
   refunded: "Pagamento estornado",
 } as const;
 
+const LABEL_STATUS_FINANCEIRO = {
+  cancelled: "Lançamento cancelado",
+  paid: "Lançamento pago",
+  pending: "Lançamento pendente",
+  refunded: "Lançamento estornado",
+} as const;
+
 /**
  * Card operacional da reserva.
  *
@@ -53,12 +61,15 @@ const LABEL_STATUS_PAGAMENTO = {
  */
 export function ReservationDecisionCard({
   podeGerenciar,
+  podeGerenciarPagamento,
   reserva,
 }: ReservationDecisionCardProps) {
   const hospede = reserva.hospedePrincipal;
   const reservaEncerrada = ["cancelled", "completed"].includes(reserva.status);
   const podeConfirmarReserva = ["pending", "awaiting_payment"].includes(reserva.status);
   const pagamentoRecebido = reserva.payment_status === "received";
+  const podeCancelarReserva =
+    podeGerenciar && (!pagamentoRecebido || podeGerenciarPagamento);
 
   return (
     <Card className="admin-glass-card overflow-hidden">
@@ -112,23 +123,28 @@ export function ReservationDecisionCard({
             label="Casa"
             valor={reserva.propriedade?.name ?? "Casa removida"}
           />
+          <Info
+            icon={<Banknote />}
+            label="Financeiro"
+            valor={formatarLancamentoFinanceiro(reserva)}
+          />
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2">
           <AcaoConfirmarReserva
             disabled={!podeGerenciar || !podeConfirmarReserva}
             reservaId={reserva.id}
           />
           <AcaoCancelarReserva
-            disabled={!podeGerenciar || reservaEncerrada}
+            disabled={reservaEncerrada || !podeCancelarReserva}
             reservaId={reserva.id}
           />
           <AcaoPagamentoRecebido
-            disabled={!podeGerenciar || reservaEncerrada || pagamentoRecebido}
+            disabled={!podeGerenciarPagamento || reservaEncerrada || pagamentoRecebido}
             reservaId={reserva.id}
           />
           <AcaoPagamentoPendente
-            disabled={!podeGerenciar || reservaEncerrada || !pagamentoRecebido}
+            disabled={!podeGerenciarPagamento || reservaEncerrada || !pagamentoRecebido}
             reservaId={reserva.id}
           />
         </div>
@@ -150,6 +166,7 @@ function DetalhesReserva({ reserva }: { reserva: ReservaConfirmacao }) {
           <Info label="Valor" valor={formatarMoeda(Number(reserva.total_amount))} />
           <Info label="Status" valor={LABEL_STATUS_RESERVA[reserva.status]} />
           <Info label="Pagamento" valor={LABEL_STATUS_PAGAMENTO[reserva.payment_status]} />
+          <Info label="Financeiro" valor={formatarLancamentoFinanceiro(reserva)} />
         </PainelDetalhe>
 
         <PainelDetalhe titulo="Hóspede">
@@ -218,6 +235,8 @@ function AcaoConfirmarReserva({
       description="A reserva será aceita e passará para confirmada."
       disabled={disabled}
       title="Confirmar reserva"
+      triggerAction="add"
+      triggerClassName="w-full"
       triggerIcon={<CheckCircle2 />}
       triggerLabel="Confirmar reserva"
       triggerVariant="default"
@@ -246,6 +265,7 @@ function AcaoCancelarReserva({
       disabled={disabled}
       title="Recusar ou cancelar reserva"
       triggerAction="cancel"
+      triggerClassName="w-full"
       triggerIcon={<XCircle />}
       triggerLabel="Recusar/cancelar"
       triggerVariant="destructive"
@@ -273,7 +293,8 @@ function AcaoPagamentoRecebido({
       description="Apenas o controle manual será atualizado. Nenhum gateway será acionado."
       disabled={disabled}
       title="Marcar pagamento como recebido"
-      triggerAction="status"
+      triggerAction="add"
+      triggerClassName="w-full"
       triggerIcon={<Banknote />}
       triggerLabel="Marcar pago"
       triggerVariant="default"
@@ -302,6 +323,7 @@ function AcaoPagamentoPendente({
       disabled={disabled}
       title="Marcar pagamento como pendente"
       triggerAction="status"
+      triggerClassName="w-full"
       triggerIcon={<Banknote />}
       triggerLabel="Pagamento pendente"
       triggerVariant="outline"
@@ -428,4 +450,11 @@ function formatarOrigem(origem: ReservaConfirmacao["source"]) {
   };
 
   return rotulos[origem];
+}
+
+function formatarLancamentoFinanceiro(reserva: ReservaConfirmacao) {
+  const lancamento = reserva.lancamentoFinanceiro;
+  if (!lancamento) return "Sem lançamento vinculado";
+
+  return `${LABEL_STATUS_FINANCEIRO[lancamento.status]} - ${formatarMoeda(Number(lancamento.amount))}`;
 }

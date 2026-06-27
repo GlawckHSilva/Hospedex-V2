@@ -3,7 +3,8 @@ import type {
   ProfileRow,
   PropertyRow,
   ReservationGuestRow,
-  ReservationRow
+  ReservationRow,
+  TransactionRow
 } from "@hospedex/types";
 
 export type TipoConfirmacao =
@@ -15,6 +16,7 @@ export type TipoConfirmacao =
 
 export type ReservaConfirmacao = ReservationRow & {
   hospedePrincipal: ReservationGuestRow | null;
+  lancamentoFinanceiro: TransactionRow | null;
   propriedade: PropertyRow | null;
   timeline: EventoTimelineConfirmacao[];
 };
@@ -55,6 +57,7 @@ export type DadosConfirmacoes = {
   pagamentosRecebidos: ReservaConfirmacao[];
   podeGerenciarLimpeza: boolean;
   podeGerenciarOperacao: boolean;
+  podeGerenciarPagamento: boolean;
   podeLer: boolean;
   pendentes: ReservaConfirmacao[];
   resumo: {

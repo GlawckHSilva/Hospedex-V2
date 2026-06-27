@@ -5,7 +5,8 @@ import type {
   ReservationGuestRow,
   ReservationNoteRow,
   ReservationRow,
-  ReservationStatusHistoryRow
+  ReservationStatusHistoryRow,
+  TransactionRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -37,6 +38,15 @@ export function podeGerenciarLimpezaDiaria(contexto: ContextoAutenticacao): bool
   if (!contexto.featureFlags.confirmations) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("cleaning.manage");
+}
+
+export function podeGerenciarPagamentoConfirmacao(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.confirmations) return false;
+  if (contexto.role === "owner") return true;
+  return (
+    contexto.permissions.includes("reservations.manage") &&
+    contexto.permissions.includes("finance.manage")
+  );
 }
 
 export async function carregarDadosConfirmacoes(
@@ -91,9 +101,16 @@ export async function carregarDadosConfirmacoes(
   const tarefaReservaIds = tarefasBase
     .map((tarefa) => tarefa.reservation_id)
     .filter((id): id is string => Boolean(id));
-  const [hospedes, historico, notas, reservasDasTarefas] = await Promise.all([
+  const [
+    hospedes,
+    historico,
+    lancamentosFinanceiros,
+    notas,
+    reservasDasTarefas
+  ] = await Promise.all([
     carregarHospedes(tenantId, reservaIds),
     carregarHistorico(tenantId, reservaIds),
+    carregarLancamentosFinanceiros(tenantId, reservaIds),
     carregarNotas(tenantId, reservaIds),
     carregarReservasPorId(tenantId, ownerId, tarefaReservaIds)
   ]);
@@ -103,6 +120,7 @@ export async function carregarDadosConfirmacoes(
     reservasBase,
     propriedades,
     hospedes,
+    lancamentosFinanceiros,
     historico,
     notas,
     perfis
@@ -144,6 +162,7 @@ export async function carregarDadosConfirmacoes(
     pagamentosRecebidos,
     podeGerenciarLimpeza: podeGerenciarLimpezaDiaria(contexto),
     podeGerenciarOperacao: podeGerenciarOperacaoDiaria(contexto),
+    podeGerenciarPagamento: podeGerenciarPagamentoConfirmacao(contexto),
     podeLer: true,
     pendentes,
     resumo: {
@@ -206,6 +225,22 @@ async function carregarNotas(tenantId: string, reservaIds: string[]) {
   return data ?? [];
 }
 
+async function carregarLancamentosFinanceiros(tenantId: string, reservaIds: string[]) {
+  if (!reservaIds.length) return [];
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("transaction_type", "income")
+    .in("reservation_id", reservaIds)
+    .order("created_at", { ascending: true })
+    .returns<TransactionRow[]>();
+
+  registrarErro("lançamentos financeiros das reservas", error);
+  return data ?? [];
+}
+
 async function carregarReservasPorId(
   tenantId: string,
   ownerId: string,
@@ -252,6 +287,7 @@ function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
+  lancamentosFinanceiros: TransactionRow[],
   historico: ReservationStatusHistoryRow[],
   notas: ReservationNoteRow[],
   perfis: ProfileRow[]
@@ -260,6 +296,9 @@ function montarReservas(
     ...reserva,
     hospedePrincipal:
       hospedes.find((hospede) => hospede.reservation_id === reserva.id) ?? null,
+    lancamentoFinanceiro:
+      lancamentosFinanceiros.find((lancamento) => lancamento.reservation_id === reserva.id) ??
+      null,
     propriedade:
       propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
     timeline: montarTimelineReserva(reserva.id, historico, notas, perfis)
@@ -395,6 +434,7 @@ function criarDadosVazios(
     pagamentosRecebidos: [],
     podeGerenciarLimpeza: false,
     podeGerenciarOperacao: false,
+    podeGerenciarPagamento: false,
     podeLer: false,
     pendentes: [],
     resumo: {

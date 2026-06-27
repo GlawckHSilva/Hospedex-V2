@@ -17,6 +17,12 @@ import {
   podeGerenciarLimpezaDiaria,
   podeGerenciarOperacaoDiaria
 } from "./data";
+import {
+  cancelarRecebimentoReserva,
+  ErroIntegracaoFinanceira,
+  marcarRecebimentoReservaPendente,
+  registrarRecebimentoReserva
+} from "./finance";
 
 const CAMINHO_CONFIRMACOES = "/confirmacoes";
 
@@ -27,6 +33,7 @@ const STATUS_TERMINAIS: ReservationStatus[] = ["cancelled", "completed"];
 type EscopoConfirmacao = {
   contexto: ContextoAutenticacao;
   ownerId: string;
+  podeGerenciarFinanceiro: boolean;
   tenantId: string;
   userId: string;
 };
@@ -82,7 +89,11 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
     );
     revalidarConfirmacoes();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao confirmar reserva.");
+    redirecionarComErro(
+      erro,
+      "Erro ao confirmar reserva.",
+      "Não foi possível confirmar a reserva."
+    );
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?sucesso=reserva-confirmada`);
@@ -126,7 +137,18 @@ export async function cancelarReservaConfirmacaoAction(formData: FormData) {
       throw new ErroConfirmacao("Reserva ja encerrada.");
     }
 
-    await atualizarReserva(supabase, escopo, reserva, "cancelled", observacao ?? "Reserva cancelada pela operacao diaria.");
+    if (reserva.payment_status === "received" && !escopo.podeGerenciarFinanceiro) {
+      throw new ErroConfirmacao(
+        "Você não tem permissão para cancelar uma reserva com pagamento recebido."
+      );
+    }
+
+    if (reserva.payment_status === "received") {
+      await cancelarRecebimentoReserva(supabase, escopo, reserva, "refunded");
+    } else if (escopo.podeGerenciarFinanceiro) {
+      await cancelarRecebimentoReserva(supabase, escopo, reserva, "cancelled");
+    }
+
     await atualizarPagamentoReserva(
       supabase,
       escopo,
@@ -134,9 +156,20 @@ export async function cancelarReservaConfirmacaoAction(formData: FormData) {
       "cancelled",
       "Pagamento cancelado junto com a reserva."
     );
+    await atualizarReserva(
+      supabase,
+      escopo,
+      reserva,
+      "cancelled",
+      observacao ?? "Reserva cancelada pela operacao diaria."
+    );
     revalidarConfirmacoes();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao cancelar reserva.");
+    redirecionarComErro(
+      erro,
+      "Erro ao cancelar reserva.",
+      "Não foi possível cancelar a reserva."
+    );
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?sucesso=reserva-cancelada`);
@@ -161,6 +194,20 @@ async function alterarPagamentoReservaOperacional(
       throw new ErroConfirmacao("Reserva encerrada nao permite alterar pagamento.");
     }
 
+    if (!escopo.podeGerenciarFinanceiro) {
+      throw new ErroConfirmacao(
+        "Você não tem permissão para alterar o financeiro desta reserva."
+      );
+    }
+
+    if (regra.statusDestino === "received") {
+      await registrarRecebimentoReserva(supabase, escopo, reserva);
+    }
+
+    if (regra.statusDestino === "pending") {
+      await marcarRecebimentoReservaPendente(supabase, escopo, reserva);
+    }
+
     await atualizarPagamentoReserva(
       supabase,
       escopo,
@@ -181,7 +228,11 @@ async function alterarPagamentoReservaOperacional(
 
     revalidarConfirmacoes();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao alterar pagamento da reserva.");
+    redirecionarComErro(
+      erro,
+      "Erro ao alterar pagamento da reserva.",
+      "Não foi possível alterar o pagamento da reserva."
+    );
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?sucesso=${regra.sucesso}`);
@@ -285,6 +336,7 @@ function criarEscopo(contexto: ContextoAutenticacao): EscopoConfirmacao {
   return {
     contexto,
     ownerId: contexto.tenant!.owner_id,
+    podeGerenciarFinanceiro: podeGerenciarFinanceiroConfirmacoes(contexto),
     tenantId: contexto.tenant!.id,
     userId: contexto.userId
   };
@@ -349,9 +401,13 @@ async function atualizarReserva(
     .eq("tenant_id", escopo.tenantId)
     .eq("owner_id", escopo.ownerId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroBanco(error.message, "Não foi possível atualizar o status da reserva.")
+    );
+  }
 
-  await supabase.from("reservation_status_history").insert({
+  const { error: erroHistorico } = await supabase.from("reservation_status_history").insert({
     changed_by: escopo.userId,
     from_status: reserva.status,
     metadata: { origem: "confirmacoes" },
@@ -360,6 +416,12 @@ async function atualizarReserva(
     tenant_id: escopo.tenantId,
     to_status: statusDestino
   });
+
+  if (erroHistorico) {
+    throw new ErroConfirmacao(
+      traduzirErroBanco(erroHistorico.message, "Não foi possível registrar a timeline da reserva.")
+    );
+  }
 
   await inserirNotaReserva(supabase, escopo, reserva.id, motivo);
 }
@@ -384,7 +446,11 @@ async function atualizarPagamentoReserva(
     .eq("tenant_id", escopo.tenantId)
     .eq("owner_id", escopo.ownerId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroBanco(error.message, "Não foi possível atualizar o status de pagamento da reserva.")
+    );
+  }
 
   await inserirNotaReserva(
     supabase,
@@ -415,7 +481,11 @@ async function atualizarTarefaLimpeza(
     .eq("id", tarefa.id)
     .eq("tenant_id", escopo.tenantId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroBanco(error.message, "Não foi possível atualizar a tarefa de limpeza.")
+    );
+  }
 
   if (tarefa.reservation_id) {
     await inserirNotaReserva(supabase, escopo, tarefa.reservation_id, nota);
@@ -437,7 +507,11 @@ async function inserirNotaReserva(
     tenant_id: escopo.tenantId
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroBanco(error.message, "Não foi possível registrar a observação da reserva.")
+    );
+  }
 }
 
 function textoObrigatorio(formData: FormData, chave: string, label: string): string {
@@ -451,15 +525,44 @@ function textoOpcional(formData: FormData, chave: string): string | null {
   return valor ? valor : null;
 }
 
-function redirecionarComErro(erro: unknown, mensagemLog: string): never {
-  const mensagem =
-    erro instanceof ErroConfirmacao ? erro.message : "Nao foi possivel concluir a operacao.";
+function podeGerenciarFinanceiroConfirmacoes(contexto: ContextoAutenticacao) {
+  if (contexto.role === "owner") return true;
+  return contexto.permissions.includes("finance.manage");
+}
 
-  if (!(erro instanceof ErroConfirmacao)) {
+function redirecionarComErro(
+  erro: unknown,
+  mensagemLog: string,
+  mensagemPadrao = "Não foi possível concluir a operação."
+): never {
+  const mensagem =
+    erro instanceof ErroConfirmacao || erro instanceof ErroIntegracaoFinanceira
+      ? erro.message
+      : mensagemPadrao;
+
+  if (!(erro instanceof ErroConfirmacao) && !(erro instanceof ErroIntegracaoFinanceira)) {
     console.error(mensagemLog, erro);
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?erro=${encodeURIComponent(mensagem)}`);
+}
+
+function traduzirErroBanco(mensagemBanco: string, fallback: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("row-level security") || mensagem.includes("permission")) {
+    return "Erro de RLS ao atualizar a reserva.";
+  }
+
+  if (mensagem.includes("reservations_status_check")) {
+    return "Status inválido para esta reserva.";
+  }
+
+  if (mensagem.includes("reservation_status_history")) {
+    return "Não foi possível registrar a timeline da reserva.";
+  }
+
+  return fallback;
 }
 
 function revalidarConfirmacoes() {

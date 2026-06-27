@@ -777,6 +777,7 @@ export type TransactionRow = {
   property_id: UUID | null;
   reservation_id: UUID | null;
   expense_category_id: UUID | null;
+  guest_name: string | null;
   transaction_type: TransactionType;
   status: TransactionStatus;
   amount: number;

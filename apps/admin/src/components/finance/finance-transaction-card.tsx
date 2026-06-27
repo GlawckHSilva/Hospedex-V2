@@ -8,6 +8,7 @@ import {
   ReceiptText,
   Tag,
   Trash2,
+  User,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -96,6 +97,7 @@ export function FinanceTransactionCard({
           <Info icon={<ReceiptText />} label="Valor" valor={formatarValor(lancamento)} destaque={receita ? "income" : "expense"} />
           <Info icon={<CalendarDays />} label="Data" valor={formatarData(lancamento)} />
           <Info icon={<Tag />} label="Categoria" valor={lancamento.categoria?.name ?? "Sem categoria"} />
+          <Info icon={<User />} label="Hóspede" valor={lancamento.guest_name ?? "Sem hóspede"} />
           <Info icon={<Home />} label="Vinculo" valor={vinculo} />
         </div>
 
@@ -117,6 +119,7 @@ export function FinanceTransactionCard({
                 <Info label="Categoria" valor={lancamento.categoria?.name ?? "Sem categoria"} />
                 <Info label="Conta" valor={lancamento.conta?.name ?? "Conta removida"} />
                 <Info label="Casa" valor={lancamento.propriedade?.name ?? "Sem vinculo"} />
+                <Info label="Hóspede" valor={lancamento.guest_name ?? "Sem hóspede"} />
                 <Info label="Reserva" valor={lancamento.reservation_id ? encurtarId(lancamento.reservation_id) : "Sem reserva"} />
                 <Info label="Data" valor={formatarData(lancamento)} />
               </div>

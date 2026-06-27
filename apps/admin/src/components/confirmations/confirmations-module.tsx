@@ -51,6 +51,7 @@ export function ConfirmationsModule({
   pagamentosRecebidos,
   podeGerenciarLimpeza,
   podeGerenciarOperacao,
+  podeGerenciarPagamento,
   pendentes,
   resumo,
   sucesso,
@@ -140,18 +141,21 @@ export function ConfirmationsModule({
             <GrupoDecisaoReservas
               descricao="Solicitações que precisam de aceite ou recusa do proprietário."
               podeGerenciar={podeGerenciarOperacao}
+              podeGerenciarPagamento={podeGerenciarPagamento}
               reservas={pendentes}
               titulo="Reservas pendentes de decisão"
             />
             <GrupoDecisaoReservas
               descricao="Reservas confirmadas que ainda estão com pagamento pendente."
               podeGerenciar={podeGerenciarOperacao}
+              podeGerenciarPagamento={podeGerenciarPagamento}
               reservas={aguardandoPagamento}
               titulo="Pagamentos pendentes"
             />
             <GrupoDecisaoReservas
               descricao="Pagamentos recebidos que podem voltar para pendente se houver ajuste operacional."
               podeGerenciar={podeGerenciarOperacao}
+              podeGerenciarPagamento={podeGerenciarPagamento}
               reservas={pagamentosRecebidos}
               titulo="Pagamentos recebidos"
             />
@@ -242,11 +246,13 @@ export function ConfirmationsModule({
 function GrupoDecisaoReservas({
   descricao,
   podeGerenciar,
+  podeGerenciarPagamento,
   reservas,
   titulo,
 }: {
   descricao: string;
   podeGerenciar: boolean;
+  podeGerenciarPagamento: boolean;
   reservas: ReservaConfirmacao[];
   titulo: string;
 }) {
@@ -263,6 +269,7 @@ function GrupoDecisaoReservas({
           <ReservationDecisionCard
             key={reserva.id}
             podeGerenciar={podeGerenciar}
+            podeGerenciarPagamento={podeGerenciarPagamento}
             reserva={reserva}
           />
         ))}
