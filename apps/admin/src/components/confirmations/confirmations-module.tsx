@@ -39,6 +39,7 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
   "reserva-cancelada": "Reserva cancelada.",
   "reserva-confirmada": "Reserva confirmada.",
   "reserva-confirmada-whatsapp": "Reserva confirmada e mensagem de WhatsApp preparada.",
+  "reserva-confirmada-whatsapp-pendente": "Reserva confirmada. Prepare a mensagem de WhatsApp manualmente.",
   "reserva-confirmada-whatsapp-revisao": "Reserva confirmada. Revise a mensagem de WhatsApp antes de abrir.",
 };
 

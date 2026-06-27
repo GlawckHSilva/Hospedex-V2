@@ -87,17 +87,32 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
       throw new ErroConfirmacao("A reserva ja foi decidida.");
     }
 
-    await atualizarReserva(
+    await confirmarReservaAtomica(
       supabase,
       escopo,
       reserva,
-      "confirmed",
       observacao ?? "Reserva confirmada pela central de confirmacoes."
     );
-    const mensagem = await prepararMensagemWhatsappReserva(supabase, escopo, reserva);
-    sucesso = mensagem.requires_manual_review
-      ? "reserva-confirmada-whatsapp-revisao"
-      : "reserva-confirmada-whatsapp";
+
+    try {
+      const mensagem = await prepararMensagemWhatsappReserva(
+        supabase,
+        escopo,
+        { ...reserva, status: "confirmed" }
+      );
+      sucesso = mensagem.requires_manual_review
+        ? "reserva-confirmada-whatsapp-revisao"
+        : "reserva-confirmada-whatsapp";
+    } catch (erroMensagem) {
+      /*
+        WhatsApp e uma etapa operacional posterior. A reserva ja foi confirmada
+        de forma atomica; falha nessa preparacao nao pode desfazer nem mascarar
+        o status confirmado e o bloqueio do calendario.
+      */
+      sucesso = "reserva-confirmada-whatsapp-pendente";
+      console.error("Reserva confirmada, mas a mensagem de WhatsApp nao foi preparada.", erroMensagem);
+    }
+
     revalidarConfirmacoes();
   } catch (erro) {
     redirecionarComErro(
@@ -415,6 +430,32 @@ async function carregarTarefaLimpeza(
   return data;
 }
 
+async function confirmarReservaAtomica(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  reserva: ReservationRow,
+  motivo: string
+) {
+  /*
+    A confirmacao usa RPC para status, timeline e calendario ficarem na mesma
+    transacao. Isso evita bloqueio de casa sem status confirmado ou sucesso
+    parcial escondido por erro em etapa posterior.
+  */
+  const { error } = await supabase.rpc("confirm_reservation_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroConfirmacaoAtomica(error.message)
+    );
+  }
+}
+
 async function atualizarReserva(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
@@ -607,6 +648,40 @@ function traduzirErroBanco(mensagemBanco: string, fallback: string) {
   }
 
   return fallback;
+}
+
+function traduzirErroConfirmacaoAtomica(mensagemBanco: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
+    return "Voce nao tem permissao para confirmar esta reserva.";
+  }
+
+  if (mensagem.includes("nao encontrada")) {
+    return "Reserva nao encontrada para este tenant.";
+  }
+
+  if (mensagem.includes("cancelada")) {
+    return "Esta reserva ja foi cancelada.";
+  }
+
+  if (mensagem.includes("ja esta confirmada") || mensagem.includes("ja foi confirmada")) {
+    return "A reserva ja esta confirmada.";
+  }
+
+  if (mensagem.includes("conflito") || mensagem.includes("indisponibilidade")) {
+    return "Conflito de datas encontrado para esta casa.";
+  }
+
+  if (mensagem.includes("calendario")) {
+    return "Nao foi possivel bloquear o periodo no calendario.";
+  }
+
+  if (mensagem.includes("status atual")) {
+    return "Status atual da reserva nao permite confirmacao.";
+  }
+
+  return "Nao foi possivel confirmar a reserva.";
 }
 
 function revalidarConfirmacoes() {
