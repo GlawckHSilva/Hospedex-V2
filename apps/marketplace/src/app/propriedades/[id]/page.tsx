@@ -36,6 +36,7 @@ import {
   type EnderecoPublico,
   type PropriedadePublica
 } from "../../../lib/marketplace/data";
+import { carregarCotacoesCambio } from "../../../lib/currency/service";
 
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -75,6 +76,7 @@ export default async function PropriedadePage({
 
   const propriedade = resultado.propriedade;
   if (!propriedade) notFound();
+  const cotacoesCambio = await carregarCotacoesCambio();
 
   return (
     <PublicShell>
@@ -182,7 +184,11 @@ export default async function PropriedadePage({
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <PropertyReservationCard feedback={feedback} property={propriedade} />
+            <PropertyReservationCard
+              cotacoesCambio={cotacoesCambio}
+              feedback={feedback}
+              property={propriedade}
+            />
           </aside>
         </div>
       </section>

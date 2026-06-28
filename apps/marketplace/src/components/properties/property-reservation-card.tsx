@@ -18,6 +18,12 @@ import { useFormStatus } from "react-dom";
 import { GlassButton, GlassCard, GlassInput, StatusBadge, buttonVariants, cn } from "@hospedex/ui";
 import type { ReservationPaymentMethod } from "@hospedex/types";
 
+import {
+  converterValorBrl,
+  formatarDataCotacao,
+  formatarMoeda
+} from "../../lib/currency/format";
+import type { CotacoesCambio } from "../../lib/currency/types";
 import { solicitarReservaPublicaAction } from "../../lib/marketplace/actions";
 import type { PropriedadePublica } from "../../lib/marketplace/data";
 
@@ -28,6 +34,7 @@ export type ReservaFeedback = {
 };
 
 export type PropertyReservationCardProps = {
+  cotacoesCambio: CotacoesCambio;
   feedback: ReservaFeedback;
   property: PropriedadePublica;
 };
@@ -49,7 +56,11 @@ type ResumoReserva = {
  * O formulario salva apenas a preferencia de pagamento. Dados sensiveis de
  * cartao ou banco nunca sao solicitados no Marketplace.
  */
-export function PropertyReservationCard({ feedback, property }: PropertyReservationCardProps) {
+export function PropertyReservationCard({
+  cotacoesCambio,
+  feedback,
+  property
+}: PropertyReservationCardProps) {
   if (feedback.status === "sucesso") {
     return <ReservationSuccess codigo={feedback.codigo} property={property} />;
   }
@@ -103,6 +114,10 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
         <div>
           <p className="text-sm text-muted-foreground">Diaria inicial</p>
           <p className="mt-2 text-3xl font-semibold">{formatarPreco(property.minPrice)}</p>
+          <ConversaoInternacional
+            cotacoesCambio={cotacoesCambio}
+            valorBrl={property.minPrice}
+          />
         </div>
         <StatusBadge tone="info">Solicitacao</StatusBadge>
       </div>
@@ -122,6 +137,7 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
         <ReservationFormFields
           checkIn={checkIn}
           checkOut={checkOut}
+          cotacoesCambio={cotacoesCambio}
           formaPagamento={formaPagamento}
           metodosPagamento={metodosPagamento}
           parcelas={parcelas}
@@ -147,6 +163,7 @@ export function PropertyReservationCard({ feedback, property }: PropertyReservat
 function ReservationFormFields({
   checkIn,
   checkOut,
+  cotacoesCambio,
   formaPagamento,
   metodosPagamento,
   parcelas,
@@ -163,6 +180,7 @@ function ReservationFormFields({
 }: {
   checkIn: string;
   checkOut: string;
+  cotacoesCambio: CotacoesCambio;
   formaPagamento: ReservationPaymentMethod | "";
   metodosPagamento: PropriedadePublica["requestProfile"]["paymentMethods"];
   parcelas: number;
@@ -317,6 +335,7 @@ function ReservationFormFields({
       </label>
 
       <ResumoValores
+        cotacoesCambio={cotacoesCambio}
         formaPagamento={formaPagamento}
         property={property}
         resumo={resumo}
@@ -335,10 +354,12 @@ function ReservationFormFields({
 }
 
 function ResumoValores({
+  cotacoesCambio,
   formaPagamento,
   property,
   resumo
 }: {
+  cotacoesCambio: CotacoesCambio;
   formaPagamento: ReservationPaymentMethod | "";
   property: PropriedadePublica;
   resumo: ResumoReserva;
@@ -366,9 +387,7 @@ function ResumoValores({
           {formatarPreco(resumo.parcelaValor)}.
         </span>
       ) : null}
-      <span className="rounded-md border border-dashed bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-        Conversao internacional indisponivel no momento.
-      </span>
+      <ConversaoTotal cotacoesCambio={cotacoesCambio} totalBrl={resumo.total} />
       <span className="flex items-center justify-between gap-3 text-muted-foreground">
         <span className="inline-flex items-center gap-2">
           <Clock className="h-4 w-4" />
@@ -378,6 +397,66 @@ function ResumoValores({
           {property.checkIn} / {property.checkOut}
         </strong>
       </span>
+    </div>
+  );
+}
+
+function ConversaoInternacional({
+  cotacoesCambio,
+  valorBrl
+}: {
+  cotacoesCambio: CotacoesCambio;
+  valorBrl: number | null;
+}) {
+  if (!valorBrl) return null;
+
+  if (!cotacoesCambio.disponivel) {
+    return (
+      <p className="mt-3 rounded-md border border-dashed bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+        {cotacoesCambio.mensagem}
+      </p>
+    );
+  }
+
+  const usd = converterValorBrl(valorBrl, cotacoesCambio, "USD");
+  const eur = converterValorBrl(valorBrl, cotacoesCambio, "EUR");
+  const dataCotacao = formatarDataCotacao(cotacoesCambio.cotadoEm);
+
+  if (!usd || !eur) return null;
+
+  return (
+    <div className="mt-3 grid gap-1 text-xs leading-5 text-muted-foreground">
+      <span>Aprox. {formatarMoeda(usd, "USD")}</span>
+      <span>Aprox. {formatarMoeda(eur, "EUR")}</span>
+      <span>
+        Valores em dolar e euro sao aproximados
+        {dataCotacao ? `, cotacao de ${dataCotacao}` : ""}.
+      </span>
+    </div>
+  );
+}
+
+function ConversaoTotal({
+  cotacoesCambio,
+  totalBrl
+}: {
+  cotacoesCambio: CotacoesCambio;
+  totalBrl: number;
+}) {
+  if (!totalBrl || !cotacoesCambio.disponivel) return null;
+
+  const usd = converterValorBrl(totalBrl, cotacoesCambio, "USD");
+  const eur = converterValorBrl(totalBrl, cotacoesCambio, "EUR");
+  if (!usd || !eur) return null;
+
+  return (
+    <div className="rounded-md border border-dashed bg-background/60 px-3 py-2 text-xs text-muted-foreground">
+      <p className="font-semibold text-foreground">Total aproximado internacional</p>
+      <p className="mt-1">Aprox. {formatarMoeda(usd, "USD")}</p>
+      <p>Aprox. {formatarMoeda(eur, "EUR")}</p>
+      <p className="mt-2 leading-5">
+        Conversao apenas informativa. O valor oficial da reserva permanece em BRL.
+      </p>
     </div>
   );
 }
