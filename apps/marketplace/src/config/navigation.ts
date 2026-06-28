@@ -2,7 +2,7 @@ import type { NavigationItem } from "@hospedex/types";
 
 export const marketplaceNavigation = [
   {
-    label: "Início",
+    label: "Inicio",
     href: "/"
   },
   {
@@ -18,7 +18,11 @@ export const marketplaceNavigation = [
     href: "/propriedades"
   },
   {
-    label: "Proprietários",
+    label: "Minhas reservas",
+    href: "/minhas-reservas"
+  },
+  {
+    label: "Proprietarios",
     href: "/#proprietarios"
   }
 ] as const satisfies readonly NavigationItem[];

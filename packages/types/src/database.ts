@@ -93,6 +93,9 @@ export type ProfileRow = {
   full_name: string | null;
   phone: string | null;
   avatar_url: string | null;
+  document_number: string | null;
+  city: string | null;
+  state: string | null;
   platform_role: PlatformRole;
   created_at: Timestamp;
   updated_at: Timestamp;
@@ -428,6 +431,7 @@ export type ReservationRow = {
   property_id: UUID;
   unit_id: UUID | null;
   owner_id: UUID;
+  guest_user_id: UUID | null;
   code: string;
   status: ReservationStatus;
   source: "manual" | "marketplace" | "direct" | "external";

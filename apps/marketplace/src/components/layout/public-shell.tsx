@@ -1,4 +1,4 @@
-import { Building2, Home, Search } from "lucide-react";
+import { Building2, Home, LogIn, Search } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -15,13 +15,22 @@ export function PublicShell({ children }: PublicShellProps) {
     <GradientBackground className="min-h-screen overflow-hidden text-foreground">
       <TopNav
         actions={
-          <Link
-            className={cn(buttonVariants({ size: "sm", variant: "default" }), "hidden sm:flex")}
-            href="/#proprietarios"
-          >
-            <Building2 className="h-4 w-4" />
-            Gestão
-          </Link>
+          <div className="hidden items-center gap-2 sm:flex">
+            <Link
+              className={cn(buttonVariants({ size: "sm", variant: "secondary" }))}
+              href="/login"
+            >
+              <LogIn className="h-4 w-4" />
+              Hospede
+            </Link>
+            <Link
+              className={cn(buttonVariants({ size: "sm", variant: "default" }))}
+              href="/#proprietarios"
+            >
+              <Building2 className="h-4 w-4" />
+              Gestao
+            </Link>
+          </div>
         }
         className="glass-navbar bg-background/72 shadow-sm shadow-cyan-950/5"
         items={marketplaceNavigation}
@@ -38,25 +47,25 @@ export function PublicShell({ children }: PublicShellProps) {
               Hospedex
             </div>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Marketplace público da V2 para hospedagens independentes,
-              conectado à gestão multi-tenant da plataforma.
+              Marketplace publico da V2 para hospedagens independentes,
+              conectado a gestao multi-tenant da plataforma.
             </p>
           </div>
           <nav className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3 sm:gap-8">
             <Link className="transition-colors hover:text-foreground" href="/">
-              Início
+              Inicio
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/propriedades">
               Hospedagens
             </Link>
+            <Link className="transition-colors hover:text-foreground" href="/minhas-reservas">
+              Minhas reservas
+            </Link>
             <Link className="transition-colors hover:text-foreground" href="/#destinos">
               Destinos
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/#por-que">
-              Por que reservar
-            </Link>
             <Link className="transition-colors hover:text-foreground" href="/#proprietarios">
-              Proprietários
+              Proprietarios
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/propriedades">
               <Search className="mr-1 inline h-3.5 w-3.5" />
@@ -66,8 +75,8 @@ export function PublicShell({ children }: PublicShellProps) {
         </div>
         <div className="border-t">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <span>© {new Date().getFullYear()} Hospedex.</span>
-            <span>V2 Marketplace público.</span>
+            <span>(c) {new Date().getFullYear()} Hospedex.</span>
+            <span>V2 Marketplace publico.</span>
           </div>
         </div>
       </footer>
