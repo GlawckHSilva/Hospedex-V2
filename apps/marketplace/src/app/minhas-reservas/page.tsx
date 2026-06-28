@@ -41,7 +41,7 @@ export default async function MinhasReservasPage() {
                   Buscar hospedagens
                 </Link>
               }
-              description="Voce ainda nao possui reservas vinculadas a esta conta."
+              description="Se voce fez uma solicitacao usando este e-mail, aguarde alguns instantes ou confira se entrou com o mesmo e-mail usado na reserva."
               icon={<CalendarCheck className="h-5 w-5" />}
               title="Nenhuma reserva encontrada"
             />

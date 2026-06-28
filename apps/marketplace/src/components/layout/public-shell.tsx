@@ -1,9 +1,10 @@
-import { Building2, Home, LogIn, Search } from "lucide-react";
+import { Building2, Home, Search } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { GradientBackground, TopNav, buttonVariants, cn } from "@hospedex/ui";
 
+import { GuestAccountMenu } from "../guest/guest-account-menu";
 import { marketplaceNavigation } from "../../config/navigation";
 
 export type PublicShellProps = {
@@ -15,16 +16,13 @@ export function PublicShell({ children }: PublicShellProps) {
     <GradientBackground className="min-h-screen overflow-hidden text-foreground">
       <TopNav
         actions={
-          <div className="hidden items-center gap-2 sm:flex">
+          <div className="flex items-center gap-2">
+            <GuestAccountMenu />
             <Link
-              className={cn(buttonVariants({ size: "sm", variant: "secondary" }))}
-              href="/login"
-            >
-              <LogIn className="h-4 w-4" />
-              Hospede
-            </Link>
-            <Link
-              className={cn(buttonVariants({ size: "sm", variant: "default" }))}
+              className={cn(
+                buttonVariants({ size: "sm", variant: "default" }),
+                "hidden sm:inline-flex"
+              )}
               href="/#proprietarios"
             >
               <Building2 className="h-4 w-4" />

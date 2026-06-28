@@ -127,7 +127,10 @@ export async function carregarReservasHospede(): Promise<
 
   const supabase = contexto.dados.supabase;
 
-  await supabase.rpc("link_guest_reservations");
+  const { error: vinculoErro } = await supabase.rpc("link_guest_reservations");
+  if (vinculoErro) {
+    console.error("Erro ao vincular reservas antigas ao hospede.", vinculoErro);
+  }
 
   const { data, error } = await supabase
     .from("reservations")
@@ -162,7 +165,10 @@ export async function carregarReservaHospede(
   if (contexto.estado !== "ok" || !contexto.dados) return erroDoContexto(contexto);
 
   const supabase = contexto.dados.supabase;
-  await supabase.rpc("link_guest_reservations");
+  const { error: vinculoErro } = await supabase.rpc("link_guest_reservations");
+  if (vinculoErro) {
+    console.error("Erro ao vincular reserva antes do detalhe do hospede.", vinculoErro);
+  }
 
   const { data, error } = await supabase
     .from("reservations")

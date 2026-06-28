@@ -1,8 +1,8 @@
 "use server";
 
-import { createClient } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 
+import { criarClienteSupabaseServer } from "../supabase/server";
 import { supabaseMarketplaceConfigurado } from "./data";
 
 type ResultadoRpcReserva = {
@@ -22,44 +22,65 @@ const FORMAS_PAGAMENTO = new Set([
 export async function solicitarReservaPublicaAction(formData: FormData) {
   const slug = textoObrigatorio(formData, "propertySlug", "propriedade");
   const destino = `/propriedades/${encodeURIComponent(slug)}`;
-
   let codigoReserva = "";
 
   try {
     if (!supabaseMarketplaceConfigurado()) {
       throw new ErroSolicitacao(
-        "As solicitações estão temporariamente indisponíveis.",
+        "As solicitações estão temporariamente indisponíveis."
       );
     }
 
     const checkIn = dataObrigatoria(formData, "checkIn", "check-in");
     const checkOut = dataObrigatoria(formData, "checkOut", "check-out");
-    const quantidadeHospedes = numeroInteiro(formData, "quantidadeHospedes", "hóspedes", 1);
+    const quantidadeHospedes = numeroInteiro(
+      formData,
+      "quantidadeHospedes",
+      "hóspedes",
+      1
+    );
     const formaPagamento = formaPagamentoObrigatoria(formData);
 
     if (checkOut <= checkIn) {
       throw new ErroSolicitacao("Check-out deve ser depois do check-in.");
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
+    const supabase = await criarClienteSupabaseServer();
+    if (!supabase) {
+      throw new ErroSolicitacao(
+        "As solicitações estão temporariamente indisponíveis."
+      );
+    }
+
+    const { data: usuarioResultado } = await supabase.auth.getUser();
+    const usuario = usuarioResultado.user;
+    const perfilHospede = usuario
+      ? await carregarPerfilHospedeLogado(supabase, usuario.id)
+      : null;
+
+    // Se o hospede estiver logado, a reserva usa obrigatoriamente o e-mail
+    // autenticado. Isso impede criar uma reserva logada para outro e-mail.
+    const emailHospede =
+      usuario?.email?.trim().toLowerCase() ??
+      textoObrigatorio(formData, "hospedeEmail", "e-mail").toLowerCase();
+    const nomeHospede =
+      textoOpcional(formData, "hospedeNome") ??
+      perfilHospede?.full_name ??
+      usuario?.email ??
+      textoObrigatorio(formData, "hospedeNome", "nome do hóspede");
+    const telefoneHospede =
+      textoOpcional(formData, "hospedeTelefone") ??
+      perfilHospede?.phone ??
+      textoObrigatorio(formData, "hospedeTelefone", "telefone");
 
     const { data, error } = await supabase.rpc("request_public_reservation", {
       p_check_in: checkIn,
       p_check_out: checkOut,
       p_guest_document: textoOpcional(formData, "hospedeDocumento"),
-      p_guest_email: textoObrigatorio(formData, "hospedeEmail", "e-mail"),
-      p_guest_name: textoObrigatorio(formData, "hospedeNome", "nome do hóspede"),
+      p_guest_email: emailHospede,
+      p_guest_name: nomeHospede,
       p_guest_notes: textoOpcional(formData, "observacoes"),
-      p_guest_phone: textoObrigatorio(formData, "hospedeTelefone", "telefone"),
+      p_guest_phone: telefoneHospede,
       p_guests_count: quantidadeHospedes,
       p_payment_method: formaPagamento,
       p_property_slug: slug
@@ -67,7 +88,7 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
 
     if (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("Erro tecnico ao solicitar reserva publica.", error);
+        console.error("Erro técnico ao solicitar reserva pública.", error);
       }
 
       throw new ErroRpcReserva(error.message);
@@ -75,9 +96,12 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
 
     const resultado = data as ResultadoRpcReserva | null;
     codigoReserva = resultado?.code ?? "";
+
+    if (usuario) {
+      await supabase.rpc("link_guest_reservations");
+    }
   } catch (erro) {
     const mensagem = obterMensagemPublica(erro);
-
     redirect(`${destino}?reserva=erro&mensagem=${encodeURIComponent(mensagem)}`);
   }
 
@@ -91,9 +115,26 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
 class ErroSolicitacao extends Error {}
 class ErroRpcReserva extends Error {}
 
+async function carregarPerfilHospedeLogado(
+  supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>,
+  userId: string
+) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name,phone")
+    .eq("id", userId)
+    .maybeSingle<{ full_name: string | null; phone: string | null }>();
+
+  if (error) {
+    console.error("Erro ao carregar perfil do hóspede logado.", error);
+  }
+
+  return data;
+}
+
 /**
- * A RPC não deve expor detalhes técnicos do PostgREST ou do banco ao visitante.
- * Somente regras de negócio conhecidas são traduzidas para mensagens públicas.
+ * A RPC nao deve expor detalhes tecnicos do PostgREST ou do banco ao visitante.
+ * Somente regras de negocio conhecidas sao traduzidas para mensagens publicas.
  */
 function obterMensagemPublica(erro: unknown) {
   if (erro instanceof ErroSolicitacao) return erro.message;
@@ -105,33 +146,30 @@ function obterMensagemPublica(erro: unknown) {
   const mensagensConhecidas: Array<[string, string]> = [
     [
       "propriedade nao encontrada ou indisponivel",
-      "Esta propriedade não está disponível para reserva.",
+      "Esta propriedade não está disponível para reserva."
     ],
     ["check-in nao pode ser no passado", "O check-in não pode ser no passado."],
     [
       "check-out deve ser depois do check-in",
-      "O check-out deve ser depois do check-in.",
+      "O check-out deve ser depois do check-in."
     ],
     [
       "quantidade de hospedes acima da capacidade",
-      "A quantidade de hóspedes excede a capacidade da casa.",
+      "A quantidade de hóspedes excede a capacidade da casa."
     ],
     [
       "quantidade de hospedes invalida",
-      "Informe uma quantidade válida de hóspedes.",
+      "Informe uma quantidade válida de hóspedes."
     ],
     [
       "a casa ja possui solicitacao ou reserva neste periodo",
-      "A casa já possui uma solicitação ou reserva neste período.",
+      "A casa já possui uma solicitação ou reserva neste período."
     ],
     [
       "a casa esta bloqueada neste periodo",
-      "A casa está indisponível neste período.",
+      "A casa está indisponível neste período."
     ],
-    [
-      "informe uma forma de pagamento valida",
-      "Escolha uma forma de pagamento.",
-    ],
+    ["informe uma forma de pagamento valida", "Escolha uma forma de pagamento."]
   ];
 
   return (
@@ -162,7 +200,7 @@ function formaPagamentoObrigatoria(formData: FormData) {
   const valor = textoObrigatorio(formData, "formaPagamento", "forma de pagamento");
   if (FORMAS_PAGAMENTO.has(valor)) return valor;
 
-  throw new ErroSolicitacao("Escolha uma forma de pagamento valida.");
+  throw new ErroSolicitacao("Escolha uma forma de pagamento válida.");
 }
 
 function dataObrigatoria(formData: FormData, chave: string, label: string) {
@@ -174,7 +212,12 @@ function dataObrigatoria(formData: FormData, chave: string, label: string) {
   return valor;
 }
 
-function numeroInteiro(formData: FormData, chave: string, label: string, minimo: number) {
+function numeroInteiro(
+  formData: FormData,
+  chave: string,
+  label: string,
+  minimo: number
+) {
   const valor = Number.parseInt(textoObrigatorio(formData, chave, label), 10);
 
   if (!Number.isFinite(valor) || valor < minimo) {
