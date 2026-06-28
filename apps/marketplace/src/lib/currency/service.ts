@@ -16,15 +16,26 @@ type AwesomeResponse = {
   USDBRL?: AwesomeQuote;
 };
 
+type FrankfurterQuote = {
+  base?: string;
+  date?: string;
+  quote?: string;
+  rate?: number;
+};
+
 type CacheCotacao = {
   expiraEm: number;
   valor: CotacoesCambio;
 };
 
-const PROVIDER_PADRAO = "awesomeapi";
-const BASE_URL_PADRAO = "https://economia.awesomeapi.com.br";
+const PROVIDER_PADRAO = "frankfurter";
+const BASE_URLS_PADRAO: Record<string, string> = {
+  awesomeapi: "https://economia.awesomeapi.com.br",
+  frankfurter: "https://api.frankfurter.dev"
+};
 const TTL_PADRAO_SEGUNDOS = 3600;
 const PARES_AWESOME = "USD-BRL,EUR-BRL";
+const MOEDAS_DESTINO = ["USD", "EUR"] as const;
 
 let cacheCotacao: CacheCotacao | null = null;
 
@@ -43,15 +54,8 @@ export async function carregarCotacoesCambio(): Promise<CotacoesCambio> {
     return cacheCotacao.valor;
   }
 
-  if (provider !== PROVIDER_PADRAO) {
-    return marcarIndisponivel(
-      provider,
-      "Conversao internacional indisponivel no momento."
-    );
-  }
-
   try {
-    const cotacoes = await buscarCotacoesAwesomeApi(ttlSegundos);
+    const cotacoes = await buscarCotacoesComFallback(provider, ttlSegundos);
     cacheCotacao = {
       expiraEm: agora + ttlSegundos * 1000,
       valor: cotacoes
@@ -71,11 +75,74 @@ export async function carregarCotacoesCambio(): Promise<CotacoesCambio> {
   }
 }
 
+async function buscarCotacoesComFallback(
+  providerConfigurado: string,
+  ttlSegundos: number
+) {
+  const providers = Array.from(
+    new Set([providerConfigurado, PROVIDER_PADRAO, "awesomeapi"])
+  );
+  let ultimoErro: Error | null = null;
+
+  for (const provider of providers) {
+    try {
+      if (provider === "frankfurter") {
+        return await buscarCotacoesFrankfurter(ttlSegundos);
+      }
+
+      if (provider === "awesomeapi") {
+        return await buscarCotacoesAwesomeApi(ttlSegundos);
+      }
+    } catch (erro) {
+      ultimoErro = erro instanceof Error ? erro : new Error("Erro desconhecido.");
+      console.warn(
+        `Provider de cambio ${provider} indisponivel.`,
+        ultimoErro.message
+      );
+    }
+  }
+
+  throw ultimoErro ?? new Error("Nenhum provider de cambio disponivel.");
+}
+
+async function buscarCotacoesFrankfurter(
+  ttlSegundos: number
+): Promise<CotacoesCambio> {
+  const provider = "frankfurter";
+  const baseUrl = obterBaseUrl(provider);
+  const resposta = await fetch(
+    `${baseUrl}/v2/rates?base=BRL&quotes=${MOEDAS_DESTINO.join(",")}`,
+    {
+      headers: obterHeaders(),
+      next: { revalidate: ttlSegundos },
+      signal: AbortSignal.timeout(5000)
+    }
+  );
+
+  if (!resposta.ok) {
+    throw new Error(`Provider de cambio retornou status ${resposta.status}.`);
+  }
+
+  const dados = (await resposta.json()) as FrankfurterQuote[];
+  const usd = normalizarCotacaoFrankfurter(dados, "USD", provider);
+  const eur = normalizarCotacaoFrankfurter(dados, "EUR", provider);
+  const cotadoEm = obterCotacaoMaisRecente([usd, eur]);
+
+  return {
+    base: "BRL",
+    cotacoes: { EUR: eur, USD: usd },
+    cotadoEm,
+    disponivel: true,
+    mensagem: null,
+    provider
+  };
+}
+
 async function buscarCotacoesAwesomeApi(
   ttlSegundos: number
 ): Promise<CotacoesCambio> {
-  const provider = obterProvider();
-  const baseUrl = obterBaseUrl();
+  const provider = "awesomeapi";
+  const baseUrl = obterBaseUrl(provider);
   const resposta = await fetch(`${baseUrl}/json/last/${PARES_AWESOME}`, {
     headers: obterHeaders(),
     next: { revalidate: ttlSegundos },
@@ -98,6 +165,29 @@ async function buscarCotacoesAwesomeApi(
     disponivel: true,
     mensagem: null,
     provider
+  };
+}
+
+function normalizarCotacaoFrankfurter(
+  cotacoes: FrankfurterQuote[],
+  moeda: MoedaConversao,
+  provider: string
+): CotacaoMoeda {
+  const cotacao = cotacoes.find(
+    (item) => item.base === "BRL" && item.quote === moeda
+  );
+  const taxa = Number(cotacao?.rate ?? 0);
+
+  if (!Number.isFinite(taxa) || taxa <= 0) {
+    throw new Error(`Cotacao BRL-${moeda} invalida.`);
+  }
+
+  return {
+    base: "BRL",
+    cotadoEm: normalizarDataFrankfurter(cotacao?.date),
+    moeda,
+    provider,
+    taxa
   };
 }
 
@@ -136,6 +226,15 @@ function normalizarDataCotacao(cotacao: AwesomeQuote | undefined) {
   return new Date().toISOString();
 }
 
+function normalizarDataFrankfurter(data: string | undefined) {
+  if (!data) return new Date().toISOString();
+
+  const dataCotacao = new Date(`${data}T12:00:00.000Z`);
+  if (!Number.isNaN(dataCotacao.getTime())) return dataCotacao.toISOString();
+
+  return new Date().toISOString();
+}
+
 function obterCotacaoMaisRecente(cotacoes: CotacaoMoeda[]) {
   return cotacoes
     .map((cotacao) => cotacao.cotadoEm)
@@ -146,8 +245,12 @@ function obterProvider() {
   return (process.env.CURRENCY_API_PROVIDER || PROVIDER_PADRAO).toLowerCase();
 }
 
-function obterBaseUrl() {
-  return (process.env.CURRENCY_API_BASE_URL || BASE_URL_PADRAO).replace(/\/$/, "");
+function obterBaseUrl(provider: string) {
+  const baseUrlConfigurada = process.env.CURRENCY_API_BASE_URL;
+  const baseUrlPadrao =
+    BASE_URLS_PADRAO[provider] ?? BASE_URLS_PADRAO.frankfurter!;
+
+  return (baseUrlConfigurada || baseUrlPadrao).replace(/\/$/, "");
 }
 
 function obterHeaders() {
