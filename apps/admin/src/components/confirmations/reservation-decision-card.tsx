@@ -22,6 +22,7 @@ import {
 } from "../../lib/confirmations/actions";
 import type { ReservaConfirmacao } from "../../lib/confirmations/types";
 import { ConfirmDialog, EntityViewModal } from "../management/entity-modal";
+import { FormActionButton } from "../management/form-submit-button";
 import { ReservationWhatsappActions } from "./reservation-whatsapp-actions";
 
 type ReservationDecisionCardProps = {
@@ -154,7 +155,7 @@ export function ReservationDecisionCard({
           />
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 md:grid-cols-2">
           <AcaoConfirmarReserva
             disabled={!podeGerenciar || !podeConfirmarReserva}
             reservaId={reserva.id}
@@ -276,7 +277,7 @@ function AcaoConfirmarReserva({
 }) {
   return (
     <ConfirmDialog
-      description="A reserva será aceita e passará para confirmada."
+      description="Ao confirmar, o periodo sera bloqueado no calendario da casa."
       disabled={disabled}
       title="Confirmar reserva"
       triggerAction="add"
@@ -289,8 +290,11 @@ function AcaoConfirmarReserva({
         action={confirmarReservaConfirmacaoAction}
         botao="Confirmar reserva"
         campo="observacao"
+        impacto="Ao confirmar, o periodo sera bloqueado no calendario da casa."
+        pendingLabel="Confirmando..."
         placeholder="Observação operacional opcional"
         reservaId={reservaId}
+        variante="add"
       />
     </ConfirmDialog>
   );
@@ -305,21 +309,24 @@ function AcaoCancelarReserva({
 }) {
   return (
     <ConfirmDialog
-      description="A reserva será cancelada e a decisão será registrada na timeline."
+      description="Esta acao cancela a reserva e libera o periodo no calendario."
       disabled={disabled}
       title="Recusar ou cancelar reserva"
       triggerAction="cancel"
       triggerClassName="w-full"
       triggerIcon={<XCircle />}
-      triggerLabel="Recusar/cancelar"
+      triggerLabel="Recusar/Cancelar reserva"
       triggerVariant="destructive"
     >
       <FormularioConfirmacao
         action={cancelarReservaConfirmacaoAction}
         botao="Cancelar reserva"
         campo="observacao"
+        impacto="Esta acao cancela a reserva e libera o periodo no calendario."
+        pendingLabel="Cancelando..."
         placeholder="Motivo opcional do cancelamento"
         reservaId={reservaId}
+        variante="cancel"
       />
     </ConfirmDialog>
   );
@@ -334,21 +341,24 @@ function AcaoPagamentoRecebido({
 }) {
   return (
     <ConfirmDialog
-      description="Apenas o controle manual será atualizado. Nenhum gateway será acionado."
+      description="Sera criado ou atualizado um lancamento financeiro vinculado a reserva."
       disabled={disabled}
       title="Marcar pagamento como recebido"
       triggerAction="add"
       triggerClassName="w-full"
       triggerIcon={<Banknote />}
-      triggerLabel="Marcar pago"
+      triggerLabel="Marcar como pago"
       triggerVariant="default"
     >
       <FormularioConfirmacao
         action={confirmarPagamentoConfirmacaoAction}
         botao="Marcar como pago"
         campo="observacao"
+        impacto="Sera criado/atualizado um lancamento financeiro vinculado a reserva."
+        pendingLabel="Registrando..."
         placeholder="Observação opcional do pagamento"
         reservaId={reservaId}
+        variante="add"
       />
     </ConfirmDialog>
   );
@@ -363,21 +373,24 @@ function AcaoPagamentoPendente({
 }) {
   return (
     <ConfirmDialog
-      description="Use quando um pagamento marcado como recebido precisar voltar para pendente."
+      description="O financeiro mantera historico do pagamento."
       disabled={disabled}
-      title="Marcar pagamento como pendente"
+      title="Voltar pagamento para pendente"
       triggerAction="status"
       triggerClassName="w-full"
       triggerIcon={<Banknote />}
-      triggerLabel="Pagamento pendente"
+      triggerLabel="Voltar para pendente"
       triggerVariant="outline"
     >
       <FormularioConfirmacao
         action={marcarPagamentoPendenteConfirmacaoAction}
         botao="Voltar para pendente"
         campo="observacao"
+        impacto="O financeiro mantera historico do pagamento."
+        pendingLabel="Atualizando..."
         placeholder="Observação opcional"
         reservaId={reservaId}
+        variante="status"
       />
     </ConfirmDialog>
   );
@@ -387,27 +400,35 @@ function FormularioConfirmacao({
   action,
   botao,
   campo,
+  impacto,
+  pendingLabel,
   placeholder,
   reservaId,
+  variante,
 }: {
   action: (formData: FormData) => Promise<void>;
   botao: string;
   campo: string;
+  impacto: string;
+  pendingLabel: string;
   placeholder: string;
   reservaId: string;
+  variante: "add" | "cancel" | "status";
 }) {
   return (
     <form action={action} className="grid gap-3">
       <input name="reservaId" type="hidden" value={reservaId} />
+      <p className="rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm text-muted-foreground">
+        {impacto}
+      </p>
       <textarea
         className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         name={campo}
         placeholder={placeholder}
       />
-      <Button type="submit">
-        <CheckCircle2 />
+      <FormActionButton icon={<CheckCircle2 />} pendingLabel={pendingLabel} variant={variante}>
         {botao}
-      </Button>
+      </FormActionButton>
     </form>
   );
 }

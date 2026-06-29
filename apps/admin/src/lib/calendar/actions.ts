@@ -231,31 +231,7 @@ export async function cancelarReservaCalendarioAction(formData: FormData) {
       throw new ErroRegraCalendario("Reserva encerrada nao pode ser cancelada pelo calendario.");
     }
 
-    const { error } = await supabase
-      .from("reservations")
-      .update({
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: escopo.userId,
-        cancellation_reason: motivo,
-        payment_status: "cancelled",
-        payment_status_updated_at: new Date().toISOString(),
-        payment_status_updated_by: escopo.userId,
-        status: "cancelled"
-      })
-      .eq("id", reserva.id)
-      .eq("tenant_id", escopo.tenantId)
-      .eq("owner_id", escopo.ownerId);
-
-    if (error) throw new Error(error.message);
-
-    await cancelarLancamentoFinanceiroDaReserva(supabase, escopo, reserva);
-    await registrarHistoricoCancelamentoReserva(supabase, escopo, reserva, motivo);
-    await registrarNotaReservaCalendario(
-      supabase,
-      escopo,
-      reserva.id,
-      `Reserva cancelada pelo calendario. Motivo: ${motivo}`
-    );
+    await cancelarReservaCalendarioAtomica(supabase, escopo, reserva, motivo);
     revalidarCalendario();
   } catch (erro) {
     redirecionarComErro(retorno, erro, "Erro ao cancelar reserva pelo calendario.");
@@ -483,41 +459,27 @@ async function atualizarLancamentoFinanceiroDaReserva(
   if (error) throw new Error(error.message);
 }
 
-async function cancelarLancamentoFinanceiroDaReserva(
-  supabase: ClienteSupabaseServer,
-  escopo: EscopoCalendario,
-  reserva: ReservationRow
-) {
-  const { error } = await supabase
-    .from("transactions")
-    .update({
-      paid_at: null,
-      status: "cancelled"
-    })
-    .eq("tenant_id", escopo.tenantId)
-    .eq("reservation_id", reserva.id)
-    .eq("transaction_type", "income");
-
-  if (error) throw new Error(error.message);
-}
-
-async function registrarHistoricoCancelamentoReserva(
+async function cancelarReservaCalendarioAtomica(
   supabase: ClienteSupabaseServer,
   escopo: EscopoCalendario,
   reserva: ReservationRow,
   motivo: string
 ) {
-  const { error } = await supabase.from("reservation_status_history").insert({
-    changed_by: escopo.userId,
-    from_status: reserva.status,
-    metadata: { origem: "calendario" },
-    reason: motivo,
-    reservation_id: reserva.id,
-    tenant_id: escopo.tenantId,
-    to_status: "cancelled"
+  /*
+    Cancelar pelo calendario tem o mesmo impacto de cancelar em Confirmacoes:
+    libera periodo, atualiza pagamento e preserva financeiro em uma transacao.
+  */
+  const { error } = await supabase.rpc("cancel_reservation_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
   });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    throw new ErroRegraCalendario(traduzirErroCancelamentoAtomico(error.message));
+  }
 }
 
 async function registrarNotaReservaCalendario(
@@ -602,8 +564,35 @@ function redirecionarComErro(retorno: string, erro: unknown, mensagemLog: string
   redirect(`${retorno}&erro=${encodeURIComponent(mensagem)}`);
 }
 
+function traduzirErroCancelamentoAtomico(mensagemBanco: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("calendario")) {
+    return "Nao foi possivel liberar o periodo no calendario.";
+  }
+
+  if (mensagem.includes("financeiro")) {
+    return "Voce nao tem permissao para cancelar reserva com pagamento recebido.";
+  }
+
+  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
+    return "Voce nao tem permissao para cancelar esta reserva.";
+  }
+
+  if (mensagem.includes("nao encontrada")) {
+    return "Reserva nao encontrada.";
+  }
+
+  if (mensagem.includes("cancelada")) {
+    return "Esta reserva ja foi cancelada.";
+  }
+
+  return "Nao foi possivel cancelar a reserva.";
+}
+
 function revalidarCalendario() {
   revalidatePath(CAMINHO_CALENDARIO);
   revalidatePath("/reservas");
+  revalidatePath("/confirmacoes");
   revalidatePath("/financeiro");
 }

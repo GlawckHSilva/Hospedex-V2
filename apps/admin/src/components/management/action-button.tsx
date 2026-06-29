@@ -82,9 +82,9 @@ const variantClass: Record<ActionButtonVariant, { fill: string; shell: string }>
 
 const sizeClass: Record<ActionButtonSize, string> = {
   icon: "h-9 w-9 px-0",
-  lg: "h-10 px-4 text-sm",
-  md: "h-9 px-3.5 text-sm",
-  sm: "h-8 px-3 text-xs",
+  lg: "min-h-10 px-4 py-2 text-sm",
+  md: "min-h-9 px-3.5 py-2 text-sm",
+  sm: "min-h-8 px-3 py-1.5 text-xs",
 };
 
 /**
@@ -136,7 +136,7 @@ export function ActionButton({
 
       <span className="relative z-10 flex min-w-0 items-center justify-center gap-2 transition-colors duration-200 group-hover/action-button:text-white">
         {size !== "icon" ? (
-          <span className="min-w-0 truncate">
+          <span className="min-w-0 text-center leading-tight">
             {children}
           </span>
         ) : null}
