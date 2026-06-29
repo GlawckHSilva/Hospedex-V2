@@ -160,14 +160,31 @@ export async function alterarStatusReservaAction(formData: FormData) {
 
     if (reserva.status !== statusDestino) {
       validarTransicaoReserva(reserva.status, statusDestino);
-      await atualizarStatusReserva(
-        supabase,
-        escopo,
-        reservaId,
-        reserva.status,
-        statusDestino,
-        motivo
-      );
+
+      if (statusDestino === "confirmed") {
+        await confirmarReservaOperacional(
+          supabase,
+          escopo,
+          reserva,
+          motivo ?? "Reserva confirmada pela tela de reservas."
+        );
+      } else if (statusDestino === "cancelled") {
+        await cancelarReservaOperacional(
+          supabase,
+          escopo,
+          reserva,
+          motivo ?? "Reserva cancelada pela tela de reservas."
+        );
+      } else {
+        await atualizarStatusReserva(
+          supabase,
+          escopo,
+          reservaId,
+          reserva.status,
+          statusDestino,
+          motivo
+        );
+      }
     }
 
     revalidarReservas();
@@ -189,7 +206,7 @@ export async function cancelarReservaAction(formData: FormData) {
 
     if (reserva.status !== "cancelled") {
       validarTransicaoReserva(reserva.status, "cancelled");
-      await atualizarStatusReserva(supabase, escopo, reservaId, reserva.status, "cancelled", motivo);
+      await cancelarReservaOperacional(supabase, escopo, reserva, motivo);
     }
 
     revalidarReservas();
@@ -528,6 +545,52 @@ async function atualizarStatusReserva(
   await registrarHistoricoStatus(supabase, escopo, reservaId, statusAtual, statusDestino, motivo);
 }
 
+async function confirmarReservaOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reserva: ReservationRow,
+  motivo: string
+) {
+  /*
+    Confirmar reserva nao pode ser um update simples. O banco precisa validar
+    conflitos e bloquear o calendario por property_id na mesma transacao.
+  */
+  const { error } = await supabase.rpc("confirm_reservation_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroOperacaoAtomica(error.message, "confirmar"));
+  }
+}
+
+async function cancelarReservaOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reserva: ReservationRow,
+  motivo: string
+) {
+  /*
+    Cancelamento precisa liberar calendario e preservar historico financeiro.
+    Por isso a tela de Reservas usa a mesma RPC da central de Confirmacoes.
+  */
+  const { error } = await supabase.rpc("cancel_reservation_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroOperacaoAtomica(error.message, "cancelar"));
+  }
+}
+
 async function registrarHistoricoStatus(
   supabase: ClienteSupabaseServer,
   escopo: EscopoReserva,
@@ -643,6 +706,43 @@ function redirecionarComErro(erro: unknown, mensagemLog: string): never {
   redirect(`${CAMINHO_RESERVAS}?erro=${encodeURIComponent(mensagem)}`);
 }
 
+function traduzirErroOperacaoAtomica(mensagemBanco: string, acao: "confirmar" | "cancelar") {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
+    return `Voce nao tem permissao para ${acao} esta reserva.`;
+  }
+
+  if (mensagem.includes("nao encontrada")) {
+    return "Reserva nao encontrada.";
+  }
+
+  if (mensagem.includes("conflito") || mensagem.includes("indisponibilidade")) {
+    return "Conflito de datas encontrado para esta casa.";
+  }
+
+  if (mensagem.includes("calendario")) {
+    return acao === "confirmar"
+      ? "Nao foi possivel bloquear o periodo no calendario."
+      : "Nao foi possivel liberar o periodo no calendario.";
+  }
+
+  if (mensagem.includes("financeiro")) {
+    return "Nao foi possivel registrar a alteracao no financeiro.";
+  }
+
+  if (mensagem.includes("cancelada")) {
+    return "Esta reserva ja foi cancelada.";
+  }
+
+  return acao === "confirmar"
+    ? "Nao foi possivel confirmar a reserva."
+    : "Nao foi possivel cancelar a reserva.";
+}
+
 function revalidarReservas() {
   revalidatePath(CAMINHO_RESERVAS);
+  revalidatePath("/confirmacoes");
+  revalidatePath("/calendario");
+  revalidatePath("/financeiro");
 }

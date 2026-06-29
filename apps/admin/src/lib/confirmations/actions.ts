@@ -18,12 +18,6 @@ import {
   podeGerenciarOperacaoDiaria
 } from "./data";
 import {
-  cancelarRecebimentoReserva,
-  ErroIntegracaoFinanceira,
-  marcarRecebimentoReservaPendente,
-  registrarRecebimentoReserva
-} from "./finance";
-import {
   ErroMensagemWhatsapp,
   prepararMensagemWhatsappReserva,
   registrarMensagemWhatsappAberta,
@@ -197,24 +191,10 @@ export async function cancelarReservaConfirmacaoAction(formData: FormData) {
       );
     }
 
-    if (reserva.payment_status === "received") {
-      await cancelarRecebimentoReserva(supabase, escopo, reserva, "refunded");
-    } else if (escopo.podeGerenciarFinanceiro) {
-      await cancelarRecebimentoReserva(supabase, escopo, reserva, "cancelled");
-    }
-
-    await atualizarPagamentoReserva(
+    await cancelarReservaAtomica(
       supabase,
       escopo,
       reserva,
-      "cancelled",
-      "Pagamento cancelado junto com a reserva."
-    );
-    await atualizarReserva(
-      supabase,
-      escopo,
-      reserva,
-      "cancelled",
       observacao ?? "Reserva cancelada pela operacao diaria."
     );
     revalidarConfirmacoes();
@@ -254,31 +234,13 @@ async function alterarPagamentoReservaOperacional(
       );
     }
 
-    if (regra.statusDestino === "received") {
-      await registrarRecebimentoReserva(supabase, escopo, reserva);
-    }
-
-    if (regra.statusDestino === "pending") {
-      await marcarRecebimentoReservaPendente(supabase, escopo, reserva);
-    }
-
-    await atualizarPagamentoReserva(
+    await atualizarPagamentoReservaAtomica(
       supabase,
       escopo,
       reserva,
       regra.statusDestino,
       observacao ?? regra.motivoPadrao
     );
-
-    if (reserva.status === "awaiting_payment" && regra.statusDestino === "received") {
-      await atualizarReserva(
-        supabase,
-        escopo,
-        reserva,
-        "confirmed",
-        "Reserva confirmada apos pagamento recebido."
-      );
-    }
 
     revalidarConfirmacoes();
   } catch (erro) {
@@ -456,6 +418,59 @@ async function confirmarReservaAtomica(
   }
 }
 
+async function atualizarPagamentoReservaAtomica(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  reserva: ReservationRow,
+  statusDestino: ReservationPaymentStatus,
+  motivo: string
+) {
+  /*
+    Pagamento e financeiro precisam ser atomicos. A RPC atualiza a reserva,
+    cria/atualiza o lancamento financeiro e registra timeline sem confirmar a
+    reserva automaticamente.
+  */
+  const { error } = await supabase.rpc("set_reservation_payment_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_target_status: statusDestino,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroPagamentoAtomico(error.message)
+    );
+  }
+}
+
+async function cancelarReservaAtomica(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  reserva: ReservationRow,
+  motivo: string
+) {
+  /*
+    Cancelamento libera calendario e trata financeiro no banco. Reserva paga
+    vira estorno/cancelamento rastreavel em vez de apagar lancamento.
+  */
+  const { error } = await supabase.rpc("cancel_reservation_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroCancelamentoAtomico(error.message)
+    );
+  }
+}
+
 async function atualizarReserva(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
@@ -504,41 +519,6 @@ async function atualizarReserva(
   }
 
   await inserirNotaReserva(supabase, escopo, reserva.id, motivo);
-}
-
-async function atualizarPagamentoReserva(
-  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
-  escopo: EscopoConfirmacao,
-  reserva: ReservationRow,
-  statusDestino: ReservationPaymentStatus,
-  motivo: string
-) {
-  const agora = new Date().toISOString();
-
-  const { error } = await supabase
-    .from("reservations")
-    .update({
-      payment_status: statusDestino,
-      payment_status_updated_at: agora,
-      payment_status_updated_by: escopo.userId
-    } satisfies Partial<ReservationRow>)
-    .eq("id", reserva.id)
-    .eq("tenant_id", escopo.tenantId)
-    .eq("owner_id", escopo.ownerId);
-
-  if (error) {
-    throw new ErroConfirmacao(
-      traduzirErroBanco(error.message, "Não foi possível atualizar o status de pagamento da reserva.")
-    );
-  }
-
-  await inserirNotaReserva(
-    supabase,
-    escopo,
-    reserva.id,
-    motivo,
-    "system"
-  );
 }
 
 async function atualizarTarefaLimpeza(
@@ -616,14 +596,12 @@ function redirecionarComErro(
   mensagemPadrao = "Não foi possível concluir a operação."
 ): never {
   const mensagem =
-    erro instanceof ErroConfirmacao || erro instanceof ErroIntegracaoFinanceira
-      || erro instanceof ErroMensagemWhatsapp
+    erro instanceof ErroConfirmacao || erro instanceof ErroMensagemWhatsapp
       ? erro.message
       : mensagemPadrao;
 
   if (
     !(erro instanceof ErroConfirmacao) &&
-    !(erro instanceof ErroIntegracaoFinanceira) &&
     !(erro instanceof ErroMensagemWhatsapp)
   ) {
     console.error(mensagemLog, erro);
@@ -684,10 +662,67 @@ function traduzirErroConfirmacaoAtomica(mensagemBanco: string) {
   return "Nao foi possivel confirmar a reserva.";
 }
 
+function traduzirErroPagamentoAtomico(mensagemBanco: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("financeiro")) {
+    return "Voce nao tem permissao para alterar o financeiro desta reserva.";
+  }
+
+  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
+    return "Voce nao tem permissao para alterar esta reserva.";
+  }
+
+  if (mensagem.includes("nao encontrada")) {
+    return "Reserva nao encontrada.";
+  }
+
+  if (mensagem.includes("encerrada")) {
+    return "Reserva encerrada nao permite alterar pagamento.";
+  }
+
+  if (mensagem.includes("valor")) {
+    return "Nao foi possivel registrar o pagamento no financeiro.";
+  }
+
+  return "Nao foi possivel alterar o pagamento da reserva.";
+}
+
+function traduzirErroCancelamentoAtomico(mensagemBanco: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("calendario")) {
+    return "Nao foi possivel liberar o periodo no calendario.";
+  }
+
+  if (mensagem.includes("financeiro")) {
+    return "Voce nao tem permissao para cancelar reserva com pagamento recebido.";
+  }
+
+  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
+    return "Voce nao tem permissao para cancelar esta reserva.";
+  }
+
+  if (mensagem.includes("nao encontrada")) {
+    return "Reserva nao encontrada.";
+  }
+
+  if (mensagem.includes("ja foi cancelada")) {
+    return "Esta reserva ja foi cancelada.";
+  }
+
+  if (mensagem.includes("concluida")) {
+    return "Reserva concluida nao pode ser cancelada.";
+  }
+
+  return "Nao foi possivel cancelar a reserva.";
+}
+
 function revalidarConfirmacoes() {
   revalidatePath(CAMINHO_CONFIRMACOES);
   revalidatePath("/reservas");
   revalidatePath("/calendario");
+  revalidatePath("/financeiro");
   revalidatePath("/limpeza");
 }
 
