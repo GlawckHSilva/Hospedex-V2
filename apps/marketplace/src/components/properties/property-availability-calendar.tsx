@@ -85,10 +85,10 @@ export function PropertyAvailabilityCalendar({
 
   return (
     <div className="overflow-hidden rounded-lg border bg-background/70">
-      <div className="flex flex-col gap-4 border-b bg-background/80 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border-b bg-background/80 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <div>
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-primary">
-            <CalendarDays className="h-4 w-4" />
+            <CalendarDays className="h-4 w-4 text-cyan-100" />
             Disponibilidade
           </p>
           <h3 className="mt-1 text-lg font-semibold">
@@ -103,7 +103,7 @@ export function PropertyAvailabilityCalendar({
             type="button"
             variant="outline"
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 text-cyan-100" />
           </Button>
           <Button
             onClick={() => setMesReferencia(inicioDoMes(new Date()))}
@@ -119,7 +119,7 @@ export function PropertyAvailabilityCalendar({
             type="button"
             variant="outline"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 text-cyan-100" />
           </Button>
         </div>
       </div>
@@ -139,7 +139,7 @@ export function PropertyAvailabilityCalendar({
           return (
             <div
               className={cn(
-                "min-h-24 border-b border-r p-2 transition last:border-r-0 hover:bg-primary/5 sm:min-h-28",
+                "min-h-20 border-b border-r p-2 transition last:border-r-0 hover:bg-primary/5 sm:min-h-24",
                 dia.foraDoMes && "bg-secondary/25 text-muted-foreground/55",
                 dia.iso === formatarIsoLocal(new Date()) &&
                   "relative bg-cyan-400/10 ring-1 ring-inset ring-cyan-300/45"
@@ -177,7 +177,7 @@ export function PropertyAvailabilityCalendar({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-2 p-4">
+      <div className="flex flex-wrap gap-2 p-3 sm:p-4">
         {Object.entries(STATUS_VISUAL).map(([status, visual]) => (
           <span
             className="inline-flex items-center gap-1.5 rounded-full border bg-background/70 px-3 py-1 text-xs text-muted-foreground"

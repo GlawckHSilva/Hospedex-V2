@@ -11,7 +11,7 @@ type PropertyAmenitiesSectionProps = {
   amenities: PropriedadePublica["amenities"];
 };
 
-const LIMITE_INICIAL = 12;
+const LIMITE_INICIAL = 8;
 
 /**
  * Comodidades públicas agrupadas.
@@ -36,7 +36,7 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-4">
       {grupos.map((grupo) => (
         <div className="grid gap-3" key={grupo.categoria}>
           <h3 className="text-sm font-semibold text-muted-foreground">
@@ -48,7 +48,7 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
                 className="inline-flex items-center gap-2 rounded-md border bg-background/70 px-3 py-2 text-sm"
                 key={comodidade.id}
               >
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-100" />
                 {comodidade.name}
               </span>
             ))}
@@ -63,7 +63,7 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
           type="button"
           variant="outline"
         >
-          {expandido ? "Ver menos" : `Ver todas (${amenities.length})`}
+          {expandido ? "Ver menos" : `Ver mais (${amenities.length})`}
         </Button>
       ) : null}
     </div>

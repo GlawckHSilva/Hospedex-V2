@@ -44,6 +44,7 @@ export type PropertyReservationCardProps = {
 type ResumoReserva = {
   diarias: number;
   hospedesExtras: number;
+  quantidadeHospedesExtras: number;
   juros: number;
   noites: number;
   parcelaValor: number;
@@ -59,7 +60,7 @@ type DadosHospedeLogado = {
 };
 
 const inputIconClass =
-  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100/75";
+  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100";
 
 /**
  * Card publico de solicitacao da Casa.
@@ -87,7 +88,7 @@ export function PropertyReservationCard({
     extrairHorarioPadrao(property.checkOut)
   );
   const [quantidadeHospedes, setQuantidadeHospedes] = useState(
-    Math.max(1, Math.min(property.maxGuests || 1, 2))
+    String(Math.max(1, Math.min(property.maxGuests || 1, 2)))
   );
   const [formaPagamento, setFormaPagamento] = useState<ReservationPaymentMethod | "">(
     primeiroMetodo
@@ -114,7 +115,10 @@ export function PropertyReservationCard({
         checkIn,
         checkOut,
         formaPagamento,
-        hospedes: quantidadeHospedes,
+        hospedes: obterQuantidadeHospedesParaResumo(
+          quantidadeHospedes,
+          property.maxGuests
+        ),
         jurosPercentual: parcelaSelecionada.jurosPercentual,
         parcelas: parcelaSelecionada.parcela,
         property
@@ -280,7 +284,7 @@ function ReservationFormFields({
   parcelasDisponiveis: Array<{ jurosPercentual: number; parcela: number }>;
   podeSolicitarReserva: boolean;
   property: PropriedadePublica;
-  quantidadeHospedes: number;
+  quantidadeHospedes: string;
   resumo: ResumoReserva;
   setCheckIn: (valor: string) => void;
   setCheckOut: (valor: string) => void;
@@ -290,7 +294,7 @@ function ReservationFormFields({
   setHorarioPrevistoCheckOut: (valor: string) => void;
   setNomeHospede: (valor: string) => void;
   setParcelas: (valor: number) => void;
-  setQuantidadeHospedes: (valor: number) => void;
+  setQuantidadeHospedes: (valor: string) => void;
   setTelefoneHospede: (valor: string) => void;
   telefoneHospede: string;
 }) {
@@ -305,11 +309,11 @@ function ReservationFormFields({
         </div>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Field label="Check-in">
           <CalendarDays className={inputIconClass} />
           <GlassInput
-            className="h-11 pl-10"
+            className="h-11 min-w-0 pl-10"
             disabled={bloqueado}
             name="checkIn"
             onChange={(evento) => setCheckIn(evento.target.value)}
@@ -321,7 +325,7 @@ function ReservationFormFields({
         <Field label="Check-out">
           <CalendarDays className={inputIconClass} />
           <GlassInput
-            className="h-11 pl-10"
+            className="h-11 min-w-0 pl-10"
             disabled={bloqueado}
             name="checkOut"
             onChange={(evento) => setCheckOut(evento.target.value)}
@@ -332,11 +336,11 @@ function ReservationFormFields({
         </Field>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Field label="Horario previsto de chegada">
           <Clock className={inputIconClass} />
           <GlassInput
-            className="h-11 pl-10"
+            className="h-11 min-w-0 pl-10"
             disabled={bloqueado}
             name="horarioPrevistoCheckIn"
             onChange={(evento) => setHorarioPrevistoCheckIn(evento.target.value)}
@@ -350,7 +354,7 @@ function ReservationFormFields({
         <Field label="Horario previsto de saida">
           <Clock className={inputIconClass} />
           <GlassInput
-            className="h-11 pl-10"
+            className="h-11 min-w-0 pl-10"
             disabled={bloqueado}
             name="horarioPrevistoCheckOut"
             onChange={(evento) => setHorarioPrevistoCheckOut(evento.target.value)}
@@ -366,24 +370,31 @@ function ReservationFormFields({
       <Field label="Hospedes">
         <Users className={inputIconClass} />
         <GlassInput
-          className="h-11 pl-10"
+          className="h-11 min-w-0 pl-10"
           disabled={bloqueado}
+          inputMode="numeric"
           max={property.maxGuests}
           min={1}
           name="quantidadeHospedes"
-          onChange={(evento) =>
-            setQuantidadeHospedes(Math.max(1, Number.parseInt(evento.target.value, 10) || 1))
+          onBlur={() =>
+            setQuantidadeHospedes(
+              normalizarQuantidadeHospedesInput(quantidadeHospedes, property.maxGuests)
+            )
           }
+          onChange={(evento) => setQuantidadeHospedes(evento.target.value.replace(/\D/g, ""))}
           required
           type="number"
           value={quantidadeHospedes}
         />
+        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+          Capacidade maxima: {property.maxGuests} hospede{property.maxGuests === 1 ? "" : "s"}.
+        </span>
       </Field>
 
       <Field label="Nome do hospede">
         <User className={inputIconClass} />
         <GlassInput
-          className="h-11 pl-10"
+          className="h-11 min-w-0 pl-10"
           disabled={bloqueado}
           name="hospedeNome"
           onChange={(evento) => setNomeHospede(evento.target.value)}
@@ -392,11 +403,11 @@ function ReservationFormFields({
         />
       </Field>
 
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <Field label="Telefone">
           <Phone className={inputIconClass} />
           <GlassInput
-            className="h-11 pl-10"
+            className="h-11 min-w-0 pl-10"
             disabled={bloqueado}
             name="hospedeTelefone"
             onChange={(evento) => setTelefoneHospede(evento.target.value)}
@@ -408,7 +419,7 @@ function ReservationFormFields({
           <Mail className={inputIconClass} />
           <GlassInput
             className={cn(
-              "h-11 pl-10",
+              "h-11 min-w-0 pl-10",
               emailHospedeBloqueado && "cursor-not-allowed border-cyan-300/35 bg-cyan-400/10"
             )}
             disabled={bloqueado}
@@ -434,7 +445,7 @@ function ReservationFormFields({
       <Field label="Forma de pagamento">
         <Banknote className={inputIconClass} />
         <select
-          className="glass-input h-11 w-full rounded-md pl-10 pr-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="glass-input h-11 w-full min-w-0 rounded-md pl-10 pr-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
           disabled={bloqueado}
           name="formaPagamento"
           onChange={(evento) =>
@@ -526,8 +537,13 @@ function ResumoValores({
       {resumo.taxaLimpeza ? (
         <ResumoLinha label="Taxa de limpeza" valor={resumo.taxaLimpeza} />
       ) : null}
-      {resumo.hospedesExtras ? (
-        <ResumoLinha label="Hospedes extras" valor={resumo.hospedesExtras} />
+      {resumo.hospedesExtras > 0 ? (
+        <ResumoLinha
+          label={`${resumo.quantidadeHospedesExtras} ${
+            resumo.quantidadeHospedesExtras === 1 ? "hospede extra" : "hospedes extras"
+          }`}
+          valor={resumo.hospedesExtras}
+        />
       ) : null}
       {resumo.juros ? <ResumoLinha label="Juros do cartao" valor={resumo.juros} /> : null}
       {property.pricing.caucao ? (
@@ -546,7 +562,7 @@ function ResumoValores({
       <ConversaoTotal cotacoesCambio={cotacoesCambio} totalBrl={resumo.total} />
       <span className="flex items-center justify-between gap-3 text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <Clock className="h-4 w-4" />
+          <Clock className="h-4 w-4 text-cyan-100" />
           Horarios
         </span>
         <strong className="text-right text-foreground">
@@ -695,9 +711,9 @@ function ReservationSuccess({
 
 function Field({ children, label }: { children: ReactNode; label: string }) {
   return (
-    <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+    <label className="grid min-w-0 gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
       {label}
-      <span className="relative">{children}</span>
+      <span className="relative min-w-0">{children}</span>
     </label>
   );
 }
@@ -722,12 +738,13 @@ function calcularResumoReserva({
   const noites = calcularNoites(checkIn, checkOut);
   const diarias = noites * property.pricing.dailyRate;
   const taxaLimpeza = noites > 0 ? property.pricing.cleaningFee : 0;
-  const hospedesExtras =
+  const hospedesInclusosNoValorBase = obterHospedesInclusosNoValorBase(property);
+  const quantidadeHospedesExtras =
     noites > 0 && property.pricing.cobraHospedeExtra
-      ? Math.max(0, hospedes - property.pricing.hospedesInclusos) *
-        property.pricing.valorHospedeExtra *
-        noites
+      ? Math.max(0, hospedes - hospedesInclusosNoValorBase)
       : 0;
+  const hospedesExtras =
+    quantidadeHospedesExtras * property.pricing.valorHospedeExtra * noites;
   const subtotal = diarias + taxaLimpeza + hospedesExtras;
   const juros =
     formaPagamento === "credit_card" && jurosPercentual > 0
@@ -740,6 +757,7 @@ function calcularResumoReserva({
   return {
     diarias,
     hospedesExtras,
+    quantidadeHospedesExtras,
     juros,
     noites,
     parcelaValor: quantidadeParcelas > 0 ? total / quantidadeParcelas : total,
@@ -747,6 +765,24 @@ function calcularResumoReserva({
     taxaLimpeza,
     total
   };
+}
+
+function obterHospedesInclusosNoValorBase(property: PropriedadePublica) {
+  const capacidade = Math.max(property.maxGuests || 1, 1);
+  const configurado = property.pricing.hospedesInclusos || capacidade;
+
+  return Math.max(1, Math.min(configurado, capacidade));
+}
+
+function obterQuantidadeHospedesParaResumo(valor: string, capacidadeMaxima: number) {
+  const numero = Number.parseInt(valor, 10);
+  if (!Number.isFinite(numero)) return 1;
+
+  return Math.max(1, Math.min(numero, Math.max(capacidadeMaxima || 1, 1)));
+}
+
+function normalizarQuantidadeHospedesInput(valor: string, capacidadeMaxima: number) {
+  return String(obterQuantidadeHospedesParaResumo(valor, capacidadeMaxima));
 }
 
 function obterParcelasDisponiveis(property: PropriedadePublica) {

@@ -44,11 +44,11 @@ type PropertyReviewsSectionProps = {
 
 export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps) {
   const [expandido, setExpandido] = useState(false);
-  const comentariosVisiveis = expandido ? reviews.comments : reviews.comments.slice(0, 3);
+  const comentariosVisiveis = expandido ? reviews.comments : reviews.comments.slice(0, 2);
 
   return (
     <FadeIn>
-      <GlassCard className="p-6">
+      <GlassCard className="p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <StatusBadge tone="info">Avaliações</StatusBadge>
@@ -72,7 +72,7 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
         </div>
 
         {reviews.total ? (
-          <div className="mt-6 grid gap-6 lg:grid-cols-[260px_1fr]">
+          <div className="mt-5 grid gap-4 lg:grid-cols-[240px_1fr]">
             <div className="space-y-3">
               {reviews.distribution.map((item) => (
                 <div className="grid grid-cols-[44px_1fr_36px] items-center gap-3" key={item.stars}>
@@ -119,14 +119,14 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
                   ) : null}
                 </article>
               ))}
-              {reviews.comments.length > 3 ? (
+              {reviews.comments.length > 2 ? (
                 <Button
                   className="w-fit"
                   onClick={() => setExpandido((valor) => !valor)}
                   type="button"
                   variant="outline"
                 >
-                  {expandido ? "Ver menos avaliacoes" : "Ver mais avaliacoes"}
+                  {expandido ? "Ver menos" : "Ver mais"}
                 </Button>
               ) : null}
             </div>
@@ -178,7 +178,7 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
 
   return (
     <FadeIn>
-      <GlassCard className="p-6">
+      <GlassCard className="p-4 sm:p-5">
         <div className="flex flex-col gap-2">
           <StatusBadge className="w-fit" tone="success">
             Regras da casa
@@ -280,12 +280,12 @@ export function PropertyRegionalGuideSection({
   locations
 }: PropertyRegionalGuideSectionProps) {
   const [expandido, setExpandido] = useState(false);
-  const locaisVisiveis = expandido ? locations : locations.slice(0, 4);
+  const locaisVisiveis = expandido ? locations : locations.slice(0, 3);
   const grupos = agruparLocaisPorCategoria(locaisVisiveis);
 
   return (
     <FadeIn>
-      <GlassCard className="p-6">
+      <GlassCard className="p-4 sm:p-5">
         <div className="flex flex-col gap-2">
           <StatusBadge className="w-fit" tone="info">
             Guia da região
@@ -297,13 +297,13 @@ export function PropertyRegionalGuideSection({
         </div>
 
         {locations.length ? (
-          <div className="mt-6 grid gap-6">
+          <div className="mt-5 grid gap-4">
             {grupos.map((grupo) => (
               <div className="grid gap-3" key={grupo.categoria}>
                 <h3 className="text-sm font-semibold text-muted-foreground">
                   {grupo.categoria}
                 </h3>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-3 md:grid-cols-2">
                   {grupo.locais.map((location) => (
                     <article
                       className="overflow-hidden rounded-lg border bg-background/70 shadow-sm transition hover:border-primary/40"
@@ -312,7 +312,7 @@ export function PropertyRegionalGuideSection({
                       {location.coverImageUrl ? (
                         <img
                           alt={`Foto de ${location.name}`}
-                          className="h-40 w-full object-cover"
+                          className="h-32 w-full object-cover"
                           src={location.coverImageUrl}
                         />
                       ) : null}
@@ -322,7 +322,7 @@ export function PropertyRegionalGuideSection({
                             <StatusBadge tone="neutral">{location.categoryLabel}</StatusBadge>
                             <h3 className="mt-3 font-semibold">{location.name}</h3>
                           </div>
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cyan-400/10 text-cyan-100">
                             <Store className="h-5 w-5" />
                           </span>
                         </div>
@@ -367,14 +367,14 @@ export function PropertyRegionalGuideSection({
                 </div>
               </div>
             ))}
-            {locations.length > 4 ? (
+            {locations.length > 3 ? (
               <Button
                 className="w-fit"
                 onClick={() => setExpandido((valor) => !valor)}
                 type="button"
                 variant="outline"
               >
-                {expandido ? "Ver menos locais" : "Ver mais locais"}
+                {expandido ? "Ver menos" : "Ver mais"}
               </Button>
             ) : null}
           </div>

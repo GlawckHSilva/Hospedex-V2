@@ -196,7 +196,8 @@ body {
 }
 
 .glass-input::-webkit-calendar-picker-indicator {
-  filter: invert(1) opacity(0.72);
+  filter: invert(1) brightness(1.8) sepia(0.35) saturate(1.6) hue-rotate(130deg);
+  opacity: 0.92;
 }
 
 .status-badge {

@@ -30,6 +30,7 @@ import {
   PropertyReservationCard,
   type ReservaFeedback
 } from "../../../components/properties/property-reservation-card";
+import { PropertyExpandableBlock } from "../../../components/properties/property-expandable-block";
 import { ShareButton } from "../../../components/properties/share-button";
 import {
   carregarPropriedadePublica,
@@ -83,8 +84,8 @@ export default async function PropriedadePage({
       <PropertyHero propriedade={propriedade} />
 
       <section className="bg-background">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_390px] lg:py-14">
-          <div className="grid gap-8">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_390px] lg:py-10">
+          <div className="grid gap-6">
             <FadeIn>
               <GlassPanel className="p-4 sm:p-5">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
@@ -262,11 +263,12 @@ function PropertyLocationSection({
 
   return (
     <Secao title="Localizacao">
-      <div className="grid gap-5">
-        <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
+      <PropertyExpandableBlock
+        preview={
+          <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <p className="flex items-center gap-2 text-sm font-semibold">
-              <MapPin className="h-4 w-4 text-primary" />
+              <MapPin className="h-4 w-4 text-cyan-100" />
               {propriedade.locationLabel}
             </p>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{endereco}</p>
@@ -279,10 +281,12 @@ function PropertyLocationSection({
               target="_blank"
             >
               Abrir no Google Maps
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4 text-cyan-100" />
             </a>
           ) : null}
-        </div>
+          </div>
+        }
+      >
 
         {urlMapa ? (
           <div className="overflow-hidden rounded-lg border bg-secondary">
@@ -299,7 +303,7 @@ function PropertyLocationSection({
             Mapa ainda nao informado pelo proprietario.
           </div>
         )}
-      </div>
+      </PropertyExpandableBlock>
     </Secao>
   );
 }
@@ -311,7 +315,9 @@ function PropertyOwnerTrustSection({ property }: { property: PropriedadePublica 
 
   return (
     <Secao title="Informacoes do proprietario">
-      <div className="grid gap-5 md:grid-cols-[auto_1fr] md:items-center">
+      <PropertyExpandableBlock
+        preview={
+          <div className="grid gap-4 md:grid-cols-[auto_1fr] md:items-center">
         {perfil.avatarUrl ? (
           <img
             alt={`Foto de ${perfil.ownerName}`}
@@ -338,19 +344,22 @@ function PropertyOwnerTrustSection({ property }: { property: PropriedadePublica 
             </p>
           ) : null}
         </div>
-      </div>
-      <div className="mt-6 grid gap-3 md:grid-cols-3">
+          </div>
+        }
+      >
+      <div className="grid gap-3 md:grid-cols-3">
         {[
           "Comunique-se pelos contatos oficiais informados nesta pagina.",
           "Confira os dados da reserva antes de realizar qualquer pagamento.",
           "Nunca envie dados sensiveis de cartao fora de ambiente seguro."
         ].map((texto) => (
           <div className="rounded-lg border bg-background/70 p-4 text-sm text-muted-foreground" key={texto}>
-            <ShieldCheck className="mb-3 h-4 w-4 text-primary" />
+            <ShieldCheck className="mb-3 h-4 w-4 text-cyan-100" />
             {texto}
           </div>
         ))}
       </div>
+      </PropertyExpandableBlock>
     </Secao>
   );
 }
@@ -380,8 +389,8 @@ function Secao({
 }) {
   return (
     <FadeIn>
-      <GlassCard className="p-6">
-        <h2 className="mb-5 text-xl font-semibold">{title}</h2>
+      <GlassCard className="p-4 sm:p-5">
+        <h2 className="mb-4 text-xl font-semibold">{title}</h2>
         {children}
       </GlassCard>
     </FadeIn>
@@ -399,7 +408,7 @@ function ResumoItem({
 }) {
   return (
     <div className="rounded-lg border bg-background/70 p-4">
-      <Icone className="h-4 w-4 text-primary" />
+      <Icone className="h-4 w-4 text-cyan-100" />
       <p className="mt-3 text-xs uppercase tracking-normal text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-semibold">{value}</p>
     </div>
