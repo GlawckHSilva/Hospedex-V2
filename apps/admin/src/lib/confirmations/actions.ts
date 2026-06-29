@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
+import { alterarStatusReservaOperacionalSeguro } from "../reservations/status-rpc";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   podeGerenciarLimpezaDiaria,
@@ -295,7 +296,21 @@ async function alterarStatusReservaOperacional(
       throw new ErroConfirmacao("Status atual da reserva nao permite esta confirmacao.");
     }
 
-    await atualizarReserva(supabase, escopo, reserva, regra.statusDestino, observacao ?? regra.motivoPadrao);
+    if (
+      regra.statusDestino !== "checked_in" &&
+      regra.statusDestino !== "checked_out" &&
+      regra.statusDestino !== "completed"
+    ) {
+      throw new ErroConfirmacao("Transicao de status invalida para esta reserva.");
+    }
+
+    await alterarStatusReservaOperacionalSeguro({
+      escopo,
+      motivo: observacao ?? regra.motivoPadrao,
+      reserva,
+      statusDestino: regra.statusDestino,
+      supabase
+    });
     revalidarConfirmacoes();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao confirmar reserva.");
@@ -469,56 +484,6 @@ async function cancelarReservaAtomica(
       traduzirErroCancelamentoAtomico(error.message)
     );
   }
-}
-
-async function atualizarReserva(
-  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
-  escopo: EscopoConfirmacao,
-  reserva: ReservationRow,
-  statusDestino: ReservationStatus,
-  motivo: string
-) {
-  const agora = new Date().toISOString();
-  const dados: Partial<ReservationRow> = { status: statusDestino };
-
-  if (statusDestino === "checked_in") dados.checked_in_at = agora;
-  if (statusDestino === "checked_out") dados.checked_out_at = agora;
-  if (statusDestino === "cancelled") {
-    dados.cancelled_at = agora;
-    dados.cancelled_by = escopo.userId;
-    dados.cancellation_reason = motivo;
-  }
-
-  const { error } = await supabase
-    .from("reservations")
-    .update(dados)
-    .eq("id", reserva.id)
-    .eq("tenant_id", escopo.tenantId)
-    .eq("owner_id", escopo.ownerId);
-
-  if (error) {
-    throw new ErroConfirmacao(
-      traduzirErroBanco(error.message, "Não foi possível atualizar o status da reserva.")
-    );
-  }
-
-  const { error: erroHistorico } = await supabase.from("reservation_status_history").insert({
-    changed_by: escopo.userId,
-    from_status: reserva.status,
-    metadata: { origem: "confirmacoes" },
-    reason: motivo,
-    reservation_id: reserva.id,
-    tenant_id: escopo.tenantId,
-    to_status: statusDestino
-  });
-
-  if (erroHistorico) {
-    throw new ErroConfirmacao(
-      traduzirErroBanco(erroHistorico.message, "Não foi possível registrar a timeline da reserva.")
-    );
-  }
-
-  await inserirNotaReserva(supabase, escopo, reserva.id, motivo);
 }
 
 async function atualizarTarefaLimpeza(

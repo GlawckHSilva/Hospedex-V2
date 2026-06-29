@@ -252,8 +252,11 @@ function montarCidadeEstado(endereco: Record<string, unknown>) {
 }
 
 function obterStatusCalendario(status: ReservaComRelacionamentos["status"]) {
-  if (["awaiting_payment", "confirmed", "checked_in"].includes(status)) {
-    return "Periodo bloqueado para a reserva.";
+  if (status === "confirmed" || status === "checked_in") {
+    return "Periodo bloqueado no calendario da casa.";
+  }
+  if (status === "awaiting_payment") {
+    return "Aparece na agenda, mas so bloqueia definitivamente apos confirmacao.";
   }
   if (status === "cancelled") return "Periodo liberado por cancelamento.";
   if (status === "completed" || status === "checked_out") return "Historico preservado.";

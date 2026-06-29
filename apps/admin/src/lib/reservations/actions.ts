@@ -21,6 +21,7 @@ import {
   type ClienteSupabaseServer,
   type EscopoReserva
 } from "./permissions";
+import { alterarStatusReservaOperacionalSeguro } from "./status-rpc";
 import { STATUS_RESERVA } from "./types";
 
 /**
@@ -177,14 +178,7 @@ export async function alterarStatusReservaAction(formData: FormData) {
           motivo ?? "Reserva cancelada pela tela de reservas."
         );
       } else {
-        await atualizarStatusReserva(
-          supabase,
-          escopo,
-          reservaId,
-          reserva.status,
-          statusDestino,
-          motivo
-        );
+        await atualizarStatusReserva(supabase, escopo, reserva, statusDestino, motivo);
       }
     }
 
@@ -559,30 +553,25 @@ async function salvarObservacaoInicial(
 async function atualizarStatusReserva(
   supabase: ClienteSupabaseServer,
   escopo: EscopoReserva,
-  reservaId: string,
-  statusAtual: ReservationStatus,
+  reserva: ReservationRow,
   statusDestino: ReservationStatus,
   motivo: string | null
 ) {
-  const dados: Record<string, string | null> = { status: statusDestino };
-
-  if (statusDestino === "checked_in") dados.checked_in_at = new Date().toISOString();
-  if (statusDestino === "checked_out") dados.checked_out_at = new Date().toISOString();
-  if (statusDestino === "cancelled") {
-    dados.cancelled_at = new Date().toISOString();
-    dados.cancelled_by = escopo.userId;
-    dados.cancellation_reason = motivo;
+  if (
+    statusDestino !== "checked_in" &&
+    statusDestino !== "checked_out" &&
+    statusDestino !== "completed"
+  ) {
+    throw new ErroRegraReserva("Transicao de status invalida para esta reserva.");
   }
 
-  const { error } = await supabase
-    .from("reservations")
-    .update(dados)
-    .eq("id", reservaId)
-    .eq("tenant_id", escopo.tenantId)
-    .eq("owner_id", escopo.ownerId);
-
-  if (error) throw new Error(error.message);
-  await registrarHistoricoStatus(supabase, escopo, reservaId, statusAtual, statusDestino, motivo);
+  await alterarStatusReservaOperacionalSeguro({
+    escopo,
+    motivo: motivo ?? "Status da reserva atualizado pelo gerenciamento de reservas.",
+    reserva,
+    statusDestino,
+    supabase
+  });
 }
 
 async function confirmarReservaOperacional(
