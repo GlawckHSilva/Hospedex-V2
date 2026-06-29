@@ -1,4 +1,4 @@
-import type { ReservationStatus } from "@hospedex/types";
+import type { ReservationRow, ReservationStatus } from "@hospedex/types";
 import { redirect } from "next/navigation";
 
 import { AdminLayoutBase } from "../../components/admin/admin-layout-base";
@@ -8,7 +8,12 @@ import {
   carregarDadosModuloReservas,
   podeLerReservas,
 } from "../../lib/reservations/data";
-import { STATUS_RESERVA } from "../../lib/reservations/types";
+import {
+  ORIGENS_RESERVA,
+  STATUS_PAGAMENTO_RESERVA,
+  STATUS_RESERVA,
+  type StatusPagamentoReserva,
+} from "../../lib/reservations/types";
 
 /**
  * Página de Reservas do Admin V2.
@@ -57,6 +62,8 @@ export default async function ReservasPage({ searchParams }: PageProps) {
 function montarFiltros(params: Record<string, string | string[] | undefined>) {
   const filtros: {
     busca?: string;
+    origem?: ReservationRow["source"] | "todos";
+    pagamento?: StatusPagamentoReserva | "todos";
     propriedadeId?: string;
     dataInicio?: string;
     dataFim?: string;
@@ -66,15 +73,39 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
   };
   const busca = lerParametro(params, "busca");
   const propriedadeId = lerParametro(params, "propriedadeId");
+  const origem = lerOrigem(params);
+  const pagamento = lerPagamento(params);
   const dataInicio = lerData(params, "dataInicio");
   const dataFim = lerData(params, "dataFim");
 
   if (busca) filtros.busca = busca;
   if (propriedadeId) filtros.propriedadeId = propriedadeId;
+  if (origem) filtros.origem = origem;
+  if (pagamento) filtros.pagamento = pagamento;
   if (dataInicio) filtros.dataInicio = dataInicio;
   if (dataFim) filtros.dataFim = dataFim;
 
   return filtros;
+}
+
+function lerOrigem(
+  params: Record<string, string | string[] | undefined>,
+) {
+  const valor = lerParametro(params, "origem");
+  if (!valor || valor === "todos") return "todos";
+  return ORIGENS_RESERVA.includes(valor as ReservationRow["source"])
+    ? (valor as ReservationRow["source"])
+    : "todos";
+}
+
+function lerPagamento(
+  params: Record<string, string | string[] | undefined>,
+) {
+  const valor = lerParametro(params, "pagamento");
+  if (!valor || valor === "todos") return "todos";
+  return STATUS_PAGAMENTO_RESERVA.includes(valor as StatusPagamentoReserva)
+    ? (valor as StatusPagamentoReserva)
+    : "todos";
 }
 
 function lerParametro(

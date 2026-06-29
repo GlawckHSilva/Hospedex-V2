@@ -3,9 +3,11 @@ import type {
   ReservationExtraServiceRow,
   ReservationGuestRow,
   ReservationNoteRow,
+  ReservationPaymentStatus,
   ReservationRow,
   ReservationStatus,
-  ReservationStatusHistoryRow
+  ReservationStatusHistoryRow,
+  TransactionRow
 } from "@hospedex/types";
 
 /**
@@ -17,16 +19,22 @@ import type {
 
 export type FiltrosReservas = {
   busca?: string;
+  origem?: ReservationRow["source"] | "todos";
+  pagamento?: StatusPagamentoReserva | "todos";
   propriedadeId?: string;
   dataInicio?: string;
   dataFim?: string;
   status?: ReservationStatus | "todos";
 };
 
+export type StatusPagamentoReserva = ReservationPaymentStatus;
+
 export type ReservaComRelacionamentos = ReservationRow & {
   propriedade: PropertyRow | null;
   hospedes: ReservationGuestRow[];
   historico: ReservationStatusHistoryRow[];
+  lancamentosFinanceiros: TransactionRow[];
+  statusPagamento: StatusPagamentoReserva;
   servicosExtras: ReservationExtraServiceRow[];
   observacoes: ReservationNoteRow[];
   valorServicosExtras: number;
@@ -36,13 +44,17 @@ export type ReservaComRelacionamentos = ReservationRow & {
 export type DadosModuloReservas = {
   filtros: FiltrosReservas;
   podeGerenciar: boolean;
+  podeGerenciarPagamento: boolean;
   propriedades: PropertyRow[];
   reservas: ReservaComRelacionamentos[];
   resumo: {
     pendentes: number;
     confirmadas: number;
     hospedadas: number;
+    concluidas: number;
     canceladas: number;
+    pagamentosPendentes: number;
+    pagamentosRecebidos: number;
   };
 };
 
@@ -61,6 +73,20 @@ export const STATUS_RESERVA: ReservationStatus[] = [
   "cancelled"
 ];
 
+export const ORIGENS_RESERVA: Array<ReservationRow["source"]> = [
+  "marketplace",
+  "manual",
+  "direct",
+  "external"
+];
+
+export const STATUS_PAGAMENTO_RESERVA: StatusPagamentoReserva[] = [
+  "pending",
+  "received",
+  "cancelled",
+  "refunded"
+];
+
 export const LABEL_STATUS_RESERVA: Record<ReservationStatus, string> = {
   pending: "Pendente",
   awaiting_payment: "Aguardando pagamento",
@@ -70,6 +96,27 @@ export const LABEL_STATUS_RESERVA: Record<ReservationStatus, string> = {
   completed: "Concluída",
   cancelled: "Cancelada"
 };
+
+export const LABEL_ORIGEM_RESERVA: Record<ReservationRow["source"], string> = {
+  direct: "Canal direto",
+  external: "Outro canal",
+  manual: "Manual",
+  marketplace: "Marketplace"
+};
+
+export const LABEL_STATUS_PAGAMENTO_RESERVA: Record<StatusPagamentoReserva, string> = {
+  cancelled: "Pagamento cancelado",
+  received: "Pagamento recebido",
+  pending: "Pagamento pendente",
+  refunded: "Pagamento estornado"
+};
+
+export function obterVariantStatusPagamentoReserva(status: StatusPagamentoReserva) {
+  if (status === "received") return "success";
+  if (status === "pending") return "info";
+  if (status === "refunded") return "warning";
+  return "secondary";
+}
 
 export function obterVariantStatusReserva(status: ReservationStatus) {
   if (status === "confirmed" || status === "checked_in" || status === "completed") {

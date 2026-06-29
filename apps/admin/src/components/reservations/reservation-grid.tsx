@@ -6,19 +6,21 @@ import { ReservationCard } from "./reservation-card";
 
 type ReservationGridProps = {
   podeGerenciar: boolean;
+  podeGerenciarPagamento: boolean;
   propriedades: PropertyRow[];
   reservas: ReservaComRelacionamentos[];
 };
 
 export function ReservationGrid({
   podeGerenciar,
+  podeGerenciarPagamento,
   propriedades,
   reservas,
 }: ReservationGridProps) {
   if (reservas.length === 0) {
     return (
       <EmptyState
-        description="Ajuste os filtros ou registre uma nova reserva manual quando houver demanda confirmada."
+        description="Quando um hospede solicitar uma hospedagem, ela aparecera aqui. Ajuste os filtros se estiver procurando uma reserva especifica."
         title="Nenhuma reserva encontrada"
       />
     );
@@ -30,6 +32,7 @@ export function ReservationGrid({
         <ReservationCard
           key={reserva.id}
           podeGerenciar={podeGerenciar}
+          podeGerenciarPagamento={podeGerenciarPagamento}
           propriedades={propriedades}
           reserva={reserva}
         />

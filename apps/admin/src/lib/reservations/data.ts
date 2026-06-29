@@ -4,7 +4,8 @@ import type {
   ReservationGuestRow,
   ReservationNoteRow,
   ReservationRow,
-  ReservationStatusHistoryRow
+  ReservationStatusHistoryRow,
+  TransactionRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
@@ -12,7 +13,8 @@ import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosModuloReservas,
   FiltrosReservas,
-  ReservaComRelacionamentos
+  ReservaComRelacionamentos,
+  StatusPagamentoReserva
 } from "./types";
 
 /**
@@ -32,6 +34,12 @@ export function podeGerenciarReservas(contexto: ContextoAutenticacao): boolean {
   if (!contexto.featureFlags.manual_approval) return false;
   if (contexto.role === "owner") return true;
   return contexto.permissions.includes("reservations.manage");
+}
+
+export function podeGerenciarPagamentoReservas(contexto: ContextoAutenticacao): boolean {
+  if (!contexto.featureFlags.manual_approval) return false;
+  if (contexto.role === "owner") return true;
+  return contexto.permissions.includes("finance.manage");
 }
 
 export async function carregarDadosModuloReservas(
@@ -99,19 +107,27 @@ export async function carregarDadosModuloReservas(
     hospedesResultado.data ?? [],
     historicoResultado.data ?? [],
     extrasResultado.data ?? [],
-    observacoesResultado.data ?? []
-  ).filter((reserva) => correspondeBusca(reserva, filtros.busca));
+    observacoesResultado.data ?? [],
+    await carregarLancamentosFinanceiros(
+      tenantId,
+      (reservasResultado.data ?? []).map((reserva) => reserva.id)
+    )
+  ).filter((reserva) => correspondeFiltrosRelacionados(reserva, filtros));
 
   return {
     filtros,
     podeGerenciar: podeGerenciarReservas(contexto),
+    podeGerenciarPagamento: podeGerenciarPagamentoReservas(contexto),
     propriedades: propriedadesResultado.data ?? [],
     reservas,
     resumo: {
       pendentes: reservas.filter((reserva) => reserva.status === "pending").length,
       confirmadas: reservas.filter((reserva) => reserva.status === "confirmed").length,
       hospedadas: reservas.filter((reserva) => reserva.status === "checked_in").length,
-      canceladas: reservas.filter((reserva) => reserva.status === "cancelled").length
+      concluidas: reservas.filter((reserva) => reserva.status === "completed").length,
+      canceladas: reservas.filter((reserva) => reserva.status === "cancelled").length,
+      pagamentosPendentes: reservas.filter((reserva) => reserva.statusPagamento === "pending").length,
+      pagamentosRecebidos: reservas.filter((reserva) => reserva.statusPagamento === "received").length
     }
   };
 }
@@ -132,6 +148,10 @@ async function criarConsultaReservas(tenantId: string, filtros: FiltrosReservas)
     consulta = consulta.eq("property_id", filtros.propriedadeId);
   }
 
+  if (filtros.origem && filtros.origem !== "todos") {
+    consulta = consulta.eq("source", filtros.origem);
+  }
+
   // O periodo usa sobreposicao de datas, porque uma reserva pode comecar antes
   // do filtro e ainda ocupar a casa dentro da janela pesquisada.
   if (filtros.dataInicio) {
@@ -145,13 +165,30 @@ async function criarConsultaReservas(tenantId: string, filtros: FiltrosReservas)
   return consulta.returns<ReservationRow[]>();
 }
 
+async function carregarLancamentosFinanceiros(tenantId: string, reservaIds: string[]) {
+  if (!reservaIds.length) return [];
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .in("reservation_id", reservaIds)
+    .order("created_at", { ascending: false })
+    .returns<TransactionRow[]>();
+
+  registrarErroLeitura("lançamentos financeiros das reservas", error);
+  return data ?? [];
+}
+
 function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
   historico: ReservationStatusHistoryRow[],
   extras: ReservationExtraServiceRow[],
-  observacoes: ReservationNoteRow[]
+  observacoes: ReservationNoteRow[],
+  lancamentos: TransactionRow[]
 ): ReservaComRelacionamentos[] {
   return reservas.map((reserva) => {
     const servicosExtras = extras.filter(
@@ -168,12 +205,30 @@ function montarReservas(
         propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
       hospedes: hospedes.filter((hospede) => hospede.reservation_id === reserva.id),
       historico: historico.filter((item) => item.reservation_id === reserva.id),
+      lancamentosFinanceiros: lancamentos.filter(
+        (lancamento) => lancamento.reservation_id === reserva.id
+      ),
+      statusPagamento: obterStatusPagamentoReserva(
+        reserva,
+        lancamentos.filter((lancamento) => lancamento.reservation_id === reserva.id)
+      ),
       servicosExtras,
       observacoes: observacoes.filter((observacao) => observacao.reservation_id === reserva.id),
       valorServicosExtras,
       valorTotalComExtras: Number(reserva.total_amount) + valorServicosExtras
     };
   });
+}
+
+function correspondeFiltrosRelacionados(
+  reserva: ReservaComRelacionamentos,
+  filtros: FiltrosReservas
+) {
+  if (!correspondeBusca(reserva, filtros.busca)) return false;
+  if (filtros.pagamento && filtros.pagamento !== "todos") {
+    return reserva.statusPagamento === filtros.pagamento;
+  }
+  return true;
 }
 
 function correspondeBusca(reserva: ReservaComRelacionamentos, busca?: string): boolean {
@@ -194,17 +249,42 @@ function correspondeBusca(reserva: ReservaComRelacionamentos, busca?: string): b
   return campos.some((campo) => campo?.toLowerCase().includes(termo));
 }
 
+function obterStatusPagamentoReserva(
+  reserva: ReservationRow,
+  lancamentos: TransactionRow[]
+): StatusPagamentoReserva {
+  if (reserva.payment_status) return reserva.payment_status;
+
+  const receitas = lancamentos.filter((item) => item.transaction_type === "income");
+
+  // O status financeiro vinculado tem prioridade por ser a fonte rastreavel do Financeiro.
+  if (receitas.some((item) => item.status === "paid")) return "received";
+  if (receitas.some((item) => item.status === "refunded")) return "refunded";
+  if (receitas.some((item) => item.status === "cancelled")) return "cancelled";
+  if (receitas.some((item) => item.status === "pending")) return "pending";
+
+  if (reserva.status === "cancelled") return "cancelled";
+  if (["confirmed", "checked_in", "checked_out", "completed"].includes(reserva.status)) {
+    return "received";
+  }
+  return "pending";
+}
+
 function criarDadosVazios(filtros: FiltrosReservas): DadosModuloReservas {
   return {
     filtros,
     podeGerenciar: false,
+    podeGerenciarPagamento: false,
     propriedades: [],
     reservas: [],
     resumo: {
       pendentes: 0,
       confirmadas: 0,
       hospedadas: 0,
-      canceladas: 0
+      concluidas: 0,
+      canceladas: 0,
+      pagamentosPendentes: 0,
+      pagamentosRecebidos: 0
     }
   };
 }

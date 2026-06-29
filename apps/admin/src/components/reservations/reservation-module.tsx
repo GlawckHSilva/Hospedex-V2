@@ -21,6 +21,10 @@ import { EntityModal } from "../management/entity-modal";
 import { ModuleToast } from "../admin/module-toast";
 import {
   LABEL_STATUS_RESERVA,
+  LABEL_ORIGEM_RESERVA,
+  LABEL_STATUS_PAGAMENTO_RESERVA,
+  ORIGENS_RESERVA,
+  STATUS_PAGAMENTO_RESERVA,
   STATUS_RESERVA,
   type DadosModuloReservas,
   type SearchParamsReservas,
@@ -45,6 +49,7 @@ const MENSAGENS_SUCESSO_RESERVAS: Record<string, string> = {
   "reserva-atualizada": "Reserva atualizada com sucesso.",
   "reserva-cancelada": "Reserva cancelada com sucesso.",
   "status-reserva": "Status da reserva atualizado.",
+  "pagamento-reserva": "Pagamento da reserva atualizado.",
   "servico-extra": "Serviço extra adicionado.",
   "observacao-adicionada": "Observação adicionada.",
 };
@@ -53,6 +58,7 @@ export function ReservationModule({
   erro,
   filtros,
   podeGerenciar,
+  podeGerenciarPagamento,
   propriedades,
   reservas,
   resumo,
@@ -99,7 +105,7 @@ export function ReservationModule({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
             <Resumo
               icon={<Clock3 />}
               label="Pendentes"
@@ -116,6 +122,15 @@ export function ReservationModule({
               valor={String(resumo.hospedadas)}
             />
             <Resumo label="Canceladas" valor={String(resumo.canceladas)} />
+            <Resumo label="Concluidas" valor={String(resumo.concluidas)} />
+            <Resumo
+              label="Pagamentos pendentes"
+              valor={String(resumo.pagamentosPendentes)}
+            />
+            <Resumo
+              label="Pagamentos recebidos"
+              valor={String(resumo.pagamentosRecebidos)}
+            />
           </div>
         </div>
       </section>
@@ -123,7 +138,7 @@ export function ReservationModule({
       <Card className="admin-glass-card">
         <CardContent className="p-5">
           <form
-            className="grid gap-4 lg:grid-cols-[1fr_0.8fr_0.9fr_0.7fr_0.7fr_auto]"
+            className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-[1fr_0.75fr_0.85fr_0.95fr_0.75fr_0.7fr_0.7fr_auto]"
           >
             <CampoTexto
               defaultValue={filtros.busca ?? ""}
@@ -132,18 +147,20 @@ export function ReservationModule({
               placeholder="Código, hóspede, telefone..."
             />
             <CampoStatus defaultValue={filtros.status ?? "todos"} />
+            <CampoPagamento defaultValue={filtros.pagamento ?? "todos"} />
             <CampoPropriedade
               defaultValue={filtros.propriedadeId ?? ""}
               propriedades={propriedades}
             />
+            <CampoOrigem defaultValue={filtros.origem ?? "todos"} />
             <CampoData
               defaultValue={filtros.dataInicio ?? ""}
-              label="Entrada"
+              label="Entrada a partir"
               name="dataInicio"
             />
             <CampoData
               defaultValue={filtros.dataFim ?? ""}
-              label="Saida"
+              label="Saida ate"
               name="dataFim"
             />
             <div className="flex items-end">
@@ -158,10 +175,32 @@ export function ReservationModule({
 
       <ReservationGrid
         podeGerenciar={podeGerenciar}
+        podeGerenciarPagamento={podeGerenciarPagamento}
         propriedades={propriedades}
         reservas={reservas}
       />
     </FadeIn>
+  );
+}
+
+function CampoPagamento({ defaultValue }: { defaultValue: string }) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="pagamento">Pagamento</Label>
+      <select
+        className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        defaultValue={defaultValue}
+        id="pagamento"
+        name="pagamento"
+      >
+        <option value="todos">Todos</option>
+        {STATUS_PAGAMENTO_RESERVA.map((status) => (
+          <option key={status} value={status}>
+            {LABEL_STATUS_PAGAMENTO_RESERVA[status]}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
@@ -181,6 +220,27 @@ function Resumo({
       ) : null}
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="truncate font-semibold">{valor}</p>
+    </div>
+  );
+}
+
+function CampoOrigem({ defaultValue }: { defaultValue: string }) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor="origem">Origem</Label>
+      <select
+        className="flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        defaultValue={defaultValue}
+        id="origem"
+        name="origem"
+      >
+        <option value="todos">Todas</option>
+        {ORIGENS_RESERVA.map((origem) => (
+          <option key={origem} value={origem}>
+            {LABEL_ORIGEM_RESERVA[origem]}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

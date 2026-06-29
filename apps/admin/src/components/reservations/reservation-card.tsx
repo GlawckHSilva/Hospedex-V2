@@ -6,21 +6,25 @@ import {
   Mail,
   Pencil,
   Phone,
+  Tag,
   UsersRound,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Card, CardContent } from "@hospedex/ui";
 
-import { EntityModal, EntityViewModal } from "../management/entity-modal";
+import { EntityModal } from "../management/entity-modal";
 import {
+  LABEL_ORIGEM_RESERVA,
+  LABEL_STATUS_PAGAMENTO_RESERVA,
   LABEL_STATUS_RESERVA,
+  obterVariantStatusPagamentoReserva,
   obterVariantStatusReserva,
   type ReservaComRelacionamentos,
 } from "../../lib/reservations/types";
-import { ReservationCancelDialog } from "./reservation-cancel-dialog";
+import { ReservationDetails } from "./reservation-details";
 import { ReservationForm } from "./reservation-form";
-import { ReservationTimeline } from "./reservation-timeline";
+import { ReservationStatusActions } from "./reservation-status-actions";
 
 /**
  * Card compacto de reserva para o grid operacional.
@@ -30,12 +34,14 @@ import { ReservationTimeline } from "./reservation-timeline";
  */
 export type ReservationCardProps = {
   podeGerenciar: boolean;
+  podeGerenciarPagamento: boolean;
   propriedades: PropertyRow[];
   reserva: ReservaComRelacionamentos;
 };
 
 export function ReservationCard({
   podeGerenciar,
+  podeGerenciarPagamento,
   propriedades,
   reserva,
 }: ReservationCardProps) {
@@ -70,6 +76,13 @@ export function ReservationCard({
           </Badge>
         </header>
 
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={obterVariantStatusPagamentoReserva(reserva.statusPagamento)}>
+            {LABEL_STATUS_PAGAMENTO_RESERVA[reserva.statusPagamento]}
+          </Badge>
+          <Badge variant="outline">{LABEL_ORIGEM_RESERVA[reserva.source]}</Badge>
+        </div>
+
         <section className="min-w-0 space-y-2 rounded-lg border bg-background/35 p-3 text-sm">
           <LinhaCompacta icon={<UsersRound />} valor={nomeHospede} />
           <LinhaCompacta icon={<Phone />} valor={telefone} />
@@ -77,6 +90,7 @@ export function ReservationCard({
         </section>
 
         <section className="grid gap-2 border-t pt-3 text-sm">
+          <ResumoLinha icon={<Tag />} label="Casa" valor={nomeCasa} />
           <ResumoLinha icon={<CalendarDays />} label="Periodo" valor={periodo} />
           <ResumoLinha
             destaque
@@ -86,52 +100,19 @@ export function ReservationCard({
           />
         </section>
 
-        <div className="mt-auto grid grid-cols-[1fr_1fr_auto] gap-2">
-          <EntityViewModal
-            description="Dados consolidados, servicos extras e linha do tempo da reserva."
+        <div className="mt-auto grid gap-2 sm:grid-cols-3">
+          <EntityModal
+            description="Dados consolidados, hospede, casa, periodo, valores, financeiro e timeline."
+            eyebrow="Visualizacao"
+            size="xl"
             title={`Reserva ${reserva.code}`}
             triggerAction="view"
             triggerClassName="h-9 justify-center"
             triggerIcon={<Eye className="h-4 w-4" />}
             triggerLabel="Visualizar"
           >
-            <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
-              <ReservationTimeline reserva={reserva} />
-              <div className="grid content-start gap-3">
-                <InfoModal label="Casa" valor={nomeCasa} />
-                <InfoModal
-                  label="Status"
-                  valor={LABEL_STATUS_RESERVA[reserva.status]}
-                />
-                <InfoModal label="Hospede" valor={nomeHospede} />
-                <InfoModal label="Telefone" valor={telefone} />
-                <InfoModal label="E-mail" valor={email} />
-                <InfoModal label="Periodo" valor={periodo} />
-                <InfoModal
-                  label="Check-in"
-                  valor={formatarData(reserva.check_in)}
-                />
-                <InfoModal
-                  label="Check-out"
-                  valor={formatarData(reserva.check_out)}
-                />
-                <InfoModal
-                  label="Chegada prevista"
-                  valor={formatarHorarioPrevisto(reserva.expected_checkin_time)}
-                />
-                <InfoModal
-                  label="Saida prevista"
-                  valor={formatarHorarioPrevisto(reserva.expected_checkout_time)}
-                />
-                <InfoModal
-                  label="Hospedes"
-                  valor={String(reserva.guests_count)}
-                />
-                <InfoModal label="Total" valor={valorTotal} />
-                <ListaServicos reserva={reserva} />
-              </div>
-            </div>
-          </EntityViewModal>
+            <ReservationDetails reserva={reserva} />
+          </EntityModal>
 
           <EntityModal
             description="Atualize periodo, hospede e valores da reserva."
@@ -152,10 +133,10 @@ export function ReservationCard({
             />
           </EntityModal>
 
-          <ReservationCancelDialog
-            codigoReserva={reserva.code}
-            disabled={!podeGerenciar || encerrada}
-            reservaId={reserva.id}
+          <ReservationStatusActions
+            podeGerenciar={podeGerenciar && !encerrada}
+            podeGerenciarPagamento={podeGerenciarPagamento && !encerrada}
+            reserva={reserva}
           />
         </div>
       </CardContent>
@@ -222,46 +203,6 @@ function ResumoLinha({
   );
 }
 
-function ListaServicos({ reserva }: { reserva: ReservaComRelacionamentos }) {
-  if (reserva.servicosExtras.length === 0) {
-    return (
-      <div className="rounded-lg border border-dashed bg-background/45 p-3 text-sm text-muted-foreground">
-        Nenhum servico extra.
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {reserva.servicosExtras.map((servico) => (
-        <div
-          className="rounded-lg border bg-background/55 p-3 text-sm"
-          key={servico.id}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <span className="font-medium">{servico.name}</span>
-            <span className="font-semibold">
-              {formatarMoeda(Number(servico.total_amount))}
-            </span>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {servico.quantity} x {formatarMoeda(Number(servico.unit_price))}
-          </p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function InfoModal({ label, valor }: { label: string; valor: string }) {
-  return (
-    <div className="rounded-lg border bg-background/45 p-3 text-sm">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words font-medium">{valor}</p>
-    </div>
-  );
-}
-
 function formatarMoeda(valor: number): string {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
@@ -273,8 +214,4 @@ function formatarData(valor: string): string {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
     new Date(`${valor}T00:00:00`),
   );
-}
-
-function formatarHorarioPrevisto(valor: string | null): string {
-  return valor ? valor.slice(0, 5) : "Nao informado pelo hospede";
 }

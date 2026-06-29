@@ -3,6 +3,7 @@
 import type {
   PropertyRow,
   ReservationGuestRow,
+  ReservationPaymentStatus,
   ReservationRow,
   ReservationStatus,
   ReservationStatusHistoryRow
@@ -34,7 +35,7 @@ const CAMINHO_RESERVAS = "/reservas";
 const TRANSICOES_RESERVA: Record<ReservationStatus, ReservationStatus[]> = {
   pending: ["awaiting_payment", "confirmed", "cancelled"],
   awaiting_payment: ["confirmed", "cancelled"],
-  confirmed: ["checked_in", "completed", "cancelled"],
+  confirmed: ["awaiting_payment", "checked_in", "completed", "cancelled"],
   checked_in: ["checked_out", "cancelled"],
   checked_out: ["completed"],
   completed: [],
@@ -193,6 +194,45 @@ export async function alterarStatusReservaAction(formData: FormData) {
   }
 
   redirect(`${CAMINHO_RESERVAS}?sucesso=status-reserva`);
+}
+
+export async function alterarPagamentoReservaAction(formData: FormData) {
+  const escopo = await carregarEscopoReservas();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const statusDestino = validarStatusPagamentoReserva(
+      textoObrigatorio(formData, "statusPagamento", "status do pagamento")
+    );
+    const motivo = textoOpcional(formData, "motivo");
+    const reserva = await carregarReservaGerenciavel(supabase, escopo, reservaId);
+
+    validarPermissaoFinanceiraReserva(escopo);
+
+    if (["cancelled", "completed"].includes(reserva.status)) {
+      throw new ErroRegraReserva("Reserva encerrada nao permite alterar pagamento.");
+    }
+
+    if (reserva.payment_status !== statusDestino) {
+      await atualizarPagamentoReservaOperacional(
+        supabase,
+        escopo,
+        reserva,
+        statusDestino,
+        motivo ??
+          (statusDestino === "received"
+            ? "Pagamento marcado como recebido pela tela de reservas."
+            : "Pagamento voltou para pendente pela tela de reservas.")
+      );
+    }
+
+    revalidarReservas();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao alterar pagamento da reserva.");
+  }
+
+  redirect(`${CAMINHO_RESERVAS}?sucesso=pagamento-reserva`);
 }
 
 export async function cancelarReservaAction(formData: FormData) {
@@ -591,6 +631,31 @@ async function cancelarReservaOperacional(
   }
 }
 
+async function atualizarPagamentoReservaOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reserva: ReservationRow,
+  statusDestino: Extract<ReservationPaymentStatus, "pending" | "received">,
+  motivo: string
+) {
+  /*
+    Pagamento altera Financeiro e timeline. A RPC do banco faz a transacao
+    atomica e preserva RLS/autenticacao sem usar service role no frontend.
+  */
+  const { error } = await supabase.rpc("set_reservation_payment_operational", {
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_target_status: statusDestino,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroPagamentoOperacional(error.message));
+  }
+}
+
 async function registrarHistoricoStatus(
   supabase: ClienteSupabaseServer,
   escopo: EscopoReserva,
@@ -627,6 +692,19 @@ function validarTransicaoReserva(
 function validarStatusReserva(valor: string): ReservationStatus {
   if (STATUS_RESERVA.includes(valor as ReservationStatus)) return valor as ReservationStatus;
   throw new ErroRegraReserva("Status de reserva inválido.");
+}
+
+function validarStatusPagamentoReserva(
+  valor: string
+): Extract<ReservationPaymentStatus, "pending" | "received"> {
+  if (valor === "pending" || valor === "received") return valor;
+  throw new ErroRegraReserva("Status de pagamento invalido.");
+}
+
+function validarPermissaoFinanceiraReserva(escopo: EscopoReserva) {
+  if (escopo.contexto.role === "owner") return;
+  if (escopo.contexto.permissions.includes("finance.manage")) return;
+  throw new ErroRegraReserva("Voce nao tem permissao para alterar o financeiro desta reserva.");
 }
 
 function dataObrigatoria(formData: FormData, chave: string, label: string): string {
@@ -697,7 +775,7 @@ function redirecionarComErro(erro: unknown, mensagemLog: string): never {
   const mensagem =
     erro instanceof ErroRegraReserva
       ? erro.message
-      : "Não foi possível concluir a operação.";
+      : normalizarMensagemErroUsuario(mensagemLog);
 
   if (!(erro instanceof ErroRegraReserva)) {
     console.error(mensagemLog, erro);
@@ -740,9 +818,46 @@ function traduzirErroOperacaoAtomica(mensagemBanco: string, acao: "confirmar" | 
     : "Nao foi possivel cancelar a reserva.";
 }
 
+function traduzirErroPagamentoOperacional(mensagemBanco: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
+    return "Voce nao tem permissao para alterar o pagamento desta reserva.";
+  }
+
+  if (mensagem.includes("financeiro")) {
+    return "Nao foi possivel registrar a alteracao no financeiro.";
+  }
+
+  if (mensagem.includes("encerrada")) {
+    return "Reserva encerrada nao permite alterar pagamento.";
+  }
+
+  if (mensagem.includes("valor")) {
+    return "Valor da reserva invalido para registrar pagamento.";
+  }
+
+  if (mensagem.includes("nao encontrada")) {
+    return "Reserva nao encontrada.";
+  }
+
+  return "Nao foi possivel alterar o pagamento da reserva.";
+}
+
 function revalidarReservas() {
   revalidatePath(CAMINHO_RESERVAS);
   revalidatePath("/confirmacoes");
   revalidatePath("/calendario");
   revalidatePath("/financeiro");
+}
+
+function normalizarMensagemErroUsuario(mensagemLog: string) {
+  if (mensagemLog.includes("criar reserva")) return "Nao foi possivel criar a reserva.";
+  if (mensagemLog.includes("atualizar reserva")) return "Nao foi possivel atualizar a reserva.";
+  if (mensagemLog.includes("alterar status")) return "Nao foi possivel alterar o status da reserva.";
+  if (mensagemLog.includes("alterar pagamento")) return "Nao foi possivel alterar o pagamento da reserva.";
+  if (mensagemLog.includes("cancelar reserva")) return "Nao foi possivel cancelar a reserva.";
+  if (mensagemLog.includes("serviço extra")) return "Nao foi possivel adicionar o servico extra.";
+  if (mensagemLog.includes("observação")) return "Nao foi possivel adicionar a observacao.";
+  return "Nao foi possivel concluir a operacao.";
 }
