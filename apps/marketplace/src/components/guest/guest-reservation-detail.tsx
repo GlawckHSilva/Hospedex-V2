@@ -123,6 +123,88 @@ export function GuestReservationDetail({
                   {pagamento.mensagemPreparada}
                 </div>
               ) : null}
+              <div className="grid gap-3 sm:grid-cols-3">
+                <Resumo
+                  icon={WalletCards}
+                  label="Total"
+                  value={formatarMoedaHospede(reserva.financeiro.valorTotal)}
+                />
+                <Resumo
+                  icon={CheckCircle2}
+                  label="Pago"
+                  value={formatarMoedaHospede(reserva.financeiro.valorPago)}
+                />
+                <Resumo
+                  icon={Clock}
+                  label="Pendente"
+                  value={formatarMoedaHospede(reserva.financeiro.valorPendente)}
+                />
+              </div>
+              {reserva.financeiro.cobrancaAberta ? (
+                <div className="rounded-xl border border-cyan-300/20 bg-background/45 p-4 text-sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge tone="warning">Cobranca aberta</StatusBadge>
+                    <StatusBadge tone={tomStatusPagamento(reserva.statusPagamento)}>
+                      {formatarStatusCobranca(reserva.financeiro.cobrancaAberta.status)}
+                    </StatusBadge>
+                  </div>
+                  <div className="mt-4 grid gap-2 text-muted-foreground">
+                    <Linha
+                      label="Valor pendente"
+                      value={formatarMoedaHospede(reserva.financeiro.cobrancaAberta.valorPendente)}
+                    />
+                    <Linha
+                      label="Vencimento"
+                      value={
+                        reserva.financeiro.cobrancaAberta.vencimento
+                          ? formatarDataHoraHospede(reserva.financeiro.cobrancaAberta.vencimento)
+                          : "Sem vencimento informado."
+                      }
+                    />
+                    <Linha
+                      label="Forma"
+                      value={
+                        reserva.financeiro.cobrancaAberta.formaPagamento
+                          ? LABEL_FORMA_PAGAMENTO[reserva.financeiro.cobrancaAberta.formaPagamento]
+                          : formaPagamento
+                      }
+                    />
+                  </div>
+                  {reserva.financeiro.cobrancaAberta.instrucoes ? (
+                    <p className="mt-4 rounded-xl border bg-background/45 p-3 text-muted-foreground">
+                      {reserva.financeiro.cobrancaAberta.instrucoes}
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed bg-background/35 p-4 text-sm text-muted-foreground">
+                  Nenhuma cobranca aberta para esta reserva.
+                </p>
+              )}
+              {reserva.financeiro.pagamentos.length ? (
+                <div className="grid gap-2">
+                  {reserva.financeiro.pagamentos.map((item) => (
+                    <div
+                      className="flex flex-col gap-2 rounded-xl border bg-background/45 p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                      key={`${item.criadoEm}-${item.valor}`}
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {formatarMoedaHospede(item.valor)} - {formatarStatusPagamentoRegistro(item.status)}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {item.confirmadoEm
+                            ? `Confirmado em ${formatarDataHoraHospede(item.confirmadoEm)}`
+                            : `Registrado em ${formatarDataHoraHospede(item.criadoEm)}`}
+                        </p>
+                      </div>
+                      {item.formaPagamento ? (
+                        <StatusBadge tone="info">{LABEL_FORMA_PAGAMENTO[item.formaPagamento]}</StatusBadge>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
           </Secao>
 
@@ -347,9 +429,42 @@ function montarTextoVoucher(reserva: ReservaHospedeDetalhe) {
     `Valor: ${formatarMoedaHospede(reserva.total)}`,
     `Status: ${LABEL_STATUS_RESERVA[reserva.status]}`,
     `Pagamento: ${LABEL_STATUS_PAGAMENTO[reserva.statusPagamento]}`,
+    `Valor pago: ${formatarMoedaHospede(reserva.financeiro.valorPago)}`,
+    `Valor pendente: ${formatarMoedaHospede(reserva.financeiro.valorPendente)}`,
     `Endereco: ${montarEnderecoCompleto(reserva.propriedade) ?? "Endereco ainda nao informado pelo proprietario"}`,
     `Contato: ${reserva.proprietario?.whatsapp ?? reserva.proprietario?.telefone ?? reserva.pagamento?.proprietarioWhatsapp ?? reserva.pagamento?.proprietarioTelefone ?? "Contato do proprietario ainda nao informado"}`
   ].join("\n");
+}
+
+function formatarStatusCobranca(status: ReservaHospedeDetalhe["financeiro"]["cobrancaAberta"] extends infer Cobranca
+  ? Cobranca extends { status: infer Status }
+    ? Status
+    : never
+  : never) {
+  const labels = {
+    cancelled: "Cancelada",
+    overdue: "Vencida",
+    paid: "Quitada",
+    partial: "Parcial",
+    pending: "Pendente",
+    refunded: "Estornada",
+  } as const;
+
+  return labels[status as keyof typeof labels] ?? "Pendente";
+}
+
+function formatarStatusPagamentoRegistro(
+  status: ReservaHospedeDetalhe["financeiro"]["pagamentos"][number]["status"]
+) {
+  const labels = {
+    cancelled: "cancelado",
+    confirmed: "confirmado",
+    pending_review: "em analise",
+    refunded: "estornado",
+    rejected: "rejeitado",
+  } as const;
+
+  return labels[status];
 }
 
 function formatarHorarioPrevisto(horario: string | null) {

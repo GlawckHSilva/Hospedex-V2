@@ -2,7 +2,9 @@ import type {
   CleaningTaskRow,
   ProfileRow,
   PropertyRow,
+  ReservationChargeRow,
   ReservationGuestRow,
+  ReservationPaymentRow,
   ReservationRow,
   ReservationWhatsappMessageRow,
   TransactionRow
@@ -16,9 +18,12 @@ export type TipoConfirmacao =
   | "pendente";
 
 export type ReservaConfirmacao = ReservationRow & {
+  cobrancas: ReservationChargeRow[];
   hospedePrincipal: ReservationGuestRow | null;
   lancamentoFinanceiro: TransactionRow | null;
+  lancamentosFinanceiros: TransactionRow[];
   mensagemWhatsapp: ReservationWhatsappMessageRow | null;
+  pagamentos: ReservationPaymentRow[];
   propriedade: PropertyRow | null;
   timeline: EventoTimelineConfirmacao[];
 };

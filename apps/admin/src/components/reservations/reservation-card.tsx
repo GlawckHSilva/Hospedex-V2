@@ -111,7 +111,10 @@ export function ReservationCard({
             triggerIcon={<Eye className="h-4 w-4" />}
             triggerLabel="Visualizar"
           >
-            <ReservationDetails reserva={reserva} />
+            <ReservationDetails
+              podeGerenciarPagamento={podeGerenciarPagamento && !encerrada}
+              reserva={reserva}
+            />
           </EntityModal>
 
           <EntityModal

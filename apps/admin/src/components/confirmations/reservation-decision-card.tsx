@@ -23,6 +23,7 @@ import {
 import type { ReservaConfirmacao } from "../../lib/confirmations/types";
 import { ConfirmDialog, EntityViewModal } from "../management/entity-modal";
 import { FormActionButton } from "../management/form-submit-button";
+import { ReservationBillingPanel } from "../reservations/reservation-billing-panel";
 import { ReservationWhatsappActions } from "./reservation-whatsapp-actions";
 
 type ReservationDecisionCardProps = {
@@ -110,7 +111,10 @@ export function ReservationDecisionCard({
             title={`Reserva ${reserva.code}`}
             triggerLabel="Visualizar"
           >
-            <DetalhesReserva reserva={reserva} />
+            <DetalhesReserva
+              podeGerenciarPagamento={podeGerenciarPagamento && !reservaEncerrada}
+              reserva={reserva}
+            />
           </EntityViewModal>
         </header>
 
@@ -195,7 +199,13 @@ export function ReservationDecisionCard({
   );
 }
 
-function DetalhesReserva({ reserva }: { reserva: ReservaConfirmacao }) {
+function DetalhesReserva({
+  podeGerenciarPagamento,
+  reserva,
+}: {
+  podeGerenciarPagamento: boolean;
+  reserva: ReservaConfirmacao;
+}) {
   const hospede = reserva.hospedePrincipal;
 
   return (
@@ -228,6 +238,20 @@ function DetalhesReserva({ reserva }: { reserva: ReservaConfirmacao }) {
         <Info label="Do hóspede" valor={reserva.guest_notes ?? "Sem observação do hóspede."} />
         <Info label="Operacional" valor={reserva.internal_notes ?? reserva.notes ?? "Sem observação operacional."} />
       </PainelDetalhe>
+
+      <ReservationBillingPanel
+        canManagePayments={podeGerenciarPagamento}
+        charges={reserva.cobrancas}
+        currency={reserva.currency}
+        defaultPaymentMethod={reserva.payment_method}
+        paymentStatus={reserva.payment_status}
+        paymentStatusUpdatedAt={reserva.payment_status_updated_at}
+        payments={reserva.pagamentos}
+        registerPaymentAction={confirmarPagamentoConfirmacaoAction}
+        reservationId={reserva.id}
+        totalAmount={Number(reserva.total_amount)}
+        transactions={reserva.lancamentosFinanceiros}
+      />
 
       <PainelDetalhe titulo="WhatsApp">
         <ReservationWhatsappActions reserva={reserva} />

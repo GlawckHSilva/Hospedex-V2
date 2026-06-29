@@ -7,9 +7,12 @@ import type {
 
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
+  CobrancaReservaHospede,
+  FinanceiroReservaHospede,
   EstadoProtegido,
   HospedePrincipalReserva,
   InstrucaoPagamentoHospede,
+  PagamentoReservaHospede,
   PerfilHospede,
   PropriedadeReservaHospede,
   ProprietarioReservaHospede,
@@ -81,6 +84,28 @@ type HistoricoRow = {
   created_at: string;
   reason: string | null;
   to_status: ReservationStatus;
+};
+
+type CobrancaReservaRow = {
+  amount: number;
+  amount_paid: number;
+  charge_type: CobrancaReservaHospede["tipo"];
+  currency: string;
+  due_at: string | null;
+  manual_instructions: string | null;
+  payment_method: ReservationPaymentMethod | null;
+  reservation_id: string;
+  status: CobrancaReservaHospede["status"];
+};
+
+type PagamentoReservaRow = {
+  amount: number;
+  confirmed_at: string | null;
+  created_at: string;
+  currency: string;
+  payment_method: ReservationPaymentMethod | null;
+  reservation_id: string;
+  status: PagamentoReservaHospede["status"];
 };
 
 type DetalhesEstadiaRow = {
@@ -318,14 +343,16 @@ async function carregarComplementosReservas(
   if (!reservas.length) {
     return {
       estadiasPorReserva: new Map<string, ComplementoEstadia>(),
+      cobrancasPorReserva: new Map<string, CobrancaReservaHospede[]>(),
       hospedesPorReserva: new Map<string, HospedePrincipalReserva>(),
       historicoPorReserva: new Map<string, HistoricoRow[]>(),
       instrucoesPorReserva: new Map<string, InstrucaoPagamentoHospede>(),
+      pagamentosPorReserva: new Map<string, PagamentoReservaHospede[]>(),
       propriedadesPorReserva: new Map<string, PropriedadeReservaHospede>()
     };
   }
 
-  const [hospedes, estadias, instrucoes, historico] = await Promise.all([
+  const [hospedes, estadias, instrucoes, historico, cobrancas, pagamentos] = await Promise.all([
     supabase
       .from("reservation_guests")
       .select("reservation_id,full_name,email,phone,document_number,is_primary")
@@ -351,20 +378,37 @@ async function carregarComplementosReservas(
           .order("created_at", { ascending: true })
           .returns<(HistoricoRow & { reservation_id: string })[]>()
       : Promise.resolve({ data: [], error: null })
+    ,
+    supabase
+      .from("reservation_charges")
+      .select("reservation_id,charge_type,amount,amount_paid,currency,due_at,status,payment_method,manual_instructions")
+      .in("reservation_id", reservaIds)
+      .order("created_at", { ascending: true })
+      .returns<CobrancaReservaRow[]>(),
+    supabase
+      .from("reservation_payments")
+      .select("reservation_id,amount,currency,payment_method,status,created_at,confirmed_at")
+      .in("reservation_id", reservaIds)
+      .order("created_at", { ascending: true })
+      .returns<PagamentoReservaRow[]>()
   ]);
 
   if (hospedes.error) console.error("Erro ao carregar hospedes da reserva.", hospedes.error);
   if (estadias.error) console.error("Erro ao carregar dados da estadia do hospede.", estadias.error);
   if (instrucoes.error) console.error("Erro ao carregar instrucoes de pagamento.", instrucoes.error);
   if (historico.error) console.error("Erro ao carregar timeline da reserva.", historico.error);
+  if (cobrancas.error) console.error("Erro ao carregar cobrancas do hospede.", cobrancas.error);
+  if (pagamentos.error) console.error("Erro ao carregar pagamentos do hospede.", pagamentos.error);
 
   const estadiasPorReserva = mapearEstadias(estadias.data ?? [], supabase);
 
   return {
+    cobrancasPorReserva: mapearCobrancasHospede(cobrancas.data ?? []),
     estadiasPorReserva,
     hospedesPorReserva: mapearHospedes(hospedes.data ?? []),
     historicoPorReserva: mapearHistorico(historico.data ?? []),
     instrucoesPorReserva: mapearInstrucoes(instrucoes.data ?? []),
+    pagamentosPorReserva: mapearPagamentosHospede(pagamentos.data ?? []),
     propriedadesPorReserva: new Map(
       [...estadiasPorReserva.entries()].map(([reservaId, estadia]) => [
         reservaId,
@@ -394,6 +438,7 @@ function montarResumoReserva(
     codigo: reserva.code,
     criadaEm: reserva.created_at,
     formaPagamento: reserva.payment_method,
+    financeiro: montarFinanceiroHospede(reserva, complementos),
     hospede: complementos.hospedesPorReserva.get(reserva.id) ?? null,
     hospedesQuantidade: reserva.guests_count,
     horarioPrevistoCheckIn: reserva.expected_checkin_time,
@@ -440,6 +485,74 @@ function mapearInstrucoes(instrucoes: InstrucaoPagamentoRow[]) {
   }
 
   return mapa;
+}
+
+function mapearCobrancasHospede(cobrancas: CobrancaReservaRow[]) {
+  const mapa = new Map<string, CobrancaReservaHospede[]>();
+
+  for (const cobranca of cobrancas) {
+    const lista = mapa.get(cobranca.reservation_id) ?? [];
+    lista.push({
+      formaPagamento: cobranca.payment_method,
+      instrucoes: cobranca.manual_instructions,
+      status: cobranca.status,
+      tipo: cobranca.charge_type,
+      valor: Number(cobranca.amount),
+      valorPago: Number(cobranca.amount_paid),
+      valorPendente: Math.max(Number(cobranca.amount) - Number(cobranca.amount_paid), 0),
+      vencimento: cobranca.due_at
+    });
+    mapa.set(cobranca.reservation_id, lista);
+  }
+
+  return mapa;
+}
+
+function mapearPagamentosHospede(pagamentos: PagamentoReservaRow[]) {
+  const mapa = new Map<string, PagamentoReservaHospede[]>();
+
+  for (const pagamento of pagamentos) {
+    const lista = mapa.get(pagamento.reservation_id) ?? [];
+    lista.push({
+      confirmadoEm: pagamento.confirmed_at,
+      criadoEm: pagamento.created_at,
+      formaPagamento: pagamento.payment_method,
+      status: pagamento.status,
+      valor: Number(pagamento.amount)
+    });
+    mapa.set(pagamento.reservation_id, lista);
+  }
+
+  return mapa;
+}
+
+function montarFinanceiroHospede(
+  reserva: ReservaRow,
+  complementos: Awaited<ReturnType<typeof carregarComplementosReservas>>
+): FinanceiroReservaHospede {
+  const cobrancas = complementos.cobrancasPorReserva.get(reserva.id) ?? [];
+  const pagamentos = complementos.pagamentosPorReserva.get(reserva.id) ?? [];
+  const valorPagoPagamentos = pagamentos
+    .filter((pagamento) => pagamento.status === "confirmed")
+    .reduce((total, pagamento) => total + pagamento.valor, 0);
+  const valorPagoCobrancas = cobrancas.reduce(
+    (total, cobranca) => total + cobranca.valorPago,
+    0
+  );
+  const valorPago = Math.max(valorPagoPagamentos, valorPagoCobrancas);
+  const valorTotal = Number(reserva.total_amount ?? 0);
+
+  return {
+    cobrancaAberta:
+      cobrancas.find((cobranca) =>
+        ["pending", "partial", "overdue"].includes(cobranca.status)
+      ) ?? null,
+    pagamentos,
+    statusPagamento: reserva.payment_status,
+    valorPago,
+    valorPendente: Math.max(valorTotal - valorPago, 0),
+    valorTotal
+  };
 }
 
 function mapearHistorico(historico: Array<HistoricoRow & { reservation_id: string }>) {

@@ -3,6 +3,7 @@
 import type {
   CleaningTaskRow,
   CleaningTaskStatus,
+  ReservationPaymentMethod,
   ReservationPaymentStatus,
   ReservationRow,
   ReservationStatus
@@ -111,6 +112,9 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
     const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
     const observacao = textoOpcional(formData, "observacao");
     const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");
+    const cobrancaId = textoOpcional(formData, "cobrancaId");
+    const comprovanteUrl = textoOpcional(formData, "comprovanteUrl");
+    const formaPagamento = validarFormaPagamentoOpcional(formData, "formaPagamento");
 
     if (STATUS_TERMINAIS.includes(reserva.status)) {
       throw new ErroConfirmacao("Reserva encerrada nao permite registrar pagamento.");
@@ -127,6 +131,9 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
       escopo,
       reserva,
       valorPagamento,
+      formaPagamento ?? reserva.payment_method,
+      cobrancaId,
+      comprovanteUrl,
       observacao ?? "Pagamento manual registrado pela operacao diaria."
     );
 
@@ -482,6 +489,9 @@ async function registrarPagamentoManualAtomico(
   escopo: EscopoConfirmacao,
   reserva: ReservationRow,
   valorPagamento: number | null,
+  formaPagamento: ReservationPaymentMethod | null,
+  cobrancaId: string | null,
+  comprovanteUrl: string | null,
   motivo: string
 ) {
   /*
@@ -490,10 +500,10 @@ async function registrarPagamentoManualAtomico(
   */
   const { error } = await supabase.rpc("confirm_manual_reservation_payment", {
     p_amount: valorPagamento,
-    p_charge_id: null,
+    p_charge_id: cobrancaId,
     p_owner_id: escopo.ownerId,
-    p_payment_method: reserva.payment_method,
-    p_proof_url: null,
+    p_payment_method: formaPagamento,
+    p_proof_url: comprovanteUrl,
     p_reason: motivo,
     p_reservation_id: reserva.id,
     p_tenant_id: escopo.tenantId,
@@ -606,6 +616,28 @@ function numeroDecimalOpcional(formData: FormData, chave: string): number | null
   }
 
   return numero;
+}
+
+function validarFormaPagamentoOpcional(
+  formData: FormData,
+  chave: string
+): ReservationPaymentMethod | null {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+
+  const formas: ReservationPaymentMethod[] = [
+    "pix",
+    "cash",
+    "debit_card",
+    "credit_card",
+    "bank_transfer"
+  ];
+
+  if (formas.includes(valor as ReservationPaymentMethod)) {
+    return valor as ReservationPaymentMethod;
+  }
+
+  throw new ErroConfirmacao("Forma de pagamento invalida.");
 }
 
 function podeGerenciarFinanceiroConfirmacoes(contexto: ContextoAutenticacao) {

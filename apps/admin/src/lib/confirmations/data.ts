@@ -2,8 +2,10 @@ import type {
   CleaningTaskRow,
   ProfileRow,
   PropertyRow,
+  ReservationChargeRow,
   ReservationGuestRow,
   ReservationNoteRow,
+  ReservationPaymentRow,
   ReservationRow,
   ReservationStatusHistoryRow,
   ReservationWhatsappMessageRow,
@@ -105,16 +107,20 @@ export async function carregarDadosConfirmacoes(
   const [
     hospedes,
     historico,
+    cobrancas,
     lancamentosFinanceiros,
     mensagensWhatsapp,
     notas,
+    pagamentos,
     reservasDasTarefas
   ] = await Promise.all([
     carregarHospedes(tenantId, reservaIds),
     carregarHistorico(tenantId, reservaIds),
+    carregarCobrancasReservas(tenantId, reservaIds),
     carregarLancamentosFinanceiros(tenantId, reservaIds),
     carregarMensagensWhatsapp(tenantId, reservaIds),
     carregarNotas(tenantId, reservaIds),
+    carregarPagamentosReservas(tenantId, reservaIds),
     carregarReservasPorId(tenantId, ownerId, tarefaReservaIds)
   ]);
   const perfis = await carregarPerfis(tenantId, ownerId, historico, notas, tarefasBase);
@@ -123,10 +129,12 @@ export async function carregarDadosConfirmacoes(
     reservasBase,
     propriedades,
     hospedes,
+    cobrancas,
     lancamentosFinanceiros,
     mensagensWhatsapp,
     historico,
     notas,
+    pagamentos,
     perfis
   );
   const limpezas = montarLimpezas(tarefasBase, propriedades, reservasDasTarefas);
@@ -210,6 +218,36 @@ async function carregarHistorico(tenantId: string, reservaIds: string[]) {
     .returns<ReservationStatusHistoryRow[]>();
 
   registrarErro("historico", error);
+  return data ?? [];
+}
+
+async function carregarCobrancasReservas(tenantId: string, reservaIds: string[]) {
+  if (!reservaIds.length) return [];
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("reservation_charges")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .in("reservation_id", reservaIds)
+    .order("created_at", { ascending: true })
+    .returns<ReservationChargeRow[]>();
+
+  registrarErro("cobrancas das reservas", error);
+  return data ?? [];
+}
+
+async function carregarPagamentosReservas(tenantId: string, reservaIds: string[]) {
+  if (!reservaIds.length) return [];
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("reservation_payments")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .in("reservation_id", reservaIds)
+    .order("created_at", { ascending: true })
+    .returns<ReservationPaymentRow[]>();
+
+  registrarErro("pagamentos das reservas", error);
   return data ?? [];
 }
 
@@ -305,21 +343,28 @@ function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
+  cobrancas: ReservationChargeRow[],
   lancamentosFinanceiros: TransactionRow[],
   mensagensWhatsapp: ReservationWhatsappMessageRow[],
   historico: ReservationStatusHistoryRow[],
   notas: ReservationNoteRow[],
+  pagamentos: ReservationPaymentRow[],
   perfis: ProfileRow[]
 ): ReservaConfirmacao[] {
   return reservas.map((reserva) => ({
     ...reserva,
+    cobrancas: cobrancas.filter((cobranca) => cobranca.reservation_id === reserva.id),
     hospedePrincipal:
       hospedes.find((hospede) => hospede.reservation_id === reserva.id) ?? null,
     lancamentoFinanceiro:
       lancamentosFinanceiros.find((lancamento) => lancamento.reservation_id === reserva.id) ??
       null,
+    lancamentosFinanceiros: lancamentosFinanceiros.filter(
+      (lancamento) => lancamento.reservation_id === reserva.id
+    ),
     mensagemWhatsapp:
       mensagensWhatsapp.find((mensagem) => mensagem.reservation_id === reserva.id) ?? null,
+    pagamentos: pagamentos.filter((pagamento) => pagamento.reservation_id === reserva.id),
     propriedade:
       propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
     timeline: montarTimelineReserva(reserva.id, historico, notas, perfis)

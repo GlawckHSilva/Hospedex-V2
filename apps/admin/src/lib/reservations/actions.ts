@@ -268,7 +268,10 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
     const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
     const reserva = await carregarReservaGerenciavel(supabase, escopo, reservaId);
     const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");
-    const motivo = textoOpcional(formData, "motivo");
+    const cobrancaId = textoOpcional(formData, "cobrancaId");
+    const comprovanteUrl = textoOpcional(formData, "comprovanteUrl");
+    const formaPagamento = validarFormaPagamentoOpcional(formData, "formaPagamento");
+    const motivo = textoOpcional(formData, "motivo") ?? textoOpcional(formData, "observacao");
 
     validarPermissaoFinanceiraReserva(escopo);
 
@@ -281,7 +284,9 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
       escopo,
       reserva,
       valorPagamento,
-      reserva.payment_method,
+      formaPagamento ?? reserva.payment_method,
+      cobrancaId,
+      comprovanteUrl,
       motivo ?? "Pagamento manual registrado pelo gerenciamento."
     );
 
@@ -742,6 +747,8 @@ async function registrarPagamentoManualOperacional(
   reserva: ReservationRow,
   valorPagamento: number | null,
   formaPagamento: ReservationPaymentMethod | null,
+  cobrancaId: string | null,
+  comprovanteUrl: string | null,
   motivo: string
 ) {
   /*
@@ -750,10 +757,10 @@ async function registrarPagamentoManualOperacional(
   */
   const { error } = await supabase.rpc("confirm_manual_reservation_payment", {
     p_amount: valorPagamento,
-    p_charge_id: null,
+    p_charge_id: cobrancaId,
     p_owner_id: escopo.ownerId,
     p_payment_method: formaPagamento,
-    p_proof_url: null,
+    p_proof_url: comprovanteUrl,
     p_reason: motivo,
     p_reservation_id: reserva.id,
     p_tenant_id: escopo.tenantId,
@@ -808,6 +815,28 @@ function validarStatusPagamentoReserva(
 ): Extract<ReservationPaymentStatus, "pending" | "received"> {
   if (valor === "pending" || valor === "received") return valor;
   throw new ErroRegraReserva("Status de pagamento invalido.");
+}
+
+function validarFormaPagamentoOpcional(
+  formData: FormData,
+  chave: string
+): ReservationPaymentMethod | null {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+
+  const formas: ReservationPaymentMethod[] = [
+    "pix",
+    "cash",
+    "debit_card",
+    "credit_card",
+    "bank_transfer"
+  ];
+
+  if (formas.includes(valor as ReservationPaymentMethod)) {
+    return valor as ReservationPaymentMethod;
+  }
+
+  throw new ErroRegraReserva("Forma de pagamento invalida.");
 }
 
 function validarPermissaoFinanceiraReserva(escopo: EscopoReserva) {

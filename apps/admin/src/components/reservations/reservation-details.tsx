@@ -1,4 +1,3 @@
-import type { ReservationPaymentMethod } from "@hospedex/types";
 import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -13,24 +12,9 @@ import {
   type ReservaComRelacionamentos,
 } from "../../lib/reservations/types";
 import { LABEL_STATUS_LANCAMENTO } from "../../lib/finance/types";
+import { registrarPagamentoManualReservaAction } from "../../lib/reservations/actions";
 import { ReservationTimeline } from "./reservation-timeline";
-
-const LABEL_FORMA_PAGAMENTO: Record<ReservationPaymentMethod, string> = {
-  bank_transfer: "Transferencia bancaria",
-  cash: "Dinheiro",
-  credit_card: "Cartao de credito",
-  debit_card: "Cartao de debito",
-  pix: "Pix",
-};
-
-const LABEL_COBRANCA = {
-  cancelled: "Cancelada",
-  overdue: "Atrasada",
-  paid: "Quitada",
-  partial: "Parcial",
-  pending: "Pendente",
-  refunded: "Estornada",
-} as const;
+import { ReservationBillingPanel } from "./reservation-billing-panel";
 
 /**
  * Detalhe operacional da reserva.
@@ -39,8 +23,10 @@ const LABEL_COBRANCA = {
  * para que a listagem continue compacta sem esconder informacoes importantes.
  */
 export function ReservationDetails({
+  podeGerenciarPagamento = false,
   reserva,
 }: {
+  podeGerenciarPagamento?: boolean;
   reserva: ReservaComRelacionamentos;
 }) {
   const hospede =
@@ -163,33 +149,19 @@ export function ReservationDetails({
           />
         </Secao>
 
-        <Secao titulo="Cobrancas e pagamentos">
-          <Info
-            label="Cobrancas"
-            valor={
-              reserva.cobrancas.length
-                ? reserva.cobrancas
-                    .map(
-                      (cobranca) =>
-                        `${LABEL_COBRANCA[cobranca.status]}: ${formatarMoeda(Number(cobranca.amount_paid))} de ${formatarMoeda(Number(cobranca.amount))}`
-                    )
-                    .join(" | ")
-                : "Nenhuma cobranca criada."
-            }
-          />
-          <Info
-            label="Pagamentos confirmados"
-            valor={
-              reserva.pagamentos.filter((pagamento) => pagamento.status === "confirmed").length
-                ? reserva.pagamentos
-                    .filter((pagamento) => pagamento.status === "confirmed")
-                    .map((pagamento) => formatarMoeda(Number(pagamento.amount)))
-                    .join(" | ")
-                : "Nenhum pagamento confirmado."
-            }
-          />
-          <Info label="Saldo aberto" valor={formatarMoeda(obterSaldoAberto(reserva))} />
-        </Secao>
+        <ReservationBillingPanel
+          canManagePayments={podeGerenciarPagamento}
+          charges={reserva.cobrancas}
+          currency={reserva.currency}
+          defaultPaymentMethod={reserva.payment_method}
+          paymentStatus={reserva.statusPagamento}
+          paymentStatusUpdatedAt={reserva.payment_status_updated_at}
+          payments={reserva.pagamentos}
+          registerPaymentAction={registrarPagamentoManualReservaAction}
+          reservationId={reserva.id}
+          totalAmount={Number(reserva.total_amount)}
+          transactions={reserva.lancamentosFinanceiros}
+        />
 
         <Secao titulo="Calendario">
           <Info label="Recurso reservavel" valor="Casa/propriedade" />
@@ -300,16 +272,16 @@ function obterStatusCalendario(status: ReservaComRelacionamentos["status"]) {
   return "Reserva pendente; acompanhe antes de confirmar.";
 }
 
-function obterSaldoAberto(reserva: ReservaComRelacionamentos) {
-  const pago = reserva.pagamentos
-    .filter((pagamento) => pagamento.status === "confirmed")
-    .reduce((total, pagamento) => total + Number(pagamento.amount), 0);
+function formatarFormaPagamento(valor: ReservaComRelacionamentos["payment_method"]) {
+  const rotulos = {
+    bank_transfer: "Transferencia bancaria",
+    cash: "Dinheiro",
+    credit_card: "Cartao de credito",
+    debit_card: "Cartao de debito",
+    pix: "Pix",
+  } as const;
 
-  return Math.max(Number(reserva.total_amount) - pago, 0);
-}
-
-function formatarFormaPagamento(valor: ReservationPaymentMethod | null) {
-  return valor ? LABEL_FORMA_PAGAMENTO[valor] : "Nao informado";
+  return valor ? rotulos[valor] : "Nao informado";
 }
 
 function formatarHorarioPrevisto(valor: string | null) {

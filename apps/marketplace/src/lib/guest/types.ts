@@ -1,5 +1,8 @@
 import type {
+  ReservationChargeStatus,
+  ReservationChargeType,
   ReservationPaymentMethod,
+  ReservationPaymentRecordStatus,
   ReservationPaymentStatus,
   ReservationStatus
 } from "@hospedex/types";
@@ -62,6 +65,34 @@ export type InstrucaoPagamentoHospede = {
   statusPagamento: ReservationPaymentStatus;
 };
 
+export type CobrancaReservaHospede = {
+  formaPagamento: ReservationPaymentMethod | null;
+  instrucoes: string | null;
+  status: ReservationChargeStatus;
+  tipo: ReservationChargeType;
+  valor: number;
+  valorPago: number;
+  valorPendente: number;
+  vencimento: string | null;
+};
+
+export type PagamentoReservaHospede = {
+  confirmadoEm: string | null;
+  criadoEm: string;
+  formaPagamento: ReservationPaymentMethod | null;
+  status: ReservationPaymentRecordStatus;
+  valor: number;
+};
+
+export type FinanceiroReservaHospede = {
+  cobrancaAberta: CobrancaReservaHospede | null;
+  pagamentos: PagamentoReservaHospede[];
+  statusPagamento: ReservationPaymentStatus;
+  valorPago: number;
+  valorPendente: number;
+  valorTotal: number;
+};
+
 export type TimelineReservaHospede = {
   data: string;
   descricao: string;
@@ -79,6 +110,7 @@ export type ReservaHospedeResumo = {
   horarioPrevistoCheckIn: string | null;
   horarioPrevistoCheckOut: string | null;
   id: string;
+  financeiro: FinanceiroReservaHospede;
   pagamento: InstrucaoPagamentoHospede | null;
   propriedade: PropriedadeReservaHospede | null;
   status: ReservationStatus;
