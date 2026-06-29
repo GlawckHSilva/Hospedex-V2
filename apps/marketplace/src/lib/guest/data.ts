@@ -5,7 +5,6 @@ import type {
   ReservationStatus
 } from "@hospedex/types";
 
-import { carregarPropriedadePublica } from "../marketplace/data";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   EstadoProtegido,
@@ -13,6 +12,7 @@ import type {
   InstrucaoPagamentoHospede,
   PerfilHospede,
   PropriedadeReservaHospede,
+  ProprietarioReservaHospede,
   ReservaHospedeDetalhe,
   ReservaHospedeResumo,
   TimelineReservaHospede
@@ -42,6 +42,8 @@ type ReservaRow = {
   code: string;
   created_at: string;
   currency: string;
+  expected_checkin_time: string | null;
+  expected_checkout_time: string | null;
   guest_notes: string | null;
   guests_count: number;
   id: string;
@@ -64,25 +66,6 @@ type HospedeReservaRow = {
   reservation_id: string;
 };
 
-type PropriedadeRow = {
-  address: JsonValue;
-  id: string;
-  name: string;
-  pricing_details: JsonValue;
-  slug: string;
-  structure_details: JsonValue;
-};
-
-type MidiaRow = {
-  alt: string | null;
-  is_cover: boolean;
-  property_id: string;
-  sort_order: number;
-  storage_bucket: string | null;
-  storage_path: string | null;
-  url: string | null;
-};
-
 type InstrucaoPagamentoRow = {
   instruction: string | null;
   owner_name: string | null;
@@ -100,11 +83,28 @@ type HistoricoRow = {
   to_status: ReservationStatus;
 };
 
+type DetalhesEstadiaRow = {
+  amenities: JsonValue;
+  house_rules: JsonValue;
+  owner_details: JsonValue;
+  property_details: JsonValue;
+  regional_guide: JsonValue;
+  reservation_id: string;
+};
+
+type ComplementoEstadia = {
+  checkInPadrao: string | null;
+  checkOutPadrao: string | null;
+  comodidades: string[];
+  guiaRegiao: ReservaHospedeDetalhe["guiaRegiao"];
+  propriedade: PropriedadeReservaHospede;
+  proprietario: ProprietarioReservaHospede | null;
+  regrasCasa: string[];
+  taxaLimpeza: number;
+};
+
 const CAMPOS_RESERVA =
-  "id,tenant_id,property_id,owner_id,code,status,check_in,check_out,guests_count,total_amount,currency,payment_method,payment_status,notes,guest_notes,created_at";
-const CAMPOS_PROPRIEDADE = "id,name,slug,address,structure_details,pricing_details";
-const CAMPOS_MIDIA =
-  "property_id,url,storage_bucket,storage_path,alt,is_cover,sort_order";
+  "id,tenant_id,property_id,owner_id,code,status,check_in,check_out,expected_checkin_time,expected_checkout_time,guests_count,total_amount,currency,payment_method,payment_status,notes,guest_notes,created_at";
 
 export async function carregarPerfilHospede(): Promise<
   ResultadoProtegido<PerfilHospede>
@@ -198,30 +198,19 @@ export async function carregarReservaHospede(
     carregarHistorico: true
   });
   const resumo = montarResumoReserva(data, complementos);
-  const propriedadePublica = resumo.propriedade?.slug
-    ? (await carregarPropriedadePublica(resumo.propriedade.slug)).propriedade
-    : null;
+  const estadia = complementos.estadiasPorReserva.get(data.id);
 
   return {
     dados: {
       ...resumo,
-      checkInHorario: propriedadePublica?.checkIn ?? null,
-      checkOutHorario: propriedadePublica?.checkOut ?? null,
-      comodidades: propriedadePublica?.amenities.map((comodidade) => comodidade.name) ?? [],
-      guiaRegiao:
-        propriedadePublica?.regionalGuide.map((local) => ({
-          categoria: local.categoryLabel,
-          endereco: local.address,
-          nome: local.name,
-          telefone: local.phone,
-          whatsapp: local.whatsapp
-        })) ?? [],
+      checkInHorario: estadia?.checkInPadrao ?? null,
+      checkOutHorario: estadia?.checkOutPadrao ?? null,
+      comodidades: estadia?.comodidades ?? [],
+      guiaRegiao: estadia?.guiaRegiao ?? [],
       observacoes: data.guest_notes ?? data.notes,
-      regrasCasa:
-        propriedadePublica?.houseRules.summary ??
-        resumo.propriedade?.regras ??
-        [],
-      taxaLimpeza: propriedadePublica?.pricing.cleaningFee ?? 0,
+      proprietario: estadia?.proprietario ?? null,
+      regrasCasa: estadia?.regrasCasa ?? resumo.propriedade?.regras ?? [],
+      taxaLimpeza: estadia?.taxaLimpeza ?? 0,
       timeline: montarTimeline(data, complementos.historicoPorReserva.get(data.id) ?? [])
     },
     estado: "ok",
@@ -325,35 +314,29 @@ async function carregarComplementosReservas(
   opcoes: { carregarHistorico?: boolean } = {}
 ) {
   const reservaIds = reservas.map((reserva) => reserva.id);
-  const propriedadeIds = [...new Set(reservas.map((reserva) => reserva.property_id))];
 
   if (!reservas.length) {
     return {
+      estadiasPorReserva: new Map<string, ComplementoEstadia>(),
       hospedesPorReserva: new Map<string, HospedePrincipalReserva>(),
       historicoPorReserva: new Map<string, HistoricoRow[]>(),
       instrucoesPorReserva: new Map<string, InstrucaoPagamentoHospede>(),
-      propriedadesPorId: new Map<string, PropriedadeReservaHospede>()
+      propriedadesPorReserva: new Map<string, PropriedadeReservaHospede>()
     };
   }
 
-  const [hospedes, propriedades, midias, instrucoes, historico] = await Promise.all([
+  const [hospedes, estadias, instrucoes, historico] = await Promise.all([
     supabase
       .from("reservation_guests")
       .select("reservation_id,full_name,email,phone,document_number,is_primary")
       .in("reservation_id", reservaIds)
       .returns<HospedeReservaRow[]>(),
-    supabase
-      .from("properties")
-      .select(CAMPOS_PROPRIEDADE)
-      .in("id", propriedadeIds)
-      .returns<PropriedadeRow[]>(),
-    supabase
-      .from("media_assets")
-      .select(CAMPOS_MIDIA)
-      .in("property_id", propriedadeIds)
-      .eq("status", "active")
-      .order("sort_order", { ascending: true })
-      .returns<MidiaRow[]>(),
+    supabase.rpc("get_guest_reservation_stay_details", {
+      p_reservation_ids: reservaIds
+    }) as unknown as Promise<{
+      data: DetalhesEstadiaRow[] | null;
+      error: Error | null;
+    }>,
     supabase.rpc("get_guest_reservation_payment_guidance", {
       p_reservation_ids: reservaIds
     }) as unknown as Promise<{
@@ -371,19 +354,22 @@ async function carregarComplementosReservas(
   ]);
 
   if (hospedes.error) console.error("Erro ao carregar hospedes da reserva.", hospedes.error);
-  if (propriedades.error) console.error("Erro ao carregar casas das reservas.", propriedades.error);
-  if (midias.error) console.error("Erro ao carregar imagens das reservas.", midias.error);
+  if (estadias.error) console.error("Erro ao carregar dados da estadia do hospede.", estadias.error);
   if (instrucoes.error) console.error("Erro ao carregar instrucoes de pagamento.", instrucoes.error);
   if (historico.error) console.error("Erro ao carregar timeline da reserva.", historico.error);
 
+  const estadiasPorReserva = mapearEstadias(estadias.data ?? [], supabase);
+
   return {
+    estadiasPorReserva,
     hospedesPorReserva: mapearHospedes(hospedes.data ?? []),
     historicoPorReserva: mapearHistorico(historico.data ?? []),
     instrucoesPorReserva: mapearInstrucoes(instrucoes.data ?? []),
-    propriedadesPorId: mapearPropriedades(
-      propriedades.data ?? [],
-      midias.data ?? [],
-      supabase
+    propriedadesPorReserva: new Map(
+      [...estadiasPorReserva.entries()].map(([reservaId, estadia]) => [
+        reservaId,
+        estadia.propriedade
+      ])
     )
   };
 }
@@ -410,9 +396,11 @@ function montarResumoReserva(
     formaPagamento: reserva.payment_method,
     hospede: complementos.hospedesPorReserva.get(reserva.id) ?? null,
     hospedesQuantidade: reserva.guests_count,
+    horarioPrevistoCheckIn: reserva.expected_checkin_time,
+    horarioPrevistoCheckOut: reserva.expected_checkout_time,
     id: reserva.id,
     pagamento: complementos.instrucoesPorReserva.get(reserva.id) ?? null,
-    propriedade: complementos.propriedadesPorId.get(reserva.property_id) ?? null,
+    propriedade: complementos.propriedadesPorReserva.get(reserva.id) ?? null,
     status: reserva.status,
     statusPagamento: reserva.payment_status,
     total: Number(reserva.total_amount ?? 0)
@@ -466,45 +454,54 @@ function mapearHistorico(historico: Array<HistoricoRow & { reservation_id: strin
   return mapa;
 }
 
-function mapearPropriedades(
-  propriedades: PropriedadeRow[],
-  midias: MidiaRow[],
+function mapearEstadias(
+  estadias: DetalhesEstadiaRow[],
   supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>
 ) {
-  const midiasPorPropriedade = new Map<string, MidiaRow[]>();
-  for (const midia of midias) {
-    const lista = midiasPorPropriedade.get(midia.property_id) ?? [];
-    lista.push(midia);
-    midiasPorPropriedade.set(midia.property_id, lista);
-  }
+  const mapa = new Map<string, ComplementoEstadia>();
 
-  const mapa = new Map<string, PropriedadeReservaHospede>();
+  for (const estadia of estadias) {
+    const propriedadeJson = objetoJson(estadia.property_details);
+    const endereco = objetoJson(propriedadeJson.address ?? null);
+    const estrutura = objetoJson(propriedadeJson.structureDetails ?? null);
+    const valores = objetoJson(propriedadeJson.pricingDetails ?? null);
+    const regras = objetoJson(estadia.house_rules);
+    const proprietarioJson = objetoJson(estadia.owner_details);
+    const imagemCapa =
+      textoJson(propriedadeJson, "coverImageUrl") ??
+      montarUrlPublicaStorage(
+        supabase,
+        textoJson(propriedadeJson, "coverImageStorageBucket"),
+        textoJson(propriedadeJson, "coverImageStoragePath")
+      );
 
-  for (const propriedade of propriedades) {
-    const endereco = objetoJson(propriedade.address);
-    const estrutura = objetoJson(propriedade.structure_details);
-    const valores = objetoJson(propriedade.pricing_details);
-    const capa = escolherImagemCapa(
-      midiasPorPropriedade.get(propriedade.id) ?? [],
-      supabase
-    );
-
-    mapa.set(propriedade.id, {
+    const propriedade: PropriedadeReservaHospede = {
       bairro: textoJson(endereco, "bairro"),
-      camas: numeroJson(estrutura, "beds"),
-      banheiros: numeroJson(estrutura, "bathrooms"),
+      camas: numeroJsonPrimeiro(estrutura, ["camas", "beds"]),
+      banheiros: numeroJsonPrimeiro(estrutura, ["banheiros", "bathrooms"]),
       cidade: textoJson(endereco, "cidade"),
-      diaria: numeroJson(valores, "dailyRate"),
+      diaria: numeroJsonPrimeiro(valores, ["valorDiaria", "dailyRate"]),
       enderecoLinha: montarEndereco(endereco),
       estado: textoJson(endereco, "estado"),
-      garagem: numeroJson(estrutura, "garageSpaces"),
+      garagem: numeroJsonPrimeiro(estrutura, ["garagemVagas", "garageSpaces"]),
       googleMapsLink: textoJson(endereco, "googleMapsLink"),
-      id: propriedade.id,
-      imagemCapa: capa,
-      nome: propriedade.name,
-      quartos: numeroJson(estrutura, "bedrooms"),
-      regras: [],
-      slug: propriedade.slug
+      id: textoJson(propriedadeJson, "id") ?? "",
+      imagemCapa,
+      nome: textoJson(propriedadeJson, "name") ?? "Casa reservada",
+      quartos: numeroJsonPrimeiro(estrutura, ["quartos", "bedrooms"]),
+      regras: montarRegrasCasa(regras),
+      slug: textoJson(propriedadeJson, "slug") ?? ""
+    };
+
+    mapa.set(estadia.reservation_id, {
+      checkInPadrao: formatarHorarioPadrao(textoJson(regras, "checkInTime"), "check-in"),
+      checkOutPadrao: formatarHorarioPadrao(textoJson(regras, "checkOutTime"), "check-out"),
+      comodidades: mapearComodidades(estadia.amenities),
+      guiaRegiao: mapearGuiaRegiao(estadia.regional_guide),
+      propriedade,
+      proprietario: mapearProprietario(proprietarioJson),
+      regrasCasa: propriedade.regras,
+      taxaLimpeza: numeroJsonPrimeiro(valores, ["taxaLimpeza", "cleaningFee"])
     });
   }
 
@@ -534,18 +531,105 @@ function montarTimeline(
   return itens.sort((a, b) => a.data.localeCompare(b.data));
 }
 
-function escolherImagemCapa(
-  midias: MidiaRow[],
-  supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>
+function montarUrlPublicaStorage(
+  supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>,
+  bucket: string | null,
+  caminho: string | null
 ) {
-  const imagem = midias.find((midia) => midia.is_cover) ?? midias[0];
-  if (!imagem) return null;
-  if (imagem.url) return imagem.url;
-  if (!imagem.storage_bucket || !imagem.storage_path) return null;
+  if (!bucket || !caminho) return null;
 
-  return supabase.storage
-    .from(imagem.storage_bucket)
-    .getPublicUrl(imagem.storage_path).data.publicUrl;
+  return supabase.storage.from(bucket).getPublicUrl(caminho).data.publicUrl;
+}
+
+function mapearProprietario(
+  proprietario: Record<string, JsonValue>
+): ProprietarioReservaHospede | null {
+  const nome = textoJson(proprietario, "name");
+  const empreendimento = textoJson(proprietario, "businessName");
+
+  if (!nome && !empreendimento) return null;
+
+  return {
+    avatarUrl: textoJson(proprietario, "avatarUrl"),
+    cidade: textoJson(proprietario, "city"),
+    empreendimento,
+    estado: textoJson(proprietario, "state"),
+    nome,
+    telefone: textoJson(proprietario, "phone"),
+    whatsapp: textoJson(proprietario, "whatsapp")
+  };
+}
+
+function mapearComodidades(valor: JsonValue) {
+  if (!Array.isArray(valor)) return [];
+
+  return valor
+    .map((item) => {
+      const comodidade = objetoJson(item);
+      return textoJson(comodidade, "name");
+    })
+    .filter((item): item is string => Boolean(item));
+}
+
+function mapearGuiaRegiao(valor: JsonValue): ReservaHospedeDetalhe["guiaRegiao"] {
+  if (!Array.isArray(valor)) return [];
+
+  return valor
+    .map((item) => {
+      const local = objetoJson(item);
+      const nome = textoJson(local, "name");
+      if (!nome) return null;
+
+      return {
+        categoria: textoJson(local, "category") ?? "Recomendacao",
+        endereco: textoJson(local, "address"),
+        nome,
+        telefone: textoJson(local, "phone"),
+        whatsapp: textoJson(local, "whatsapp")
+      };
+    })
+    .filter((item): item is ReservaHospedeDetalhe["guiaRegiao"][number] =>
+      Boolean(item)
+    );
+}
+
+function montarRegrasCasa(regras: Record<string, JsonValue>) {
+  const itens: string[] = [];
+  const checkIn = textoJson(regras, "checkInTime");
+  const checkOut = textoJson(regras, "checkOutTime");
+  const maximoHospedes = numeroJson(regras, "maxGuests");
+  const idadeMinima = numeroJson(regras, "minResponsibleAge");
+  const minimoDiarias = numeroJson(regras, "minNights");
+  const maximoDiarias = numeroJson(regras, "maxNights");
+  const regrasAdicionais = textoJson(regras, "additionalRules");
+  const instrucoesEspeciais = textoJson(regras, "specialInstructions");
+  const cancelamento = textoJson(regras, "cancellationNotes");
+
+  if (checkIn) itens.push(`Check-in padrao a partir de ${checkIn}.`);
+  if (checkOut) itens.push(`Check-out padrao ate ${checkOut}.`);
+  if (maximoHospedes) itens.push(`Capacidade maxima de ${maximoHospedes} hospede(s).`);
+  if (idadeMinima) itens.push(`Responsavel com idade minima de ${idadeMinima} anos.`);
+  if (minimoDiarias) itens.push(`Estadia minima de ${minimoDiarias} diaria(s).`);
+  if (maximoDiarias) itens.push(`Estadia maxima de ${maximoDiarias} diaria(s).`);
+  itens.push(
+    booleanoJson(regras, "allowPets") ? "Pets permitidos." : "Pets nao permitidos.",
+    booleanoJson(regras, "allowSmoking")
+      ? "Fumantes permitidos nas areas autorizadas."
+      : "Fumantes nao permitidos.",
+    booleanoJson(regras, "allowEvents")
+      ? "Eventos permitidos mediante autorizacao."
+      : "Festas e eventos nao permitidos."
+  );
+  if (regrasAdicionais) itens.push(regrasAdicionais);
+  if (instrucoesEspeciais) itens.push(instrucoesEspeciais);
+  if (cancelamento) itens.push(cancelamento);
+
+  return itens;
+}
+
+function formatarHorarioPadrao(horario: string | null, tipo: "check-in" | "check-out") {
+  if (!horario) return null;
+  return tipo === "check-in" ? `A partir das ${horario}` : `Ate ${horario}`;
 }
 
 function objetoJson(valor: JsonValue): Record<string, JsonValue> {
@@ -566,6 +650,22 @@ function numeroJson(objeto: Record<string, JsonValue>, chave: string) {
     return Number.isFinite(numero) ? numero : 0;
   }
   return 0;
+}
+
+function numeroJsonPrimeiro(objeto: Record<string, JsonValue>, chaves: string[]) {
+  for (const chave of chaves) {
+    const numero = numeroJson(objeto, chave);
+    if (numero) return numero;
+  }
+
+  return 0;
+}
+
+function booleanoJson(objeto: Record<string, JsonValue>, chave: string) {
+  const valor = objeto[chave];
+  if (typeof valor === "boolean") return valor;
+  if (typeof valor === "string") return valor === "true";
+  return false;
 }
 
 function montarEndereco(endereco: Record<string, JsonValue>) {

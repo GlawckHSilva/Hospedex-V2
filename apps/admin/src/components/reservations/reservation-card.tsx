@@ -116,6 +116,14 @@ export function ReservationCard({
                   valor={formatarData(reserva.check_out)}
                 />
                 <InfoModal
+                  label="Chegada prevista"
+                  valor={formatarHorarioPrevisto(reserva.expected_checkin_time)}
+                />
+                <InfoModal
+                  label="Saida prevista"
+                  valor={formatarHorarioPrevisto(reserva.expected_checkout_time)}
+                />
+                <InfoModal
                   label="Hospedes"
                   valor={String(reserva.guests_count)}
                 />
@@ -265,4 +273,8 @@ function formatarData(valor: string): string {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
     new Date(`${valor}T00:00:00`),
   );
+}
+
+function formatarHorarioPrevisto(valor: string | null): string {
+  return valor ? valor.slice(0, 5) : "Nao informado pelo hospede";
 }

@@ -118,6 +118,16 @@ export function ReservationDecisionCard({
             valor={`${formatarDataCurta(reserva.check_in)} - ${formatarDataCurta(reserva.check_out)}`}
           />
           <Info
+            icon={<CalendarDays />}
+            label="Chegada prevista"
+            valor={formatarHorarioPrevisto(reserva.expected_checkin_time)}
+          />
+          <Info
+            icon={<CalendarDays />}
+            label="Saida prevista"
+            valor={formatarHorarioPrevisto(reserva.expected_checkout_time)}
+          />
+          <Info
             icon={<Users />}
             label="Hóspedes"
             valor={`${reserva.guests_count} ${reserva.guests_count === 1 ? "hóspede" : "hóspedes"}`}
@@ -190,6 +200,8 @@ function DetalhesReserva({ reserva }: { reserva: ReservaConfirmacao }) {
           <Info label="Código" valor={reserva.code} />
           <Info label="Casa" valor={reserva.propriedade?.name ?? "Casa removida"} />
           <Info label="Período" valor={`${formatarDataCurta(reserva.check_in)} - ${formatarDataCurta(reserva.check_out)}`} />
+          <Info label="Chegada prevista" valor={formatarHorarioPrevisto(reserva.expected_checkin_time)} />
+          <Info label="Saida prevista" valor={formatarHorarioPrevisto(reserva.expected_checkout_time)} />
           <Info label="Valor" valor={formatarMoeda(Number(reserva.total_amount))} />
           <Info label="Status" valor={LABEL_STATUS_RESERVA[reserva.status]} />
           <Info label="Pagamento" valor={LABEL_STATUS_PAGAMENTO[reserva.payment_status]} />
@@ -464,6 +476,10 @@ function formatarDataHora(valor: string) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(valor));
+}
+
+function formatarHorarioPrevisto(valor: string | null) {
+  return valor ? valor.slice(0, 5) : "Nao informado pelo hospede";
 }
 
 function formatarMoeda(valor: number) {

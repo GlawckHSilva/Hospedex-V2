@@ -35,6 +35,16 @@ export type PropriedadeReservaHospede = {
   slug: string;
 };
 
+export type ProprietarioReservaHospede = {
+  avatarUrl: string | null;
+  cidade: string | null;
+  empreendimento: string | null;
+  estado: string | null;
+  nome: string | null;
+  telefone: string | null;
+  whatsapp: string | null;
+};
+
 export type HospedePrincipalReserva = {
   documento: string | null;
   email: string | null;
@@ -66,6 +76,8 @@ export type ReservaHospedeResumo = {
   formaPagamento: ReservationPaymentMethod | null;
   hospede: HospedePrincipalReserva | null;
   hospedesQuantidade: number;
+  horarioPrevistoCheckIn: string | null;
+  horarioPrevistoCheckOut: string | null;
   id: string;
   pagamento: InstrucaoPagamentoHospede | null;
   propriedade: PropriedadeReservaHospede | null;
@@ -86,6 +98,7 @@ export type ReservaHospedeDetalhe = ReservaHospedeResumo & {
     whatsapp: string | null;
   }>;
   observacoes: string | null;
+  proprietario: ProprietarioReservaHospede | null;
   regrasCasa: string[];
   taxaLimpeza: number;
   timeline: TimelineReservaHospede[];

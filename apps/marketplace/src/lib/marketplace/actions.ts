@@ -39,6 +39,16 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
       "hóspedes",
       1
     );
+    const horarioPrevistoCheckIn = horarioOpcional(
+      formData,
+      "horarioPrevistoCheckIn",
+      "horario previsto de chegada"
+    );
+    const horarioPrevistoCheckOut = horarioOpcional(
+      formData,
+      "horarioPrevistoCheckOut",
+      "horario previsto de saida"
+    );
     const formaPagamento = formaPagamentoObrigatoria(formData);
 
     if (checkOut <= checkIn) {
@@ -83,6 +93,8 @@ export async function solicitarReservaPublicaAction(formData: FormData) {
       p_guest_phone: telefoneHospede,
       p_guests_count: quantidadeHospedes,
       p_payment_method: formaPagamento,
+      p_expected_checkin_time: horarioPrevistoCheckIn,
+      p_expected_checkout_time: horarioPrevistoCheckOut,
       p_property_slug: slug
     });
 
@@ -207,6 +219,17 @@ function dataObrigatoria(formData: FormData, chave: string, label: string) {
   const valor = textoObrigatorio(formData, chave, label);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
     throw new ErroSolicitacao(`Informe ${label} válido.`);
+  }
+
+  return valor;
+}
+
+function horarioOpcional(formData: FormData, chave: string, label: string) {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+
+  if (!/^\d{2}:\d{2}$/.test(valor)) {
+    throw new ErroSolicitacao(`Informe ${label} valido.`);
   }
 
   return valor;

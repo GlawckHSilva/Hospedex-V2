@@ -437,6 +437,8 @@ export type ReservationRow = {
   source: "manual" | "marketplace" | "direct" | "external";
   check_in: string;
   check_out: string;
+  expected_checkin_time: string | null;
+  expected_checkout_time: string | null;
   guests_count: number;
   total_amount: number;
   currency: string;

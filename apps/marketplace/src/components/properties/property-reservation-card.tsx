@@ -80,6 +80,12 @@ export function PropertyReservationCard({
   const primeiroMetodo = metodosPagamento[0]?.method ?? "";
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
+  const [horarioPrevistoCheckIn, setHorarioPrevistoCheckIn] = useState(
+    extrairHorarioPadrao(property.checkIn)
+  );
+  const [horarioPrevistoCheckOut, setHorarioPrevistoCheckOut] = useState(
+    extrairHorarioPadrao(property.checkOut)
+  );
   const [quantidadeHospedes, setQuantidadeHospedes] = useState(
     Math.max(1, Math.min(property.maxGuests || 1, 2))
   );
@@ -203,6 +209,8 @@ export function PropertyReservationCard({
           emailHospede={emailHospede}
           emailHospedeBloqueado={Boolean(hospedeLogado?.email)}
           parcelas={parcelas}
+          horarioPrevistoCheckIn={horarioPrevistoCheckIn}
+          horarioPrevistoCheckOut={horarioPrevistoCheckOut}
           parcelasDisponiveis={parcelasDisponiveis}
           podeSolicitarReserva={podeSolicitarReserva}
           property={property}
@@ -215,6 +223,8 @@ export function PropertyReservationCard({
             setFormaPagamento(metodo);
             setParcelas(metodo === "credit_card" ? parcelaPadrao : 1);
           }}
+          setHorarioPrevistoCheckIn={setHorarioPrevistoCheckIn}
+          setHorarioPrevistoCheckOut={setHorarioPrevistoCheckOut}
           nomeHospede={nomeHospede}
           setParcelas={setParcelas}
           setNomeHospede={setNomeHospede}
@@ -234,6 +244,8 @@ function ReservationFormFields({
   emailHospede,
   emailHospedeBloqueado,
   formaPagamento,
+  horarioPrevistoCheckIn,
+  horarioPrevistoCheckOut,
   metodosPagamento,
   nomeHospede,
   parcelas,
@@ -246,6 +258,8 @@ function ReservationFormFields({
   setCheckOut,
   setEmailHospede,
   setFormaPagamento,
+  setHorarioPrevistoCheckIn,
+  setHorarioPrevistoCheckOut,
   setNomeHospede,
   setParcelas,
   setQuantidadeHospedes,
@@ -258,6 +272,8 @@ function ReservationFormFields({
   emailHospede: string;
   emailHospedeBloqueado: boolean;
   formaPagamento: ReservationPaymentMethod | "";
+  horarioPrevistoCheckIn: string;
+  horarioPrevistoCheckOut: string;
   metodosPagamento: PropriedadePublica["requestProfile"]["paymentMethods"];
   nomeHospede: string;
   parcelas: number;
@@ -270,6 +286,8 @@ function ReservationFormFields({
   setCheckOut: (valor: string) => void;
   setEmailHospede: (valor: string) => void;
   setFormaPagamento: (valor: ReservationPaymentMethod | "") => void;
+  setHorarioPrevistoCheckIn: (valor: string) => void;
+  setHorarioPrevistoCheckOut: (valor: string) => void;
   setNomeHospede: (valor: string) => void;
   setParcelas: (valor: number) => void;
   setQuantidadeHospedes: (valor: number) => void;
@@ -311,6 +329,37 @@ function ReservationFormFields({
             type="date"
             value={checkOut}
           />
+        </Field>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Horario previsto de chegada">
+          <Clock className={inputIconClass} />
+          <GlassInput
+            className="h-11 pl-10"
+            disabled={bloqueado}
+            name="horarioPrevistoCheckIn"
+            onChange={(evento) => setHorarioPrevistoCheckIn(evento.target.value)}
+            type="time"
+            value={horarioPrevistoCheckIn}
+          />
+          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+            Padrao da casa: {property.checkIn}.
+          </span>
+        </Field>
+        <Field label="Horario previsto de saida">
+          <Clock className={inputIconClass} />
+          <GlassInput
+            className="h-11 pl-10"
+            disabled={bloqueado}
+            name="horarioPrevistoCheckOut"
+            onChange={(evento) => setHorarioPrevistoCheckOut(evento.target.value)}
+            type="time"
+            value={horarioPrevistoCheckOut}
+          />
+          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+            Padrao da casa: {property.checkOut}.
+          </span>
         </Field>
       </div>
 
@@ -730,6 +779,11 @@ function parseDataInput(valor: string) {
   }
 
   return new Date(Date.UTC(partes[0]!, partes[1]! - 1, partes[2]!));
+}
+
+function extrairHorarioPadrao(valor: string | null | undefined) {
+  if (!valor) return "";
+  return valor.match(/\b\d{2}:\d{2}\b/)?.[0] ?? "";
 }
 
 function obterIniciais(nome: string) {
