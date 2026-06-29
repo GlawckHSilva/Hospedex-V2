@@ -9,6 +9,8 @@ import { FormActionButton } from "../management/form-submit-button";
 import {
   alterarPagamentoReservaAction,
   alterarStatusReservaAction,
+  aprovarCobrancaReservaAction,
+  registrarPagamentoManualReservaAction,
 } from "../../lib/reservations/actions";
 import {
   LABEL_STATUS_RESERVA,
@@ -36,13 +38,35 @@ type AcaoPagamentoReserva = {
   descricao: string;
   icone: ReactNode;
   motivo: string;
-  statusPagamentoDestino: StatusPagamentoReserva;
   tipo: "pagamento";
   titulo: string;
   variante: ActionButtonVariant;
 };
 
-type AcaoReserva = AcaoStatusReserva | AcaoPagamentoReserva;
+type AcaoPagamentoStatusReserva = {
+  descricao: string;
+  icone: ReactNode;
+  motivo: string;
+  statusPagamentoDestino: StatusPagamentoReserva;
+  tipo: "pagamento_status";
+  titulo: string;
+  variante: ActionButtonVariant;
+};
+
+type AcaoCobrancaReserva = {
+  descricao: string;
+  icone: ReactNode;
+  motivo: string;
+  tipo: "cobranca";
+  titulo: string;
+  variante: ActionButtonVariant;
+};
+
+type AcaoReserva =
+  | AcaoStatusReserva
+  | AcaoPagamentoReserva
+  | AcaoPagamentoStatusReserva
+  | AcaoCobrancaReserva;
 
 /**
  * Acoes operacionais da reserva.
@@ -87,23 +111,40 @@ export function ReservationStatusActions({
             {acoes.map((acao) => (
               <form
                 action={
-                  acao.tipo === "pagamento"
-                    ? alterarPagamentoReservaAction
-                    : alterarStatusReservaAction
+                  acao.tipo === "cobranca"
+                    ? aprovarCobrancaReservaAction
+                    : acao.tipo === "pagamento"
+                      ? registrarPagamentoManualReservaAction
+                      : acao.tipo === "pagamento_status"
+                        ? alterarPagamentoReservaAction
+                        : alterarStatusReservaAction
                 }
                 className="grid gap-2"
                 key={`${acao.tipo}-${acao.titulo}`}
               >
                 <input name="reservaId" type="hidden" value={reserva.id} />
                 {acao.tipo === "pagamento" ? (
+                  <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                    Valor recebido
+                    <input
+                      className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      defaultValue={obterSaldoAberto(reserva).toFixed(2)}
+                      min="0.01"
+                      name="valorPagamento"
+                      step="0.01"
+                      type="number"
+                    />
+                  </label>
+                ) : null}
+                {acao.tipo === "pagamento_status" ? (
                   <input
                     name="statusPagamento"
                     type="hidden"
                     value={acao.statusPagamentoDestino}
                   />
-                ) : (
+                ) : acao.tipo === "status" ? (
                   <input name="status" type="hidden" value={acao.statusDestino} />
-                )}
+                ) : null}
                 <input name="motivo" type="hidden" value={acao.motivo} />
                 <div className="rounded-lg border bg-background/45 p-3">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -144,39 +185,48 @@ function obterAcoesReserva(
   const terminal = reserva.status === "cancelled" || reserva.status === "completed";
 
   if (reserva.status === "pending" || reserva.status === "awaiting_payment") {
-    acoes.push(
-      {
-        descricao: "Confirma a reserva e bloqueia o periodo no calendario da casa.",
+    if (reserva.status === "pending") {
+      acoes.push({
+        descricao: "Aprova a solicitacao, gera cobranca e segura o periodo temporariamente.",
         icone: <CheckCircle2 className="h-4 w-4" />,
-        motivo: "Reserva confirmada pelo gerenciamento de reservas.",
-        statusDestino: "confirmed",
-        tipo: "status",
-        titulo: "Confirmar reserva",
+        motivo: "Reserva aprovada e cobranca gerada pelo gerenciamento de reservas.",
+        tipo: "cobranca",
+        titulo: "Aprovar e gerar cobranca",
         variante: "add",
-      },
+      });
+    }
+
+    acoes.push(
       criarAcaoCancelamento(reserva.status === "pending" ? "Recusar reserva" : "Cancelar reserva")
     );
   }
 
-  if (!terminal && podeGerenciarPagamento && reserva.statusPagamento !== "received") {
+  if (
+    !terminal &&
+    podeGerenciarPagamento &&
+    !["paid", "received"].includes(reserva.statusPagamento)
+  ) {
     acoes.push({
-      descricao: "Marca o pagamento como recebido e atualiza o lancamento financeiro.",
+      descricao: `Registra pagamento manual. Saldo aberto: ${formatarMoeda(obterSaldoAberto(reserva))}.`,
       icone: <Banknote className="h-4 w-4" />,
-      motivo: "Pagamento marcado como recebido pelo gerenciamento de reservas.",
-      statusPagamentoDestino: "received",
+      motivo: "Pagamento manual registrado pelo gerenciamento de reservas.",
       tipo: "pagamento",
-      titulo: "Marcar pago",
+      titulo: "Registrar pagamento",
       variante: "add",
     });
   }
 
-  if (!terminal && podeGerenciarPagamento && reserva.statusPagamento === "received") {
+  if (
+    !terminal &&
+    podeGerenciarPagamento &&
+    ["partial", "paid", "received"].includes(reserva.statusPagamento)
+  ) {
     acoes.push({
       descricao: "Volta o pagamento para pendente, mantendo historico financeiro.",
       icone: <RotateCcw className="h-4 w-4" />,
       motivo: "Pagamento voltou para pendente pelo gerenciamento de reservas.",
       statusPagamentoDestino: "pending",
-      tipo: "pagamento",
+      tipo: "pagamento_status",
       titulo: "Voltar pagamento",
       variante: "status",
     });
@@ -240,15 +290,28 @@ function criarAcaoCancelamento(titulo: string): AcaoStatusReserva {
 }
 
 function obterRotuloPendente(acao: AcaoReserva) {
-  if (acao.tipo === "pagamento") {
-    return acao.statusPagamentoDestino === "received"
-      ? "Registrando..."
-      : "Atualizando...";
-  }
+  if (acao.tipo === "pagamento") return "Registrando...";
+  if (acao.tipo === "pagamento_status") return "Atualizando...";
+  if (acao.tipo === "cobranca") return "Gerando...";
 
   if (acao.statusDestino === "cancelled") return "Cancelando...";
   if (acao.statusDestino === "confirmed") return "Confirmando...";
   if (acao.statusDestino === "checked_in") return "Registrando...";
   if (acao.statusDestino === "checked_out") return "Registrando...";
   return "Atualizando...";
+}
+
+function obterSaldoAberto(reserva: ReservaComRelacionamentos) {
+  const pago = reserva.pagamentos
+    .filter((pagamento) => pagamento.status === "confirmed")
+    .reduce((total, pagamento) => total + Number(pagamento.amount), 0);
+
+  return Math.max(Number(reserva.total_amount) - pago, 0);
+}
+
+function formatarMoeda(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    style: "currency"
+  }).format(valor);
 }

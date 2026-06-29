@@ -3,6 +3,7 @@
 import type {
   PropertyRow,
   ReservationGuestRow,
+  ReservationPaymentMethod,
   ReservationPaymentStatus,
   ReservationRow,
   ReservationStatus,
@@ -224,6 +225,69 @@ export async function alterarPagamentoReservaAction(formData: FormData) {
     revalidarReservas();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao alterar pagamento da reserva.");
+  }
+
+  redirect(`${CAMINHO_RESERVAS}?sucesso=pagamento-reserva`);
+}
+
+export async function aprovarCobrancaReservaAction(formData: FormData) {
+  const escopo = await carregarEscopoReservas();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const reserva = await carregarReservaGerenciavel(supabase, escopo, reservaId);
+    const valorCobranca = numeroDecimalOpcional(formData, "valorCobranca");
+    const motivo = textoOpcional(formData, "motivo");
+
+    if (reserva.status !== "pending") {
+      throw new ErroRegraReserva("Somente reservas pendentes podem gerar cobranca inicial.");
+    }
+
+    await aprovarReservaComCobrancaOperacional(
+      supabase,
+      escopo,
+      reserva,
+      valorCobranca,
+      motivo ?? "Reserva aprovada e cobranca criada pelo gerenciamento."
+    );
+
+    revalidarReservas();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao aprovar reserva e gerar cobranca.");
+  }
+
+  redirect(`${CAMINHO_RESERVAS}?sucesso=cobranca-reserva`);
+}
+
+export async function registrarPagamentoManualReservaAction(formData: FormData) {
+  const escopo = await carregarEscopoReservas();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const reserva = await carregarReservaGerenciavel(supabase, escopo, reservaId);
+    const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");
+    const motivo = textoOpcional(formData, "motivo");
+
+    validarPermissaoFinanceiraReserva(escopo);
+
+    if (["cancelled", "completed"].includes(reserva.status)) {
+      throw new ErroRegraReserva("Reserva encerrada nao permite registrar pagamento.");
+    }
+
+    await registrarPagamentoManualOperacional(
+      supabase,
+      escopo,
+      reserva,
+      valorPagamento,
+      reserva.payment_method,
+      motivo ?? "Pagamento manual registrado pelo gerenciamento."
+    );
+
+    revalidarReservas();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao registrar pagamento manual da reserva.");
   }
 
   redirect(`${CAMINHO_RESERVAS}?sucesso=pagamento-reserva`);
@@ -645,6 +709,62 @@ async function atualizarPagamentoReservaOperacional(
   }
 }
 
+async function aprovarReservaComCobrancaOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reserva: ReservationRow,
+  valorCobranca: number | null,
+  motivo: string
+) {
+  /*
+    A aprovacao gera cobranca e bloqueio temporario. O status confirmado so
+    nasce depois do pagamento manual/gateway futuro.
+  */
+  const { error } = await supabase.rpc("approve_reservation_charge_operational", {
+    p_charge_amount: valorCobranca,
+    p_charge_type: "full",
+    p_due_at: null,
+    p_owner_id: escopo.ownerId,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroOperacaoAtomica(error.message, "aprovar"));
+  }
+}
+
+async function registrarPagamentoManualOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reserva: ReservationRow,
+  valorPagamento: number | null,
+  formaPagamento: ReservationPaymentMethod | null,
+  motivo: string
+) {
+  /*
+    O pagamento parcial e atomico no banco: cria pagamento rastreavel, atualiza
+    cobranca, Financeiro, timeline e confirma a reserva quando ha valor recebido.
+  */
+  const { error } = await supabase.rpc("confirm_manual_reservation_payment", {
+    p_amount: valorPagamento,
+    p_charge_id: null,
+    p_owner_id: escopo.ownerId,
+    p_payment_method: formaPagamento,
+    p_proof_url: null,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroPagamentoOperacional(error.message));
+  }
+}
+
 async function registrarHistoricoStatus(
   supabase: ClienteSupabaseServer,
   escopo: EscopoReserva,
@@ -726,6 +846,18 @@ function textoOpcional(formData: FormData, chave: string): string | null {
   return valor ? valor : null;
 }
 
+function numeroDecimalOpcional(formData: FormData, chave: string): number | null {
+  const valor = formData.get(chave)?.toString().trim().replace(",", ".");
+  if (!valor) return null;
+
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero <= 0) {
+    throw new ErroRegraReserva("Informe um valor valido.");
+  }
+
+  return numero;
+}
+
 function numeroInteiro(
   formData: FormData,
   chave: string,
@@ -773,7 +905,10 @@ function redirecionarComErro(erro: unknown, mensagemLog: string): never {
   redirect(`${CAMINHO_RESERVAS}?erro=${encodeURIComponent(mensagem)}`);
 }
 
-function traduzirErroOperacaoAtomica(mensagemBanco: string, acao: "confirmar" | "cancelar") {
+function traduzirErroOperacaoAtomica(
+  mensagemBanco: string,
+  acao: "aprovar" | "confirmar" | "cancelar"
+) {
   const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
 
   if (mensagem.includes("permissao") || mensagem.includes("permission")) {
@@ -789,7 +924,7 @@ function traduzirErroOperacaoAtomica(mensagemBanco: string, acao: "confirmar" | 
   }
 
   if (mensagem.includes("calendario")) {
-    return acao === "confirmar"
+    return acao === "confirmar" || acao === "aprovar"
       ? "Nao foi possivel bloquear o periodo no calendario."
       : "Nao foi possivel liberar o periodo no calendario.";
   }
@@ -802,9 +937,9 @@ function traduzirErroOperacaoAtomica(mensagemBanco: string, acao: "confirmar" | 
     return "Esta reserva ja foi cancelada.";
   }
 
-  return acao === "confirmar"
-    ? "Nao foi possivel confirmar a reserva."
-    : "Nao foi possivel cancelar a reserva.";
+  if (acao === "aprovar") return "Nao foi possivel aprovar a reserva.";
+  if (acao === "confirmar") return "Nao foi possivel confirmar a reserva.";
+  return "Nao foi possivel cancelar a reserva.";
 }
 
 function traduzirErroPagamentoOperacional(mensagemBanco: string) {

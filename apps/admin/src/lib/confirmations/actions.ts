@@ -20,7 +20,6 @@ import {
 } from "./data";
 import {
   ErroMensagemWhatsapp,
-  prepararMensagemWhatsappReserva,
   registrarMensagemWhatsappAberta,
   registrarMensagemWhatsappCopiada
 } from "./whatsapp";
@@ -58,16 +57,11 @@ export async function confirmarCheckOutConfirmacaoAction(formData: FormData) {
 }
 
 export async function confirmarPagamentoConfirmacaoAction(formData: FormData) {
-  await alterarPagamentoReservaOperacional(formData, {
-    motivoPadrao: "Pagamento marcado como recebido pela operacao diaria.",
-    statusDestino: "received",
-    sucesso: "pagamento-confirmado"
-  });
+  await registrarPagamentoManualConfirmacao(formData);
 }
 
 export async function confirmarReservaConfirmacaoAction(formData: FormData) {
   const escopo = await carregarEscopoOperacao();
-  let sucesso = "reserva-confirmada";
 
   try {
     const supabase = await criarClienteSupabaseServer();
@@ -78,46 +72,27 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
       throw new ErroConfirmacao("Reserva encerrada nao pode ser confirmada.");
     }
 
-    if (!["pending", "awaiting_payment"].includes(reserva.status)) {
+    if (reserva.status !== "pending") {
       throw new ErroConfirmacao("A reserva ja foi decidida.");
     }
 
-    await confirmarReservaAtomica(
+    await aprovarReservaECriarCobrancaAtomica(
       supabase,
       escopo,
       reserva,
-      observacao ?? "Reserva confirmada pela central de confirmacoes."
+      observacao ?? "Reserva aprovada e cobranca criada pela central de confirmacoes."
     );
-
-    try {
-      const mensagem = await prepararMensagemWhatsappReserva(
-        supabase,
-        escopo,
-        { ...reserva, status: "confirmed" }
-      );
-      sucesso = mensagem.requires_manual_review
-        ? "reserva-confirmada-whatsapp-revisao"
-        : "reserva-confirmada-whatsapp";
-    } catch (erroMensagem) {
-      /*
-        WhatsApp e uma etapa operacional posterior. A reserva ja foi confirmada
-        de forma atomica; falha nessa preparacao nao pode desfazer nem mascarar
-        o status confirmado e o bloqueio do calendario.
-      */
-      sucesso = "reserva-confirmada-whatsapp-pendente";
-      console.error("Reserva confirmada, mas a mensagem de WhatsApp nao foi preparada.", erroMensagem);
-    }
 
     revalidarConfirmacoes();
   } catch (erro) {
     redirecionarComErro(
       erro,
-      "Erro ao confirmar reserva.",
+      "Erro ao aprovar reserva e gerar cobranca.",
       "Não foi possível confirmar a reserva."
     );
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=${sucesso}`);
+  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=cobranca-gerada`);
 }
 
 export async function marcarPagamentoPendenteConfirmacaoAction(formData: FormData) {
@@ -126,6 +101,45 @@ export async function marcarPagamentoPendenteConfirmacaoAction(formData: FormDat
     statusDestino: "pending",
     sucesso: "pagamento-pendente"
   });
+}
+
+async function registrarPagamentoManualConfirmacao(formData: FormData) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
+    const observacao = textoOpcional(formData, "observacao");
+    const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");
+
+    if (STATUS_TERMINAIS.includes(reserva.status)) {
+      throw new ErroConfirmacao("Reserva encerrada nao permite registrar pagamento.");
+    }
+
+    if (!escopo.podeGerenciarFinanceiro) {
+      throw new ErroConfirmacao(
+        "VocÃª nÃ£o tem permissÃ£o para alterar o financeiro desta reserva."
+      );
+    }
+
+    await registrarPagamentoManualAtomico(
+      supabase,
+      escopo,
+      reserva,
+      valorPagamento,
+      observacao ?? "Pagamento manual registrado pela operacao diaria."
+    );
+
+    revalidarConfirmacoes();
+  } catch (erro) {
+    redirecionarComErro(
+      erro,
+      "Erro ao registrar pagamento manual.",
+      "NÃ£o foi possÃ­vel registrar o pagamento da reserva."
+    );
+  }
+
+  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=pagamento-confirmado`);
 }
 
 export async function adicionarObservacaoConfirmacaoAction(formData: FormData) {
@@ -186,7 +200,7 @@ export async function cancelarReservaConfirmacaoAction(formData: FormData) {
       throw new ErroConfirmacao("Reserva ja encerrada.");
     }
 
-    if (reserva.payment_status === "received" && !escopo.podeGerenciarFinanceiro) {
+    if (["partial", "paid", "received"].includes(reserva.payment_status) && !escopo.podeGerenciarFinanceiro) {
       throw new ErroConfirmacao(
         "Você não tem permissão para cancelar uma reserva com pagamento recebido."
       );
@@ -407,18 +421,20 @@ async function carregarTarefaLimpeza(
   return data;
 }
 
-async function confirmarReservaAtomica(
+async function aprovarReservaECriarCobrancaAtomica(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
   reserva: ReservationRow,
   motivo: string
 ) {
   /*
-    A confirmacao usa RPC para status, timeline e calendario ficarem na mesma
-    transacao. Isso evita bloqueio de casa sem status confirmado ou sucesso
-    parcial escondido por erro em etapa posterior.
+    Aprovar reserva cria uma cobranca e um bloqueio temporario. A confirmacao
+    definitiva do calendario acontece quando um pagamento manual e registrado.
   */
-  const { error } = await supabase.rpc("confirm_reservation_operational", {
+  const { error } = await supabase.rpc("approve_reservation_charge_operational", {
+    p_charge_amount: null,
+    p_charge_type: "full",
+    p_due_at: null,
     p_owner_id: escopo.ownerId,
     p_reason: motivo,
     p_reservation_id: reserva.id,
@@ -450,6 +466,36 @@ async function atualizarPagamentoReservaAtomica(
     p_reason: motivo,
     p_reservation_id: reserva.id,
     p_target_status: statusDestino,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroPagamentoAtomico(error.message)
+    );
+  }
+}
+
+async function registrarPagamentoManualAtomico(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  reserva: ReservationRow,
+  valorPagamento: number | null,
+  motivo: string
+) {
+  /*
+    Pagamento manual registra entrada parcial/total, atualiza Financeiro e
+    transforma o bloqueio temporario em reserva definitiva quando ha pagamento.
+  */
+  const { error } = await supabase.rpc("confirm_manual_reservation_payment", {
+    p_amount: valorPagamento,
+    p_charge_id: null,
+    p_owner_id: escopo.ownerId,
+    p_payment_method: reserva.payment_method,
+    p_proof_url: null,
+    p_reason: motivo,
+    p_reservation_id: reserva.id,
     p_tenant_id: escopo.tenantId,
     p_user_id: escopo.userId
   });
@@ -548,6 +594,18 @@ function textoObrigatorio(formData: FormData, chave: string, label: string): str
 function textoOpcional(formData: FormData, chave: string): string | null {
   const valor = formData.get(chave)?.toString().trim();
   return valor ? valor : null;
+}
+
+function numeroDecimalOpcional(formData: FormData, chave: string): number | null {
+  const valor = formData.get(chave)?.toString().trim().replace(",", ".");
+  if (!valor) return null;
+
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero <= 0) {
+    throw new ErroConfirmacao("Informe um valor valido.");
+  }
+
+  return numero;
 }
 
 function podeGerenciarFinanceiroConfirmacoes(contexto: ContextoAutenticacao) {

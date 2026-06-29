@@ -140,12 +140,12 @@ export async function carregarDadosConfirmacoes(
   const aguardandoPagamento = reservas.filter(
     (reserva) =>
       !["pending", "cancelled", "completed"].includes(reserva.status) &&
-      reserva.payment_status === "pending"
+      ["pending", "partial", "overdue"].includes(reserva.payment_status)
   );
   const pagamentosRecebidos = reservas.filter(
     (reserva) =>
       !["cancelled", "completed"].includes(reserva.status) &&
-      reserva.payment_status === "received"
+      ["paid", "received"].includes(reserva.payment_status)
   );
   const notificacoes = montarNotificacoes(
     checkInsHoje,
@@ -432,7 +432,7 @@ function montarNotificacoes(
       tipo: "pagamento_pendente" as const
     })),
     ...reservas
-      .filter((reserva) => reserva.payment_status === "received")
+      .filter((reserva) => ["paid", "received"].includes(reserva.payment_status))
       .map((reserva) => ({
         descricao: `Pagamento recebido: ${reserva.code}.`,
         id: `pagamento-recebido-${reserva.id}`,

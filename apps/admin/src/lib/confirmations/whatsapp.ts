@@ -185,7 +185,7 @@ function montarMensagem(reserva: ReservationRow, base: BaseMensagem) {
   const instrucoes = montarInstrucoesPagamento(formaPagamento, base.configuracoes);
   const contato = montarContatoProprietario(base.configuracoes);
   const avisoPagamento =
-    reserva.payment_status === "received"
+    ["paid", "received"].includes(reserva.payment_status)
       ? "Pagamento ja registrado como recebido no Hospedex."
       : "A reserva esta aguardando confirmacao de pagamento.";
 

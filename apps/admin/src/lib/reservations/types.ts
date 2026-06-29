@@ -3,6 +3,8 @@ import type {
   ReservationExtraServiceRow,
   ReservationGuestRow,
   ReservationNoteRow,
+  ReservationChargeRow,
+  ReservationPaymentRow,
   ReservationPaymentStatus,
   ReservationRow,
   ReservationStatus,
@@ -33,6 +35,8 @@ export type ReservaComRelacionamentos = ReservationRow & {
   propriedade: PropertyRow | null;
   hospedes: ReservationGuestRow[];
   historico: ReservationStatusHistoryRow[];
+  cobrancas: ReservationChargeRow[];
+  pagamentos: ReservationPaymentRow[];
   lancamentosFinanceiros: TransactionRow[];
   statusPagamento: StatusPagamentoReserva;
   servicosExtras: ReservationExtraServiceRow[];
@@ -82,7 +86,10 @@ export const ORIGENS_RESERVA: Array<ReservationRow["source"]> = [
 
 export const STATUS_PAGAMENTO_RESERVA: StatusPagamentoReserva[] = [
   "pending",
+  "partial",
+  "paid",
   "received",
+  "overdue",
   "cancelled",
   "refunded"
 ];
@@ -106,15 +113,19 @@ export const LABEL_ORIGEM_RESERVA: Record<ReservationRow["source"], string> = {
 
 export const LABEL_STATUS_PAGAMENTO_RESERVA: Record<StatusPagamentoReserva, string> = {
   cancelled: "Pagamento cancelado",
+  overdue: "Pagamento atrasado",
+  paid: "Pagamento quitado",
+  partial: "Pagamento parcial",
   received: "Pagamento recebido",
   pending: "Pagamento pendente",
   refunded: "Pagamento estornado"
 };
 
 export function obterVariantStatusPagamentoReserva(status: StatusPagamentoReserva) {
-  if (status === "received") return "success";
+  if (status === "received" || status === "paid") return "success";
+  if (status === "partial") return "info";
   if (status === "pending") return "info";
-  if (status === "refunded") return "warning";
+  if (status === "refunded" || status === "overdue") return "warning";
   return "secondary";
 }
 

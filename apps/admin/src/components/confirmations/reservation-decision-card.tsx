@@ -43,6 +43,9 @@ const LABEL_STATUS_RESERVA = {
 
 const LABEL_STATUS_PAGAMENTO = {
   cancelled: "Pagamento cancelado",
+  overdue: "Pagamento atrasado",
+  paid: "Pagamento quitado",
+  partial: "Pagamento parcial",
   pending: "Pagamento pendente",
   received: "Pagamento recebido",
   refunded: "Pagamento estornado",
@@ -76,10 +79,11 @@ export function ReservationDecisionCard({
 }: ReservationDecisionCardProps) {
   const hospede = reserva.hospedePrincipal;
   const reservaEncerrada = ["cancelled", "completed"].includes(reserva.status);
-  const podeConfirmarReserva = ["pending", "awaiting_payment"].includes(reserva.status);
-  const pagamentoRecebido = reserva.payment_status === "received";
+  const podeConfirmarReserva = reserva.status === "pending";
+  const pagamentoRecebido = ["paid", "received"].includes(reserva.payment_status);
+  const pagamentoComHistorico = ["partial", "paid", "received"].includes(reserva.payment_status);
   const podeCancelarReserva =
-    podeGerenciar && (!pagamentoRecebido || podeGerenciarPagamento);
+    podeGerenciar && (!pagamentoComHistorico || podeGerenciarPagamento);
 
   return (
     <Card className="admin-glass-card overflow-hidden">
@@ -166,10 +170,10 @@ export function ReservationDecisionCard({
           />
           <AcaoPagamentoRecebido
             disabled={!podeGerenciarPagamento || reservaEncerrada || pagamentoRecebido}
-            reservaId={reserva.id}
+            reserva={reserva}
           />
           <AcaoPagamentoPendente
-            disabled={!podeGerenciarPagamento || reservaEncerrada || !pagamentoRecebido}
+            disabled={!podeGerenciarPagamento || reservaEncerrada || !pagamentoComHistorico}
             reservaId={reserva.id}
           />
         </div>
@@ -277,21 +281,21 @@ function AcaoConfirmarReserva({
 }) {
   return (
     <ConfirmDialog
-      description="Ao confirmar, o periodo sera bloqueado no calendario da casa."
+      description="Ao aprovar, uma cobranca sera criada e o periodo ficara segurado temporariamente."
       disabled={disabled}
-      title="Confirmar reserva"
+      title="Aprovar reserva e gerar cobranca"
       triggerAction="add"
       triggerClassName="w-full"
       triggerIcon={<CheckCircle2 />}
-      triggerLabel="Confirmar reserva"
+      triggerLabel="Aprovar e gerar cobranca"
       triggerVariant="default"
     >
       <FormularioConfirmacao
         action={confirmarReservaConfirmacaoAction}
-        botao="Confirmar reserva"
+        botao="Aprovar e gerar cobranca"
         campo="observacao"
-        impacto="Ao confirmar, o periodo sera bloqueado no calendario da casa."
-        pendingLabel="Confirmando..."
+        impacto="Ao aprovar, a reserva fica aguardando pagamento e segura o periodo temporariamente."
+        pendingLabel="Gerando..."
         placeholder="Observação operacional opcional"
         reservaId={reservaId}
         variante="add"
@@ -334,10 +338,10 @@ function AcaoCancelarReserva({
 
 function AcaoPagamentoRecebido({
   disabled,
-  reservaId,
+  reserva,
 }: {
   disabled: boolean;
-  reservaId: string;
+  reserva: ReservaConfirmacao;
 }) {
   return (
     <ConfirmDialog
@@ -357,7 +361,8 @@ function AcaoPagamentoRecebido({
         impacto="Sera criado/atualizado um lancamento financeiro vinculado a reserva."
         pendingLabel="Registrando..."
         placeholder="Observação opcional do pagamento"
-        reservaId={reservaId}
+        reservaId={reserva.id}
+        valorPagamentoPadrao={Number(reserva.total_amount)}
         variante="add"
       />
     </ConfirmDialog>
@@ -404,6 +409,7 @@ function FormularioConfirmacao({
   pendingLabel,
   placeholder,
   reservaId,
+  valorPagamentoPadrao,
   variante,
 }: {
   action: (formData: FormData) => Promise<void>;
@@ -413,6 +419,7 @@ function FormularioConfirmacao({
   pendingLabel: string;
   placeholder: string;
   reservaId: string;
+  valorPagamentoPadrao?: number;
   variante: "add" | "cancel" | "status";
 }) {
   return (
@@ -426,6 +433,19 @@ function FormularioConfirmacao({
         name={campo}
         placeholder={placeholder}
       />
+      {typeof valorPagamentoPadrao === "number" ? (
+        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+          Valor recebido
+          <input
+            className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            defaultValue={valorPagamentoPadrao.toFixed(2)}
+            min="0.01"
+            name="valorPagamento"
+            step="0.01"
+            type="number"
+          />
+        </label>
+      ) : null}
       <FormActionButton icon={<CheckCircle2 />} pendingLabel={pendingLabel} variant={variante}>
         {botao}
       </FormActionButton>
@@ -479,7 +499,8 @@ function variantStatusReserva(status: ReservaConfirmacao["status"]) {
 }
 
 function variantStatusPagamento(status: ReservaConfirmacao["payment_status"]) {
-  if (status === "received") return "success";
+  if (status === "paid" || status === "received") return "success";
+  if (status === "partial") return "info";
   if (status === "cancelled" || status === "refunded") return "danger";
   return "warning";
 }

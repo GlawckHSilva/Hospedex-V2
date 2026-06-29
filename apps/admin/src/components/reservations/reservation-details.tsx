@@ -23,6 +23,15 @@ const LABEL_FORMA_PAGAMENTO: Record<ReservationPaymentMethod, string> = {
   pix: "Pix",
 };
 
+const LABEL_COBRANCA = {
+  cancelled: "Cancelada",
+  overdue: "Atrasada",
+  paid: "Quitada",
+  partial: "Parcial",
+  pending: "Pendente",
+  refunded: "Estornada",
+} as const;
+
 /**
  * Detalhe operacional da reserva.
  *
@@ -154,6 +163,34 @@ export function ReservationDetails({
           />
         </Secao>
 
+        <Secao titulo="Cobrancas e pagamentos">
+          <Info
+            label="Cobrancas"
+            valor={
+              reserva.cobrancas.length
+                ? reserva.cobrancas
+                    .map(
+                      (cobranca) =>
+                        `${LABEL_COBRANCA[cobranca.status]}: ${formatarMoeda(Number(cobranca.amount_paid))} de ${formatarMoeda(Number(cobranca.amount))}`
+                    )
+                    .join(" | ")
+                : "Nenhuma cobranca criada."
+            }
+          />
+          <Info
+            label="Pagamentos confirmados"
+            valor={
+              reserva.pagamentos.filter((pagamento) => pagamento.status === "confirmed").length
+                ? reserva.pagamentos
+                    .filter((pagamento) => pagamento.status === "confirmed")
+                    .map((pagamento) => formatarMoeda(Number(pagamento.amount)))
+                    .join(" | ")
+                : "Nenhum pagamento confirmado."
+            }
+          />
+          <Info label="Saldo aberto" valor={formatarMoeda(obterSaldoAberto(reserva))} />
+        </Secao>
+
         <Secao titulo="Calendario">
           <Info label="Recurso reservavel" valor="Casa/propriedade" />
           <Info label="Base" valor="property_id" />
@@ -261,6 +298,14 @@ function obterStatusCalendario(status: ReservaComRelacionamentos["status"]) {
   if (status === "cancelled") return "Periodo liberado por cancelamento.";
   if (status === "completed" || status === "checked_out") return "Historico preservado.";
   return "Reserva pendente; acompanhe antes de confirmar.";
+}
+
+function obterSaldoAberto(reserva: ReservaComRelacionamentos) {
+  const pago = reserva.pagamentos
+    .filter((pagamento) => pagamento.status === "confirmed")
+    .reduce((total, pagamento) => total + Number(pagamento.amount), 0);
+
+  return Math.max(Number(reserva.total_amount) - pago, 0);
 }
 
 function formatarFormaPagamento(valor: ReservationPaymentMethod | null) {

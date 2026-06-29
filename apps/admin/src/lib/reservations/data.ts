@@ -1,8 +1,10 @@
 import type {
   PropertyRow,
+  ReservationChargeRow,
   ReservationExtraServiceRow,
   ReservationGuestRow,
   ReservationNoteRow,
+  ReservationPaymentRow,
   ReservationRow,
   ReservationStatusHistoryRow,
   TransactionRow
@@ -58,6 +60,8 @@ export async function carregarDadosModuloReservas(
     reservasResultado,
     hospedesResultado,
     historicoResultado,
+    cobrancasResultado,
+    pagamentosResultado,
     extrasResultado,
     observacoesResultado
   ] = await Promise.all([
@@ -81,6 +85,17 @@ export async function carregarDadosModuloReservas(
       .order("created_at", { ascending: true })
       .returns<ReservationStatusHistoryRow[]>(),
     supabase
+      .from("reservation_charges")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .returns<ReservationChargeRow[]>(),
+    supabase
+      .from("reservation_payments")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: true })
+      .returns<ReservationPaymentRow[]>(),
+    supabase
       .from("reservation_extra_services")
       .select("*")
       .eq("tenant_id", tenantId)
@@ -101,11 +116,16 @@ export async function carregarDadosModuloReservas(
   registrarErroLeitura("serviços extras", extrasResultado.error);
   registrarErroLeitura("observações da reserva", observacoesResultado.error);
 
+  registrarErroLeitura("cobrancas da reserva", cobrancasResultado.error);
+  registrarErroLeitura("pagamentos da reserva", pagamentosResultado.error);
+
   const reservas = montarReservas(
     reservasResultado.data ?? [],
     propriedadesResultado.data ?? [],
     hospedesResultado.data ?? [],
     historicoResultado.data ?? [],
+    cobrancasResultado.data ?? [],
+    pagamentosResultado.data ?? [],
     extrasResultado.data ?? [],
     observacoesResultado.data ?? [],
     await carregarLancamentosFinanceiros(
@@ -126,8 +146,12 @@ export async function carregarDadosModuloReservas(
       hospedadas: reservas.filter((reserva) => reserva.status === "checked_in").length,
       concluidas: reservas.filter((reserva) => reserva.status === "completed").length,
       canceladas: reservas.filter((reserva) => reserva.status === "cancelled").length,
-      pagamentosPendentes: reservas.filter((reserva) => reserva.statusPagamento === "pending").length,
-      pagamentosRecebidos: reservas.filter((reserva) => reserva.statusPagamento === "received").length
+      pagamentosPendentes: reservas.filter((reserva) =>
+        ["pending", "partial", "overdue"].includes(reserva.statusPagamento)
+      ).length,
+      pagamentosRecebidos: reservas.filter((reserva) =>
+        ["paid", "received"].includes(reserva.statusPagamento)
+      ).length
     }
   };
 }
@@ -186,6 +210,8 @@ function montarReservas(
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
   historico: ReservationStatusHistoryRow[],
+  cobrancas: ReservationChargeRow[],
+  pagamentos: ReservationPaymentRow[],
   extras: ReservationExtraServiceRow[],
   observacoes: ReservationNoteRow[],
   lancamentos: TransactionRow[]
@@ -205,6 +231,8 @@ function montarReservas(
         propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
       hospedes: hospedes.filter((hospede) => hospede.reservation_id === reserva.id),
       historico: historico.filter((item) => item.reservation_id === reserva.id),
+      cobrancas: cobrancas.filter((cobranca) => cobranca.reservation_id === reserva.id),
+      pagamentos: pagamentos.filter((pagamento) => pagamento.reservation_id === reserva.id),
       lancamentosFinanceiros: lancamentos.filter(
         (lancamento) => lancamento.reservation_id === reserva.id
       ),

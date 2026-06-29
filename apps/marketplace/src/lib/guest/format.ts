@@ -23,6 +23,9 @@ export const MENSAGEM_STATUS_RESERVA: Partial<Record<ReservationStatus, string>>
 
 export const LABEL_STATUS_PAGAMENTO: Record<ReservationPaymentStatus, string> = {
   cancelled: "Cancelado",
+  overdue: "Atrasado",
+  paid: "Pago",
+  partial: "Parcial",
   pending: "Pendente",
   received: "Recebido",
   refunded: "Estornado"
@@ -82,7 +85,8 @@ export function tomStatusReserva(status: ReservationStatus) {
 }
 
 export function tomStatusPagamento(status: ReservationPaymentStatus) {
-  if (status === "received") return "success" as const;
+  if (status === "paid" || status === "received") return "success" as const;
+  if (status === "partial") return "info" as const;
   if (status === "cancelled" || status === "refunded") return "danger" as const;
   return "warning" as const;
 }

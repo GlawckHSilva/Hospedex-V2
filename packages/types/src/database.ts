@@ -28,9 +28,32 @@ export type ReservationStatus =
   | "cancelled";
 export type ReservationPaymentStatus =
   | "pending"
+  | "partial"
+  | "paid"
   | "received"
+  | "overdue"
   | "refunded"
   | "cancelled";
+export type ReservationChargeType =
+  | "deposit"
+  | "remaining"
+  | "full"
+  | "extra"
+  | "adjustment"
+  | "refund";
+export type ReservationChargeStatus =
+  | "pending"
+  | "partial"
+  | "paid"
+  | "overdue"
+  | "cancelled"
+  | "refunded";
+export type ReservationPaymentRecordStatus =
+  | "pending_review"
+  | "confirmed"
+  | "rejected"
+  | "cancelled"
+  | "refunded";
 export type ReservationPaymentMethod =
   | "pix"
   | "cash"
@@ -556,6 +579,48 @@ export type ReservationNoteRow = {
   created_at: Timestamp;
 };
 
+export type ReservationChargeRow = {
+  id: UUID;
+  tenant_id: UUID;
+  property_id: UUID;
+  reservation_id: UUID;
+  charge_type: ReservationChargeType;
+  amount: number;
+  amount_paid: number;
+  currency: string;
+  due_at: Timestamp | null;
+  status: ReservationChargeStatus;
+  payment_method: ReservationPaymentMethod | null;
+  payment_provider: "manual" | "gateway" | "none";
+  payment_link: string | null;
+  pix_copy_paste: string | null;
+  pix_qr_code: string | null;
+  manual_instructions: string | null;
+  internal_notes: string | null;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type ReservationPaymentRow = {
+  id: UUID;
+  tenant_id: UUID;
+  property_id: UUID;
+  reservation_id: UUID;
+  charge_id: UUID | null;
+  amount: number;
+  currency: string;
+  payment_method: ReservationPaymentMethod | null;
+  status: ReservationPaymentRecordStatus;
+  proof_url: string | null;
+  gateway_transaction_id: string | null;
+  notes: string | null;
+  confirmed_by: UUID | null;
+  confirmed_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
 export type ReservationWhatsappMessageStatus =
   | "prepared"
   | "copied"
@@ -823,6 +888,8 @@ export type TransactionRow = {
   financial_account_id: UUID;
   property_id: UUID | null;
   reservation_id: UUID | null;
+  reservation_charge_id: UUID | null;
+  reservation_payment_id: UUID | null;
   expense_category_id: UUID | null;
   guest_name: string | null;
   transaction_type: TransactionType;
