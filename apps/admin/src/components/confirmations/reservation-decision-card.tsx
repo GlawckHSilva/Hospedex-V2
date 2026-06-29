@@ -15,9 +15,11 @@ import { Badge, Button, Card, CardContent } from "@hospedex/ui";
 
 import {
   adicionarObservacaoConfirmacaoAction,
+  cancelarPagamentoConfirmacaoAction,
   cancelarReservaConfirmacaoAction,
   confirmarPagamentoConfirmacaoAction,
   confirmarReservaConfirmacaoAction,
+  estornarPagamentoConfirmacaoAction,
   marcarPagamentoPendenteConfirmacaoAction,
 } from "../../lib/confirmations/actions";
 import type { ReservaConfirmacao } from "../../lib/confirmations/types";
@@ -247,6 +249,8 @@ function DetalhesReserva({
         paymentStatus={reserva.payment_status}
         paymentStatusUpdatedAt={reserva.payment_status_updated_at}
         payments={reserva.pagamentos}
+        cancelPaymentAction={cancelarPagamentoConfirmacaoAction}
+        refundPaymentAction={estornarPagamentoConfirmacaoAction}
         registerPaymentAction={confirmarPagamentoConfirmacaoAction}
         reservationId={reserva.id}
         totalAmount={Number(reserva.total_amount)}

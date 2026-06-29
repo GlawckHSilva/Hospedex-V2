@@ -61,6 +61,14 @@ export async function confirmarPagamentoConfirmacaoAction(formData: FormData) {
   await registrarPagamentoManualConfirmacao(formData);
 }
 
+export async function cancelarPagamentoConfirmacaoAction(formData: FormData) {
+  await reverterPagamentoConfirmacao(formData, "cancelar");
+}
+
+export async function estornarPagamentoConfirmacaoAction(formData: FormData) {
+  await reverterPagamentoConfirmacao(formData, "estornar");
+}
+
 export async function confirmarReservaConfirmacaoAction(formData: FormData) {
   const escopo = await carregarEscopoOperacao();
 
@@ -147,6 +155,59 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
   }
 
   redirect(`${CAMINHO_CONFIRMACOES}?sucesso=pagamento-confirmado`);
+}
+
+async function reverterPagamentoConfirmacao(
+  formData: FormData,
+  tipo: "cancelar" | "estornar"
+) {
+  const escopo = await carregarEscopoOperacao();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    await carregarReserva(
+      supabase,
+      escopo,
+      textoObrigatorio(formData, "reservaId", "reserva")
+    );
+    const pagamentoId = textoObrigatorio(formData, "pagamentoId", "pagamento");
+    const motivo = textoObrigatorio(formData, "motivo", "motivo");
+
+    if (!escopo.podeGerenciarFinanceiro) {
+      throw new ErroConfirmacao(
+        "Voce nao tem permissao para alterar o financeiro desta reserva."
+      );
+    }
+
+    if (tipo === "cancelar") {
+      await cancelarPagamentoAtomico(supabase, escopo, pagamentoId, motivo);
+    } else {
+      await estornarPagamentoAtomico(
+        supabase,
+        escopo,
+        pagamentoId,
+        numeroDecimalObrigatorio(formData, "valorEstorno", "valor do estorno"),
+        motivo,
+        textoOpcional(formData, "observacao")
+      );
+    }
+
+    revalidarConfirmacoes();
+  } catch (erro) {
+    redirecionarComErro(
+      erro,
+      "Erro ao reverter pagamento da reserva.",
+      tipo === "cancelar"
+        ? "Nao foi possivel cancelar o pagamento da reserva."
+        : "Nao foi possivel estornar o pagamento da reserva."
+    );
+  }
+
+  redirect(
+    `${CAMINHO_CONFIRMACOES}?sucesso=${
+      tipo === "cancelar" ? "pagamento-cancelado" : "pagamento-estornado"
+    }`
+  );
 }
 
 export async function adicionarObservacaoConfirmacaoAction(formData: FormData) {
@@ -517,6 +578,60 @@ async function registrarPagamentoManualAtomico(
   }
 }
 
+async function cancelarPagamentoAtomico(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  pagamentoId: string,
+  motivo: string
+) {
+  /*
+    Cancelamento corrige pagamento lancado por engano. A RPC preserva registro,
+    recalcula saldo e registra timeline em uma unica transacao.
+  */
+  const { error } = await supabase.rpc("cancel_reservation_payment", {
+    p_owner_id: escopo.ownerId,
+    p_payment_id: pagamentoId,
+    p_reason: motivo,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroPagamentoAtomico(error.message)
+    );
+  }
+}
+
+async function estornarPagamentoAtomico(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  pagamentoId: string,
+  valorEstorno: number,
+  motivo: string,
+  observacao: string | null
+) {
+  /*
+    Estorno registra devolucao real e cria saida financeira. Nao altera status
+    operacional nem libera calendario se a reserva continuar ativa.
+  */
+  const { error } = await supabase.rpc("refund_reservation_payment", {
+    p_note: observacao,
+    p_owner_id: escopo.ownerId,
+    p_payment_id: pagamentoId,
+    p_reason: motivo,
+    p_refund_amount: valorEstorno,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroConfirmacao(
+      traduzirErroPagamentoAtomico(error.message)
+    );
+  }
+}
+
 async function cancelarReservaAtomica(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
@@ -615,6 +730,16 @@ function numeroDecimalOpcional(formData: FormData, chave: string): number | null
     throw new ErroConfirmacao("Informe um valor valido.");
   }
 
+  return numero;
+}
+
+function numeroDecimalObrigatorio(
+  formData: FormData,
+  chave: string,
+  label: string
+): number {
+  const numero = numeroDecimalOpcional(formData, chave);
+  if (numero === null) throw new ErroConfirmacao(`Informe ${label}.`);
   return numero;
 }
 

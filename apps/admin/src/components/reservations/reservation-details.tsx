@@ -12,7 +12,11 @@ import {
   type ReservaComRelacionamentos,
 } from "../../lib/reservations/types";
 import { LABEL_STATUS_LANCAMENTO } from "../../lib/finance/types";
-import { registrarPagamentoManualReservaAction } from "../../lib/reservations/actions";
+import {
+  cancelarPagamentoReservaAction,
+  estornarPagamentoReservaAction,
+  registrarPagamentoManualReservaAction
+} from "../../lib/reservations/actions";
 import { ReservationTimeline } from "./reservation-timeline";
 import { ReservationBillingPanel } from "./reservation-billing-panel";
 
@@ -157,6 +161,8 @@ export function ReservationDetails({
           paymentStatus={reserva.statusPagamento}
           paymentStatusUpdatedAt={reserva.payment_status_updated_at}
           payments={reserva.pagamentos}
+          cancelPaymentAction={cancelarPagamentoReservaAction}
+          refundPaymentAction={estornarPagamentoReservaAction}
           registerPaymentAction={registrarPagamentoManualReservaAction}
           reservationId={reserva.id}
           totalAmount={Number(reserva.total_amount)}

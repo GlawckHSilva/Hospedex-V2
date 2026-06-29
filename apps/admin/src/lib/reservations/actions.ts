@@ -298,6 +298,62 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
   redirect(`${CAMINHO_RESERVAS}?sucesso=pagamento-reserva`);
 }
 
+export async function cancelarPagamentoReservaAction(formData: FormData) {
+  const escopo = await carregarEscopoReservas();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const pagamentoId = textoObrigatorio(formData, "pagamentoId", "pagamento");
+    const motivo = textoObrigatorio(formData, "motivo", "motivo do cancelamento");
+    await carregarReservaGerenciavel(supabase, escopo, reservaId);
+
+    validarPermissaoFinanceiraReserva(escopo);
+    await cancelarPagamentoReservaOperacional(
+      supabase,
+      escopo,
+      pagamentoId,
+      motivo
+    );
+
+    revalidarReservas();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao cancelar pagamento da reserva.");
+  }
+
+  redirect(`${CAMINHO_RESERVAS}?sucesso=pagamento-cancelado`);
+}
+
+export async function estornarPagamentoReservaAction(formData: FormData) {
+  const escopo = await carregarEscopoReservas();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+    const pagamentoId = textoObrigatorio(formData, "pagamentoId", "pagamento");
+    const valorEstorno = numeroMoeda(formData, "valorEstorno", "valor do estorno");
+    const motivo = textoObrigatorio(formData, "motivo", "motivo do estorno");
+    const observacao = textoOpcional(formData, "observacao");
+    await carregarReservaGerenciavel(supabase, escopo, reservaId);
+
+    validarPermissaoFinanceiraReserva(escopo);
+    await estornarPagamentoReservaOperacional(
+      supabase,
+      escopo,
+      pagamentoId,
+      valorEstorno,
+      motivo,
+      observacao
+    );
+
+    revalidarReservas();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao estornar pagamento da reserva.");
+  }
+
+  redirect(`${CAMINHO_RESERVAS}?sucesso=pagamento-estornado`);
+}
+
 export async function cancelarReservaAction(formData: FormData) {
   const escopo = await carregarEscopoReservas();
 
@@ -763,6 +819,56 @@ async function registrarPagamentoManualOperacional(
     p_proof_url: comprovanteUrl,
     p_reason: motivo,
     p_reservation_id: reserva.id,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroPagamentoOperacional(error.message));
+  }
+}
+
+async function cancelarPagamentoReservaOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  pagamentoId: string,
+  motivo: string
+) {
+  /*
+    Cancelar pagamento nao apaga o registro. A RPC marca o pagamento como
+    cancelado, recalcula cobranca/reserva e preserva a trilha financeira.
+  */
+  const { error } = await supabase.rpc("cancel_reservation_payment", {
+    p_owner_id: escopo.ownerId,
+    p_payment_id: pagamentoId,
+    p_reason: motivo,
+    p_tenant_id: escopo.tenantId,
+    p_user_id: escopo.userId
+  });
+
+  if (error) {
+    throw new ErroRegraReserva(traduzirErroPagamentoOperacional(error.message));
+  }
+}
+
+async function estornarPagamentoReservaOperacional(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  pagamentoId: string,
+  valorEstorno: number,
+  motivo: string,
+  observacao: string | null
+) {
+  /*
+    Estorno representa devolucao real ao hospede. O banco cria uma saida no
+    Financeiro e mantem o pagamento original auditavel.
+  */
+  const { error } = await supabase.rpc("refund_reservation_payment", {
+    p_note: observacao,
+    p_owner_id: escopo.ownerId,
+    p_payment_id: pagamentoId,
+    p_reason: motivo,
+    p_refund_amount: valorEstorno,
     p_tenant_id: escopo.tenantId,
     p_user_id: escopo.userId
   });

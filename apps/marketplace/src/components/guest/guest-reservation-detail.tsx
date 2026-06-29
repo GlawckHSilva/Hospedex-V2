@@ -197,6 +197,16 @@ export function GuestReservationDetail({
                             ? `Confirmado em ${formatarDataHoraHospede(item.confirmadoEm)}`
                             : `Registrado em ${formatarDataHoraHospede(item.criadoEm)}`}
                         </p>
+                        {item.tipoReversao === "refund" ? (
+                          <p className="mt-1 text-xs text-amber-200">
+                            Estorno registrado para esta reserva.
+                          </p>
+                        ) : null}
+                        {item.valorEstornado > 0 && item.tipoReversao === null ? (
+                          <p className="mt-1 text-xs text-amber-200">
+                            Valor ja estornado: {formatarMoedaHospede(item.valorEstornado)}
+                          </p>
+                        ) : null}
                       </div>
                       {item.formaPagamento ? (
                         <StatusBadge tone="info">{LABEL_FORMA_PAGAMENTO[item.formaPagamento]}</StatusBadge>

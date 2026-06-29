@@ -608,6 +608,9 @@ export type ReservationPaymentRow = {
   property_id: UUID;
   reservation_id: UUID;
   charge_id: UUID | null;
+  parent_payment_id: UUID | null;
+  reversal_type: "cancel" | "refund" | null;
+  reversal_reason: string | null;
   amount: number;
   currency: string;
   payment_method: ReservationPaymentMethod | null;
@@ -617,6 +620,9 @@ export type ReservationPaymentRow = {
   notes: string | null;
   confirmed_by: UUID | null;
   confirmed_at: Timestamp | null;
+  refunded_amount: number;
+  reversed_by: UUID | null;
+  reversed_at: Timestamp | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 };

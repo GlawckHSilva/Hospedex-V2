@@ -80,8 +80,12 @@ export type PagamentoReservaHospede = {
   confirmadoEm: string | null;
   criadoEm: string;
   formaPagamento: ReservationPaymentMethod | null;
+  motivoReversao: string | null;
+  pagamentoOrigemId: string | null;
   status: ReservationPaymentRecordStatus;
+  tipoReversao: "cancel" | "refund" | null;
   valor: number;
+  valorEstornado: number;
 };
 
 export type FinanceiroReservaHospede = {

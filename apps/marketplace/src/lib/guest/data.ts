@@ -103,7 +103,11 @@ type PagamentoReservaRow = {
   confirmed_at: string | null;
   created_at: string;
   currency: string;
+  parent_payment_id: string | null;
   payment_method: ReservationPaymentMethod | null;
+  refunded_amount: number;
+  reversal_reason: string | null;
+  reversal_type: "cancel" | "refund" | null;
   reservation_id: string;
   status: PagamentoReservaHospede["status"];
 };
@@ -387,7 +391,7 @@ async function carregarComplementosReservas(
       .returns<CobrancaReservaRow[]>(),
     supabase
       .from("reservation_payments")
-      .select("reservation_id,amount,currency,payment_method,status,created_at,confirmed_at")
+      .select("reservation_id,amount,currency,payment_method,status,created_at,confirmed_at,parent_payment_id,reversal_type,reversal_reason,refunded_amount")
       .in("reservation_id", reservaIds)
       .order("created_at", { ascending: true })
       .returns<PagamentoReservaRow[]>()
@@ -517,8 +521,12 @@ function mapearPagamentosHospede(pagamentos: PagamentoReservaRow[]) {
       confirmadoEm: pagamento.confirmed_at,
       criadoEm: pagamento.created_at,
       formaPagamento: pagamento.payment_method,
+      motivoReversao: pagamento.reversal_reason,
+      pagamentoOrigemId: pagamento.parent_payment_id,
       status: pagamento.status,
-      valor: Number(pagamento.amount)
+      tipoReversao: pagamento.reversal_type,
+      valor: Number(pagamento.amount),
+      valorEstornado: Number(pagamento.refunded_amount ?? 0)
     });
     mapa.set(pagamento.reservation_id, lista);
   }
@@ -532,14 +540,18 @@ function montarFinanceiroHospede(
 ): FinanceiroReservaHospede {
   const cobrancas = complementos.cobrancasPorReserva.get(reserva.id) ?? [];
   const pagamentos = complementos.pagamentosPorReserva.get(reserva.id) ?? [];
-  const valorPagoPagamentos = pagamentos
-    .filter((pagamento) => pagamento.status === "confirmed")
+  const valorOriginalPago = pagamentos
+    .filter((pagamento) => pagamento.tipoReversao === null && ["confirmed", "refunded"].includes(pagamento.status))
     .reduce((total, pagamento) => total + pagamento.valor, 0);
+  const valorEstornado = pagamentos
+    .filter((pagamento) => pagamento.tipoReversao === "refund" && pagamento.status === "refunded")
+    .reduce((total, pagamento) => total + pagamento.valor, 0);
+  const valorPagoPagamentos = Math.max(valorOriginalPago - valorEstornado, 0);
   const valorPagoCobrancas = cobrancas.reduce(
     (total, cobranca) => total + cobranca.valorPago,
     0
   );
-  const valorPago = Math.max(valorPagoPagamentos, valorPagoCobrancas);
+  const valorPago = pagamentos.length ? valorPagoPagamentos : valorPagoCobrancas;
   const valorTotal = Number(reserva.total_amount ?? 0);
 
   return {

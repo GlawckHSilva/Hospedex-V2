@@ -8,7 +8,7 @@ import type {
   ReservationPaymentStatus,
   TransactionRow,
 } from "@hospedex/types";
-import { Banknote, ExternalLink, Lock, ReceiptText, RotateCcw } from "lucide-react";
+import { Banknote, ExternalLink, Lock, ReceiptText, RotateCcw, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Card, CardContent } from "@hospedex/ui";
@@ -68,6 +68,8 @@ type ReservationBillingPanelProps = {
   payments: ReservationPaymentRow[];
   paymentStatus: ReservationPaymentStatus;
   paymentStatusUpdatedAt: string | null;
+  cancelPaymentAction?: (formData: FormData) => Promise<void>;
+  refundPaymentAction?: (formData: FormData) => Promise<void>;
   registerPaymentAction?: (formData: FormData) => Promise<void>;
   reservationId: string;
   totalAmount: number;
@@ -88,6 +90,8 @@ export function ReservationBillingPanel({
   payments,
   paymentStatus,
   paymentStatusUpdatedAt,
+  cancelPaymentAction,
+  refundPaymentAction,
   registerPaymentAction,
   reservationId,
   totalAmount,
@@ -148,7 +152,11 @@ export function ReservationBillingPanel({
               {payments.map((payment) => (
                 <PagamentoCard
                   key={payment.id}
+                  canManagePayments={canManagePayments}
+                  cancelPaymentAction={cancelPaymentAction}
                   payment={payment}
+                  refundPaymentAction={refundPaymentAction}
+                  reservationId={reservationId}
                   transaction={transactions.find((item) => item.reservation_payment_id === payment.id) ?? null}
                 />
               ))}
@@ -306,17 +314,8 @@ function CobrancaCard({
               </form>
             </ConfirmDialog>
           ) : null}
-          <button
-            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-muted bg-muted/25 px-3 py-2 text-xs font-semibold text-muted-foreground opacity-70"
-            disabled
-            title="Estorno detalhado sera preparado em etapa futura."
-            type="button"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Estornar
-          </button>
           <p className="text-xs leading-5 text-muted-foreground">
-            Estorno detalhado sera preparado em etapa futura.
+            Cancelamento e estorno ficam disponiveis nos pagamentos confirmados abaixo.
           </p>
         </div>
       </div>
@@ -325,22 +324,54 @@ function CobrancaCard({
 }
 
 function PagamentoCard({
+  canManagePayments,
+  cancelPaymentAction,
   payment,
+  refundPaymentAction,
+  reservationId,
   transaction,
 }: {
+  canManagePayments: boolean;
+  cancelPaymentAction: ((formData: FormData) => Promise<void>) | undefined;
   payment: ReservationPaymentRow;
+  refundPaymentAction: ((formData: FormData) => Promise<void>) | undefined;
+  reservationId: string;
   transaction: TransactionRow | null;
 }) {
+  const valor = Number(payment.amount);
+  const valorEstornado = Number(payment.refunded_amount ?? 0);
+  const valorDisponivelEstorno = Math.max(valor - valorEstornado, 0);
+  const pagamentoOriginalConfirmado =
+    payment.status === "confirmed" && payment.reversal_type === null;
+  const podeCancelar =
+    canManagePayments &&
+    Boolean(cancelPaymentAction) &&
+    pagamentoOriginalConfirmado &&
+    valorEstornado <= 0;
+  const podeEstornar =
+    canManagePayments &&
+    Boolean(refundPaymentAction) &&
+    pagamentoOriginalConfirmado &&
+    valorDisponivelEstorno > 0;
+
   return (
     <div className="rounded-xl border bg-background/45 p-3 text-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={payment.status === "confirmed" ? "success" : "outline"}>
+            <Badge variant={variantStatusPagamentoRegistro(payment.status)}>
               {LABEL_STATUS_PAGAMENTO_REGISTRO[payment.status]}
             </Badge>
             {payment.payment_method ? (
               <Badge variant="outline">{LABEL_FORMA_PAGAMENTO[payment.payment_method]}</Badge>
+            ) : null}
+            {payment.reversal_type === "refund" ? (
+              <Badge variant="warning">Registro de estorno</Badge>
+            ) : null}
+            {valorEstornado > 0 && payment.reversal_type === null ? (
+              <Badge variant="warning">
+                Estornado {formatarMoeda(valorEstornado, payment.currency)}
+              </Badge>
             ) : null}
           </div>
           <div className="mt-3 grid gap-2 text-muted-foreground sm:grid-cols-2">
@@ -348,6 +379,12 @@ function PagamentoCard({
             <Linha label="Confirmado em" value={payment.confirmed_at ? formatarDataHora(payment.confirmed_at) : "Nao confirmado"} />
             <Linha label="Financeiro" value={transaction ? LABEL_STATUS_LANCAMENTO[transaction.status] : "Sem lancamento vinculado"} />
             <Linha label="Observacao" value={payment.notes ?? "Sem observacao"} />
+            {payment.reversal_reason ? (
+              <Linha label="Motivo" value={payment.reversal_reason} />
+            ) : null}
+            {payment.reversed_at ? (
+              <Linha label="Reversao" value={formatarDataHora(payment.reversed_at)} />
+            ) : null}
           </div>
           {payment.proof_url ? (
             <a
@@ -360,9 +397,139 @@ function PagamentoCard({
             </a>
           ) : null}
         </div>
-        <strong className="text-base">{formatarMoeda(Number(payment.amount), payment.currency)}</strong>
+        <div className="grid gap-2 lg:min-w-56">
+          <strong className="text-base">{formatarMoeda(valor, payment.currency)}</strong>
+          {podeCancelar && cancelPaymentAction ? (
+            <ConfirmDialog
+              description="Esta acao nao apagará o pagamento. Ela cancelara o registro e recalculara cobranca, saldo, financeiro e timeline."
+              title="Cancelar pagamento"
+              triggerAction="delete"
+              triggerClassName="w-full"
+              triggerIcon={<XCircle />}
+              triggerLabel="Cancelar pagamento"
+              triggerVariant="destructive"
+            >
+              <form action={cancelPaymentAction} className="grid gap-3">
+                <input name="reservaId" type="hidden" value={reservationId} />
+                <input name="pagamentoId" type="hidden" value={payment.id} />
+                <ResumoModalPagamento
+                  payment={payment}
+                  titulo="Pagamento selecionado"
+                  valor={valor}
+                />
+                <p className="rounded-lg border border-amber-400/25 bg-amber-500/10 p-3 text-xs leading-5 text-amber-700 dark:text-amber-100">
+                  Use cancelamento apenas para pagamento lancado por engano. Para dinheiro devolvido ao hospede, use estorno.
+                </p>
+                <CampoMotivo
+                  name="motivo"
+                  placeholder="Ex.: Lancamento duplicado ou recebido por engano."
+                />
+                <FormActionButton icon={<XCircle />} pendingLabel="Cancelando..." variant="delete">
+                  Confirmar cancelamento
+                </FormActionButton>
+              </form>
+            </ConfirmDialog>
+          ) : null}
+          {podeEstornar && refundPaymentAction ? (
+            <ConfirmDialog
+              description="Registra uma devolucao real ao hospede, cria saida no financeiro e recalcula o saldo da reserva."
+              title="Estornar pagamento"
+              triggerAction="status"
+              triggerClassName="w-full"
+              triggerIcon={<RotateCcw />}
+              triggerLabel="Estornar pagamento"
+            >
+              <form action={refundPaymentAction} className="grid gap-3">
+                <input name="reservaId" type="hidden" value={reservationId} />
+                <input name="pagamentoId" type="hidden" value={payment.id} />
+                <ResumoModalPagamento
+                  payment={payment}
+                  titulo="Disponivel para estorno"
+                  valor={valorDisponivelEstorno}
+                />
+                <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                  Valor a estornar
+                  <input
+                    className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    defaultValue={valorDisponivelEstorno.toFixed(2)}
+                    max={valorDisponivelEstorno.toFixed(2)}
+                    min="0.01"
+                    name="valorEstorno"
+                    step="0.01"
+                    type="number"
+                  />
+                </label>
+                <CampoMotivo
+                  name="motivo"
+                  placeholder="Ex.: Devolucao parcial combinada com o hospede."
+                />
+                <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                  Observacao opcional
+                  <textarea
+                    className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    name="observacao"
+                    placeholder="Detalhe interno sobre o estorno."
+                  />
+                </label>
+                <FormActionButton icon={<RotateCcw />} pendingLabel="Estornando..." variant="status">
+                  Confirmar estorno
+                </FormActionButton>
+              </form>
+            </ConfirmDialog>
+          ) : null}
+          {!pagamentoOriginalConfirmado ? (
+            <p className="text-xs leading-5 text-muted-foreground">
+              Pagamentos cancelados ou estornados ficam visiveis para auditoria.
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
+  );
+}
+
+function ResumoModalPagamento({
+  payment,
+  titulo,
+  valor,
+}: {
+  payment: ReservationPaymentRow;
+  titulo: string;
+  valor: number;
+}) {
+  return (
+    <div className="grid gap-2 rounded-lg border bg-background/55 p-3 text-sm">
+      <p className="font-semibold">{titulo}</p>
+      <Linha label="Valor" value={formatarMoeda(valor, payment.currency)} />
+      <Linha
+        label="Forma"
+        value={payment.payment_method ? LABEL_FORMA_PAGAMENTO[payment.payment_method] : "Nao definida"}
+      />
+      <Linha
+        label="Confirmado em"
+        value={payment.confirmed_at ? formatarDataHora(payment.confirmed_at) : "Nao confirmado"}
+      />
+    </div>
+  );
+}
+
+function CampoMotivo({
+  name,
+  placeholder,
+}: {
+  name: string;
+  placeholder: string;
+}) {
+  return (
+    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+      Motivo obrigatorio
+      <textarea
+        className="min-h-20 rounded-md border bg-background px-3 py-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        name={name}
+        placeholder={placeholder}
+        required
+      />
+    </label>
   );
 }
 
@@ -417,12 +584,18 @@ function EstadoVazio({ children }: { children: ReactNode }) {
 }
 
 function obterValorPago(payments: ReservationPaymentRow[], charges: ReservationChargeRow[]) {
-  const paidByPayments = payments
-    .filter((payment) => payment.status === "confirmed")
+  const valorOriginalPago = payments
+    .filter((payment) => payment.reversal_type === null && ["confirmed", "refunded"].includes(payment.status))
     .reduce((total, payment) => total + Number(payment.amount), 0);
+  const valorEstornado = payments
+    .filter((payment) => payment.reversal_type === "refund" && payment.status === "refunded")
+    .reduce((total, payment) => total + Number(payment.amount), 0);
+  const paidByPayments = Math.max(valorOriginalPago - valorEstornado, 0);
   const paidByCharges = charges.reduce((total, charge) => total + Number(charge.amount_paid), 0);
 
-  return Math.max(paidByPayments, paidByCharges);
+  // Pagamentos detalhados sao a fonte principal quando existem, pois carregam
+  // cancelamentos e estornos parciais. Cobrancas ficam como fallback legado.
+  return payments.length ? paidByPayments : paidByCharges;
 }
 
 function variantStatusCobranca(status: ReservationChargeStatus) {
@@ -430,6 +603,13 @@ function variantStatusCobranca(status: ReservationChargeStatus) {
   if (status === "partial") return "info";
   if (status === "overdue") return "warning";
   if (status === "cancelled" || status === "refunded") return "secondary";
+  return "outline";
+}
+
+function variantStatusPagamentoRegistro(status: ReservationPaymentRecordStatus) {
+  if (status === "confirmed") return "success";
+  if (status === "refunded") return "warning";
+  if (status === "cancelled" || status === "rejected") return "secondary";
   return "outline";
 }
 
