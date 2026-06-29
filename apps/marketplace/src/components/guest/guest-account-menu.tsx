@@ -115,10 +115,20 @@ export function GuestAccountMenu() {
   }
 
   return (
-    <div className="relative shrink-0" ref={menuRef}>
+    <div className="relative flex shrink-0 items-center gap-2" ref={menuRef}>
+      <Link
+        className={cn(
+          buttonVariants({ size: "sm", variant: "secondary" }),
+          "hidden border border-cyan-300/20 bg-cyan-400/10 text-cyan-50 hover:bg-cyan-400/15 md:inline-flex"
+        )}
+        href="/minhas-reservas"
+      >
+        <TicketCheck className="h-4 w-4 text-cyan-200" />
+        Minhas reservas
+      </Link>
       <button
         aria-expanded={aberto}
-        className="inline-flex h-10 items-center gap-2 rounded-full border bg-background/70 px-2 pr-3 text-sm font-medium shadow-sm shadow-cyan-950/10 transition hover:border-primary/45 hover:bg-secondary/70"
+        className="inline-flex h-10 items-center gap-2 rounded-full border border-cyan-300/20 bg-background/70 px-2 pr-3 text-sm font-medium shadow-sm shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-secondary/70"
         onClick={() => setAberto((valor) => !valor)}
         type="button"
       >
@@ -136,7 +146,7 @@ export function GuestAccountMenu() {
         <span className="hidden max-w-28 truncate sm:inline">
           {perfil.full_name ?? perfil.email}
         </span>
-        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        <ChevronDown className="h-3.5 w-3.5 text-cyan-100/75" />
       </button>
 
       {aberto ? (

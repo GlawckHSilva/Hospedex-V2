@@ -10,10 +10,11 @@ export type TopNavProps = {
   label?: string;
   items: readonly NavigationItem[];
   actions?: ReactNode;
+  brand?: ReactNode;
   className?: string;
 };
 
-export function TopNav({ label, items, actions, className }: TopNavProps) {
+export function TopNav({ label, items, actions, brand, className }: TopNavProps) {
   return (
     <header
       className={cn(
@@ -22,7 +23,7 @@ export function TopNav({ label, items, actions, className }: TopNavProps) {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
-        <BrandLockup {...(label ? { label } : {})} />
+        {brand ?? <BrandLockup {...(label ? { label } : {})} />}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Navegação principal">
           {items.map((item) => (
             <Link

@@ -7,12 +7,13 @@ import {
   Clock,
   Mail,
   Phone,
+  Send,
   ShieldCheck,
   User,
   Users
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
 import { GlassButton, GlassCard, GlassInput, StatusBadge, buttonVariants, cn } from "@hospedex/ui";
@@ -26,6 +27,7 @@ import {
 import type { CotacoesCambio } from "../../lib/currency/types";
 import { solicitarReservaPublicaAction } from "../../lib/marketplace/actions";
 import type { PropriedadePublica } from "../../lib/marketplace/data";
+import { criarClienteSupabaseBrowser } from "../../lib/supabase/client";
 
 export type ReservaFeedback = {
   codigo?: string | undefined;
@@ -49,6 +51,15 @@ type ResumoReserva = {
   taxaLimpeza: number;
   total: number;
 };
+
+type DadosHospedeLogado = {
+  email: string;
+  nome: string;
+  telefone: string;
+};
+
+const inputIconClass =
+  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100/75";
 
 /**
  * Card publico de solicitacao da Casa.
@@ -81,6 +92,12 @@ export function PropertyReservationCard({
   );
   const parcelaPadrao = parcelasDisponiveis[0]?.parcela ?? 1;
   const [parcelas, setParcelas] = useState(parcelaPadrao);
+  const [nomeHospede, setNomeHospede] = useState("");
+  const [telefoneHospede, setTelefoneHospede] = useState("");
+  const [emailHospede, setEmailHospede] = useState("");
+  const [hospedeLogado, setHospedeLogado] = useState<DadosHospedeLogado | null>(
+    null
+  );
   const parcelaSelecionada =
     parcelasDisponiveis.find((parcela) => parcela.parcela === parcelas) ??
     parcelasDisponiveis[0] ??
@@ -107,6 +124,49 @@ export function PropertyReservationCard({
     ]
   );
   const podeSolicitarReserva = property.maxGuests > 0 && metodosPagamento.length > 0;
+
+  useEffect(() => {
+    const supabase = criarClienteSupabaseBrowser();
+    if (!supabase) return;
+
+    const clienteSupabase = supabase;
+    let ativo = true;
+
+    async function carregarHospedeLogado() {
+      const { data: usuarioResultado } = await clienteSupabase.auth.getUser();
+      const usuario = usuarioResultado.user;
+      if (!usuario?.email || !ativo) return;
+
+      const { data: perfil } = await clienteSupabase
+        .from("profiles")
+        .select("full_name,phone,email")
+        .eq("id", usuario.id)
+        .maybeSingle<{
+          email: string | null;
+          full_name: string | null;
+          phone: string | null;
+        }>();
+
+      const dados = {
+        email: usuario.email.trim().toLowerCase(),
+        nome: perfil?.full_name ?? "",
+        telefone: perfil?.phone ?? ""
+      };
+
+      if (ativo) {
+        setHospedeLogado(dados);
+        setEmailHospede(dados.email);
+        setNomeHospede((valorAtual) => valorAtual || dados.nome);
+        setTelefoneHospede((valorAtual) => valorAtual || dados.telefone);
+      }
+    }
+
+    void carregarHospedeLogado();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   return (
     <GlassCard className="p-5 shadow-2xl shadow-cyan-950/15">
@@ -140,6 +200,8 @@ export function PropertyReservationCard({
           cotacoesCambio={cotacoesCambio}
           formaPagamento={formaPagamento}
           metodosPagamento={metodosPagamento}
+          emailHospede={emailHospede}
+          emailHospedeBloqueado={Boolean(hospedeLogado?.email)}
           parcelas={parcelas}
           parcelasDisponiveis={parcelasDisponiveis}
           podeSolicitarReserva={podeSolicitarReserva}
@@ -148,12 +210,17 @@ export function PropertyReservationCard({
           resumo={resumo}
           setCheckIn={setCheckIn}
           setCheckOut={setCheckOut}
+          setEmailHospede={setEmailHospede}
           setFormaPagamento={(metodo) => {
             setFormaPagamento(metodo);
             setParcelas(metodo === "credit_card" ? parcelaPadrao : 1);
           }}
+          nomeHospede={nomeHospede}
           setParcelas={setParcelas}
+          setNomeHospede={setNomeHospede}
           setQuantidadeHospedes={setQuantidadeHospedes}
+          setTelefoneHospede={setTelefoneHospede}
+          telefoneHospede={telefoneHospede}
         />
       </form>
     </GlassCard>
@@ -164,8 +231,11 @@ function ReservationFormFields({
   checkIn,
   checkOut,
   cotacoesCambio,
+  emailHospede,
+  emailHospedeBloqueado,
   formaPagamento,
   metodosPagamento,
+  nomeHospede,
   parcelas,
   parcelasDisponiveis,
   podeSolicitarReserva,
@@ -174,15 +244,22 @@ function ReservationFormFields({
   resumo,
   setCheckIn,
   setCheckOut,
+  setEmailHospede,
   setFormaPagamento,
+  setNomeHospede,
   setParcelas,
-  setQuantidadeHospedes
+  setQuantidadeHospedes,
+  setTelefoneHospede,
+  telefoneHospede
 }: {
   checkIn: string;
   checkOut: string;
   cotacoesCambio: CotacoesCambio;
+  emailHospede: string;
+  emailHospedeBloqueado: boolean;
   formaPagamento: ReservationPaymentMethod | "";
   metodosPagamento: PropriedadePublica["requestProfile"]["paymentMethods"];
+  nomeHospede: string;
   parcelas: number;
   parcelasDisponiveis: Array<{ jurosPercentual: number; parcela: number }>;
   podeSolicitarReserva: boolean;
@@ -191,9 +268,13 @@ function ReservationFormFields({
   resumo: ResumoReserva;
   setCheckIn: (valor: string) => void;
   setCheckOut: (valor: string) => void;
+  setEmailHospede: (valor: string) => void;
   setFormaPagamento: (valor: ReservationPaymentMethod | "") => void;
+  setNomeHospede: (valor: string) => void;
   setParcelas: (valor: number) => void;
   setQuantidadeHospedes: (valor: number) => void;
+  setTelefoneHospede: (valor: string) => void;
+  telefoneHospede: string;
 }) {
   const { pending } = useFormStatus();
   const bloqueado = pending || !podeSolicitarReserva;
@@ -208,7 +289,7 @@ function ReservationFormFields({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Check-in">
-          <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <CalendarDays className={inputIconClass} />
           <GlassInput
             className="h-11 pl-10"
             disabled={bloqueado}
@@ -220,7 +301,7 @@ function ReservationFormFields({
           />
         </Field>
         <Field label="Check-out">
-          <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <CalendarDays className={inputIconClass} />
           <GlassInput
             className="h-11 pl-10"
             disabled={bloqueado}
@@ -234,7 +315,7 @@ function ReservationFormFields({
       </div>
 
       <Field label="Hospedes">
-        <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Users className={inputIconClass} />
         <GlassInput
           className="h-11 pl-10"
           disabled={bloqueado}
@@ -251,29 +332,49 @@ function ReservationFormFields({
       </Field>
 
       <Field label="Nome do hospede">
-        <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <GlassInput className="h-11 pl-10" disabled={bloqueado} name="hospedeNome" required />
+        <User className={inputIconClass} />
+        <GlassInput
+          className="h-11 pl-10"
+          disabled={bloqueado}
+          name="hospedeNome"
+          onChange={(evento) => setNomeHospede(evento.target.value)}
+          required
+          value={nomeHospede}
+        />
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Telefone">
-          <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Phone className={inputIconClass} />
           <GlassInput
             className="h-11 pl-10"
             disabled={bloqueado}
             name="hospedeTelefone"
+            onChange={(evento) => setTelefoneHospede(evento.target.value)}
             required
+            value={telefoneHospede}
           />
         </Field>
         <Field label="E-mail">
-          <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Mail className={inputIconClass} />
           <GlassInput
-            className="h-11 pl-10"
+            className={cn(
+              "h-11 pl-10",
+              emailHospedeBloqueado && "cursor-not-allowed border-cyan-300/35 bg-cyan-400/10"
+            )}
             disabled={bloqueado}
             name="hospedeEmail"
+            onChange={(evento) => setEmailHospede(evento.target.value)}
+            readOnly={emailHospedeBloqueado}
             required
             type="email"
+            value={emailHospede}
           />
+          {emailHospedeBloqueado ? (
+            <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+              Este e-mail esta vinculado a sua conta.
+            </span>
+          ) : null}
         </Field>
       </div>
 
@@ -282,7 +383,7 @@ function ReservationFormFields({
       </Field>
 
       <Field label="Forma de pagamento">
-        <Banknote className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Banknote className={inputIconClass} />
         <select
           className="glass-input h-11 w-full rounded-md pl-10 pr-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
           disabled={bloqueado}
@@ -342,7 +443,13 @@ function ReservationFormFields({
       />
       <PerfilConfianca property={property} />
 
-      <GlassButton className="w-full" disabled={bloqueado} size="lg" type="submit">
+      <GlassButton
+        className="w-full border-cyan-300/50 bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-200 disabled:border-cyan-900/50 disabled:bg-cyan-950/50 disabled:text-cyan-100/60"
+        disabled={bloqueado}
+        size="lg"
+        type="submit"
+      >
+        <Send className="h-4 w-4 text-current" />
         {pending ? "Enviando..." : "Solicitar reserva"}
       </GlassButton>
       <p className="text-center text-xs leading-5 text-muted-foreground">

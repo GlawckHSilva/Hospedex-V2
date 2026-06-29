@@ -1,8 +1,8 @@
-import { Building2, Home, Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { GradientBackground, TopNav, buttonVariants, cn } from "@hospedex/ui";
+import { GradientBackground, TopNav } from "@hospedex/ui";
 
 import { GuestAccountMenu } from "../guest/guest-account-menu";
 import { marketplaceNavigation } from "../../config/navigation";
@@ -18,18 +18,9 @@ export function PublicShell({ children }: PublicShellProps) {
         actions={
           <div className="flex items-center gap-2">
             <GuestAccountMenu />
-            <Link
-              className={cn(
-                buttonVariants({ size: "sm", variant: "default" }),
-                "hidden sm:inline-flex"
-              )}
-              href="/#proprietarios"
-            >
-              <Building2 className="h-4 w-4" />
-              Gestao
-            </Link>
           </div>
         }
+        brand={<MarketplaceBrand />}
         className="glass-navbar bg-background/72 shadow-sm shadow-cyan-950/5"
         items={marketplaceNavigation}
         label="Hospedex"
@@ -63,7 +54,7 @@ export function PublicShell({ children }: PublicShellProps) {
               Destinos
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/#proprietarios">
-              Proprietarios
+              Para proprietarios
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/propriedades">
               <Search className="mr-1 inline h-3.5 w-3.5" />
@@ -79,5 +70,31 @@ export function PublicShell({ children }: PublicShellProps) {
         </div>
       </footer>
     </GradientBackground>
+  );
+}
+
+/**
+ * Marca publica do Marketplace.
+ *
+ * Usa o asset oficial da V2 para evitar o antigo quadrado com "H" e manter a
+ * navegação coerente com o restante do produto.
+ */
+function MarketplaceBrand() {
+  return (
+    <Link
+      aria-label="Ir para o inicio do Marketplace Hospedex"
+      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-cyan-300/20 bg-slate-950/72 px-2.5 py-1.5 shadow-sm shadow-cyan-950/20 backdrop-blur-xl"
+      href="/"
+    >
+      <img
+        alt=""
+        className="h-9 w-9 shrink-0 object-contain"
+        src="/brand/hospedex-logo-white.png"
+      />
+      <span className="min-w-0 truncate text-lg font-bold leading-none tracking-normal">
+        <span className="text-cyan-300">Hospe</span>
+        <span className="text-white">dex</span>
+      </span>
+    </Link>
   );
 }

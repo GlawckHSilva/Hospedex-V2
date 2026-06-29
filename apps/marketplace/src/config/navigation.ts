@@ -6,23 +6,15 @@ export const marketplaceNavigation = [
     href: "/"
   },
   {
-    label: "Destinos",
-    href: "/#destinos"
-  },
-  {
-    label: "Categorias",
-    href: "/#categorias"
-  },
-  {
     label: "Hospedagens",
     href: "/propriedades"
   },
   {
-    label: "Minhas reservas",
-    href: "/minhas-reservas"
+    label: "Destinos",
+    href: "/#destinos"
   },
   {
-    label: "Proprietarios",
+    label: "Anunciar",
     href: "/#proprietarios"
   }
 ] as const satisfies readonly NavigationItem[];
