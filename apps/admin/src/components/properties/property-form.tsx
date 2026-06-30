@@ -1325,8 +1325,7 @@ function EtapaValores({
           label="Cobranca do hospede extra"
           name="tipoCobrancaHospedeExtra"
           options={[
-            { label: "Por estadia", valor: "per_stay" },
-            { label: "Por diaria", valor: "per_night" },
+            { label: "Por reserva", valor: "per_stay" },
           ]}
         />
       </div>

@@ -766,12 +766,9 @@ function calcularResumoReserva({
     noites > 0 && property.pricing.cobraHospedeExtra
       ? Math.max(0, hospedes - hospedesInclusosNoValorBase)
       : 0;
-  const multiplicadorHospedeExtra =
-    property.pricing.tipoCobrancaHospedeExtra === "per_night" ? noites : 1;
-  const hospedesExtras =
-    quantidadeHospedesExtras *
-    property.pricing.valorHospedeExtra *
-    multiplicadorHospedeExtra;
+  // O valor de hospede extra e cobrado por reserva.
+  // Se cobrar por diaria, uma estadia longa infla o total de forma indevida.
+  const hospedesExtras = quantidadeHospedesExtras * property.pricing.valorHospedeExtra;
   const subtotal = diarias + taxaLimpeza + hospedesExtras;
   const juros =
     formaPagamento === "credit_card" && jurosPercentual > 0

@@ -657,9 +657,11 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
 }
 
 function validarTipoCobrancaHospedeExtra(
-  valor: string | null,
+  _valor: string | null,
 ): TipoCobrancaHospedeExtra {
-  if (valor === "per_night") return "per_night";
+  void _valor;
+  // Na regra atual da V2, hospede extra e adicional da reserva, nao da diaria.
+  // Isso evita multiplicar R$ 250 por todas as noites e inflar o total publico.
   return "per_stay";
 }
 

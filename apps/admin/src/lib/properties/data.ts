@@ -325,13 +325,12 @@ function normalizarValores(valor: JsonValue): ValoresPropriedade {
 }
 
 function normalizarTipoCobrancaHospedeExtra(
-  valores: Record<string, JsonValue>,
+  _valores: Record<string, JsonValue>,
 ): "per_stay" | "per_night" {
-  const valor =
-    obterTextoJson(valores, "tipoCobrancaHospedeExtra") ||
-    obterTextoJson(valores, "extra_guest_fee_type");
-
-  return valor === "per_night" ? "per_night" : "per_stay";
+  void _valores;
+  // A V2 cobra hospede extra por reserva.
+  // Valores antigos salvos como per_night sao normalizados para evitar total incorreto.
+  return "per_stay";
 }
 
 function normalizarFormasPagamento(

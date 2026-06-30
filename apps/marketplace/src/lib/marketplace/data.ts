@@ -1188,13 +1188,12 @@ function normalizarValoresCasa(valor: JsonValue): ValoresCasaPublica {
 }
 
 function normalizarTipoCobrancaHospedeExtra(
-  valores: Record<string, JsonValue>
+  _valores: Record<string, JsonValue>
 ): "per_stay" | "per_night" {
-  const valor =
-    obterTextoJson(valores, "tipoCobrancaHospedeExtra") ||
-    obterTextoJson(valores, "extra_guest_fee_type");
-
-  return valor === "per_night" ? "per_night" : "per_stay";
+  void _valores;
+  // No Marketplace, o valor de hospede extra representa adicional por reserva.
+  // Configuracoes antigas por diaria sao tratadas como per_stay para manter o total correto.
+  return "per_stay";
 }
 
 function normalizarJurosParcelasCartao(valor: JsonValue) {
