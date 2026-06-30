@@ -61,9 +61,9 @@ type DadosHospedeLogado = {
 };
 
 const inputIconClass =
-  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white";
+  "pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white";
 const selectIconClass =
-  "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white";
+  "pointer-events-none absolute right-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white";
 const reservationInputWithIconClass =
   "marketplace-reservation-control h-12 min-w-0 pl-10 pr-10 text-sm text-slate-50 placeholder:text-slate-400/80";
 const reservationInputPlainClass =
