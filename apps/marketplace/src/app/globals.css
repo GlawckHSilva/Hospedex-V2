@@ -29,14 +29,18 @@ select.marketplace-reservation-control option {
   color: #f8fafc;
 }
 
-.marketplace-reservation-control::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  filter: invert(88%) sepia(38%) saturate(883%) hue-rotate(147deg) brightness(103%) contrast(98%);
-  opacity: 0.95;
+input.marketplace-reservation-control[type="date"],
+input.marketplace-reservation-control[type="time"] {
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.marketplace-reservation-control::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+input.marketplace-reservation-control[type="date"]::-webkit-calendar-picker-indicator,
+input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+  margin: 0;
+  opacity: 0;
+  width: 0;
 }
 
 .marketplace-reservation-control::-webkit-datetime-edit,

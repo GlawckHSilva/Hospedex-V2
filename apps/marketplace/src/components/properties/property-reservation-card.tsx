@@ -61,17 +61,17 @@ type DadosHospedeLogado = {
 };
 
 const inputIconClass =
-  "pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white";
+  "pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white/90";
 const selectIconClass =
-  "pointer-events-none absolute right-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white";
+  "pointer-events-none absolute right-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white/80";
 const reservationInputWithIconClass =
-  "marketplace-reservation-control h-12 min-w-0 pl-10 pr-10 text-sm text-slate-50 placeholder:text-slate-400/80";
+  "marketplace-reservation-control h-12 min-w-0 pl-11 pr-3 text-left text-sm text-slate-50 placeholder:text-slate-400/80";
 const reservationInputPlainClass =
-  "marketplace-reservation-control h-12 min-w-0 px-3 text-sm text-slate-50 placeholder:text-slate-400/80";
+  "marketplace-reservation-control h-12 min-w-0 px-3 text-left text-sm text-slate-50 placeholder:text-slate-400/80";
 const reservationSelectWithIconClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-10 pr-10 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-11 pr-11 text-left text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const reservationSelectPlainClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-10 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-11 text-left text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const reservationTextareaClass =
   "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-slate-50 placeholder:text-slate-400/80 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const LIMITE_PADRAO_HOSPEDES_EXTRAS = 10;
