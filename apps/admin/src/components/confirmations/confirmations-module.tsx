@@ -25,6 +25,7 @@ import type {
 import { ModuleToast } from "../admin/module-toast";
 import { EmptyState, EntityGrid } from "../management/entity-card";
 import { ConfirmDialog } from "../management/entity-modal";
+import { MENSAGENS_PENDENCIA } from "./pending-messages";
 import { ReservationDecisionCard } from "./reservation-decision-card";
 
 type PendingModuleProps = DadosConfirmacoes & SearchParamsConfirmacoes;
@@ -48,8 +49,8 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
 /**
  * Central de pendências do Gerenciamento.
  *
- * A lógica ainda reaproveita actions de confirmação porque elas executam as
- * regras sensíveis de reservas, pagamentos e limpeza no servidor.
+ * Pendências mostra somente o que exige ação. Reservas pagas sem etapa
+ * operacional pendente ficam fora desta tela para não criar ruído.
  */
 export function PendingModule({
   aguardandoPagamento,
@@ -59,7 +60,6 @@ export function PendingModule({
   hoje,
   limpezasPendentes,
   notificacoes,
-  pagamentosRecebidos,
   podeGerenciarLimpeza,
   podeGerenciarOperacao,
   podeGerenciarPagamento,
@@ -74,7 +74,6 @@ export function PendingModule({
     checkOutsHoje.length +
     pendentes.length +
     aguardandoPagamento.length +
-    pagamentosRecebidos.length +
     limpezasPendentes.length;
 
   return (
@@ -121,7 +120,7 @@ export function PendingModule({
             />
             <ResumoCard
               icon={Bell}
-              label="Pendentes"
+              label="Solicitações"
               tone="cyan"
               valor={resumo.pendentes}
             />
@@ -133,7 +132,7 @@ export function PendingModule({
             />
             <ResumoCard
               icon={Banknote}
-              label="Pag. pendentes"
+              label="Pagamentos"
               tone="roxo"
               valor={resumo.aguardandoPagamento}
             />
@@ -150,52 +149,71 @@ export function PendingModule({
       ) : (
         <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
           <div className="space-y-5">
-            <GrupoDecisaoReservas
-              descricao="Solicitações que precisam de aceite ou recusa do proprietário."
-              podeGerenciar={podeGerenciarOperacao}
-              podeGerenciarPagamento={podeGerenciarPagamento}
-              reservas={pendentes}
-              titulo="Reservas pendentes de decisão"
-            />
-            <GrupoDecisaoReservas
-              descricao="Reservas confirmadas que ainda estão com pagamento pendente."
-              podeGerenciar={podeGerenciarOperacao}
-              podeGerenciarPagamento={podeGerenciarPagamento}
-              reservas={aguardandoPagamento}
-              titulo="Pagamentos pendentes"
-            />
-            <GrupoDecisaoReservas
-              descricao="Pagamentos recebidos que podem voltar para pendente se houver ajuste operacional."
-              podeGerenciar={podeGerenciarOperacao}
-              podeGerenciarPagamento={podeGerenciarPagamento}
-              reservas={pagamentosRecebidos}
-              titulo="Pagamentos recebidos"
-            />
+            <SecaoPendencias
+              descricao="Novas solicitações que ainda precisam de decisão."
+              titulo="Solicitações"
+              total={pendentes.length}
+            >
+              <GrupoDecisaoReservas
+                podeGerenciar={podeGerenciarOperacao}
+                podeGerenciarPagamento={podeGerenciarPagamento}
+                reservas={pendentes}
+              />
+            </SecaoPendencias>
 
-            <EntityGrid>
-              <GrupoReservas
-                action={confirmarCheckInConfirmacaoAction}
-                cor="verde"
-                cta="Confirmar check-in"
-                icon={<DoorOpen />}
+            <SecaoPendencias
+              descricao="Reservas aprovadas que ainda exigem registro, análise ou complemento de pagamento."
+              titulo="Pagamentos"
+              total={aguardandoPagamento.length}
+            >
+              <GrupoDecisaoReservas
                 podeGerenciar={podeGerenciarOperacao}
-                reservas={checkInsHoje}
-                titulo="Check-ins de hoje"
+                podeGerenciarPagamento={podeGerenciarPagamento}
+                reservas={aguardandoPagamento}
               />
-              <GrupoReservas
-                action={confirmarCheckOutConfirmacaoAction}
-                cor="laranja"
-                cta="Confirmar check-out"
-                icon={<DoorClosed />}
-                podeGerenciar={podeGerenciarOperacao}
-                reservas={checkOutsHoje}
-                titulo="Check-outs de hoje"
-              />
-              <GrupoLimpeza
-                limpezas={limpezasPendentes}
-                podeGerenciar={podeGerenciarLimpeza}
-              />
-            </EntityGrid>
+            </SecaoPendencias>
+
+            <SecaoPendencias
+              descricao="Ações do dia para entrada e saída de hóspedes."
+              titulo="Operação"
+              total={checkInsHoje.length + checkOutsHoje.length}
+            >
+              <EntityGrid>
+                <GrupoReservas
+                  action={confirmarCheckInConfirmacaoAction}
+                  cor="verde"
+                  cta={MENSAGENS_PENDENCIA.checkin_pending.primaryAction}
+                  descricao={MENSAGENS_PENDENCIA.checkin_pending.description}
+                  icon={<DoorOpen />}
+                  podeGerenciar={podeGerenciarOperacao}
+                  reservas={checkInsHoje}
+                  titulo="Check-ins pendentes"
+                />
+                <GrupoReservas
+                  action={confirmarCheckOutConfirmacaoAction}
+                  cor="laranja"
+                  cta={MENSAGENS_PENDENCIA.checkout_pending.primaryAction}
+                  descricao={MENSAGENS_PENDENCIA.checkout_pending.description}
+                  icon={<DoorClosed />}
+                  podeGerenciar={podeGerenciarOperacao}
+                  reservas={checkOutsHoje}
+                  titulo="Check-outs pendentes"
+                />
+              </EntityGrid>
+            </SecaoPendencias>
+
+            <SecaoPendencias
+              descricao="Casas que precisam voltar ao ciclo operacional."
+              titulo="Limpeza"
+              total={limpezasPendentes.length}
+            >
+              <EntityGrid>
+                <GrupoLimpeza
+                  limpezas={limpezasPendentes}
+                  podeGerenciar={podeGerenciarLimpeza}
+                />
+              </EntityGrid>
+            </SecaoPendencias>
           </div>
 
           <aside className="space-y-4">
@@ -255,38 +273,53 @@ export function PendingModule({
   );
 }
 
-function GrupoDecisaoReservas({
+function SecaoPendencias({
+  children,
   descricao,
-  podeGerenciar,
-  podeGerenciarPagamento,
-  reservas,
   titulo,
+  total,
 }: {
+  children: ReactNode;
   descricao: string;
-  podeGerenciar: boolean;
-  podeGerenciarPagamento: boolean;
-  reservas: ReservaConfirmacao[];
   titulo: string;
+  total: number;
 }) {
-  if (!reservas.length) return null;
+  if (total === 0) return null;
 
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-base font-semibold">{titulo}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold">{titulo}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
+        </div>
+        <Badge variant="outline">{total}</Badge>
       </div>
-      <div className="grid gap-4 2xl:grid-cols-2">
-        {reservas.map((reserva) => (
-          <ReservationDecisionCard
-            key={reserva.id}
-            podeGerenciar={podeGerenciar}
-            podeGerenciarPagamento={podeGerenciarPagamento}
-            reserva={reserva}
-          />
-        ))}
-      </div>
+      {children}
     </section>
+  );
+}
+
+function GrupoDecisaoReservas({
+  podeGerenciar,
+  podeGerenciarPagamento,
+  reservas,
+}: {
+  podeGerenciar: boolean;
+  podeGerenciarPagamento: boolean;
+  reservas: ReservaConfirmacao[];
+}) {
+  return (
+    <div className="grid gap-4 2xl:grid-cols-2">
+      {reservas.map((reserva) => (
+        <ReservationDecisionCard
+          key={reserva.id}
+          podeGerenciar={podeGerenciar}
+          podeGerenciarPagamento={podeGerenciarPagamento}
+          reserva={reserva}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -294,6 +327,7 @@ function GrupoReservas({
   action,
   cor,
   cta,
+  descricao,
   icon,
   podeGerenciar,
   reservas,
@@ -302,6 +336,7 @@ function GrupoReservas({
   action: (formData: FormData) => Promise<void>;
   cor: "laranja" | "roxo" | "verde" | "vermelho";
   cta: string;
+  descricao: string;
   icon: ReactNode;
   podeGerenciar: boolean;
   reservas: ReservaConfirmacao[];
@@ -318,6 +353,9 @@ function GrupoReservas({
           titulo={titulo}
           total={reservas.length}
         />
+        <p className="rounded-lg border border-cyan-300/15 bg-cyan-400/10 p-3 text-sm text-muted-foreground">
+          {descricao}
+        </p>
         {reservas.map((reserva) => (
           <LinhaOperacao
             action={action}
@@ -355,10 +393,13 @@ function GrupoLimpeza({
           titulo="Limpezas pendentes"
           total={limpezas.length}
         />
+        <p className="rounded-lg border border-cyan-300/15 bg-cyan-400/10 p-3 text-sm text-muted-foreground">
+          {MENSAGENS_PENDENCIA.cleaning_pending.description}
+        </p>
         {limpezas.map((limpeza) => (
           <LinhaOperacao
             action={confirmarLimpezaConfirmacaoAction}
-            cta="Confirmar limpeza"
+            cta={MENSAGENS_PENDENCIA.cleaning_pending.primaryAction}
             idName="tarefaId"
             itemId={limpeza.id}
             key={limpeza.id}
