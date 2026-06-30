@@ -4,6 +4,7 @@ import {
   Banknote,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock,
   Mail,
   Phone,
@@ -60,7 +61,19 @@ type DadosHospedeLogado = {
 };
 
 const inputIconClass =
-  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100";
+  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60";
+const selectIconClass =
+  "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55";
+const reservationInputWithIconClass =
+  "marketplace-reservation-control h-12 min-w-0 pl-10 pr-10 text-sm text-slate-50 placeholder:text-slate-400/80";
+const reservationInputPlainClass =
+  "marketplace-reservation-control h-12 min-w-0 px-3 text-sm text-slate-50 placeholder:text-slate-400/80";
+const reservationSelectWithIconClass =
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-10 pr-10 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+const reservationSelectPlainClass =
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-10 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+const reservationTextareaClass =
+  "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-slate-50 placeholder:text-slate-400/80 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 
 /**
  * Card publico de solicitacao da Casa.
@@ -313,7 +326,7 @@ function ReservationFormFields({
         <Field label="Check-in">
           <CalendarDays className={inputIconClass} />
           <GlassInput
-            className="h-11 min-w-0 pl-10"
+            className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="checkIn"
             onChange={(evento) => setCheckIn(evento.target.value)}
@@ -325,7 +338,7 @@ function ReservationFormFields({
         <Field label="Check-out">
           <CalendarDays className={inputIconClass} />
           <GlassInput
-            className="h-11 min-w-0 pl-10"
+            className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="checkOut"
             onChange={(evento) => setCheckOut(evento.target.value)}
@@ -340,7 +353,7 @@ function ReservationFormFields({
         <Field label="Horario previsto de chegada">
           <Clock className={inputIconClass} />
           <GlassInput
-            className="h-11 min-w-0 pl-10"
+            className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="horarioPrevistoCheckIn"
             onChange={(evento) => setHorarioPrevistoCheckIn(evento.target.value)}
@@ -354,7 +367,7 @@ function ReservationFormFields({
         <Field label="Horario previsto de saida">
           <Clock className={inputIconClass} />
           <GlassInput
-            className="h-11 min-w-0 pl-10"
+            className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="horarioPrevistoCheckOut"
             onChange={(evento) => setHorarioPrevistoCheckOut(evento.target.value)}
@@ -370,7 +383,7 @@ function ReservationFormFields({
       <Field label="Hospedes">
         <Users className={inputIconClass} />
         <GlassInput
-          className="h-11 min-w-0 pl-10"
+          className={reservationInputWithIconClass}
           disabled={bloqueado}
           inputMode="numeric"
           max={obterMaximoHospedesSelecionavel(property)}
@@ -398,7 +411,7 @@ function ReservationFormFields({
       <Field label="Nome do hospede">
         <User className={inputIconClass} />
         <GlassInput
-          className="h-11 min-w-0 pl-10"
+          className={reservationInputWithIconClass}
           disabled={bloqueado}
           name="hospedeNome"
           onChange={(evento) => setNomeHospede(evento.target.value)}
@@ -411,7 +424,7 @@ function ReservationFormFields({
         <Field label="Telefone">
           <Phone className={inputIconClass} />
           <GlassInput
-            className="h-11 min-w-0 pl-10"
+            className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="hospedeTelefone"
             onChange={(evento) => setTelefoneHospede(evento.target.value)}
@@ -423,7 +436,7 @@ function ReservationFormFields({
           <Mail className={inputIconClass} />
           <GlassInput
             className={cn(
-              "h-11 min-w-0 pl-10",
+              reservationInputWithIconClass,
               emailHospedeBloqueado && "cursor-not-allowed border-cyan-300/35 bg-cyan-400/10"
             )}
             disabled={bloqueado}
@@ -443,13 +456,17 @@ function ReservationFormFields({
       </div>
 
       <Field label="CPF opcional">
-        <GlassInput className="h-11" disabled={bloqueado} name="hospedeDocumento" />
+        <GlassInput
+          className={reservationInputPlainClass}
+          disabled={bloqueado}
+          name="hospedeDocumento"
+        />
       </Field>
 
       <Field label="Forma de pagamento">
         <Banknote className={inputIconClass} />
         <select
-          className="glass-input h-11 w-full min-w-0 rounded-md pl-10 pr-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={reservationSelectWithIconClass}
           disabled={bloqueado}
           name="formaPagamento"
           onChange={(evento) =>
@@ -467,12 +484,13 @@ function ReservationFormFields({
             </option>
           ))}
         </select>
+        <ChevronDown className={selectIconClass} />
       </Field>
 
       {formaPagamento === "credit_card" ? (
         <Field label="Parcelas">
           <select
-            className="glass-input h-11 w-full rounded-md px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={reservationSelectPlainClass}
             disabled={bloqueado}
             onChange={(evento) => setParcelas(Number.parseInt(evento.target.value, 10))}
             value={parcelas}
@@ -486,13 +504,14 @@ function ReservationFormFields({
               </option>
             ))}
           </select>
+          <ChevronDown className={selectIconClass} />
         </Field>
       ) : null}
 
       <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
         Observacoes
         <textarea
-          className="glass-input min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={reservationTextareaClass}
           disabled={bloqueado}
           name="observacoes"
           placeholder="Conte o motivo da viagem, horario previsto de chegada ou pedidos importantes."
