@@ -155,6 +155,11 @@ function obterMensagemPublica(erro: unknown) {
   }
 
   const mensagem = normalizarTextoErro(erro.message);
+  const limiteHospedes = mensagem.match(/esta casa permite no maximo (\d+) hospedes/);
+  if (limiteHospedes?.[1]) {
+    return `Esta casa permite no máximo ${limiteHospedes[1]} hóspedes.`;
+  }
+
   const mensagensConhecidas: Array<[string, string]> = [
     [
       "propriedade nao encontrada ou indisponivel",

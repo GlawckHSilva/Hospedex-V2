@@ -88,7 +88,7 @@ export function PropertyReservationCard({
     extrairHorarioPadrao(property.checkOut)
   );
   const [quantidadeHospedes, setQuantidadeHospedes] = useState(
-    String(Math.max(1, Math.min(property.maxGuests || 1, 2)))
+    String(Math.max(1, Math.min(obterMaximoHospedesSelecionavel(property), 2)))
   );
   const [formaPagamento, setFormaPagamento] = useState<ReservationPaymentMethod | "">(
     primeiroMetodo
@@ -117,7 +117,7 @@ export function PropertyReservationCard({
         formaPagamento,
         hospedes: obterQuantidadeHospedesParaResumo(
           quantidadeHospedes,
-          property.maxGuests
+          obterMaximoHospedesSelecionavel(property)
         ),
         jurosPercentual: parcelaSelecionada.jurosPercentual,
         parcelas: parcelaSelecionada.parcela,
@@ -373,12 +373,15 @@ function ReservationFormFields({
           className="h-11 min-w-0 pl-10"
           disabled={bloqueado}
           inputMode="numeric"
-          max={property.maxGuests}
+          max={obterMaximoHospedesSelecionavel(property)}
           min={1}
           name="quantidadeHospedes"
           onBlur={() =>
             setQuantidadeHospedes(
-              normalizarQuantidadeHospedesInput(quantidadeHospedes, property.maxGuests)
+              normalizarQuantidadeHospedesInput(
+                quantidadeHospedes,
+                obterMaximoHospedesSelecionavel(property)
+              )
             )
           }
           onChange={(evento) => setQuantidadeHospedes(evento.target.value.replace(/\D/g, ""))}
@@ -387,7 +390,8 @@ function ReservationFormFields({
           value={quantidadeHospedes}
         />
         <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
-          Capacidade maxima: {property.maxGuests} hospede{property.maxGuests === 1 ? "" : "s"}.
+          Maximo permitido: {obterMaximoHospedesSelecionavel(property)} hospede
+          {obterMaximoHospedesSelecionavel(property) === 1 ? "" : "s"}.
         </span>
       </Field>
 
@@ -743,8 +747,12 @@ function calcularResumoReserva({
     noites > 0 && property.pricing.cobraHospedeExtra
       ? Math.max(0, hospedes - hospedesInclusosNoValorBase)
       : 0;
+  const multiplicadorHospedeExtra =
+    property.pricing.tipoCobrancaHospedeExtra === "per_night" ? noites : 1;
   const hospedesExtras =
-    quantidadeHospedesExtras * property.pricing.valorHospedeExtra * noites;
+    quantidadeHospedesExtras *
+    property.pricing.valorHospedeExtra *
+    multiplicadorHospedeExtra;
   const subtotal = diarias + taxaLimpeza + hospedesExtras;
   const juros =
     formaPagamento === "credit_card" && jurosPercentual > 0
@@ -772,6 +780,13 @@ function obterHospedesInclusosNoValorBase(property: PropriedadePublica) {
   const configurado = property.pricing.hospedesInclusos || capacidade;
 
   return Math.max(1, Math.min(configurado, capacidade));
+}
+
+function obterMaximoHospedesSelecionavel(property: PropriedadePublica) {
+  const capacidadeMaxima = Math.max(property.maxGuests || 1, 1);
+  if (property.pricing.cobraHospedeExtra) return capacidadeMaxima;
+
+  return obterHospedesInclusosNoValorBase(property);
 }
 
 function obterQuantidadeHospedesParaResumo(valor: string, capacidadeMaxima: number) {

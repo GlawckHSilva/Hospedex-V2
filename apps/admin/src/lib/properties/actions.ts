@@ -26,6 +26,7 @@ import {
 import type { EnderecoPropriedade } from "./types";
 import type {
   FormasPagamentoPropriedade,
+  TipoCobrancaHospedeExtra,
   TipoChavePixPropriedade,
 } from "./types";
 
@@ -106,6 +107,7 @@ type EntradaPropriedade = {
     }>;
     maxParcelasCartao: number;
     taxaLimpeza: number;
+    tipoCobrancaHospedeExtra: TipoCobrancaHospedeExtra;
     valorDiaria: number;
     valorHospedeExtra: number;
   };
@@ -645,10 +647,20 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       jurosParcelasCartao: formasPagamento.cartaoCredito.jurosParcelas,
       maxParcelasCartao: formasPagamento.cartaoCredito.maxParcelas,
       taxaLimpeza: numeroMoedaOpcional(formData, "taxaLimpeza", 0),
+      tipoCobrancaHospedeExtra: validarTipoCobrancaHospedeExtra(
+        textoOpcional(formData, "tipoCobrancaHospedeExtra"),
+      ),
       valorDiaria,
       valorHospedeExtra: numeroMoedaOpcional(formData, "valorHospedeExtra", 0),
     },
   };
+}
+
+function validarTipoCobrancaHospedeExtra(
+  valor: string | null,
+): TipoCobrancaHospedeExtra {
+  if (valor === "per_night") return "per_night";
+  return "per_stay";
 }
 
 function validarPublicacaoObrigatoria({

@@ -87,6 +87,8 @@ export type FormasPagamentoPropriedade = {
   };
 };
 
+export type TipoCobrancaHospedeExtra = "per_stay" | "per_night";
+
 export type ValoresPropriedade = {
   /** @deprecated Mantido para compatibilidade com funcoes publicas antigas. */
   aceitaCartaoCredito: boolean;
@@ -102,6 +104,7 @@ export type ValoresPropriedade = {
   /** @deprecated Usar formasPagamento.cartaoCredito.maxParcelas. */
   maxParcelasCartao: number;
   taxaLimpeza: number;
+  tipoCobrancaHospedeExtra: TipoCobrancaHospedeExtra;
   valorDiaria: number;
   valorHospedeExtra: number;
 };

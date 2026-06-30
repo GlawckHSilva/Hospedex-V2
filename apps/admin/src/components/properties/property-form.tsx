@@ -1319,6 +1319,16 @@ function EtapaValores({
           min={1}
           name="hospedesInclusos"
         />
+        <CampoSelect
+          defaultValue={valores?.tipoCobrancaHospedeExtra ?? "per_stay"}
+          disabled={disabled}
+          label="Cobranca do hospede extra"
+          name="tipoCobrancaHospedeExtra"
+          options={[
+            { label: "Por estadia", valor: "per_stay" },
+            { label: "Por diaria", valor: "per_night" },
+          ]}
+        />
       </div>
       <CampoCheckbox
         defaultChecked={valores?.cobraHospedeExtra ?? false}

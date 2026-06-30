@@ -302,15 +302,36 @@ function normalizarValores(valor: JsonValue): ValoresPropriedade {
       formasPagamento.cartaoCredito.ativo ||
       obterBooleanoJson(valores, "aceitaCartaoCredito"),
     caucao: obterNumeroJson(valores, "caucao"),
-    cobraHospedeExtra: obterBooleanoJson(valores, "cobraHospedeExtra"),
+    cobraHospedeExtra:
+      obterBooleanoJson(valores, "cobraHospedeExtra") ||
+      obterBooleanoJson(valores, "allows_extra_guests"),
     formasPagamento,
-    hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
+    hospedesInclusos: obterNumeroJson(
+      valores,
+      "hospedesInclusos",
+      obterNumeroJson(valores, "included_guests", 1),
+    ),
     jurosParcelasCartao: jurosCartao,
     maxParcelasCartao,
     taxaLimpeza: obterNumeroJson(valores, "taxaLimpeza"),
+    tipoCobrancaHospedeExtra: normalizarTipoCobrancaHospedeExtra(valores),
     valorDiaria: obterNumeroJson(valores, "valorDiaria"),
-    valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra"),
+    valorHospedeExtra: obterNumeroJson(
+      valores,
+      "valorHospedeExtra",
+      obterNumeroJson(valores, "extra_guest_fee"),
+    ),
   };
+}
+
+function normalizarTipoCobrancaHospedeExtra(
+  valores: Record<string, JsonValue>,
+): "per_stay" | "per_night" {
+  const valor =
+    obterTextoJson(valores, "tipoCobrancaHospedeExtra") ||
+    obterTextoJson(valores, "extra_guest_fee_type");
+
+  return valor === "per_night" ? "per_night" : "per_stay";
 }
 
 function normalizarFormasPagamento(

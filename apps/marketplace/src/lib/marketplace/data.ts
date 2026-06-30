@@ -157,6 +157,7 @@ export type ValoresCasaPublica = {
     parcela: number;
   }>;
   maxParcelasCartao: number;
+  tipoCobrancaHospedeExtra: "per_stay" | "per_night";
   valorHospedeExtra: number;
 };
 
@@ -1165,14 +1166,35 @@ function normalizarValoresCasa(valor: JsonValue): ValoresCasaPublica {
   return {
     aceitaCartaoCredito: obterBooleanoJson(valores, "aceitaCartaoCredito"),
     caucao: obterNumeroJson(valores, "caucao"),
-    cobraHospedeExtra: obterBooleanoJson(valores, "cobraHospedeExtra"),
+    cobraHospedeExtra:
+      obterBooleanoJson(valores, "cobraHospedeExtra") ||
+      obterBooleanoJson(valores, "allows_extra_guests"),
     cleaningFee: obterNumeroJson(valores, "taxaLimpeza"),
     dailyRate: obterNumeroJson(valores, "valorDiaria"),
-    hospedesInclusos: obterNumeroJson(valores, "hospedesInclusos", 1),
+    hospedesInclusos: obterNumeroJson(
+      valores,
+      "hospedesInclusos",
+      obterNumeroJson(valores, "included_guests", 1)
+    ),
     jurosParcelasCartao: normalizarJurosParcelasCartao(valores.jurosParcelasCartao ?? null),
     maxParcelasCartao: obterNumeroJson(valores, "maxParcelasCartao", 1),
-    valorHospedeExtra: obterNumeroJson(valores, "valorHospedeExtra")
+    tipoCobrancaHospedeExtra: normalizarTipoCobrancaHospedeExtra(valores),
+    valorHospedeExtra: obterNumeroJson(
+      valores,
+      "valorHospedeExtra",
+      obterNumeroJson(valores, "extra_guest_fee")
+    )
   };
+}
+
+function normalizarTipoCobrancaHospedeExtra(
+  valores: Record<string, JsonValue>
+): "per_stay" | "per_night" {
+  const valor =
+    obterTextoJson(valores, "tipoCobrancaHospedeExtra") ||
+    obterTextoJson(valores, "extra_guest_fee_type");
+
+  return valor === "per_night" ? "per_night" : "per_stay";
 }
 
 function normalizarJurosParcelasCartao(valor: JsonValue) {
