@@ -61,9 +61,9 @@ type DadosHospedeLogado = {
 };
 
 const inputIconClass =
-  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/60";
+  "pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white";
 const selectIconClass =
-  "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55";
+  "pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white";
 const reservationInputWithIconClass =
   "marketplace-reservation-control h-12 min-w-0 pl-10 pr-10 text-sm text-slate-50 placeholder:text-slate-400/80";
 const reservationInputPlainClass =
@@ -532,7 +532,7 @@ function ReservationFormFields({
         size="lg"
         type="submit"
       >
-        <Send className="h-4 w-4 text-current" />
+        <Send className="h-4 w-4 text-white" />
         {pending ? "Enviando..." : "Solicitar reserva"}
       </GlassButton>
       <p className="text-center text-xs leading-5 text-muted-foreground">
@@ -585,7 +585,7 @@ function ResumoValores({
       <ConversaoTotal cotacoesCambio={cotacoesCambio} totalBrl={resumo.total} />
       <span className="flex items-center justify-between gap-3 text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <Clock className="h-4 w-4 text-cyan-100" />
+          <Clock className="h-4 w-4 text-white" />
           Horarios
         </span>
         <strong className="text-right text-foreground">
@@ -680,7 +680,7 @@ function PerfilConfianca({ property }: { property: PropriedadePublica }) {
         </div>
       </div>
       <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-primary">
-        <ShieldCheck className="h-4 w-4" />
+        <ShieldCheck className="h-4 w-4 text-withe" />
         Proprietario verificado
       </p>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
@@ -714,10 +714,10 @@ function ReservationSuccess({
       role="status"
     >
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
-        <CheckCircle2 className="h-6 w-6" />
+        <CheckCircle2 className="h-6 w-6 text-white" />
       </span>
-      <h2 className="mt-5 text-xl font-semibold">Solicitacao enviada com sucesso.</h2>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+      <h2 className="mt-5 text-xl font-semibold text-whie">Solicitacao enviada com sucesso.</h2>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground text-white">
         O proprietario ira analisar sua reserva.
       </p>
       {codigo ? (
