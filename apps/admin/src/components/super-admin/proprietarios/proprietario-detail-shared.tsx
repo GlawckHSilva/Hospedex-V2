@@ -101,7 +101,7 @@ export function labelModulo(chave: string) {
     api_future: "API futura",
     calendar: "Calendario",
     cleaning: "Limpeza",
-    confirmations: "Confirmacoes",
+    confirmations: "Pendências",
     extra_services: "Servicos extras",
     integrations: "Integracoes",
     inventory: "Inventario",

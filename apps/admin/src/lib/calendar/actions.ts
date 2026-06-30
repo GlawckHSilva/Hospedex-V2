@@ -593,6 +593,7 @@ function traduzirErroCancelamentoAtomico(mensagemBanco: string) {
 function revalidarCalendario() {
   revalidatePath(CAMINHO_CALENDARIO);
   revalidatePath("/reservas");
+  revalidatePath("/pendencias");
   revalidatePath("/confirmacoes");
   revalidatePath("/financeiro");
 }

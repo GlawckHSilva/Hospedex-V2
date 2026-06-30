@@ -25,7 +25,7 @@ import {
   registrarMensagemWhatsappCopiada
 } from "./whatsapp";
 
-const CAMINHO_CONFIRMACOES = "/confirmacoes";
+const CAMINHO_PENDENCIAS = "/pendencias";
 
 class ErroConfirmacao extends Error {}
 
@@ -101,7 +101,7 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
     );
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=cobranca-gerada`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=cobranca-gerada`);
 }
 
 export async function marcarPagamentoPendenteConfirmacaoAction(formData: FormData) {
@@ -154,7 +154,7 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
     );
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=pagamento-confirmado`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=pagamento-confirmado`);
 }
 
 async function reverterPagamentoConfirmacao(
@@ -204,7 +204,7 @@ async function reverterPagamentoConfirmacao(
   }
 
   redirect(
-    `${CAMINHO_CONFIRMACOES}?sucesso=${
+    `${CAMINHO_PENDENCIAS}?sucesso=${
       tipo === "cancelar" ? "pagamento-cancelado" : "pagamento-estornado"
     }`
   );
@@ -225,7 +225,7 @@ export async function adicionarObservacaoConfirmacaoAction(formData: FormData) {
     redirecionarComErro(erro, "Erro ao adicionar observacao.");
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=observacao-adicionada`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=observacao-adicionada`);
 }
 
 export async function registrarMensagemWhatsappCopiadaAction(mensagemId: string) {
@@ -289,7 +289,7 @@ export async function cancelarReservaConfirmacaoAction(formData: FormData) {
     );
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=reserva-cancelada`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=reserva-cancelada`);
 }
 
 async function alterarPagamentoReservaOperacional(
@@ -334,7 +334,7 @@ async function alterarPagamentoReservaOperacional(
     );
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=${regra.sucesso}`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=${regra.sucesso}`);
 }
 
 export async function confirmarLimpezaConfirmacaoAction(formData: FormData) {
@@ -355,7 +355,7 @@ export async function confirmarLimpezaConfirmacaoAction(formData: FormData) {
     redirecionarComErro(erro, "Erro ao confirmar limpeza.");
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=limpeza-confirmada`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=limpeza-confirmada`);
 }
 
 async function alterarStatusReservaOperacional(
@@ -398,7 +398,7 @@ async function alterarStatusReservaOperacional(
     redirecionarComErro(erro, "Erro ao confirmar reserva.");
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?sucesso=${regra.sucesso}`);
+  redirect(`${CAMINHO_PENDENCIAS}?sucesso=${regra.sucesso}`);
 }
 
 async function carregarEscopoOperacao(): Promise<EscopoConfirmacao> {
@@ -787,7 +787,7 @@ function redirecionarComErro(
     console.error(mensagemLog, erro);
   }
 
-  redirect(`${CAMINHO_CONFIRMACOES}?erro=${encodeURIComponent(mensagem)}`);
+  redirect(`${CAMINHO_PENDENCIAS}?erro=${encodeURIComponent(mensagem)}`);
 }
 
 function traduzirErroBanco(mensagemBanco: string, fallback: string) {
@@ -899,7 +899,8 @@ function traduzirErroCancelamentoAtomico(mensagemBanco: string) {
 }
 
 function revalidarConfirmacoes() {
-  revalidatePath(CAMINHO_CONFIRMACOES);
+  revalidatePath(CAMINHO_PENDENCIAS);
+  revalidatePath("/confirmacoes");
   revalidatePath("/reservas");
   revalidatePath("/calendario");
   revalidatePath("/financeiro");

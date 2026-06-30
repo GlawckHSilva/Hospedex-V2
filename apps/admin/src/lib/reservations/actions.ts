@@ -1105,6 +1105,7 @@ function traduzirErroPagamentoOperacional(mensagemBanco: string) {
 
 function revalidarReservas() {
   revalidatePath(CAMINHO_RESERVAS);
+  revalidatePath("/pendencias");
   revalidatePath("/confirmacoes");
   revalidatePath("/calendario");
   revalidatePath("/financeiro");

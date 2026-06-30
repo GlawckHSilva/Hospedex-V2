@@ -159,6 +159,7 @@ function redirecionarComErro(erro: unknown, mensagemLog: string): never {
 function revalidarNotificacoes() {
   revalidatePath(CAMINHO_NOTIFICACOES);
   revalidatePath("/");
+  revalidatePath("/pendencias");
   revalidatePath("/confirmacoes");
   revalidatePath("/reservas");
   revalidatePath("/limpeza");

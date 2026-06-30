@@ -12,6 +12,8 @@ import {
   ORIGENS_RESERVA,
   STATUS_PAGAMENTO_RESERVA,
   STATUS_RESERVA,
+  ABAS_RESERVAS,
+  type AbaReservas,
   type StatusPagamentoReserva,
 } from "../../lib/reservations/types";
 
@@ -60,7 +62,9 @@ export default async function ReservasPage({ searchParams }: PageProps) {
 }
 
 function montarFiltros(params: Record<string, string | string[] | undefined>) {
+  const aba = lerAba(params);
   const filtros: {
+    aba?: AbaReservas;
     busca?: string;
     origem?: ReservationRow["source"] | "todos";
     pagamento?: StatusPagamentoReserva | "todos";
@@ -69,7 +73,8 @@ function montarFiltros(params: Record<string, string | string[] | undefined>) {
     dataFim?: string;
     status: ReservationStatus | "todos";
   } = {
-    status: lerStatus(params),
+    aba,
+    status: lerStatus(params, aba),
   };
   const busca = lerParametro(params, "busca");
   const propriedadeId = lerParametro(params, "propriedadeId");
@@ -118,12 +123,30 @@ function lerParametro(
 
 function lerStatus(
   params: Record<string, string | string[] | undefined>,
+  aba?: AbaReservas,
 ): ReservationStatus | "todos" {
   const valor = lerParametro(params, "status");
-  if (!valor || valor === "todos") return "todos";
-  return STATUS_RESERVA.includes(valor as ReservationStatus)
-    ? (valor as ReservationStatus)
-    : "todos";
+  if (valor && valor !== "todos") {
+    return STATUS_RESERVA.includes(valor as ReservationStatus)
+      ? (valor as ReservationStatus)
+      : "todos";
+  }
+
+  if (valor === "todos") return "todos";
+
+  return ABAS_RESERVAS.find((item) => item.key === aba)?.status ?? "todos";
+}
+
+function lerAba(
+  params: Record<string, string | string[] | undefined>,
+): AbaReservas {
+  const valor = lerParametro(params, "tab");
+  const aba = ABAS_RESERVAS.find((item) => item.key === valor);
+
+  if (aba) return aba.key;
+
+  const status = lerStatus(params);
+  return ABAS_RESERVAS.find((item) => item.status === status)?.key ?? "todas";
 }
 
 function lerData(

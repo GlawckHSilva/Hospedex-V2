@@ -1,9 +1,9 @@
 import type {
   PropertyRow,
+  ReservationChargeRow,
   ReservationExtraServiceRow,
   ReservationGuestRow,
   ReservationNoteRow,
-  ReservationChargeRow,
   ReservationPaymentRow,
   ReservationPaymentStatus,
   ReservationRow,
@@ -20,6 +20,7 @@ import type {
  */
 
 export type FiltrosReservas = {
+  aba?: AbaReservas;
   busca?: string;
   origem?: ReservationRow["source"] | "todos";
   pagamento?: StatusPagamentoReserva | "todos";
@@ -28,6 +29,15 @@ export type FiltrosReservas = {
   dataFim?: string;
   status?: ReservationStatus | "todos";
 };
+
+export type AbaReservas =
+  | "todas"
+  | "solicitacoes"
+  | "aguardando-pagamento"
+  | "confirmadas"
+  | "em-hospedagem"
+  | "finalizadas"
+  | "canceladas";
 
 export type StatusPagamentoReserva = ReservationPaymentStatus;
 
@@ -75,6 +85,48 @@ export const STATUS_RESERVA: ReservationStatus[] = [
   "checked_out",
   "completed",
   "cancelled"
+];
+
+export const ABAS_RESERVAS: Array<{
+  key: AbaReservas;
+  label: string;
+  status: ReservationStatus | "todos";
+}> = [
+  {
+    key: "todas",
+    label: "Todas",
+    status: "todos"
+  },
+  {
+    key: "solicitacoes",
+    label: "Solicitações",
+    status: "pending"
+  },
+  {
+    key: "aguardando-pagamento",
+    label: "Aguardando pagamento",
+    status: "awaiting_payment"
+  },
+  {
+    key: "confirmadas",
+    label: "Confirmadas",
+    status: "confirmed"
+  },
+  {
+    key: "em-hospedagem",
+    label: "Em hospedagem",
+    status: "checked_in"
+  },
+  {
+    key: "finalizadas",
+    label: "Finalizadas",
+    status: "completed"
+  },
+  {
+    key: "canceladas",
+    label: "Canceladas",
+    status: "cancelled"
+  }
 ];
 
 export const ORIGENS_RESERVA: Array<ReservationRow["source"]> = [

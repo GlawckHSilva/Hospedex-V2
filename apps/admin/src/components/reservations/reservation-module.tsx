@@ -5,6 +5,7 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import {
@@ -23,6 +24,7 @@ import {
   LABEL_STATUS_RESERVA,
   LABEL_ORIGEM_RESERVA,
   LABEL_STATUS_PAGAMENTO_RESERVA,
+  ABAS_RESERVAS,
   ORIGENS_RESERVA,
   STATUS_PAGAMENTO_RESERVA,
   STATUS_RESERVA,
@@ -122,7 +124,7 @@ export function ReservationModule({
               valor={String(resumo.hospedadas)}
             />
             <Resumo label="Canceladas" valor={String(resumo.canceladas)} />
-            <Resumo label="Concluidas" valor={String(resumo.concluidas)} />
+            <Resumo label="Concluídas" valor={String(resumo.concluidas)} />
             <Resumo
               label="Pagamentos pendentes"
               valor={String(resumo.pagamentosPendentes)}
@@ -134,6 +136,29 @@ export function ReservationModule({
           </div>
         </div>
       </section>
+
+      <nav
+        aria-label="Filtros principais de reservas"
+        className="flex flex-wrap gap-2 rounded-xl border border-border/70 bg-background/45 p-2"
+      >
+        {ABAS_RESERVAS.map((aba) => {
+          const ativa = (filtros.aba ?? "todas") === aba.key;
+
+          return (
+            <Link
+              className={
+                ativa
+                  ? "rounded-lg border border-cyan-400/45 bg-cyan-500/15 px-3 py-2 text-sm font-semibold text-cyan-800 shadow-sm shadow-cyan-950/10 transition dark:text-cyan-100"
+                  : "rounded-lg border border-transparent px-3 py-2 text-sm text-muted-foreground transition hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-foreground"
+              }
+              href={`/reservas?tab=${aba.key}`}
+              key={aba.key}
+            >
+              {aba.label}
+            </Link>
+          );
+        })}
+      </nav>
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">

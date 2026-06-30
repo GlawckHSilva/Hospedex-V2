@@ -57,9 +57,9 @@ export const FEATURE_FLAGS_CONTROLADAS: FeatureFlagControladaConfig[] = [
     ownerConfigurable: true
   },
   {
-    descricao: "Central de confirmacoes operacionais.",
+    descricao: "Central de pendências operacionais.",
     key: "confirmations",
-    label: "Confirmacoes",
+    label: "Pendências",
     module: "confirmations",
     ownerConfigurable: true
   },

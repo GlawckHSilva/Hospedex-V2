@@ -51,7 +51,6 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   auditoria: ClipboardCheck,
   avaliacoes: Star,
   calendario: CalendarDays,
-  confirmacoes: ClipboardCheck,
   configuracoes: Settings,
   dashboard: LayoutDashboard,
   featureFlags: Flag,
@@ -63,6 +62,7 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   integracoes: PlugZap,
   licencas: KeyRound,
   limpeza: Sparkles,
+  pendencias: ClipboardCheck,
   planos: ReceiptText,
   proprietarios: Building2,
   propriedades: Home,
@@ -374,7 +374,7 @@ function SidebarAdmin({
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
                 {tituloPerfil}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">NavegaÃ§Ã£o por perfil</p>
+              <p className="mt-1 text-xs text-muted-foreground">Navegação por perfil</p>
             </>
           ) : (
             <>
@@ -434,7 +434,7 @@ function MenuMobileAdmin({
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
                   {tituloPerfil}
                 </p>
-                <p className="text-xs text-muted-foreground">NavegaÃ§Ã£o por perfil</p>
+                <p className="text-xs text-muted-foreground">Navegação por perfil</p>
               </>
             ) : (
               <>

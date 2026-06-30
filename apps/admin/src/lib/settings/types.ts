@@ -95,9 +95,9 @@ export const MODULOS_GERENCIAMENTO_CONFIGURAVEIS: Array<{
     label: "Notificacoes"
   },
   {
-    descricao: "Central de check-in, check-out e operacao diaria.",
+    descricao: "Central de pendências, check-in, check-out e operação diária.",
     key: "confirmations",
-    label: "Confirmacoes"
+    label: "Pendências"
   }
 ];
 

@@ -11,8 +11,6 @@ import type { ReactNode } from "react";
 
 import { Badge, Button, Card, CardContent, FadeIn } from "@hospedex/ui";
 
-import { EmptyState, EntityGrid } from "../management/entity-card";
-import { ConfirmDialog } from "../management/entity-modal";
 import {
   confirmarCheckInConfirmacaoAction,
   confirmarCheckOutConfirmacaoAction,
@@ -25,25 +23,35 @@ import type {
   SearchParamsConfirmacoes,
 } from "../../lib/confirmations/types";
 import { ModuleToast } from "../admin/module-toast";
+import { EmptyState, EntityGrid } from "../management/entity-card";
+import { ConfirmDialog } from "../management/entity-modal";
 import { ReservationDecisionCard } from "./reservation-decision-card";
 
-type ConfirmationsModuleProps = DadosConfirmacoes & SearchParamsConfirmacoes;
+type PendingModuleProps = DadosConfirmacoes & SearchParamsConfirmacoes;
 
 const MENSAGENS_SUCESSO: Record<string, string> = {
   "checkin-confirmado": "Check-in confirmado.",
   "checkout-confirmado": "Check-out confirmado.",
-  "limpeza-confirmada": "Limpeza concluida.",
-  "observacao-adicionada": "Observacao adicionada.",
+  "limpeza-confirmada": "Limpeza concluída.",
+  "observacao-adicionada": "Observação adicionada.",
   "pagamento-confirmado": "Pagamento marcado como recebido.",
   "pagamento-pendente": "Pagamento marcado como pendente.",
   "reserva-cancelada": "Reserva cancelada.",
   "reserva-confirmada": "Reserva confirmada.",
   "reserva-confirmada-whatsapp": "Reserva confirmada e mensagem de WhatsApp preparada.",
-  "reserva-confirmada-whatsapp-pendente": "Reserva confirmada. Prepare a mensagem de WhatsApp manualmente.",
-  "reserva-confirmada-whatsapp-revisao": "Reserva confirmada. Revise a mensagem de WhatsApp antes de abrir.",
+  "reserva-confirmada-whatsapp-pendente":
+    "Reserva confirmada. Prepare a mensagem de WhatsApp manualmente.",
+  "reserva-confirmada-whatsapp-revisao":
+    "Reserva confirmada. Revise a mensagem de WhatsApp antes de abrir.",
 };
 
-export function ConfirmationsModule({
+/**
+ * Central de pendências do Gerenciamento.
+ *
+ * A lógica ainda reaproveita actions de confirmação porque elas executam as
+ * regras sensíveis de reservas, pagamentos e limpeza no servidor.
+ */
+export function PendingModule({
   aguardandoPagamento,
   checkInsHoje,
   checkOutsHoje,
@@ -60,7 +68,7 @@ export function ConfirmationsModule({
   sucesso,
   tenantNome,
   timeline,
-}: ConfirmationsModuleProps) {
+}: PendingModuleProps) {
   const totalItens =
     checkInsHoje.length +
     checkOutsHoje.length +
@@ -81,7 +89,7 @@ export function ConfirmationsModule({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Badge variant="info">Operacao diaria</Badge>
+              <Badge variant="info">Pendências operacionais</Badge>
               {notificacoes.length ? (
                 <span className="relative flex h-3 w-3">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60" />
@@ -90,10 +98,11 @@ export function ConfirmationsModule({
               ) : null}
             </div>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">
-              Confirmacoes
+              Pendências
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {tenantNome} · {formatarData(hoje)}
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Acompanhe tudo que precisa de ação no gerenciamento. {tenantNome} ·{" "}
+              {formatarData(hoje)}
             </p>
           </div>
 
@@ -134,9 +143,9 @@ export function ConfirmationsModule({
 
       {totalItens === 0 ? (
         <EmptyState
-          description="Nenhuma reserva pendente de confirmação."
+          description="Tudo certo por aqui."
           icon={<CheckCircle2 className="h-5 w-5" />}
-          title="Nenhuma reserva pendente de confirmação"
+          title="Nenhuma pendência no momento"
         />
       ) : (
         <section className="grid gap-5 xl:grid-cols-[1fr_360px]">
@@ -192,7 +201,7 @@ export function ConfirmationsModule({
           <aside className="space-y-4">
             <Card className="admin-glass-card">
               <CardContent className="p-5">
-                <h2 className="text-base font-semibold">Notificacoes</h2>
+                <h2 className="text-base font-semibold">Notificações</h2>
                 <div className="mt-4 space-y-3">
                   {notificacoes.length ? (
                     notificacoes.map((notificacao) => (
@@ -205,7 +214,7 @@ export function ConfirmationsModule({
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      Sem notificacoes pendentes.
+                      Sem notificações pendentes.
                     </p>
                   )}
                 </div>
@@ -318,7 +327,9 @@ function GrupoReservas({
             key={reserva.id}
             podeGerenciar={podeGerenciar}
             subtitulo={reserva.propriedade?.name ?? "Casa"}
-            titulo={`${reserva.code} · ${reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"}`}
+            titulo={`${reserva.code} · ${
+              reserva.hospedePrincipal?.full_name ?? "Hóspede não informado"
+            }`}
           />
         ))}
       </CardContent>
