@@ -638,12 +638,9 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       caucao: numeroMoedaOpcional(formData, "caucao", 0),
       cobraHospedeExtra: checkboxAtivo(formData, "cobraHospedeExtra"),
       formasPagamento,
-      hospedesInclusos: numeroInteiroOpcional(
-        formData,
-        "hospedesInclusos",
-        1,
-        1,
-      ),
+      // Regra oficial: a capacidade cadastrada da casa e a quantidade sem extra.
+      // Mantemos o campo legado sincronizado para contratos antigos nao divergirem.
+      hospedesInclusos: hospedesMaximos,
       jurosParcelasCartao: formasPagamento.cartaoCredito.jurosParcelas,
       maxParcelasCartao: formasPagamento.cartaoCredito.maxParcelas,
       taxaLimpeza: numeroMoedaOpcional(formData, "taxaLimpeza", 0),
@@ -660,8 +657,7 @@ function validarTipoCobrancaHospedeExtra(
   _valor: string | null,
 ): TipoCobrancaHospedeExtra {
   void _valor;
-  // Na regra atual da V2, hospede extra e adicional da reserva, nao da diaria.
-  // Isso evita multiplicar R$ 250 por todas as noites e inflar o total publico.
+  // Regra oficial: hospede extra e adicional da reserva, nao da diaria.
   return "per_stay";
 }
 

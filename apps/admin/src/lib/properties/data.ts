@@ -328,8 +328,7 @@ function normalizarTipoCobrancaHospedeExtra(
   _valores: Record<string, JsonValue>,
 ): "per_stay" | "per_night" {
   void _valores;
-  // A V2 cobra hospede extra por reserva.
-  // Valores antigos salvos como per_night sao normalizados para evitar total incorreto.
+  // A V2 cobra hospede extra por reserva apenas acima da capacidade cadastrada.
   return "per_stay";
 }
 

@@ -74,6 +74,7 @@ const reservationSelectPlainClass =
   "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-10 text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const reservationTextareaClass =
   "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-slate-50 placeholder:text-slate-400/80 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+const LIMITE_PADRAO_HOSPEDES_EXTRAS = 10;
 
 /**
  * Card publico de solicitacao da Casa.
@@ -403,8 +404,7 @@ function ReservationFormFields({
           value={quantidadeHospedes}
         />
         <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
-          Maximo permitido: {obterMaximoHospedesSelecionavel(property)} hospede
-          {obterMaximoHospedesSelecionavel(property) === 1 ? "" : "s"}.
+          {obterTextoLimiteHospedes(property)}
         </span>
       </Field>
 
@@ -761,13 +761,13 @@ function calcularResumoReserva({
   const noites = calcularNoites(checkIn, checkOut);
   const diarias = noites * property.pricing.dailyRate;
   const taxaLimpeza = noites > 0 ? property.pricing.cleaningFee : 0;
-  const hospedesInclusosNoValorBase = obterHospedesInclusosNoValorBase(property);
+  const capacidadeSemCobrancaExtra = obterCapacidadeCadastrada(property);
   const quantidadeHospedesExtras =
-    noites > 0 && property.pricing.cobraHospedeExtra
-      ? Math.max(0, hospedes - hospedesInclusosNoValorBase)
+    noites > 0 && permiteHospedesExtras(property)
+      ? Math.max(0, hospedes - capacidadeSemCobrancaExtra)
       : 0;
-  // O valor de hospede extra e cobrado por reserva.
-  // Se cobrar por diaria, uma estadia longa infla o total de forma indevida.
+  // Regra oficial: a capacidade cadastrada da casa e a quantidade inclusa.
+  // Hospedes acima dessa capacidade pagam o adicional uma vez por reserva.
   const hospedesExtras = quantidadeHospedesExtras * property.pricing.valorHospedeExtra;
   const subtotal = diarias + taxaLimpeza + hospedesExtras;
   const juros =
@@ -791,18 +791,34 @@ function calcularResumoReserva({
   };
 }
 
-function obterHospedesInclusosNoValorBase(property: PropriedadePublica) {
-  const capacidade = Math.max(property.maxGuests || 1, 1);
-  const configurado = property.pricing.hospedesInclusos || capacidade;
-
-  return Math.max(1, Math.min(configurado, capacidade));
+function obterCapacidadeCadastrada(property: PropriedadePublica) {
+  return Math.max(property.maxGuests || 1, 1);
 }
 
 function obterMaximoHospedesSelecionavel(property: PropriedadePublica) {
-  const capacidadeMaxima = Math.max(property.maxGuests || 1, 1);
-  if (property.pricing.cobraHospedeExtra) return capacidadeMaxima;
+  const capacidadeCadastrada = obterCapacidadeCadastrada(property);
+  if (permiteHospedesExtras(property)) {
+    // Enquanto nao existir campo proprio de limite de extras, a interface
+    // libera uma margem operacional clara sem alterar a capacidade cadastrada.
+    return capacidadeCadastrada + LIMITE_PADRAO_HOSPEDES_EXTRAS;
+  }
 
-  return obterHospedesInclusosNoValorBase(property);
+  return capacidadeCadastrada;
+}
+
+function permiteHospedesExtras(property: PropriedadePublica) {
+  return property.pricing.cobraHospedeExtra && property.pricing.valorHospedeExtra > 0;
+}
+
+function obterTextoLimiteHospedes(property: PropriedadePublica) {
+  const capacidade = obterCapacidadeCadastrada(property);
+  const maximo = obterMaximoHospedesSelecionavel(property);
+
+  if (permiteHospedesExtras(property)) {
+    return `${capacidade} hospede${capacidade === 1 ? "" : "s"} incluso${capacidade === 1 ? "" : "s"} sem extra. Ate ${maximo} com adicional.`;
+  }
+
+  return `Esta casa permite ate ${capacidade} hospede${capacidade === 1 ? "" : "s"}.`;
 }
 
 function obterQuantidadeHospedesParaResumo(valor: string, capacidadeMaxima: number) {

@@ -1309,15 +1309,8 @@ function EtapaValores({
         <CampoMoeda
           defaultValue={valores?.valorHospedeExtra ?? 0}
           disabled={disabled}
-          label="Valor por hospede extra"
+          label="Valor por hospede extra por reserva"
           name="valorHospedeExtra"
-        />
-        <CampoNumero
-          defaultValue={valores?.hospedesInclusos ?? 1}
-          disabled={disabled}
-          label="Hospedes inclusos no valor base"
-          min={1}
-          name="hospedesInclusos"
         />
         <CampoSelect
           defaultValue={valores?.tipoCobrancaHospedeExtra ?? "per_stay"}

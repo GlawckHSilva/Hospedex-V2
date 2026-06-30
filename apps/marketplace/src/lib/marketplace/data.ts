@@ -530,7 +530,9 @@ function propriedadeAtendeFiltros(
   filtros: FiltrosPropriedadesPublicas,
   propriedadesIndisponiveis: Set<string>
 ) {
-  if (filtros.hospedes && propriedade.maxGuests < filtros.hospedes) return false;
+  if (filtros.hospedes && obterLimitePublicoHospedes(propriedade) < filtros.hospedes) {
+    return false;
+  }
   if (
     filtros.precoMinimo &&
     (propriedade.minPrice === null || propriedade.minPrice < filtros.precoMinimo)
@@ -545,6 +547,15 @@ function propriedadeAtendeFiltros(
   }
   if (propriedadesIndisponiveis.has(propriedade.id)) return false;
   return true;
+}
+
+function obterLimitePublicoHospedes(propriedade: PropriedadePublica) {
+  const capacidade = Math.max(propriedade.maxGuests || 1, 1);
+  if (propriedade.pricing.cobraHospedeExtra && propriedade.pricing.valorHospedeExtra > 0) {
+    return capacidade + 10;
+  }
+
+  return capacidade;
 }
 
 export async function carregarPropriedadePublica(slugOuId: string) {
@@ -1191,8 +1202,7 @@ function normalizarTipoCobrancaHospedeExtra(
   _valores: Record<string, JsonValue>
 ): "per_stay" | "per_night" {
   void _valores;
-  // No Marketplace, o valor de hospede extra representa adicional por reserva.
-  // Configuracoes antigas por diaria sao tratadas como per_stay para manter o total correto.
+  // No Marketplace, hospede extra e cobrado por reserva somente acima da capacidade cadastrada.
   return "per_stay";
 }
 
