@@ -133,7 +133,7 @@ export function AdminShell({
         tituloPerfil={tituloPerfil}
       />
 
-      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[264px_1fr]">
+      <div className="grid w-full gap-6 px-4 py-4 sm:px-5 lg:grid-cols-[272px_minmax(0,1fr)] lg:px-4">
         <SidebarAdmin
           acaoSairSidebar={acaoSairSidebar}
           gerenciamento={gerenciamento}
@@ -195,7 +195,7 @@ function TopbarAdmin({
 }: TopbarAdminProps) {
   return (
     <header className="glass-navbar sticky top-0 z-40 bg-[#030712]/88">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="flex h-16 w-full items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             aria-label="Abrir menu"
@@ -208,7 +208,9 @@ function TopbarAdmin({
             <Menu />
           </Button>
 
-          <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" surface />
+          <div className={cn(gerenciamento && "lg:hidden")}>
+            <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" surface />
+          </div>
         </div>
 
         <div className="flex min-w-0 items-center gap-2">
@@ -358,6 +360,39 @@ type SidebarAdminProps = {
   tituloPerfil: string;
 };
 
+type GrupoMenuSidebar = {
+  chaves: string[];
+  titulo: string;
+};
+
+const GRUPOS_MENU_GERENCIAMENTO: GrupoMenuSidebar[] = [
+  {
+    chaves: ["/", "/propriedades", "/reservas", "/calendario", "/hospedes"],
+    titulo: "Principal",
+  },
+  {
+    chaves: [
+      "/financeiro",
+      "/pendencias",
+      "/servicos-extras",
+      "/limpeza",
+      "/inventario",
+      "/relatorios",
+    ],
+    titulo: "Operacional",
+  },
+  {
+    chaves: [
+      "/guia-regiao",
+      "/avaliacoes",
+      "/funcionarios",
+      "/integracoes",
+      "/configuracoes",
+    ],
+    titulo: "Configurações",
+  },
+];
+
 function SidebarAdmin({
   acaoSairSidebar,
   gerenciamento,
@@ -365,10 +400,39 @@ function SidebarAdmin({
   pathname,
   tituloPerfil
 }: SidebarAdminProps) {
+  const grupos = agruparItensSidebar(itens, gerenciamento);
+
+  if (!gerenciamento) {
+    return (
+      <aside className="hidden min-h-0 lg:block">
+        <div className="glass-sidebar sticky top-[5.25rem] flex h-[calc(100dvh-6.5rem)] min-h-0 flex-col overflow-hidden p-3">
+          <div className="shrink-0 px-2 pb-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
+              {tituloPerfil}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Menu administrativo</p>
+          </div>
+          <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
+            {itens.map((item) => (
+              <ItemMenu key={item.href} item={item} pathname={pathname} />
+            ))}
+            <div className="pt-1">{acaoSairSidebar}</div>
+          </nav>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="hidden min-h-0 lg:block">
-      <div className="glass-sidebar sticky top-[5.25rem] flex h-[calc(100dvh-6.5rem)] min-h-0 flex-col overflow-hidden p-3">
-        <div className="shrink-0 px-2 pb-4">
+      <div className="sticky top-20 flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden border-r border-slate-800/90 bg-slate-950/45 px-4 py-4 shadow-[18px_0_50px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+        <div className="flex shrink-0 items-center gap-2 pb-5">
+          <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
+          <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-200" variant="outline">
+            V2
+          </Badge>
+        </div>
+        <div className="hidden">
           {gerenciamento ? (
             <>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
@@ -385,11 +449,9 @@ function SidebarAdmin({
             </>
           )}
         </div>
-        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
-          {itens.map((item) => (
-            <ItemMenu key={item.href} item={item} pathname={pathname} />
-          ))}
-          <div className="pt-1">{acaoSairSidebar}</div>
+        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <MenuAgrupado grupos={grupos} pathname={pathname} />
+          <div className="mt-5 border-t border-slate-800/80 pt-3">{acaoSairSidebar}</div>
         </nav>
       </div>
     </aside>
@@ -413,6 +475,8 @@ function MenuMobileAdmin({
   pathname,
   tituloPerfil
 }: MenuMobileAdminProps) {
+  const grupos = agruparItensSidebar(itens, gerenciamento);
+
   return (
     <motion.div
       animate={{ opacity: 1 }}
@@ -427,8 +491,14 @@ function MenuMobileAdmin({
         initial={{ x: "-100%" }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
-        <div className="flex shrink-0 items-center justify-between pb-4">
-          <div>
+        <div className="flex shrink-0 items-center justify-between pb-5">
+          <div className="flex items-center gap-2">
+            <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
+            <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-200" variant="outline">
+              V2
+            </Badge>
+          </div>
+          <div className="hidden">
             {gerenciamento ? (
               <>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
@@ -448,11 +518,9 @@ function MenuMobileAdmin({
           </Button>
         </div>
 
-        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
-          {itens.map((item) => (
-            <ItemMenu key={item.href} item={item} onNavigate={onFechar} pathname={pathname} />
-          ))}
-          <div className="pt-1">{acaoSairMobile}</div>
+        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+          <MenuAgrupado grupos={grupos} onNavigate={onFechar} pathname={pathname} />
+          <div className="mt-5 border-t border-slate-800/80 pt-3">{acaoSairMobile}</div>
         </nav>
       </motion.aside>
     </motion.div>
@@ -465,12 +533,58 @@ type ItemMenuProps = {
   pathname: string;
 };
 
+type MenuAgrupadoProps = {
+  grupos: Array<{
+    itens: ItemMenuAdminResolvido[];
+    titulo: string;
+  }>;
+  onNavigate?: () => void;
+  pathname: string;
+};
+
+function MenuAgrupado({ grupos, onNavigate, pathname }: MenuAgrupadoProps) {
+  return (
+    <div className="space-y-6 pb-2">
+      {grupos.map((grupo) =>
+        grupo.itens.length > 0 ? (
+          <section className="space-y-2" key={grupo.titulo}>
+            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-500">
+              {grupo.titulo}
+            </p>
+            <div className="space-y-1">
+              {grupo.itens.map((item) => (
+                <ItemMenu
+                  item={item}
+                  key={item.href}
+                  pathname={pathname}
+                  {...(onNavigate ? { onNavigate } : {})}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null,
+      )}
+    </div>
+  );
+}
+
 function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
-  const ativo = pathname === item.href;
+  const ativo = itemMenuEstaAtivo(pathname, item.href);
   const Icone = ICONES_MENU[item.icone];
   const conteudo = (
     <>
-      <Icone className="h-4 w-4 shrink-0" />
+      <span
+        className={cn(
+          "absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-cyan-300 transition-opacity",
+          ativo ? "opacity-100" : "opacity-0",
+        )}
+      />
+      <Icone
+        className={cn(
+          "h-4 w-4 shrink-0 transition-colors",
+          ativo ? "text-cyan-200" : "text-slate-400",
+        )}
+      />
       <span className="min-w-0 flex-1 truncate">{item.titulo}</span>
       {item.bloqueadoPorFeatureFlag ? (
         <span className="rounded-md border border-warning/25 bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold text-warning">
@@ -480,10 +594,10 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
     </>
   );
   const classes = cn(
-    "flex h-10 items-center gap-2 rounded-lg border border-transparent px-3 text-sm transition-colors duration-200",
+    "relative flex h-10 items-center gap-3 rounded-lg px-3 pl-3.5 text-sm font-medium transition-colors duration-200",
     ativo
-      ? "border-cyan-400/30 bg-cyan-500/12 text-cyan-900 ring-1 ring-cyan-400/25 dark:text-cyan-100"
-      : "text-muted-foreground hover:border-cyan-400/20 hover:bg-cyan-500/8 hover:text-foreground",
+      ? "bg-cyan-500/14 text-cyan-50 shadow-sm shadow-cyan-950/20"
+      : "text-slate-400 hover:bg-cyan-500/8 hover:text-slate-100",
     item.bloqueadoPorFeatureFlag && "cursor-not-allowed opacity-55 hover:bg-transparent"
   );
 
@@ -500,6 +614,39 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
       {conteudo}
     </Link>
   );
+}
+
+function agruparItensSidebar(
+  itens: ItemMenuAdminResolvido[],
+  gerenciamento: boolean,
+): Array<{ itens: ItemMenuAdminResolvido[]; titulo: string }> {
+  if (!gerenciamento) {
+    return [{ itens, titulo: "Plataforma" }];
+  }
+
+  const itensAgrupados = new Set<string>();
+  const grupos = GRUPOS_MENU_GERENCIAMENTO.map((grupo) => {
+    const itensDoGrupo = grupo.chaves
+      .map((href) => itens.find((item) => item.href === href))
+      .filter((item): item is ItemMenuAdminResolvido => Boolean(item));
+
+    itensDoGrupo.forEach((item) => itensAgrupados.add(item.href));
+
+    return {
+      itens: itensDoGrupo,
+      titulo: grupo.titulo,
+    };
+  });
+  const itensSemGrupo = itens.filter((item) => !itensAgrupados.has(item.href));
+
+  return itensSemGrupo.length
+    ? [...grupos, { itens: itensSemGrupo, titulo: "Outros" }]
+    : grupos;
+}
+
+function itemMenuEstaAtivo(pathname: string, href: string): boolean {
+  if (href === "/" || href === "/super-admin") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 function obterIniciaisUsuario(nomeUsuario: string, emailUsuario: string) {
