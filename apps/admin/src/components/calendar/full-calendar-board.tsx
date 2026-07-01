@@ -8,11 +8,19 @@ import type {
   MoreLinkArg,
 } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
+import interactionPlugin, { type DateClickArg } from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
 import FullCalendar from "@fullcalendar/react";
 import timeGridPlugin from "@fullcalendar/timegrid";
-import { AlertTriangle, CalendarRange, ChevronLeft, ChevronRight, Save, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarRange,
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Save,
+  Trash2
+} from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState, type ComponentProps } from "react";
 
@@ -142,11 +150,23 @@ export function FullCalendarBoard({
 
   const dataInicial =
     filtros.visao === "semanal" ? filtros.semana : `${filtros.mes}-01`;
+  const [dataSelecionada, setDataSelecionada] = useState(dataInicial);
   const periodoLabel = obterPeriodoLabel(filtros);
+  const eventosSelecionados = useMemo(
+    () =>
+      eventos
+        .filter((evento) => eventoOcorreNaData(evento, dataSelecionada))
+        .sort((a, b) => a.start.localeCompare(b.start)),
+    [dataSelecionada, eventos],
+  );
 
   function abrirEvento(info: EventClickArg) {
     const evento = eventosPorId.get(info.event.id);
     if (evento) setEventoSelecionado(evento);
+  }
+
+  function selecionarDia(info: DateClickArg) {
+    setDataSelecionada(info.dateStr);
   }
 
   function abrirEventosDoDia(info: MoreLinkArg) {
@@ -154,6 +174,7 @@ export function FullCalendarBoard({
       .map((segmento) => eventosPorId.get(segmento.event.id))
       .filter((evento): evento is EventoFullCalendarHospedex => Boolean(evento));
 
+    setDataSelecionada(info.date.toISOString().slice(0, 10));
     setEventosDoDia({
       data: info.date.toISOString().slice(0, 10),
       eventos: eventosVisiveis,
@@ -163,134 +184,138 @@ export function FullCalendarBoard({
   }
 
   return (
-    <Card className="overflow-hidden border-cyan-300/20 bg-slate-950/90 text-slate-100 shadow-2xl shadow-cyan-950/20">
-      <CardContent className="space-y-4 p-3 sm:p-4 lg:p-5">
-        <div className="rounded-2xl border border-cyan-300/20 bg-slate-900/80 p-3 shadow-inner shadow-white/5 ring-1 ring-white/5">
-          <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <Link
-                aria-label="Periodo anterior"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-sm shadow-sm transition hover:border-cyan-300/50 hover:bg-cyan-400/20 hover:text-cyan-100"
-                href={hrefPeriodoAnterior}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Link>
-              <Link
-                className="inline-flex h-9 items-center rounded-full border border-cyan-300/20 bg-cyan-400/20 px-4 text-sm font-semibold text-cyan-100 shadow-sm transition hover:border-cyan-200/60 hover:bg-cyan-400/25"
-                href={hrefHoje}
-              >
-                Hoje
-              </Link>
-              <Link
-                aria-label="Proximo periodo"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-sm shadow-sm transition hover:border-cyan-300/50 hover:bg-cyan-400/20 hover:text-cyan-100"
-                href={hrefPeriodoProximo}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-              <div className="ml-0 min-w-0 sm:ml-2">
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-cyan-200/70">
-                  Calendario
-                </p>
-                <h2 className="truncate text-xl font-semibold capitalize tracking-normal text-white sm:text-2xl">
+    <>
+      <section className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <Card className="overflow-hidden border-cyan-300/20 bg-slate-950/90 text-slate-100 shadow-2xl shadow-cyan-950/20">
+          <CardContent className="space-y-4 p-3 sm:p-4 lg:p-5">
+            <div className="flex flex-col gap-3 rounded-2xl border border-cyan-300/18 bg-slate-900/60 p-3 ring-1 ring-white/5 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  aria-label="Periodo anterior"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-sm shadow-sm transition hover:border-cyan-300/50 hover:bg-cyan-400/15 hover:text-cyan-100"
+                  href={hrefPeriodoAnterior}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Link>
+                <Link
+                  className="inline-flex h-10 items-center rounded-lg border border-cyan-300/25 bg-white/[0.05] px-4 text-sm font-semibold text-slate-100 shadow-sm transition hover:border-cyan-200/60 hover:bg-cyan-400/15"
+                  href={hrefHoje}
+                >
+                  Hoje
+                </Link>
+                <Link
+                  aria-label="Proximo periodo"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-sm shadow-sm transition hover:border-cyan-300/50 hover:bg-cyan-400/15 hover:text-cyan-100"
+                  href={hrefPeriodoProximo}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+                <h2 className="ml-0 min-w-0 truncate text-xl font-semibold capitalize tracking-normal text-white sm:ml-3 sm:text-2xl">
                   {periodoLabel}
                 </h2>
               </div>
-          </div>
 
-            <div className="inline-flex w-fit rounded-full border border-white/10 bg-slate-950/60 p-1 shadow-sm">
-            {modos.map((modo) => (
-              <Link
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-xs font-semibold transition",
-                  filtros.visao === modo.value
-                    ? "bg-cyan-400 text-slate-950 shadow-sm shadow-cyan-400/25"
-                    : "text-slate-300 hover:bg-white/[0.08] hover:text-cyan-100",
-                )}
-                href={montarHrefModo(filtros, modo.value)}
-                key={modo.value}
-              >
-                {modo.label}
-              </Link>
-            ))}
+              <div className="inline-flex w-fit rounded-lg border border-white/10 bg-slate-950/60 p-1 shadow-sm">
+                {modos.map((modo) => (
+                  <Link
+                    className={cn(
+                      "rounded-md px-4 py-2 text-xs font-semibold transition",
+                      filtros.visao === modo.value
+                        ? "bg-cyan-400 text-slate-950 shadow-sm shadow-cyan-400/25"
+                        : "text-slate-300 hover:bg-white/[0.08] hover:text-cyan-100",
+                    )}
+                    href={montarHrefModo(filtros, modo.value)}
+                    key={modo.value}
+                  >
+                    {modo.label}
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="hospedex-fullcalendar">
-          <FullCalendar
-            allDayText="Dia todo"
-            dayMaxEvents={2}
-            editable={false}
-            eventClick={abrirEvento}
-            eventContent={renderizarEvento}
-            eventDisplay="block"
-            eventMaxStack={2}
-            eventStartEditable={false}
-            events={eventosFullCalendar}
-            expandRows
-            fixedWeekCount={false}
-            headerToolbar={false}
-            height="auto"
-            initialDate={dataInicial}
-            initialView={visualPorModo[filtros.visao]}
-            locale={ptBrLocale}
-            moreLinkClick={abrirEventosDoDia}
-            moreLinkContent={(info) => `+${info.num} eventos`}
-            nowIndicator
-            plugins={[
-              dayGridPlugin,
-              timeGridPlugin,
-              listPlugin,
-              interactionPlugin,
-            ]}
-            selectable
-            slotLabelFormat={{
-              hour: "2-digit",
-              minute: "2-digit",
-              omitZeroMinute: false,
-            }}
-            slotMaxTime="22:00:00"
-            slotMinTime="06:00:00"
-            titleFormat={{ month: "long", year: "numeric" }}
-          />
-        </div>
-
-        <ModalEvento
-          evento={eventoSelecionado}
-          filtros={filtros}
-          onOpenChange={(aberto) => {
-            if (!aberto) setEventoSelecionado(null);
-          }}
-          podeGerenciar={podeGerenciar}
-        />
-
-        <AppModal
-          description="Eventos agrupados pelo FullCalendar quando o dia possui muitos compromissos."
-          onOpenChange={(aberto) => {
-            if (!aberto) setEventosDoDia(null);
-          }}
-          open={Boolean(eventosDoDia)}
-          size="md"
-          title={`Eventos de ${formatarData(eventosDoDia?.data)}`}
-        >
-          <div className="space-y-3">
-            {eventosDoDia?.eventos.map((evento) => (
-              <EventoResumo
-                evento={evento}
-                key={evento.id}
-                onClick={() => {
-                  setEventoSelecionado(evento);
-                  setEventosDoDia(null);
+            <div className="hospedex-fullcalendar">
+              <FullCalendar
+                allDayText="Dia todo"
+                dateClick={selecionarDia}
+                dayMaxEvents={2}
+                editable={false}
+                eventClick={abrirEvento}
+                eventContent={renderizarEvento}
+                eventDisplay="block"
+                eventMaxStack={2}
+                eventStartEditable={false}
+                events={eventosFullCalendar}
+                expandRows
+                fixedWeekCount={false}
+                headerToolbar={false}
+                height="auto"
+                initialDate={dataInicial}
+                initialView={visualPorModo[filtros.visao]}
+                locale={ptBrLocale}
+                moreLinkClick={abrirEventosDoDia}
+                moreLinkContent={(info) => `+${info.num} eventos`}
+                nowIndicator
+                plugins={[
+                  dayGridPlugin,
+                  timeGridPlugin,
+                  listPlugin,
+                  interactionPlugin,
+                ]}
+                selectable
+                slotLabelFormat={{
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  omitZeroMinute: false,
                 }}
+                slotMaxTime="22:00:00"
+                slotMinTime="06:00:00"
+                titleFormat={{ month: "long", year: "numeric" }}
               />
-            ))}
-          </div>
-        </AppModal>
+            </div>
+          </CardContent>
+        </Card>
 
-        <EstilosFullCalendar />
-      </CardContent>
-    </Card>
+        <PainelEventosDia
+          data={dataSelecionada}
+          eventos={eventosSelecionados}
+          onAbrirEvento={setEventoSelecionado}
+        />
+      </section>
+
+      <ModalEvento
+        evento={eventoSelecionado}
+        filtros={filtros}
+        onOpenChange={(aberto) => {
+          if (!aberto) setEventoSelecionado(null);
+        }}
+        podeGerenciar={podeGerenciar}
+      />
+
+      <AppModal
+        description="Eventos agrupados pelo FullCalendar quando o dia possui muitos compromissos."
+        onOpenChange={(aberto) => {
+          if (!aberto) setEventosDoDia(null);
+        }}
+        open={Boolean(eventosDoDia)}
+        size="md"
+        title={`Eventos de ${formatarData(eventosDoDia?.data)}`}
+      >
+        <div className="space-y-3">
+          {eventosDoDia?.eventos.map((evento) => (
+            <EventoResumo
+              evento={evento}
+              key={evento.id}
+              onClick={() => {
+                setEventoSelecionado(evento);
+                setEventosDoDia(null);
+              }}
+            />
+          ))}
+        </div>
+      </AppModal>
+
+      <EstilosFullCalendar />
+    </>
   );
 }
 
@@ -315,6 +340,102 @@ function renderizarEvento(info: EventContentArg) {
         {tipo}
       </span>
     </div>
+  );
+}
+
+function PainelEventosDia({
+  data,
+  eventos,
+  onAbrirEvento
+}: {
+  data: string;
+  eventos: EventoFullCalendarHospedex[];
+  onAbrirEvento: (evento: EventoFullCalendarHospedex) => void;
+}) {
+  return (
+    <Card className="admin-glass-card overflow-hidden xl:sticky xl:top-24">
+      <CardContent className="space-y-4 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">
+              Eventos de {formatarDataCompleta(data)}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Clique em um item para abrir os detalhes.
+            </p>
+          </div>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/25 bg-cyan-500/10 text-cyan-300">
+            <CalendarRange className="h-4 w-4" />
+          </span>
+        </div>
+
+        {eventos.length ? (
+          <div className="space-y-3">
+            {eventos.map((evento) => (
+              <EventoDiaCard
+                evento={evento}
+                key={evento.id}
+                onClick={() => onAbrirEvento(evento)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-cyan-300/20 bg-slate-950/35 p-4 text-sm text-muted-foreground">
+            Nenhum evento programado para este dia.
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function EventoDiaCard({
+  evento,
+  onClick
+}: {
+  evento: EventoFullCalendarHospedex;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className="group w-full rounded-2xl border bg-background/50 p-4 text-left shadow-sm transition hover:border-cyan-300/45 hover:bg-cyan-500/8"
+      onClick={onClick}
+      style={{
+        borderColor: `${evento.color}55`,
+        boxShadow: `inset 0 0 0 1px ${evento.color}12`
+      }}
+      type="button"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p
+            className="inline-flex items-center gap-2 text-sm font-semibold"
+            style={{ color: evento.color }}
+          >
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: evento.color }}
+            />
+            {labelEventoDia(evento)}
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {formatarPeriodoEvento(evento)}
+          </p>
+          <p className="mt-1 truncate text-base font-semibold text-foreground">
+            {evento.title}
+          </p>
+          <p className="mt-2 truncate text-sm text-muted-foreground">
+            {evento.detalhe}
+          </p>
+        </div>
+        {evento.origem === "reserva" ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-cyan-300/25 px-2.5 py-1.5 text-xs font-semibold text-cyan-200 transition group-hover:bg-cyan-500/10">
+            Ver reserva
+            <ExternalLink className="h-3 w-3" />
+          </span>
+        ) : null}
+      </div>
+    </button>
   );
 }
 
@@ -615,12 +736,55 @@ function montarHrefModo(
   return `/calendario?${params.toString()}`;
 }
 
+function eventoOcorreNaData(evento: EventoFullCalendarHospedex, data: string) {
+  if (evento.tipo === "reserva") {
+    return data >= evento.dataInicio && data < evento.dataFim;
+  }
+
+  if (evento.origem === "bloqueio") {
+    return data >= evento.dataInicio && data <= evento.dataFim;
+  }
+
+  return evento.start.slice(0, 10) === data;
+}
+
+function labelEventoDia(evento: EventoFullCalendarHospedex) {
+  const labels: Record<EventoFullCalendarHospedex["tipo"], string> = {
+    bloqueio: "Bloqueio",
+    checkin: "Check-in",
+    checkout: "Check-out",
+    limpeza: "Limpeza",
+    manutencao: "Manutenção",
+    reserva: evento.status === "confirmed" ? "Reserva confirmada" : "Reserva"
+  };
+
+  return labels[evento.tipo];
+}
+
+function formatarPeriodoEvento(evento: EventoFullCalendarHospedex) {
+  if (evento.dataInicio === evento.dataFim) {
+    return formatarData(evento.dataInicio);
+  }
+
+  return `${formatarData(evento.dataInicio)} - ${formatarData(evento.dataFim)}`;
+}
+
 function formatarData(data?: string) {
   if (!data) return "";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "long",
+  }).format(new Date(`${data}T12:00:00`));
+}
+
+function formatarDataCompleta(data?: string) {
+  if (!data) return "";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   }).format(new Date(`${data}T12:00:00`));
 }
 

@@ -1,6 +1,13 @@
-import { LockKeyhole, Plus } from "lucide-react";
+import {
+  CalendarCheck2,
+  ChevronDown,
+  LockKeyhole,
+  Plus,
+  Sparkles,
+  Wrench
+} from "lucide-react";
 import Link from "next/link";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import { Button, Card, CardContent, FadeIn, Input, Label, cn } from "@hospedex/ui";
 
@@ -54,7 +61,6 @@ export function CalendarModule({
   filtros,
   podeGerenciar,
   propriedades,
-  reservas,
   resumo,
   sucesso,
 }: CalendarModuleProps) {
@@ -64,6 +70,7 @@ export function CalendarModule({
     null;
   const bloqueado = !podeGerenciar || !casaAtual;
   const eventos = montarEventosFullCalendar(dias);
+  const diaHoje = dias.find((dia) => dia.data === hojeIso());
 
   return (
     <FadeIn className="relative space-y-5 pb-8">
@@ -91,49 +98,41 @@ export function CalendarModule({
         />
       </section>
 
-      <Card className="admin-glass-card">
-        <CardContent className="space-y-4 p-5">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
-                Selecionar casa
-              </p>
-              <h2 className="mt-1 text-lg font-semibold">
-                {casaAtual?.name ?? "Nenhuma casa cadastrada"}
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {propriedades.map((propriedade) => (
-                <Link
-                  className={cn(
-                    "rounded-full border px-4 py-2 text-sm font-medium transition hover:-translate-y-0.5 hover:bg-cyan-500/10",
-                    propriedade.id === filtros.propriedadeId
-                      ? "border-cyan-400/50 bg-cyan-500/20 text-cyan-800 dark:text-cyan-100"
-                      : "text-muted-foreground"
-                  )}
-                  href={montarHref(filtros, { propriedadeId: propriedade.id })}
-                  key={propriedade.id}
-                >
-                  {propriedade.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {propriedades.length === 0 ? (
         <EstadoVazio mensagem="Cadastre uma casa antes de visualizar o calendário." />
       ) : (
         <>
-          <section className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <ResumoCompacto label="Próximos check-ins" valor={String(resumo.checkInsProximos)} />
-            <ResumoCompacto label="Próximos check-outs" valor={String(resumo.checkOutsProximos)} />
-            <ResumoCompacto label="Limpezas pendentes" valor={String(resumo.limpezasPendentes)} />
-            <ResumoCompacto label="Bloqueios ativos" valor={String(resumo.bloqueiosAtivos)} />
+          <section className="grid items-stretch gap-3 xl:grid-cols-[220px_minmax(280px,1fr)_repeat(4,minmax(130px,1fr))]">
+            <SeletorCasaCalendario
+              casaAtual={casaAtual}
+              filtros={filtros}
+              propriedades={propriedades}
+            />
+            <LegendaHoje
+              checkIns={diaHoje?.checkIns.length ?? 0}
+              checkOuts={diaHoje?.checkOuts.length ?? 0}
+              limpezas={diaHoje?.limpezas.length ?? 0}
+              reservas={diaHoje?.reservas.length ?? 0}
+            />
             <ResumoCompacto
-              label="Reservas futuras"
-              valor={String(reservas.filter((reserva) => reserva.check_in >= hojeIso()).length)}
+              icon={<CalendarCheck2 />}
+              label="Reservas"
+              valor={String(resumo.reservasAtivas)}
+            />
+            <ResumoCompacto
+              icon={<LockKeyhole />}
+              label="Bloqueios"
+              valor={String(resumo.bloqueiosAtivos)}
+            />
+            <ResumoCompacto
+              icon={<Sparkles />}
+              label="Limpezas"
+              valor={String(resumo.limpezasPendentes)}
+            />
+            <ResumoCompacto
+              icon={<Wrench />}
+              label="Manutenções"
+              valor={String(resumo.manutencoesPendentes)}
             />
           </section>
 
@@ -462,12 +461,98 @@ function CampoMotivoBloqueio({ disabled }: { disabled: boolean }) {
   );
 }
 
-function ResumoCompacto({ label, valor }: { label: string; valor: string }) {
+function SeletorCasaCalendario({
+  casaAtual,
+  filtros,
+  propriedades
+}: {
+  casaAtual: DadosModuloCalendario["propriedades"][number] | null;
+  filtros: DadosModuloCalendario["filtros"];
+  propriedades: DadosModuloCalendario["propriedades"];
+}) {
+  return (
+    <Card className="admin-glass-card">
+      <CardContent className="p-3">
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">Casa</p>
+        <details className="group relative">
+          <summary className="flex h-10 cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-cyan-300/20 bg-background/45 px-3 text-sm font-semibold transition hover:border-cyan-300/45 hover:bg-cyan-500/10 [&::-webkit-details-marker]:hidden">
+            <span className="truncate">{casaAtual?.name ?? "Nenhuma casa"}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-cyan-400 transition group-open:rotate-180" />
+          </summary>
+          <div className="absolute left-0 top-full z-30 mt-2 grid max-h-72 w-full gap-1 overflow-auto rounded-xl border border-cyan-300/20 bg-slate-950/95 p-2 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl">
+            {propriedades.map((propriedade) => (
+              <Link
+                className={cn(
+                  "rounded-lg px-3 py-2 text-sm transition hover:bg-cyan-500/10 hover:text-cyan-100",
+                  propriedade.id === filtros.propriedadeId
+                    ? "bg-cyan-500/15 text-cyan-100"
+                    : "text-slate-300"
+                )}
+                href={montarHref(filtros, { propriedadeId: propriedade.id })}
+                key={propriedade.id}
+              >
+                {propriedade.name}
+              </Link>
+            ))}
+          </div>
+        </details>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LegendaHoje({
+  checkIns,
+  checkOuts,
+  limpezas,
+  reservas
+}: {
+  checkIns: number;
+  checkOuts: number;
+  limpezas: number;
+  reservas: number;
+}) {
+  return (
+    <Card className="admin-glass-card">
+      <CardContent className="flex h-full flex-wrap items-center gap-3 p-4 text-sm">
+        <span className="font-semibold text-foreground">Hoje:</span>
+        <IndicadorLegenda cor="bg-orange-400" texto={`${checkIns} check-in`} />
+        <IndicadorLegenda cor="bg-rose-400" texto={`${checkOuts} check-out`} />
+        <IndicadorLegenda cor="bg-cyan-400" texto={`${limpezas} limpezas`} />
+        <IndicadorLegenda cor="bg-emerald-400" texto={`${reservas} reserva futura`} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function IndicadorLegenda({ cor, texto }: { cor: string; texto: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+      <span className={cn("h-2 w-2 rounded-full", cor)} />
+      {texto}
+    </span>
+  );
+}
+
+function ResumoCompacto({
+  icon,
+  label,
+  valor
+}: {
+  icon: ReactNode;
+  label: string;
+  valor: string;
+}) {
   return (
     <Card className="admin-glass-card overflow-hidden">
-      <CardContent className="min-h-24 p-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-xl font-semibold">{valor}</p>
+      <CardContent className="flex min-h-20 items-center gap-3 p-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/12 text-cyan-400 [&_svg]:h-5 [&_svg]:w-5">
+          {icon}
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm text-muted-foreground">{label}</p>
+          <p className="mt-1 text-2xl font-semibold leading-none">{valor}</p>
+        </div>
       </CardContent>
     </Card>
   );
