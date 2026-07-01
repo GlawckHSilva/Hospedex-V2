@@ -1,6 +1,6 @@
 "use server";
 
-import type { CrmGuestRating, ReservationGuestRow } from "@hospedex/types";
+import type { CrmGuestRating, CrmGuestRow, ReservationGuestRow, ReservationRow } from "@hospedex/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -12,6 +12,10 @@ import {
   type ClienteSupabaseServer,
   type EscopoHospede
 } from "./permissions";
+import {
+  avaliarRemocaoHospedeCrm,
+  hospedeReservaCorrespondeAoCrmGuest
+} from "./removal-rules";
 import { AVALIACOES_HOSPEDE_CRM, type EntradaHospedeCrm } from "./types";
 
 /**
@@ -22,6 +26,53 @@ import { AVALIACOES_HOSPEDE_CRM, type EntradaHospedeCrm } from "./types";
  */
 
 const CAMINHO_HOSPEDES = "/hospedes";
+
+export async function criarHospedeAction(formData: FormData) {
+  const escopo = await carregarEscopoHospede();
+
+  try {
+    const supabase = await criarClienteSupabaseServer();
+    const entrada = obterEntradaHospede(formData);
+
+    const existente = await localizarHospedeExistente(supabase, escopo.tenantId, {
+      document_number: entrada.documentNumber,
+      email: entrada.email,
+      full_name: entrada.fullName,
+      phone: entrada.phone
+    });
+
+    if (existente) {
+      throw new ErroRegraHospede("Este hospede ja existe no CRM deste tenant.");
+    }
+
+    const { error } = await supabase.from("crm_guests").insert({
+      birth_date: entrada.birthDate,
+      city: entrada.city,
+      created_by: escopo.userId,
+      document_number: entrada.documentNumber,
+      email: entrada.email,
+      full_name: entrada.fullName,
+      internal_rating: entrada.internalRating,
+      metadata: {
+        origem: "cadastro_manual",
+        removivel_do_crm: true
+      },
+      owner_id: escopo.ownerId,
+      phone: entrada.phone,
+      private_notes: entrada.privateNotes,
+      state: entrada.state,
+      status: entrada.internalRating === "blocked" ? "blocked" : "active",
+      tenant_id: escopo.tenantId
+    });
+
+    if (error) throw new Error(error.message);
+    revalidarHospedes();
+  } catch (erro) {
+    redirecionarComErro(erro, "Erro ao cadastrar hospede.");
+  }
+
+  redirect(`${CAMINHO_HOSPEDES}?sucesso=hospede-criado`);
+}
 
 export async function atualizarHospedeAction(formData: FormData) {
   const escopo = await carregarEscopoHospede();
@@ -100,6 +151,7 @@ export async function excluirHospedeAction(formData: FormData) {
       textoObrigatorio(formData, "hospedeId", "hospede")
     );
     exigirConfirmacaoExclusao(formData);
+    await exigirHospedeRemovivelDoCrm(supabase, escopo, hospede);
 
     // Exclusao logica preserva historico de reservas e auditoria do CRM.
     const { error } = await supabase
@@ -183,6 +235,43 @@ async function localizarHospedeExistente(
   const { data, error } = await consulta.maybeSingle<{ id: string }>();
   if (error) throw new Error(error.message);
   return data;
+}
+
+async function exigirHospedeRemovivelDoCrm(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoHospede,
+  hospede: CrmGuestRow
+) {
+  const { data: hospedesReserva, error: erroHospedesReserva } = await supabase
+    .from("reservation_guests")
+    .select("*")
+    .eq("tenant_id", escopo.tenantId)
+    .returns<ReservationGuestRow[]>();
+
+  if (erroHospedesReserva) throw new Error(erroHospedesReserva.message);
+
+  const reservaIds = (hospedesReserva ?? [])
+    .filter((hospedeReserva) => hospedeReservaCorrespondeAoCrmGuest(hospede, hospedeReserva))
+    .map((hospedeReserva) => hospedeReserva.reservation_id);
+
+  if (!reservaIds.length) return;
+
+  const { data: reservas, error: erroReservas } = await supabase
+    .from("reservations")
+    .select("*")
+    .eq("tenant_id", escopo.tenantId)
+    .eq("owner_id", escopo.ownerId)
+    .in("id", reservaIds)
+    .returns<ReservationRow[]>();
+
+  if (erroReservas) throw new Error(erroReservas.message);
+
+  const resultado = avaliarRemocaoHospedeCrm(reservas ?? []);
+  if (!resultado.permitida) {
+    throw new ErroRegraHospede(
+      resultado.motivo ?? "Nao e possivel apagar hospedes com historico operacional ativo."
+    );
+  }
 }
 
 function obterEntradaHospede(formData: FormData): EntradaHospedeCrm {

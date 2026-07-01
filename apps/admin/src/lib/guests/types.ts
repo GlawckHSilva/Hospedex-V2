@@ -39,6 +39,10 @@ export type HospedeCrmCompleto = CrmGuestRow & {
     checkIns: number;
     checkOuts: number;
   };
+  remocaoCrm: {
+    motivo: string | null;
+    permitida: boolean;
+  };
 };
 
 export type EventoTimelineHospede = {

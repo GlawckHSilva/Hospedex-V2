@@ -11,8 +11,11 @@ import type { ContextoAutenticacao } from "../auth/types";
 import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { podeGerenciarHospedes, podeLerHospedes } from "./permissions";
+import {
+  avaliarRemocaoHospedeCrm,
+  hospedeReservaCorrespondeAoCrmGuest
+} from "./removal-rules";
 import type {
-  ChaveHospedeReserva,
   DadosModuloHospedes,
   EventoTimelineHospede,
   FiltrosHospedes,
@@ -144,7 +147,8 @@ function montarHospedeCompleto(
     .filter((reserva) =>
       hospedesReserva.some(
         (hospedeReserva) =>
-          hospedeReserva.reservation_id === reserva.id && correspondeHospede(hospede, hospedeReserva)
+          hospedeReserva.reservation_id === reserva.id &&
+          hospedeReservaCorrespondeAoCrmGuest(hospede, hospedeReserva)
       )
     )
     .map<ReservaHospede>((reserva) => ({
@@ -173,23 +177,10 @@ function montarHospedeCompleto(
         .filter((reserva) => reserva.status !== "cancelled")
         .reduce((total, reserva) => total + Number(reserva.total_amount), 0)
     },
+    remocaoCrm: avaliarRemocaoHospedeCrm(reservasDoHospede),
     reservas: reservasDoHospede,
     timeline: montarTimeline(reservasDoHospede)
   };
-}
-
-function correspondeHospede(hospede: CrmGuestRow, chave: ChaveHospedeReserva): boolean {
-  return Boolean(
-    (hospede.email && chave.email && hospede.email.toLowerCase() === chave.email.toLowerCase()) ||
-      (hospede.phone && chave.phone && hospede.phone === chave.phone) ||
-      (hospede.document_number &&
-        chave.document_number &&
-        hospede.document_number === chave.document_number) ||
-      (!hospede.email &&
-        !hospede.phone &&
-        !hospede.document_number &&
-        hospede.full_name.toLowerCase() === chave.full_name.toLowerCase())
-  );
 }
 
 function montarTimeline(reservas: ReservaHospede[]): EventoTimelineHospede[] {

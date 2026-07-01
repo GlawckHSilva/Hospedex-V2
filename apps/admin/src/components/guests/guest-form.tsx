@@ -1,7 +1,7 @@
 import { Button, Input, Label } from "@hospedex/ui";
 import type { ComponentProps } from "react";
 
-import { atualizarHospedeAction } from "../../lib/guests/actions";
+import { atualizarHospedeAction, criarHospedeAction } from "../../lib/guests/actions";
 import {
   AVALIACOES_HOSPEDE_CRM,
   LABEL_AVALIACAO_HOSPEDE_CRM,
@@ -16,7 +16,8 @@ import {
  */
 
 export type GuestFormProps = {
-  hospede: HospedeCrmCompleto;
+  hospede?: HospedeCrmCompleto;
+  modo?: "criar" | "editar";
   podeGerenciar: boolean;
 };
 
@@ -25,41 +26,43 @@ const campoClasse =
 const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
-export function GuestForm({ hospede, podeGerenciar }: GuestFormProps) {
+export function GuestForm({ hospede, modo = "editar", podeGerenciar }: GuestFormProps) {
+  const editando = modo === "editar";
+
   return (
-    <form action={atualizarHospedeAction} className="grid gap-4">
-      <input name="hospedeId" type="hidden" value={hospede.id} />
+    <form action={editando ? atualizarHospedeAction : criarHospedeAction} className="grid gap-4">
+      {editando && hospede ? <input name="hospedeId" type="hidden" value={hospede.id} /> : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoTexto
-          defaultValue={hospede.full_name}
+          defaultValue={hospede?.full_name ?? ""}
           disabled={!podeGerenciar}
           label="Nome"
           name="fullName"
           required
         />
         <CampoAvaliacao
-          defaultValue={hospede.internal_rating}
+          defaultValue={hospede?.internal_rating ?? "neutral"}
           disabled={!podeGerenciar}
         />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto
-          defaultValue={hospede.phone ?? ""}
+          defaultValue={hospede?.phone ?? ""}
           disabled={!podeGerenciar}
           label="Telefone"
           name="phone"
         />
         <CampoTexto
-          defaultValue={hospede.email ?? ""}
+          defaultValue={hospede?.email ?? ""}
           disabled={!podeGerenciar}
           label="E-mail"
           name="email"
           type="email"
         />
         <CampoTexto
-          defaultValue={hospede.document_number ?? ""}
+          defaultValue={hospede?.document_number ?? ""}
           disabled={!podeGerenciar}
           label="Documento"
           name="documentNumber"
@@ -68,19 +71,19 @@ export function GuestForm({ hospede, podeGerenciar }: GuestFormProps) {
 
       <div className="grid gap-4 md:grid-cols-3">
         <CampoTexto
-          defaultValue={hospede.city ?? ""}
+          defaultValue={hospede?.city ?? ""}
           disabled={!podeGerenciar}
           label="Cidade"
           name="city"
         />
         <CampoTexto
-          defaultValue={hospede.state ?? ""}
+          defaultValue={hospede?.state ?? ""}
           disabled={!podeGerenciar}
           label="Estado"
           name="state"
         />
         <CampoTexto
-          defaultValue={hospede.birth_date ?? ""}
+          defaultValue={hospede?.birth_date ?? ""}
           disabled={!podeGerenciar}
           label="Aniversario"
           name="birthDate"
@@ -89,7 +92,7 @@ export function GuestForm({ hospede, podeGerenciar }: GuestFormProps) {
       </div>
 
       <CampoArea
-        defaultValue={hospede.private_notes ?? ""}
+        defaultValue={hospede?.private_notes ?? ""}
         disabled={!podeGerenciar}
         label="Observacoes privadas"
         name="privateNotes"
@@ -97,7 +100,7 @@ export function GuestForm({ hospede, podeGerenciar }: GuestFormProps) {
 
       <div className="flex justify-end">
         <Button disabled={!podeGerenciar} type="submit">
-          Salvar hospede
+          {editando ? "Salvar hospede" : "Criar hospede"}
         </Button>
       </div>
     </form>
