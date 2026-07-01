@@ -8,6 +8,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   moduloLimpezaAtivo,
@@ -71,8 +72,14 @@ export async function carregarDadosModuloLimpeza(
   registrarErro("reservas operacionais", reservasResultado.error);
 
   const propriedades = propriedadesResultado.data ?? [];
-  const reservasBase = reservasResultado.data ?? [];
-  const tarefasBase = tarefasResultado.data ?? [];
+  const reservasBase = filtrarPorPropriedadesAtivas(
+    reservasResultado.data ?? [],
+    propriedades
+  );
+  const tarefasBase = filtrarPorPropriedadesAtivas(
+    tarefasResultado.data ?? [],
+    propriedades
+  );
   const hospedes = await carregarHospedes(tenantId, reservasBase.map((reserva) => reserva.id));
   const responsaveis = await carregarResponsaveis(tenantId, ownerId);
 

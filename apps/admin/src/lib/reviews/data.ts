@@ -5,6 +5,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   AvaliacaoComRelacionamentos,
@@ -50,7 +51,7 @@ export async function carregarDadosAvaliacoes(
   const [propriedadesResultado, avaliacoesResultado] = await Promise.all([
     supabase
       .from("properties")
-      .select("id,name,status")
+      .select("id,name,status,deleted_at")
       .eq("tenant_id", tenant.id)
       .is("deleted_at", null)
       .order("name", { ascending: true })
@@ -62,7 +63,10 @@ export async function carregarDadosAvaliacoes(
   registrarErro("avaliacoes", avaliacoesResultado.error);
 
   const propriedades = propriedadesResultado.data ?? [];
-  const avaliacoesBase = avaliacoesResultado.data ?? [];
+  const avaliacoesBase = filtrarPorPropriedadesAtivas(
+    avaliacoesResultado.data ?? [],
+    propriedades
+  );
   const [reservas, hospedes] = await Promise.all([
     carregarReservasDasAvaliacoes(tenant.id, avaliacoesBase),
     carregarHospedesDasAvaliacoes(tenant.id, avaliacoesBase)

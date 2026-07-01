@@ -12,6 +12,10 @@ import {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+// A listagem publica precisa refletir imediatamente casas arquivadas ou
+// despublicadas no Gerenciamento, sem depender de HTML estatico antigo.
+export const dynamic = "force-dynamic";
+
 export default async function PropriedadesPage({
   searchParams
 }: {

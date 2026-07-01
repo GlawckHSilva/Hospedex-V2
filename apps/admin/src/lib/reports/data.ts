@@ -9,6 +9,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { podeLerRelatorios } from "./permissions";
 import {
@@ -85,7 +86,8 @@ export async function carregarDadosModuloRelatorios(
   registrarErro("categorias financeiras", categoriasResultado.error);
   registrarErro("lancamentos financeiros", transacoesResultado.error);
 
-  const reservas = reservasResultado.data ?? [];
+  const propriedades = propriedadesResultado.data ?? [];
+  const reservas = filtrarPorPropriedadesAtivas(reservasResultado.data ?? [], propriedades);
   const idsReservas = reservas.map((reserva) => reserva.id);
   const [hospedes, extras] = await Promise.all([
     carregarHospedesReservas(tenantId, idsReservas),
@@ -96,7 +98,7 @@ export async function carregarDadosModuloRelatorios(
     categorias: categoriasResultado.data ?? [],
     extras,
     hospedes,
-    propriedades: propriedadesResultado.data ?? [],
+    propriedades,
     reservas,
     transacoes: (transacoesResultado.data ?? []).filter((transacao) =>
       transacaoPertenceAoPeriodo(transacao, filtros)

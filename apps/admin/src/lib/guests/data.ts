@@ -8,6 +8,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { podeGerenciarHospedes, podeLerHospedes } from "./permissions";
 import type {
@@ -77,12 +78,18 @@ export async function carregarDadosModuloHospedes(
   registrarErro("historico", historicoResultado.error);
   registrarErro("timeline", observacoesResultado.error);
 
+  const propriedades = propriedadesResultado.data ?? [];
+  const reservasOperacionais = filtrarPorPropriedadesAtivas(
+    reservasResultado.data ?? [],
+    propriedades
+  );
+
   const hospedes = (hospedesResultado.data ?? []).map((hospede) =>
     montarHospedeCompleto(
       hospede,
-      reservasResultado.data ?? [],
+      reservasOperacionais,
       hospedesReservaResultado.data ?? [],
-      propriedadesResultado.data ?? [],
+      propriedades,
       historicoResultado.data ?? [],
       observacoesResultado.data ?? []
     )

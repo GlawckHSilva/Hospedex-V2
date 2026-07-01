@@ -25,7 +25,7 @@ export type FiltrosAvaliacoes = {
   status: FiltroStatusAvaliacao;
 };
 
-export type CasaAvaliacao = Pick<PropertyRow, "id" | "name" | "status">;
+export type CasaAvaliacao = Pick<PropertyRow, "id" | "name" | "status" | "deleted_at">;
 export type ReservaAvaliacao = Pick<
   ReservationRow,
   "id" | "code" | "check_in" | "check_out" | "status"

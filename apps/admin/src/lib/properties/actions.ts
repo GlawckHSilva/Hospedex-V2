@@ -302,12 +302,15 @@ export async function excluirPropriedadeAction(formData: FormData) {
       propriedadeId,
     );
 
-    // A exclusão de propriedade é lógica para preservar histórico operacional,
-    // reservas futuras e auditoria multi-tenant sem expor a propriedade nas listas.
+    // A exclusao de propriedade e logica para preservar financeiro e auditoria,
+    // mas os modulos operacionais ignoram tudo que estiver ligado a esta casa.
+    const dataExclusao = new Date().toISOString();
     const { error } = await supabase
       .from("properties")
       .update({
-        deleted_at: new Date().toISOString(),
+        deleted_at: dataExclusao,
+        is_public: false,
+        marketplace_featured: false,
         status: "archived",
       })
       .eq("id", propriedade.id)
@@ -1640,4 +1643,12 @@ function montarContextoErroCasa(
 
 function revalidarModulo() {
   revalidatePath(CAMINHO_PROPRIEDADES);
+  revalidatePath("/dashboard");
+  revalidatePath("/pendencias");
+  revalidatePath("/reservas");
+  revalidatePath("/calendario");
+  revalidatePath("/limpeza");
+  revalidatePath("/hospedes");
+  revalidatePath("/relatorios");
+  revalidatePath("/avaliacoes");
 }

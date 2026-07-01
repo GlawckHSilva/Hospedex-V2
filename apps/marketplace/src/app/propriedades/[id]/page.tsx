@@ -42,6 +42,10 @@ import { carregarCotacoesCambio } from "../../../lib/currency/service";
 type Params = Promise<{ id: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+// A pagina publica da casa deve consultar o estado atual da propriedade para
+// retornar 404 assim que ela for arquivada ou despublicada.
+export const dynamic = "force-dynamic";
+
 export default async function PropriedadePage({
   params,
   searchParams

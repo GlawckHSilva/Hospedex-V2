@@ -11,6 +11,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosModuloReservas,
@@ -119,9 +120,15 @@ export async function carregarDadosModuloReservas(
   registrarErroLeitura("cobrancas da reserva", cobrancasResultado.error);
   registrarErroLeitura("pagamentos da reserva", pagamentosResultado.error);
 
-  const reservas = montarReservas(
+  const propriedades = propriedadesResultado.data ?? [];
+  const reservasOperacionais = filtrarPorPropriedadesAtivas(
     reservasResultado.data ?? [],
-    propriedadesResultado.data ?? [],
+    propriedades
+  );
+
+  const reservas = montarReservas(
+    reservasOperacionais,
+    propriedades,
     hospedesResultado.data ?? [],
     historicoResultado.data ?? [],
     cobrancasResultado.data ?? [],
@@ -130,7 +137,7 @@ export async function carregarDadosModuloReservas(
     observacoesResultado.data ?? [],
     await carregarLancamentosFinanceiros(
       tenantId,
-      (reservasResultado.data ?? []).map((reserva) => reserva.id)
+      reservasOperacionais.map((reserva) => reserva.id)
     )
   ).filter((reserva) => correspondeFiltrosRelacionados(reserva, filtros));
 
@@ -138,7 +145,7 @@ export async function carregarDadosModuloReservas(
     filtros,
     podeGerenciar: podeGerenciarReservas(contexto),
     podeGerenciarPagamento: podeGerenciarPagamentoReservas(contexto),
-    propriedades: propriedadesResultado.data ?? [],
+    propriedades,
     reservas,
     resumo: {
       pendentes: reservas.filter((reserva) => reserva.status === "pending").length,

@@ -31,6 +31,10 @@ import {
 const HERO_FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80";
 
+// A home do Marketplace depende das casas publicadas no banco. Forcar leitura
+// dinamica evita manter em cache uma casa excluida pelo proprietario.
+export const dynamic = "force-dynamic";
+
 const motivosReserva = [
   {
     title: "Canal direto",

@@ -10,6 +10,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 
 /**
@@ -280,7 +281,16 @@ async function carregarDadosOperacionais(
   registrarErroModulo(erros, "limpeza", limpezasResultado.error);
   registrarErroModulo(erros, "licencas", licencasResultado.error);
 
-  const reservas = reservasResultado.data ?? [];
+  const propriedades = propriedadesResultado.data ?? [];
+  const reservas = filtrarPorPropriedadesAtivas(reservasResultado.data ?? [], propriedades);
+  const reservasPendentes = filtrarPorPropriedadesAtivas(
+    reservasPendentesResultado.data ?? [],
+    propriedades
+  );
+  const limpezasPendentes = filtrarPorPropriedadesAtivas(
+    limpezasResultado.data ?? [],
+    propriedades
+  );
   const hospedes = await carregarHospedesEventos(tenantId, reservas, periodo, erros);
 
   return {
@@ -288,12 +298,12 @@ async function carregarDadosOperacionais(
       hospedes,
       licencas: licencasResultado.data ?? [],
       licencasPermitidas: podeVerLicencas,
-      limpezasPendentes: limpezasResultado.data ?? [],
+      limpezasPendentes,
       limpezaPermitida: podeVerLimpeza,
-      propriedades: propriedadesResultado.data ?? [],
+      propriedades,
       propriedadesPermitidas: podeVerPropriedades,
       reservas,
-      reservasPendentes: reservasPendentesResultado.data ?? [],
+      reservasPendentes,
       transacoesReceita: transacoesResultado.data ?? []
     },
     erros

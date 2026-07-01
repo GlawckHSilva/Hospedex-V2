@@ -13,6 +13,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosConfirmacoes,
@@ -90,6 +91,7 @@ export async function carregarDadosConfirmacoes(
       .select("*")
       .eq("tenant_id", tenantId)
       .eq("owner_id", ownerId)
+      .is("deleted_at", null)
       .returns<PropertyRow[]>()
   ]);
 
@@ -97,9 +99,15 @@ export async function carregarDadosConfirmacoes(
   registrarErro("limpezas", tarefasResultado.error);
   registrarErro("casas", propriedadesResultado.error);
 
-  const reservasBase = reservasResultado.data ?? [];
-  const tarefasBase = tarefasResultado.data ?? [];
   const propriedades = propriedadesResultado.data ?? [];
+  const reservasBase = filtrarPorPropriedadesAtivas(
+    reservasResultado.data ?? [],
+    propriedades
+  );
+  const tarefasBase = filtrarPorPropriedadesAtivas(
+    tarefasResultado.data ?? [],
+    propriedades
+  );
   const reservaIds = reservasBase.map((reserva) => reserva.id);
   const tarefaReservaIds = tarefasBase
     .map((tarefa) => tarefa.reservation_id)
