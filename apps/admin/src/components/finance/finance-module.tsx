@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   Plus,
   Search,
+  SlidersHorizontal,
   TrendingDown,
   TrendingUp,
   WalletCards,
@@ -28,8 +29,7 @@ import {
 } from "../../lib/finance/types";
 import { FinanceForm } from "./finance-form";
 import {
-  FinanceTransactionMobileCard,
-  FinanceTransactionRow,
+  FinanceTransactionCard,
 } from "./finance-transaction-card";
 
 /**
@@ -156,7 +156,7 @@ export function FinanceModule({
 
       <Card className="admin-glass-card">
         <CardContent className="p-4">
-          <form className="grid gap-4 xl:grid-cols-[0.85fr_0.85fr_0.85fr_1fr_minmax(220px,1.8fr)_auto]">
+          <form className="hidden gap-4 lg:grid xl:grid-cols-[0.85fr_0.85fr_0.85fr_1fr_minmax(220px,1.8fr)_auto]">
             <CampoMes defaultValue={filtros.mes} />
             <CampoTipoFiltro defaultValue={filtros.tipo} />
             <CampoStatusFiltro defaultValue={filtros.status} />
@@ -176,6 +176,42 @@ export function FinanceModule({
               </ActionButton>
             </div>
           </form>
+
+          <form className="space-y-3 lg:hidden">
+            <CampoBusca defaultValue={filtros.busca} id="busca-mobile" />
+            <details className="group rounded-xl border border-cyan-400/20 bg-background/45">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-sm font-semibold text-cyan-700 marker:hidden dark:text-cyan-200">
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filtros
+                </span>
+                <span className="text-xs text-muted-foreground group-open:hidden">
+                  abrir
+                </span>
+                <span className="hidden text-xs text-muted-foreground group-open:inline">
+                  fechar
+                </span>
+              </summary>
+              <div className="grid gap-4 px-3 pb-3 pt-1">
+                <CampoMes defaultValue={filtros.mes} id="mes-mobile" />
+                <CampoTipoFiltro defaultValue={filtros.tipo} id="tipo-mobile" />
+                <CampoStatusFiltro defaultValue={filtros.status} id="status-mobile" />
+                <CampoCategoriaFiltro
+                  categorias={categorias}
+                  defaultValue={filtros.categoriaId}
+                  id="categoria-mobile"
+                />
+                <ActionButton
+                  className="h-10 w-full px-4"
+                  icon={<Search />}
+                  type="submit"
+                  variant="settings"
+                >
+                  Filtrar
+                </ActionButton>
+              </div>
+            </details>
+          </form>
         </CardContent>
       </Card>
 
@@ -186,41 +222,9 @@ export function FinanceModule({
         />
       ) : lancamentos.length > 0 ? (
         <>
-          <Card className="admin-glass-card hidden overflow-hidden lg:block">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[1080px] text-left text-sm">
-                <thead className="border-b border-border/80 bg-cyan-500/[0.03] text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold">Tipo</th>
-                    <th className="px-4 py-3 font-semibold">Descrição</th>
-                    <th className="px-4 py-3 font-semibold">Categoria</th>
-                    <th className="px-4 py-3 font-semibold">Hóspede/Casa</th>
-                    <th className="px-4 py-3 font-semibold">Data</th>
-                    <th className="px-4 py-3 font-semibold">Status</th>
-                    <th className="px-4 py-3 text-right font-semibold">Valor</th>
-                    <th className="px-4 py-3 text-right font-semibold">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lancamentos.map((lancamento) => (
-                    <FinanceTransactionRow
-                      categorias={categorias}
-                      contas={contas}
-                      filtros={filtros}
-                      key={lancamento.id}
-                      lancamento={lancamento}
-                      podeGerenciar={podeGerenciar}
-                      propriedades={propriedades}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <div className="grid gap-3 lg:hidden">
+          <div className="grid gap-4 xl:grid-cols-2">
             {lancamentos.map((lancamento) => (
-              <FinanceTransactionMobileCard
+              <FinanceTransactionCard
                 categorias={categorias}
                 contas={contas}
                 filtros={filtros}
@@ -369,20 +373,32 @@ function EstadoVazio({
   );
 }
 
-function CampoMes({ defaultValue }: { defaultValue: string }) {
+function CampoMes({
+  defaultValue,
+  id = "mes",
+}: {
+  defaultValue: string;
+  id?: string;
+}) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="mes">Mês</Label>
-      <Input defaultValue={defaultValue} id="mes" name="mes" required type="month" />
+      <Label htmlFor={id}>Mês</Label>
+      <Input defaultValue={defaultValue} id={id} name="mes" required type="month" />
     </div>
   );
 }
 
-function CampoTipoFiltro({ defaultValue }: { defaultValue: string }) {
+function CampoTipoFiltro({
+  defaultValue,
+  id = "tipo",
+}: {
+  defaultValue: string;
+  id?: string;
+}) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="tipo">Tipo</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="tipo" name="tipo">
+      <Label htmlFor={id}>Tipo</Label>
+      <select className={campoClasse} defaultValue={defaultValue} id={id} name="tipo">
         <option value="todos">Todos</option>
         {TIPOS_LANCAMENTO_FINANCEIRO.map((tipo) => (
           <option key={tipo} value={tipo}>
@@ -394,11 +410,17 @@ function CampoTipoFiltro({ defaultValue }: { defaultValue: string }) {
   );
 }
 
-function CampoStatusFiltro({ defaultValue }: { defaultValue: string }) {
+function CampoStatusFiltro({
+  defaultValue,
+  id = "status",
+}: {
+  defaultValue: string;
+  id?: string;
+}) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="status">Status</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="status" name="status">
+      <Label htmlFor={id}>Status</Label>
+      <select className={campoClasse} defaultValue={defaultValue} id={id} name="status">
         <option value="todos">Todos</option>
         {STATUS_LANCAMENTO_FINANCEIRO.map((status) => (
           <option key={status} value={status}>
@@ -413,17 +435,19 @@ function CampoStatusFiltro({ defaultValue }: { defaultValue: string }) {
 function CampoCategoriaFiltro({
   categorias,
   defaultValue,
+  id = "categoriaId",
 }: {
   categorias: DadosModuloFinanceiro["categorias"];
   defaultValue: string;
+  id?: string;
 }) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="categoriaId">Categoria</Label>
+      <Label htmlFor={id}>Categoria</Label>
       <select
         className={campoClasse}
         defaultValue={defaultValue}
-        id="categoriaId"
+        id={id}
         name="categoriaId"
       >
         <option value="todas">Todas</option>
@@ -437,16 +461,22 @@ function CampoCategoriaFiltro({
   );
 }
 
-function CampoBusca({ defaultValue }: { defaultValue: string }) {
+function CampoBusca({
+  defaultValue,
+  id = "busca",
+}: {
+  defaultValue: string;
+  id?: string;
+}) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="busca">Busca</Label>
+      <Label htmlFor={id}>Busca</Label>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="pl-9"
           defaultValue={defaultValue}
-          id="busca"
+          id={id}
           name="busca"
           placeholder="Buscar por descrição, casa, reserva ou hóspede"
         />
