@@ -166,7 +166,7 @@ export function AppModal({
             aria-labelledby={titleId}
             aria-modal="true"
             className={cn(
-              "relative my-auto flex max-h-[calc(100svh-3rem)] w-full flex-col overflow-hidden rounded-2xl border border-cyan-300/20 bg-background/92 shadow-2xl shadow-cyan-950/30 ring-1 ring-white/10 dark:bg-zinc-950/92",
+              "relative my-auto flex max-h-[calc(100svh-3rem)] w-full flex-col overflow-hidden rounded-2xl border border-cyan-300/20 bg-card/95 shadow-2xl shadow-cyan-950/25 ring-1 ring-white/10",
               sizeClass[size],
             )}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
@@ -175,7 +175,7 @@ export function AppModal({
             role="dialog"
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            <div className="shrink-0 border-b bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_32%)] px-5 py-4 sm:px-6">
+            <div className="shrink-0 border-b border-border bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_34%)] px-5 py-4 sm:px-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   {eyebrow ? (

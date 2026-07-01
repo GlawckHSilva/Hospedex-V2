@@ -64,9 +64,9 @@ const variantClass: Record<ActionButtonVariant, { fill: string; shell: string }>
       "border-cyan-400/35 bg-cyan-500/8 text-cyan-700 shadow-cyan-950/10 dark:text-cyan-200",
   },
   settings: {
-    fill: "bg-violet-600",
+    fill: "bg-slate-500",
     shell:
-      "border-violet-500/35 bg-violet-500/8 text-violet-700 shadow-violet-950/10 dark:text-violet-200",
+      "border-slate-500/35 bg-slate-500/8 text-slate-700 shadow-slate-950/10 dark:text-slate-200",
   },
   status: {
     fill: "bg-orange-500",
@@ -74,9 +74,9 @@ const variantClass: Record<ActionButtonVariant, { fill: string; shell: string }>
       "border-orange-400/40 bg-orange-400/10 text-orange-700 shadow-orange-950/10 dark:text-orange-200",
   },
   view: {
-    fill: "bg-blue-600",
+    fill: "bg-cyan-500",
     shell:
-      "border-blue-500/35 bg-blue-500/8 text-blue-700 shadow-blue-950/10 dark:text-blue-200",
+      "border-cyan-400/35 bg-cyan-500/8 text-cyan-700 shadow-cyan-950/10 dark:text-cyan-200",
   },
 };
 

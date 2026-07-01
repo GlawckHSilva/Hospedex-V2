@@ -194,7 +194,7 @@ function TopbarAdmin({
   tituloPerfil
 }: TopbarAdminProps) {
   return (
-    <header className="glass-navbar sticky top-0 z-40 bg-background/72">
+    <header className="glass-navbar sticky top-0 z-40 bg-[#030712]/88">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
@@ -260,7 +260,7 @@ function PerfilUsuarioMenu({
         aria-expanded={aberto}
         aria-haspopup="menu"
         aria-label="Abrir menu do perfil"
-        className="group flex h-10 items-center gap-1.5 rounded-full border border-border/70 bg-background/70 py-1 pl-1 pr-2 shadow-sm transition hover:border-cyan-300/55 hover:bg-cyan-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+        className="group flex h-10 items-center gap-1.5 rounded-full border border-border bg-card/85 py-1 pl-1 pr-2 shadow-sm transition hover:border-cyan-300/45 hover:bg-cyan-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
         onClick={() => setAberto((valorAtual) => !valorAtual)}
         type="button"
       >
@@ -277,7 +277,7 @@ function PerfilUsuarioMenu({
         {aberto ? (
           <motion.div
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-border/70 bg-background/95 p-2 shadow-xl shadow-cyan-950/10 backdrop-blur-xl dark:shadow-black/30"
+            className="absolute right-0 top-12 z-50 w-64 rounded-xl border border-border bg-card/95 p-2 shadow-xl shadow-cyan-950/10 backdrop-blur-xl dark:shadow-black/30"
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             initial={{ opacity: 0, y: -4, scale: 0.98 }}
             role="menu"
@@ -332,7 +332,7 @@ function AvatarUsuario({
   }, [avatarUrl]);
 
   return (
-    <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/40 bg-cyan-500/15 text-xs font-semibold text-cyan-800 dark:text-cyan-100">
+    <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-300/40 bg-cyan-500/15 text-xs font-semibold text-cyan-900 dark:text-cyan-100">
       {mostrarImagem && avatarUrl ? (
         <Image
           alt={nomeUsuario}
@@ -416,7 +416,7 @@ function MenuMobileAdmin({
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 bg-background/70 backdrop-blur-sm lg:hidden"
+      className="fixed inset-0 z-50 bg-background/78 backdrop-blur-sm lg:hidden"
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
     >
@@ -480,10 +480,10 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
     </>
   );
   const classes = cn(
-    "flex h-10 items-center gap-2 rounded-lg px-3 text-sm transition duration-200 hover:translate-x-0.5",
+    "flex h-10 items-center gap-2 rounded-lg border border-transparent px-3 text-sm transition-colors duration-200",
     ativo
-      ? "bg-cyan-500/14 text-cyan-800 ring-1 ring-cyan-400/30 dark:text-cyan-100"
-      : "text-muted-foreground hover:bg-cyan-500/10 hover:text-foreground",
+      ? "border-cyan-400/30 bg-cyan-500/12 text-cyan-900 ring-1 ring-cyan-400/25 dark:text-cyan-100"
+      : "text-muted-foreground hover:border-cyan-400/20 hover:bg-cyan-500/8 hover:text-foreground",
     item.bloqueadoPorFeatureFlag && "cursor-not-allowed opacity-55 hover:bg-transparent"
   );
 
