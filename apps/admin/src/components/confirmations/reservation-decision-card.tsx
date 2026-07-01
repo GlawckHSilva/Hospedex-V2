@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Badge, Card, CardContent } from "@hospedex/ui";
+import { Badge, Card, CardContent, cn } from "@hospedex/ui";
 
 import {
   adicionarObservacaoConfirmacaoAction,
@@ -88,12 +88,13 @@ export function ReservationDecisionCard({
   const podeCancelarReserva =
     podeGerenciar && !reservaEncerrada && (!pagamentoComHistorico || podeGerenciarPagamento);
   const saldoPendente = calcularSaldoPendente(reserva);
+  const prioridade = obterPrioridadePendencia(reserva);
 
   return (
-    <Card className="admin-glass-card overflow-hidden">
-      <CardContent className="grid gap-4 p-4 sm:p-5">
-        <header className="space-y-3">
-          <div className="flex flex-wrap gap-2">
+    <Card className={cn("admin-glass-card overflow-hidden", prioridade.cardClass)}>
+      <CardContent className="grid gap-3 p-4">
+        <header className="space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant={variantStatusReserva(reserva.status)}>
               {LABEL_STATUS_RESERVA[reserva.status]}
             </Badge>
@@ -103,6 +104,7 @@ export function ReservationDecisionCard({
             {temComprovanteEmAnalise(reserva) ? (
               <Badge variant="warning">Comprovante em análise</Badge>
             ) : null}
+            <span className={prioridade.labelClass}>{prioridade.label}</span>
           </div>
 
           <div>
@@ -118,12 +120,12 @@ export function ReservationDecisionCard({
             </p>
           </div>
 
-          <p className="rounded-xl border border-cyan-300/15 bg-cyan-400/10 p-3 text-sm leading-5 text-muted-foreground">
+          <p className="rounded-lg border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-sm leading-5 text-muted-foreground">
             {mensagem.description}
           </p>
         </header>
 
-        <section className="grid gap-2 text-sm sm:grid-cols-2">
+        <section className="grid gap-2 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <Resumo icon={<CalendarDays />} label="Período" valor={formatarPeriodo(reserva)} />
           <Resumo
             icon={<Users />}
@@ -142,7 +144,7 @@ export function ReservationDecisionCard({
           />
         </section>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
           <AcaoPrincipal
             podeGerenciar={podeGerenciar}
             podeGerenciarPagamento={podeGerenciarPagamento}
@@ -272,11 +274,6 @@ function MaisAcoes({
         )}
 
         <PainelDetalhe titulo="Ações secundárias">
-          <AcaoCancelarReserva
-            disabled={!podeCancelarReserva}
-            reservaId={reserva.id}
-            statusReserva={reserva.status}
-          />
           <AcaoPagamentoPendente
             disabled={!podeVoltarPagamento}
             reservaId={reserva.id}
@@ -297,6 +294,14 @@ function MaisAcoes({
               Adicionar observação
             </FormActionButton>
           </form>
+        </PainelDetalhe>
+
+        <PainelDetalhe titulo="AÃ§Ã£o de risco">
+          <AcaoCancelarReserva
+            disabled={!podeCancelarReserva}
+            reservaId={reserva.id}
+            statusReserva={reserva.status}
+          />
         </PainelDetalhe>
       </div>
     </EntityViewModal>
@@ -648,6 +653,37 @@ function obterTipoPendenciaReserva(reserva: ReservaConfirmacao): TipoMensagemPen
   if (reserva.status === "pending") return "reservation_request";
   if (reserva.payment_status === "partial") return "partial_payment";
   return "awaiting_payment";
+}
+
+function obterPrioridadePendencia(reserva: ReservaConfirmacao) {
+  const vencido =
+    reserva.payment_status === "overdue" ||
+    reserva.cobrancas.some((cobranca) => cobranca.status === "overdue");
+
+  if (vencido) {
+    return {
+      cardClass: "border-red-400/35 shadow-red-950/10",
+      label: "Alta prioridade",
+      labelClass:
+        "rounded-full border border-red-400/35 bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-200",
+    };
+  }
+
+  if (reserva.status === "pending" || temComprovanteEmAnalise(reserva)) {
+    return {
+      cardClass: "border-orange-400/30 shadow-orange-950/10",
+      label: "Media prioridade",
+      labelClass:
+        "rounded-full border border-orange-400/35 bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-200",
+    };
+  }
+
+  return {
+    cardClass: "border-cyan-400/20 shadow-cyan-950/10",
+    label: "Media prioridade",
+    labelClass:
+      "rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-xs font-medium text-cyan-200",
+  };
 }
 
 function temComprovanteEmAnalise(reserva: ReservaConfirmacao) {

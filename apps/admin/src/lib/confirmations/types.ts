@@ -81,5 +81,6 @@ export type DadosConfirmacoes = {
 
 export type SearchParamsConfirmacoes = {
   erro?: string | undefined;
+  filtroPagamento?: string | undefined;
   sucesso?: string | undefined;
 };

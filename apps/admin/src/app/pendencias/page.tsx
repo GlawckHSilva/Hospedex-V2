@@ -47,6 +47,7 @@ export default async function PendenciasPage({ searchParams }: PageProps) {
       <PendingModule
         {...dados}
         erro={lerParametro(params, "erro")}
+        filtroPagamento={lerParametro(params, "pagamento")}
         sucesso={lerParametro(params, "sucesso")}
         tenantNome={contexto.tenant.name}
       />

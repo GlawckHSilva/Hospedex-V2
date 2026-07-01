@@ -29,8 +29,7 @@ export default function PendenciasLoading() {
             </CardContent>
           </Card>
           <div className="space-y-4">
-            <Skeleton className="h-48" />
-            <Skeleton className="h-64" />
+            <Skeleton className="h-72" />
           </div>
         </section>
       </div>
