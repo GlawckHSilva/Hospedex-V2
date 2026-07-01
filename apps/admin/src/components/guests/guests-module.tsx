@@ -14,7 +14,7 @@ import {
   type SearchParamsHospedes
 } from "../../lib/guests/types";
 import { GuestForm } from "./guest-form";
-import { GuestMobileCard, GuestTableRow } from "./guest-card";
+import { GuestCard } from "./guest-card";
 
 /**
  * Módulo de Hóspedes e CRM.
@@ -80,15 +80,39 @@ export function GuestsModule({
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Resumo color="cyan" description="Hóspedes cadastrados" icon={<UsersRound />} label="Total" valor={String(resumo.total)} />
-        <Resumo color="green" description="Hóspedes ativos" icon={<UserRound />} label="Ativos" valor={String(resumo.ativos)} />
-        <Resumo color="amber" description="Precisam de atenção" icon={<ShieldAlert />} label="Atenção" valor={String(resumo.atencao)} />
-        <Resumo color="red" description="Hóspedes bloqueados" icon={<Ban />} label="Bloqueados" valor={String(resumo.bloqueados)} />
+        <Resumo
+          color="cyan"
+          description="Hóspedes cadastrados"
+          icon={<UsersRound />}
+          label="Total"
+          valor={String(resumo.total)}
+        />
+        <Resumo
+          color="green"
+          description="Hóspedes ativos"
+          icon={<UserRound />}
+          label="Ativos"
+          valor={String(resumo.ativos)}
+        />
+        <Resumo
+          color="amber"
+          description="Precisam de atenção"
+          icon={<ShieldAlert />}
+          label="Atenção"
+          valor={String(resumo.atencao)}
+        />
+        <Resumo
+          color="red"
+          description="Hóspedes bloqueados"
+          icon={<Ban />}
+          label="Bloqueados"
+          valor={String(resumo.bloqueados)}
+        />
       </section>
 
       <Card className="admin-glass-card">
         <CardContent className="p-5">
-          <form className="grid gap-4 lg:grid-cols-[minmax(260px,1fr)_minmax(180px,0.42fr)_auto_auto] lg:items-end">
+          <form className="hidden gap-4 lg:grid lg:grid-cols-[minmax(260px,1fr)_minmax(180px,0.42fr)_auto_auto] lg:items-end">
             <CampoBusca defaultValue={filtros.busca ?? ""} />
             <CampoStatus defaultValue={filtros.status ?? "todos"} />
             <MaisFiltros />
@@ -99,38 +123,40 @@ export function GuestsModule({
               </Button>
             </div>
           </form>
+
+          <form className="space-y-3 lg:hidden">
+            <CampoBusca defaultValue={filtros.busca ?? ""} id="busca-mobile" />
+            <details className="group rounded-xl border border-cyan-400/20 bg-background/45">
+              <summary className="flex h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-sm font-semibold text-cyan-700 marker:hidden dark:text-cyan-200">
+                <span className="inline-flex items-center gap-2">
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                </span>
+                <span className="text-xs text-muted-foreground group-open:hidden">
+                  abrir
+                </span>
+                <span className="hidden text-xs text-muted-foreground group-open:inline">
+                  fechar
+                </span>
+              </summary>
+              <div className="grid gap-4 px-3 pb-3 pt-1">
+                <CampoStatus defaultValue={filtros.status ?? "todos"} id="status-mobile" />
+                <MaisFiltrosConteudo />
+                <Button className="h-11 w-full px-5" type="submit" variant="outline">
+                  <Search className="h-4 w-4" />
+                  Filtrar
+                </Button>
+              </div>
+            </details>
+          </form>
         </CardContent>
       </Card>
 
       {hospedes.length > 0 ? (
         <>
-          <Card className="admin-glass-card hidden overflow-hidden lg:block">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] text-left text-sm">
-                <thead className="border-b border-border/70 text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                  <tr>
-                    <th className="px-5 py-4 font-semibold">Hóspede</th>
-                    <th className="px-5 py-4 font-semibold">Contato</th>
-                    <th className="px-5 py-4 font-semibold">Última hospedagem</th>
-                    <th className="px-5 py-4 text-right font-semibold">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {hospedes.map((hospede) => (
-                    <GuestTableRow
-                      hospede={hospede}
-                      key={hospede.id}
-                      podeGerenciar={podeGerenciar}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          <div className="grid gap-3 lg:hidden">
+          <div className="grid gap-4 xl:grid-cols-2">
             {hospedes.map((hospede) => (
-              <GuestMobileCard
+              <GuestCard
                 hospede={hospede}
                 key={hospede.id}
                 podeGerenciar={podeGerenciar}
@@ -224,29 +250,41 @@ function Resumo({
   );
 }
 
-function CampoBusca({ defaultValue }: { defaultValue: string }) {
+function CampoBusca({
+  defaultValue,
+  id = "busca",
+}: {
+  defaultValue: string;
+  id?: string;
+}) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="busca">Busca</Label>
+      <Label htmlFor={id}>Busca</Label>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="h-11 pl-10"
           defaultValue={defaultValue}
-          id="busca"
+          id={id}
           name="busca"
-          placeholder="Buscar por nome, telefone ou e-mail..."
+          placeholder="Buscar por nome, telefone ou e-mail"
         />
       </div>
     </div>
   );
 }
 
-function CampoStatus({ defaultValue }: { defaultValue: string }) {
+function CampoStatus({
+  defaultValue,
+  id = "status",
+}: {
+  defaultValue: string;
+  id?: string;
+}) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor="status">Status</Label>
-      <select className={campoClasse} defaultValue={defaultValue} id="status" name="status">
+      <Label htmlFor={id}>Status</Label>
+      <select className={campoClasse} defaultValue={defaultValue} id={id} name="status">
         {STATUS_HOSPEDE_CRM.map((status) => (
           <option key={status} value={status}>
             {LABEL_STATUS_HOSPEDE_CRM[status]}
@@ -265,13 +303,21 @@ function MaisFiltros() {
         Mais filtros
       </summary>
       <div className="absolute right-0 z-30 mt-2 grid w-72 gap-2 rounded-xl border bg-card p-4 text-sm text-muted-foreground shadow-xl shadow-cyan-950/20">
-        <span>Recorrentes</span>
-        <span>Sem histórico</span>
-        <span>Com atenção</span>
-        <span>Origem</span>
-        <span>Última hospedagem</span>
+        <MaisFiltrosConteudo />
       </div>
     </details>
+  );
+}
+
+function MaisFiltrosConteudo() {
+  return (
+    <>
+      <span>Recorrentes</span>
+      <span>Sem histórico</span>
+      <span>Com atenção</span>
+      <span>Origem</span>
+      <span>Última hospedagem</span>
+    </>
   );
 }
 
@@ -279,10 +325,13 @@ function AvisoRemocao({ total }: { total: number }) {
   return (
     <Card className="admin-glass-card">
       <CardContent className="flex flex-col gap-3 p-4 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p className="max-w-4xl">
-          Só é possível apagar hóspedes que não possuem reservas, hospedagens ou
-          pendências ativas. O cadastro público do hóspede no site não será excluído.
-        </p>
+        <div className="flex max-w-4xl items-start gap-2">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-cyan-500 dark:text-cyan-300" />
+          <p>
+            Só é possível apagar hóspedes que não possuem reservas, hospedagens ou
+            pendências ativas. O cadastro público do hóspede no site não será excluído.
+          </p>
+        </div>
         <span className="shrink-0 font-medium">Total: {total} hóspedes</span>
       </CardContent>
     </Card>
