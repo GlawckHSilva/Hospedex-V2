@@ -296,7 +296,7 @@ function MaisAcoes({
           </form>
         </PainelDetalhe>
 
-        <PainelDetalhe titulo="AÃ§Ã£o de risco">
+        <PainelDetalhe titulo="Ação de risco">
           <AcaoCancelarReserva
             disabled={!podeCancelarReserva}
             reservaId={reserva.id}
@@ -672,7 +672,7 @@ function obterPrioridadePendencia(reserva: ReservaConfirmacao) {
   if (reserva.status === "pending" || temComprovanteEmAnalise(reserva)) {
     return {
       cardClass: "border-orange-400/30 shadow-orange-950/10",
-      label: "Media prioridade",
+      label: "Média prioridade",
       labelClass:
         "rounded-full border border-orange-400/35 bg-orange-500/10 px-2 py-0.5 text-xs font-medium text-orange-200",
     };
@@ -680,7 +680,7 @@ function obterPrioridadePendencia(reserva: ReservaConfirmacao) {
 
   return {
     cardClass: "border-cyan-400/20 shadow-cyan-950/10",
-    label: "Media prioridade",
+    label: "Média prioridade",
     labelClass:
       "rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-xs font-medium text-cyan-200",
   };

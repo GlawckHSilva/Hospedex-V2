@@ -3,9 +3,11 @@ import {
   Banknote,
   CheckCircle2,
   ClipboardCheck,
+  ChevronRight,
   DoorClosed,
   DoorOpen,
   Sparkles,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -42,8 +44,8 @@ type FiltroPagamentoPendencia =
 const MENSAGENS_SUCESSO: Record<string, string> = {
   "checkin-confirmado": "Check-in confirmado.",
   "checkout-confirmado": "Check-out confirmado.",
-  "limpeza-confirmada": "Limpeza concluida.",
-  "observacao-adicionada": "Observacao adicionada.",
+  "limpeza-confirmada": "Limpeza concluída.",
+  "observacao-adicionada": "Observação adicionada.",
   "pagamento-confirmado": "Pagamento marcado como recebido.",
   "pagamento-pendente": "Pagamento marcado como pendente.",
   "reserva-cancelada": "Reserva cancelada.",
@@ -61,16 +63,16 @@ const FILTROS_PAGAMENTO: Array<{
 }> = [
   { label: "Todos", value: "todos" },
   { label: "Vencidos", value: "vencidos" },
-  { label: "Aguardando", value: "aguardando" },
+  { label: "Aguardando pagamento", value: "aguardando" },
+  { label: "Confirmados sem pagamento", value: "confirmadas-sem-pagamento" },
   { label: "Recebidos", value: "recebidos" },
-  { label: "Sem pagamento", value: "confirmadas-sem-pagamento" },
 ];
 
 /**
- * Central de pendencias do Gerenciamento.
+ * Central de pendências do Gerenciamento.
  *
- * Esta tela mostra somente o que exige decisao ou resolucao. Historico e avisos
- * gerais continuam no sininho de notificacoes para nao misturar acao com ruido.
+ * Esta tela mostra somente o que exige decisão ou resolução. Histórico e avisos
+ * gerais continuam no sininho de notificações para não misturar ação com ruído.
  */
 export function PendingModule({
   aguardandoPagamento,
@@ -114,12 +116,11 @@ export function PendingModule({
       <section className="admin-glass-panel p-4 sm:p-5">
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
           <div className="min-w-0">
-            <Badge variant="info">Pendencias operacionais</Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
-              Pendencias
+            <h1 className="text-2xl font-semibold tracking-normal">
+              Pendências
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Acoes pendentes para hoje e proximos dias.
+              Ações que precisam da sua atenção.
             </p>
             <p className="mt-3 rounded-xl border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-sm leading-6 text-cyan-950 dark:text-cyan-100">
               {resumoInteligente}
@@ -130,35 +131,30 @@ export function PendingModule({
             <ResumoCard
               icon={DoorOpen}
               label="Check-ins"
-              status="Hoje"
               tone="verde"
               valor={resumo.checkInsHoje}
             />
             <ResumoCard
               icon={DoorClosed}
               label="Check-outs"
-              status="Hoje"
               tone="laranja"
               valor={resumo.checkOutsHoje}
             />
             <ResumoCard
               icon={ClipboardCheck}
-              label="Solicitacoes"
-              status="Analise"
+              label="Solicitações"
               tone="cyan"
               valor={resumo.pendentes}
             />
             <ResumoCard
               icon={Sparkles}
               label="Limpezas"
-              status="Operacao"
               tone="azul"
               valor={resumo.limpezasPendentes}
             />
             <ResumoCard
               icon={Banknote}
               label="Pagamentos"
-              status="Financeiro"
               tone="roxo"
               valor={resumo.aguardandoPagamento}
             />
@@ -168,7 +164,7 @@ export function PendingModule({
 
       {totalItens === 0 ? (
         <EmptyState
-          description="Nenhuma acao pendente encontrada. Novas pendencias aparecerao aqui quando exigirem alguma decisao."
+          description="Nenhuma ação pendente encontrada. Novas pendências aparecerão aqui quando exigirem alguma decisão."
           icon={<CheckCircle2 className="h-5 w-5" />}
           title="Tudo certo por agora"
         />
@@ -176,16 +172,16 @@ export function PendingModule({
         <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-5">
             <div>
-              <h2 className="text-lg font-semibold">Acoes pendentes</h2>
+              <h2 className="text-lg font-semibold">Pendências para resolver</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Somente itens que exigem decisao ou resolucao aparecem aqui.
+                Somente itens que exigem decisão ou ação aparecem aqui.
               </p>
             </div>
 
             <SecaoPendencias
-              descricao="Novas solicitacoes que ainda precisam de decisao."
+              descricao="Novas solicitações que ainda precisam de decisão."
               prioridade="media"
-              titulo="Solicitacoes"
+              titulo="Solicitações"
               total={pendentes.length}
             >
               <GrupoDecisaoReservas
@@ -202,7 +198,7 @@ export function PendingModule({
                   filtroAtual={filtroPagamentoAtual}
                 />
               }
-              descricao="Reservas aprovadas que ainda exigem registro, analise ou complemento de pagamento."
+              descricao="Reservas aprovadas que ainda exigem registro, análise ou complemento de pagamento."
               prioridade={
                 aguardandoPagamento.some(temPagamentoVencido) ? "alta" : "media"
               }
@@ -221,9 +217,9 @@ export function PendingModule({
             </SecaoPendencias>
 
             <SecaoPendencias
-              descricao="Acoes do dia para entrada e saida de hospedes."
+              descricao="Ações do dia para entrada e saída de hóspedes."
               prioridade={checkInsHoje.length + checkOutsHoje.length > 0 ? "alta" : "baixa"}
-              titulo="Operacao"
+              titulo="Operação"
               total={checkInsHoje.length + checkOutsHoje.length}
             >
               <EntityGrid>
@@ -386,7 +382,7 @@ function GrupoReservas({
             podeGerenciar={podeGerenciar}
             subtitulo={reserva.propriedade?.name ?? "Casa"}
             titulo={`${reserva.code} - ${
-              reserva.hospedePrincipal?.full_name ?? "Hospede nao informado"
+              reserva.hospedePrincipal?.full_name ?? "Hóspede não informado"
             }`}
           />
         ))}
@@ -457,7 +453,7 @@ function LinhaOperacao({
         <p className="mt-1 text-sm text-muted-foreground">{subtitulo}</p>
       </div>
       <ConfirmDialog
-        description="Registre uma observacao opcional antes de confirmar a operacao."
+        description="Registre uma observação opcional antes de confirmar a operação."
         disabled={!podeGerenciar}
         title={cta}
         triggerIcon={<CheckCircle2 className="h-4 w-4" />}
@@ -470,7 +466,7 @@ function LinhaOperacao({
           <textarea
             className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             name="observacao"
-            placeholder="Observacao opcional"
+            placeholder="Observação opcional"
           />
           <Button disabled={!podeGerenciar} type="submit">
             <CheckCircle2 />
@@ -507,25 +503,20 @@ function TituloGrupo({
 function ResumoCard({
   icon: Icon,
   label,
-  status,
   tone,
   valor,
 }: {
   icon: LucideIcon;
   label: string;
-  status: string;
   tone: "azul" | "cyan" | "laranja" | "roxo" | "verde";
   valor: number;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border bg-background/55 p-3 text-sm">
-      <div className="flex items-start justify-between gap-2">
+    <div className="min-w-0 rounded-xl border border-cyan-300/10 bg-background/55 p-3 text-sm shadow-sm shadow-black/10">
+      <div className="flex items-center justify-between gap-2">
         <div className={classeTom(tone)}>
           <Icon className="h-4 w-4" />
         </div>
-        <span className="rounded-full bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {status}
-        </span>
       </div>
       <p className="mt-2 truncate text-xs text-muted-foreground">{label}</p>
       <p className="text-xl font-semibold">{valor}</p>
@@ -548,27 +539,50 @@ function ResumoUrgencia({
   solicitacoes: number;
   total: number;
 }) {
+  const acaoPrincipal = montarAcaoPrincipalResumo({
+    checkIns,
+    checkOuts,
+    limpezas,
+    pagamentos,
+    solicitacoes,
+  });
+
   return (
     <Card className="admin-glass-card">
       <CardContent className="space-y-4 p-4">
         <div>
           <h2 className="flex items-center gap-2 text-base font-semibold">
             <AlertTriangle className="h-4 w-4 text-orange-400" />
-            Resumo de urgencia
+            Resumo de urgência
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {total} {total === 1 ? "acao precisa" : "acoes precisam"} de atencao.
+            {total} {total === 1 ? "ação precisa" : "ações precisam"} de atenção.
           </p>
         </div>
         <div className="space-y-2">
-          <UrgenciaLinha label="Pagamentos aguardando confirmacao" valor={pagamentos} tom="roxo" />
+          <UrgenciaLinha label="Pagamentos aguardando confirmação" valor={pagamentos} tom="roxo" />
           <UrgenciaLinha label="Check-ins pendentes" valor={checkIns} tom="verde" />
           <UrgenciaLinha label="Check-outs pendentes" valor={checkOuts} tom="laranja" />
           <UrgenciaLinha label="Limpezas pendentes" valor={limpezas} tom="azul" />
-          <UrgenciaLinha label="Solicitacoes aguardando resposta" valor={solicitacoes} tom="cyan" />
+          <UrgenciaLinha label="Solicitações aguardando resposta" valor={solicitacoes} tom="cyan" />
         </div>
+        {acaoPrincipal ? (
+          <Link
+            className="group flex items-center justify-between gap-3 rounded-xl border border-yellow-300/30 bg-yellow-400/10 px-3 py-3 text-sm transition-colors hover:border-yellow-300/50 hover:bg-yellow-400/15"
+            href={acaoPrincipal.href}
+          >
+            <span className="flex min-w-0 items-start gap-2">
+              <Star className="mt-0.5 h-4 w-4 shrink-0 text-yellow-300" />
+              <span className="min-w-0">
+                <span className="block font-semibold text-foreground">Ação principal:</span>
+                <span className="block text-muted-foreground">{acaoPrincipal.label}</span>
+              </span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-yellow-200 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        ) : null}
         <p className="rounded-xl border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
-          Avisos e historico continuam no sininho de notificacoes.
+          Avisos e histórico continuam no sininho de notificações.
         </p>
       </CardContent>
     </Card>
@@ -592,6 +606,57 @@ function UrgenciaLinha({
       </span>
     </div>
   );
+}
+
+function montarAcaoPrincipalResumo({
+  checkIns,
+  checkOuts,
+  limpezas,
+  pagamentos,
+  solicitacoes,
+}: {
+  checkIns: number;
+  checkOuts: number;
+  limpezas: number;
+  pagamentos: number;
+  solicitacoes: number;
+}) {
+  if (solicitacoes > 0) {
+    return {
+      href: "/pendencias",
+      label: `Responder ${solicitacoes} ${solicitacoes === 1 ? "solicitação" : "solicitações"}`,
+    };
+  }
+
+  if (pagamentos > 0) {
+    return {
+      href: "/pendencias?pagamento=todos",
+      label: `Registrar ${pagamentos} ${pagamentos === 1 ? "pagamento pendente" : "pagamentos pendentes"}`,
+    };
+  }
+
+  if (checkIns > 0) {
+    return {
+      href: "/pendencias",
+      label: `Confirmar ${checkIns} ${checkIns === 1 ? "check-in" : "check-ins"}`,
+    };
+  }
+
+  if (checkOuts > 0) {
+    return {
+      href: "/pendencias",
+      label: `Confirmar ${checkOuts} ${checkOuts === 1 ? "check-out" : "check-outs"}`,
+    };
+  }
+
+  if (limpezas > 0) {
+    return {
+      href: "/pendencias",
+      label: `Concluir ${limpezas} ${limpezas === 1 ? "limpeza" : "limpezas"}`,
+    };
+  }
+
+  return null;
 }
 
 function FiltrosPagamento({
@@ -676,7 +741,7 @@ function rotuloPrioridade(prioridade: PrioridadePendencia) {
   const rotulos: Record<PrioridadePendencia, string> = {
     alta: "Alta prioridade",
     baixa: "Baixa prioridade",
-    media: "Media prioridade",
+    media: "Média prioridade",
   };
 
   return rotulos[prioridade];
@@ -735,10 +800,10 @@ function contarPagamentos(
 
 function mensagemVaziaPagamento(filtro: FiltroPagamentoPendencia) {
   const mensagens: Record<FiltroPagamentoPendencia, string> = {
-    aguardando: "Nenhum pagamento exige acao agora.",
-    "confirmadas-sem-pagamento": "Nenhuma reserva confirmada esta sem pagamento pendente.",
-    recebidos: "Pagamentos recebidos nao exigem acao aqui. Consulte o financeiro ou o sininho.",
-    todos: "Nenhum pagamento exige acao agora.",
+    aguardando: "Nenhum pagamento exige ação agora.",
+    "confirmadas-sem-pagamento": "Nenhuma reserva confirmada está sem pagamento pendente.",
+    recebidos: "Pagamentos recebidos não exigem ação aqui. Consulte o financeiro ou o sininho.",
+    todos: "Nenhum pagamento exige ação agora.",
     vencidos: "Nenhum pagamento vencido no momento.",
   };
 
@@ -754,12 +819,12 @@ function montarResumoInteligente(
   totalItens: number,
 ) {
   if (totalItens === 0) {
-    return "Tudo certo por agora. Nenhuma acao exige sua atencao no momento.";
+    return "Tudo certo por agora. Nenhuma ação exige sua atenção no momento.";
   }
 
   const partes = [
     formatarParte(resumo.aguardandoPagamento, "pagamento pendente", "pagamentos pendentes"),
-    formatarParte(resumo.pendentes, "solicitacao aguardando resposta", "solicitacoes aguardando resposta"),
+    formatarParte(resumo.pendentes, "solicitação aguardando resposta", "solicitações aguardando resposta"),
     formatarParte(resumo.checkInsHoje, "check-in pendente", "check-ins pendentes"),
     formatarParte(resumo.checkOutsHoje, "check-out pendente", "check-outs pendentes"),
     formatarParte(resumo.limpezasPendentes, "limpeza pendente", "limpezas pendentes"),
@@ -773,7 +838,7 @@ function montarResumoInteligente(
     ? " Nenhum check-in, checkout ou limpeza para hoje."
     : "";
 
-  return `Voce tem ${partes.join(", ")}.${complemento}`;
+  return `Você tem ${partes.join(", ")}.${complemento}`;
 }
 
 function formatarParte(total: number, singular: string, plural: string) {
