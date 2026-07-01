@@ -80,7 +80,7 @@ export const LABEL_STATUS_LANCAMENTO: Record<TransactionStatus, string> = {
 
 export function obterVariantStatusFinanceiro(status: TransactionStatus) {
   if (status === "paid") return "success";
-  if (status === "pending") return "info";
-  if (status === "refunded") return "warning";
+  if (status === "pending") return "warning";
+  if (status === "refunded") return "danger";
   return "secondary";
 }

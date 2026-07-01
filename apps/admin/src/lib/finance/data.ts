@@ -191,6 +191,7 @@ function lancamentoCorrespondeBusca(lancamento: LancamentoFinanceiro, busca: str
     lancamento.description,
     lancamento.categoria?.name,
     lancamento.conta?.name,
+    lancamento.guest_name,
     lancamento.propriedade?.name,
     lancamento.reservation_id
   ];
