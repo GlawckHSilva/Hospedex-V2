@@ -112,7 +112,7 @@ export function AdminShell({
   return (
     <div
       className={cn(
-        "admin-shell-bg premium-grid-bg min-h-screen text-foreground",
+        "admin-shell-bg premium-grid-bg dark min-h-screen text-foreground",
         // O ajuste visual de scrollbar pertence ao Gerenciamento, sem alterar a experiencia do Super Admin.
         "admin-management-shell",
       )}

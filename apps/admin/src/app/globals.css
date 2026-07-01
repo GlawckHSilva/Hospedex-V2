@@ -18,6 +18,80 @@
 }
 
 /*
+ * Tema real do Gerenciamento.
+ *
+ * O provider global respeita a preferencia do usuario/sistema. Para o painel de
+ * gestao, a identidade precisa ser sempre preta + ciano; por isso os tokens
+ * sao reaplicados no container do Admin e nao dependem apenas da classe no html.
+ */
+.admin-management-shell {
+  color-scheme: dark;
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: #07111f;
+  --card-foreground: #f8fafc;
+  --popover: #07111f;
+  --popover-foreground: #f8fafc;
+  --primary: #22d3ee;
+  --primary-foreground: #020617;
+  --secondary: #0b1220;
+  --secondary-foreground: #f8fafc;
+  --muted: #0b1220;
+  --muted-foreground: #94a3b8;
+  --accent: #083344;
+  --accent-foreground: #ecfeff;
+  --destructive: #ef4444;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #22d3ee;
+  --success: #22c55e;
+  --warning: #eab308;
+  --info: #22d3ee;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(34, 211, 238, 0.12), transparent 30%),
+    radial-gradient(circle at 88% 6%, rgba(6, 182, 212, 0.07), transparent 28%),
+    linear-gradient(135deg, #020617 0%, #030712 48%, #020617 100%);
+  color: var(--foreground);
+}
+
+.admin-management-shell :is(.glass-navbar, .glass-sidebar) {
+  border-color: rgba(30, 41, 59, 0.95);
+  background: rgba(3, 7, 18, 0.94);
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(248, 250, 252, 0.05);
+}
+
+.admin-management-shell :is(.admin-glass-panel, .admin-glass-card, .glass-card, .glass-panel, .glass-modal, .glass-table) {
+  border-color: rgba(30, 41, 59, 0.96);
+  background: rgba(7, 17, 31, 0.94);
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(248, 250, 252, 0.06);
+}
+
+.admin-management-shell :is(.admin-glass-panel, .admin-glass-card, .glass-card, .glass-panel, .glass-modal, .glass-table):hover {
+  background: rgba(11, 18, 32, 0.96);
+}
+
+.admin-management-shell :is(.glass-input, input, select, textarea) {
+  border-color: rgba(30, 41, 59, 0.96);
+  background-color: rgba(2, 6, 23, 0.82);
+  color: #f8fafc;
+}
+
+.admin-management-shell :is(input, select, textarea)::placeholder {
+  color: #64748b;
+}
+
+.admin-management-shell :is(input, select, textarea):focus-visible {
+  border-color: rgba(34, 211, 238, 0.7);
+  outline: 2px solid rgba(34, 211, 238, 0.28);
+  outline-offset: 2px;
+}
+
+/*
  * Login e loading oficiais da V2.
  *
  * O fundo escuro com grid e luz ciano cria a identidade Hospedex sem mexer na
