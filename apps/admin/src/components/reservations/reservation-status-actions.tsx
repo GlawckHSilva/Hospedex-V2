@@ -1,4 +1,4 @@
-import { Banknote, CheckCircle2, ClipboardCheck, RotateCcw, XCircle } from "lucide-react";
+import { Banknote, CheckCircle2, ClipboardCheck, XCircle } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge } from "@hospedex/ui";
@@ -7,15 +7,15 @@ import type { ActionButtonVariant } from "../management/action-button";
 import { ConfirmDialog } from "../management/entity-modal";
 import { FormActionButton } from "../management/form-submit-button";
 import {
-  alterarPagamentoReservaAction,
   alterarStatusReservaAction,
   aprovarCobrancaReservaAction,
   registrarPagamentoManualReservaAction,
 } from "../../lib/reservations/actions";
 import {
   LABEL_STATUS_RESERVA,
+  reservaEstaEncerrada,
+  reservaPermiteRegistrarPagamento,
   type ReservaComRelacionamentos,
-  type StatusPagamentoReserva,
 } from "../../lib/reservations/types";
 
 type ReservationStatusActionsProps = {
@@ -35,20 +35,11 @@ type AcaoStatusReserva = {
 };
 
 type AcaoPagamentoReserva = {
+  cobrancaId?: string;
   descricao: string;
   icone: ReactNode;
   motivo: string;
   tipo: "pagamento";
-  titulo: string;
-  variante: ActionButtonVariant;
-};
-
-type AcaoPagamentoStatusReserva = {
-  descricao: string;
-  icone: ReactNode;
-  motivo: string;
-  statusPagamentoDestino: StatusPagamentoReserva;
-  tipo: "pagamento_status";
   titulo: string;
   variante: ActionButtonVariant;
 };
@@ -65,7 +56,6 @@ type AcaoCobrancaReserva = {
 type AcaoReserva =
   | AcaoStatusReserva
   | AcaoPagamentoReserva
-  | AcaoPagamentoStatusReserva
   | AcaoCobrancaReserva;
 
 /**
@@ -80,7 +70,7 @@ export function ReservationStatusActions({
   reserva,
 }: ReservationStatusActionsProps) {
   const acoes = obterAcoesReserva(reserva, podeGerenciarPagamento);
-  const terminal = reserva.status === "cancelled" || reserva.status === "completed";
+  const terminal = reservaEstaEncerrada(reserva.status);
 
   return (
     <ConfirmDialog
@@ -115,34 +105,31 @@ export function ReservationStatusActions({
                     ? aprovarCobrancaReservaAction
                     : acao.tipo === "pagamento"
                       ? registrarPagamentoManualReservaAction
-                      : acao.tipo === "pagamento_status"
-                        ? alterarPagamentoReservaAction
-                        : alterarStatusReservaAction
+                      : alterarStatusReservaAction
                 }
                 className="grid gap-2"
                 key={`${acao.tipo}-${acao.titulo}`}
               >
                 <input name="reservaId" type="hidden" value={reserva.id} />
                 {acao.tipo === "pagamento" ? (
-                  <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                    Valor recebido
-                    <input
-                      className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      defaultValue={obterSaldoAberto(reserva).toFixed(2)}
-                      min="0.01"
-                      name="valorPagamento"
-                      step="0.01"
-                      type="number"
-                    />
-                  </label>
+                  <>
+                    {acao.cobrancaId ? (
+                      <input name="cobrancaId" type="hidden" value={acao.cobrancaId} />
+                    ) : null}
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      Valor recebido
+                      <input
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        defaultValue={obterSaldoAberto(reserva).toFixed(2)}
+                        min="0.01"
+                        name="valorPagamento"
+                        step="0.01"
+                        type="number"
+                      />
+                    </label>
+                  </>
                 ) : null}
-                {acao.tipo === "pagamento_status" ? (
-                  <input
-                    name="statusPagamento"
-                    type="hidden"
-                    value={acao.statusPagamentoDestino}
-                  />
-                ) : acao.tipo === "status" ? (
+                {acao.tipo === "status" ? (
                   <input name="status" type="hidden" value={acao.statusDestino} />
                 ) : null}
                 <input name="motivo" type="hidden" value={acao.motivo} />
@@ -182,7 +169,6 @@ function obterAcoesReserva(
   podeGerenciarPagamento: boolean
 ): AcaoReserva[] {
   const acoes: AcaoReserva[] = [];
-  const terminal = reserva.status === "cancelled" || reserva.status === "completed";
 
   if (reserva.status === "pending" || reserva.status === "awaiting_payment") {
     if (reserva.status === "pending") {
@@ -202,34 +188,22 @@ function obterAcoesReserva(
   }
 
   if (
-    !terminal &&
     podeGerenciarPagamento &&
-    !["paid", "received"].includes(reserva.statusPagamento)
+    reservaPermiteRegistrarPagamento(reserva.status, reserva.statusPagamento)
   ) {
-    acoes.push({
-      descricao: `Registra pagamento manual. Saldo aberto: ${formatarMoeda(obterSaldoAberto(reserva))}.`,
-      icone: <Banknote className="h-4 w-4" />,
-      motivo: "Pagamento manual registrado pelo gerenciamento de reservas.",
-      tipo: "pagamento",
-      titulo: "Registrar pagamento",
-      variante: "add",
-    });
-  }
+    const cobrancaAberta = obterCobrancaAberta(reserva);
 
-  if (
-    !terminal &&
-    podeGerenciarPagamento &&
-    ["partial", "paid", "received"].includes(reserva.statusPagamento)
-  ) {
-    acoes.push({
-      descricao: "Volta o pagamento para pendente, mantendo historico financeiro.",
-      icone: <RotateCcw className="h-4 w-4" />,
-      motivo: "Pagamento voltou para pendente pelo gerenciamento de reservas.",
-      statusPagamentoDestino: "pending",
-      tipo: "pagamento_status",
-      titulo: "Voltar pagamento",
-      variante: "status",
-    });
+    if (cobrancaAberta) {
+      acoes.push({
+        cobrancaId: cobrancaAberta.id,
+        descricao: `${reserva.statusPagamento === "partial" ? "Registra o restante da cobranca." : "Registra pagamento manual da cobranca aberta."} Saldo aberto: ${formatarMoeda(obterSaldoAberto(reserva))}.`,
+        icone: <Banknote className="h-4 w-4" />,
+        motivo: "Pagamento manual registrado pelo gerenciamento de reservas.",
+        tipo: "pagamento",
+        titulo: reserva.statusPagamento === "partial" ? "Registrar restante" : "Registrar pagamento",
+        variante: "add",
+      });
+    }
   }
 
   if (reserva.status === "confirmed") {
@@ -291,7 +265,6 @@ function criarAcaoCancelamento(titulo: string): AcaoStatusReserva {
 
 function obterRotuloPendente(acao: AcaoReserva) {
   if (acao.tipo === "pagamento") return "Registrando...";
-  if (acao.tipo === "pagamento_status") return "Atualizando...";
   if (acao.tipo === "cobranca") return "Gerando...";
 
   if (acao.statusDestino === "cancelled") return "Cancelando...";
@@ -299,6 +272,12 @@ function obterRotuloPendente(acao: AcaoReserva) {
   if (acao.statusDestino === "checked_in") return "Registrando...";
   if (acao.statusDestino === "checked_out") return "Registrando...";
   return "Atualizando...";
+}
+
+function obterCobrancaAberta(reserva: ReservaComRelacionamentos) {
+  return reserva.cobrancas.find((cobranca) =>
+    ["pending", "partial", "overdue"].includes(cobranca.status)
+  );
 }
 
 function obterSaldoAberto(reserva: ReservaComRelacionamentos) {

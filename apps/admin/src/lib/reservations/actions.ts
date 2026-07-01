@@ -23,7 +23,7 @@ import {
   type EscopoReserva
 } from "./permissions";
 import { alterarStatusReservaOperacionalSeguro } from "./status-rpc";
-import { STATUS_RESERVA } from "./types";
+import { reservaPermiteAcoesFinanceiras, STATUS_RESERVA } from "./types";
 
 /**
  * Server actions do módulo de Reservas.
@@ -275,8 +275,10 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
 
     validarPermissaoFinanceiraReserva(escopo);
 
-    if (["cancelled", "completed"].includes(reserva.status)) {
-      throw new ErroRegraReserva("Reserva encerrada nao permite registrar pagamento.");
+    if (!reservaPermiteAcoesFinanceiras(reserva.status)) {
+      throw new ErroRegraReserva(
+        "Aprove a solicitacao e gere uma cobranca antes de registrar pagamento."
+      );
     }
 
     await registrarPagamentoManualOperacional(

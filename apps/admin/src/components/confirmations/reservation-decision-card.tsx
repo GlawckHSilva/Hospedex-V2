@@ -28,7 +28,10 @@ import {
   marcarPagamentoPendenteConfirmacaoAction,
 } from "../../lib/confirmations/actions";
 import type { ReservaConfirmacao } from "../../lib/confirmations/types";
-import { LABEL_STATUS_PAGAMENTO_RESERVA } from "../../lib/reservations/types";
+import {
+  LABEL_STATUS_PAGAMENTO_RESERVA,
+  reservaPermiteAcoesFinanceiras,
+} from "../../lib/reservations/types";
 import { ConfirmDialog, EntityViewModal } from "../management/entity-modal";
 import { FormActionButton } from "../management/form-submit-button";
 import { ReservationBillingPanel } from "../reservations/reservation-billing-panel";
@@ -308,6 +311,8 @@ function DetalhesReserva({
   reserva: ReservaConfirmacao;
 }) {
   const hospede = reserva.hospedePrincipal;
+  const podeOperarFinanceiro =
+    podeGerenciarPagamento && reservaPermiteAcoesFinanceiras(reserva.status);
 
   return (
     <div className="grid gap-5">
@@ -350,7 +355,7 @@ function DetalhesReserva({
       </PainelDetalhe>
 
       <ReservationBillingPanel
-        canManagePayments={podeGerenciarPagamento}
+        canManagePayments={podeOperarFinanceiro}
         cancelPaymentAction={cancelarPagamentoConfirmacaoAction}
         charges={reserva.cobrancas}
         currency={reserva.currency}

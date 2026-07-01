@@ -9,6 +9,7 @@ import {
   LABEL_STATUS_RESERVA,
   obterVariantStatusPagamentoReserva,
   obterVariantStatusReserva,
+  reservaPermiteAcoesFinanceiras,
   type ReservaComRelacionamentos,
 } from "../../lib/reservations/types";
 import { LABEL_STATUS_LANCAMENTO } from "../../lib/finance/types";
@@ -46,6 +47,8 @@ export function ReservationDetails({
     reserva.lancamentosFinanceiros.find((item) => item.status === "paid") ??
     reserva.lancamentosFinanceiros[0] ??
     null;
+  const podeOperarFinanceiro =
+    podeGerenciarPagamento && reservaPermiteAcoesFinanceiras(reserva.status);
 
   return (
     <div className="grid gap-4 xl:grid-cols-[1fr_22rem]">
@@ -154,7 +157,7 @@ export function ReservationDetails({
         </Secao>
 
         <ReservationBillingPanel
-          canManagePayments={podeGerenciarPagamento}
+          canManagePayments={podeOperarFinanceiro}
           charges={reserva.cobrancas}
           currency={reserva.currency}
           defaultPaymentMethod={reserva.payment_method}

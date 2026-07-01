@@ -190,3 +190,24 @@ export function obterVariantStatusReserva(status: ReservationStatus) {
   if (status === "cancelled") return "warning";
   return "secondary";
 }
+
+export function reservaEstaEncerrada(status: ReservationStatus) {
+  return status === "cancelled" || status === "completed";
+}
+
+export function reservaPermiteAcoesFinanceiras(status: ReservationStatus) {
+  /*
+   * Reserva pendente ainda e apenas uma solicitacao.
+   * O pagamento so pode ser operado depois da aprovacao gerar uma cobranca.
+   */
+  return status !== "pending" && !reservaEstaEncerrada(status);
+}
+
+export function reservaPermiteRegistrarPagamento(
+  status: ReservationStatus,
+  statusPagamento: StatusPagamentoReserva
+) {
+  if (!reservaPermiteAcoesFinanceiras(status)) return false;
+
+  return !["paid", "received", "cancelled", "refunded"].includes(statusPagamento);
+}
