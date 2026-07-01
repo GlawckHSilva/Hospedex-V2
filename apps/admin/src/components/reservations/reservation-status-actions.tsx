@@ -76,11 +76,11 @@ export function ReservationStatusActions({
     <ConfirmDialog
       description="As acoes disponiveis dependem do status atual da reserva e preservam o historico operacional."
       disabled={!podeGerenciar || acoes.length === 0}
-      title={`Acoes da reserva ${reserva.code}`}
+      title={`Ações da reserva ${reserva.code}`}
       triggerAction="settings"
-      triggerClassName="h-9 justify-center"
+      triggerClassName="h-9 w-full justify-center"
       triggerIcon={<ClipboardCheck className="h-4 w-4" />}
-      triggerLabel="Acoes"
+      triggerLabel="Ações operacionais"
       triggerVariant="outline"
     >
       <div className="space-y-4">

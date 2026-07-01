@@ -1,3 +1,4 @@
+import { type PropertyRow } from "@hospedex/types";
 import { CalendarDays, CreditCard, Eye, Home, UserRound } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -12,6 +13,7 @@ import {
   type ReservaComRelacionamentos,
 } from "../../lib/reservations/types";
 import { EntityModal } from "../management/entity-modal";
+import { ReservationActionMenu } from "./reservation-action-menu";
 import { ReservationDetails } from "./reservation-details";
 
 /**
@@ -21,12 +23,16 @@ import { ReservationDetails } from "./reservation-details";
  * resumo de historico/gestao. Acoes operacionais ficam fora do corpo do card.
  */
 export type ReservationCardProps = {
+  podeGerenciar: boolean;
   podeGerenciarPagamento: boolean;
+  propriedades: PropertyRow[];
   reserva: ReservaComRelacionamentos;
 };
 
 export function ReservationCard({
+  podeGerenciar,
   podeGerenciarPagamento,
+  propriedades,
   reserva,
 }: ReservationCardProps) {
   const hospedePrincipal =
@@ -77,23 +83,33 @@ export function ReservationCard({
           />
         </section>
 
-        <EntityModal
-          description="Dados consolidados, hospede, casa, periodo, valores, financeiro e timeline."
-          eyebrow="Visualizacao"
-          size="xl"
-          title={`Reserva ${reserva.code}`}
-          triggerAction="view"
-          triggerClassName="w-full justify-center"
-          triggerIcon={<Eye className="h-4 w-4" />}
-          triggerLabel="Ver detalhes"
-        >
-          <ReservationDetails
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <EntityModal
+            description="Dados consolidados, hóspede, casa, período, valores, financeiro e timeline."
+            eyebrow="Visualização"
+            size="xl"
+            title={`Reserva ${reserva.code}`}
+            triggerAction="view"
+            triggerClassName="w-full justify-center"
+            triggerIcon={<Eye className="h-4 w-4" />}
+            triggerLabel="Ver detalhes"
+          >
+            <ReservationDetails
+              podeGerenciarPagamento={
+                podeGerenciarPagamento && reservaPermiteAcoesFinanceiras(reserva.status)
+              }
+              reserva={reserva}
+            />
+          </EntityModal>
+          <ReservationActionMenu
+            podeGerenciar={podeGerenciar}
             podeGerenciarPagamento={
               podeGerenciarPagamento && reservaPermiteAcoesFinanceiras(reserva.status)
             }
+            propriedades={propriedades}
             reserva={reserva}
           />
-        </EntityModal>
+        </div>
       </CardContent>
     </Card>
   );

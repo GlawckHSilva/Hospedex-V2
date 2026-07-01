@@ -147,12 +147,12 @@ export const STATUS_PAGAMENTO_RESERVA: StatusPagamentoReserva[] = [
 ];
 
 export const LABEL_STATUS_RESERVA: Record<ReservationStatus, string> = {
-  pending: "Pendente",
+  pending: "Solicitação",
   awaiting_payment: "Aguardando pagamento",
   confirmed: "Confirmada",
-  checked_in: "Hospedado",
+  checked_in: "Em hospedagem",
   checked_out: "Check-out realizado",
-  completed: "Concluída",
+  completed: "Finalizada",
   cancelled: "Cancelada"
 };
 
@@ -164,13 +164,13 @@ export const LABEL_ORIGEM_RESERVA: Record<ReservationRow["source"], string> = {
 };
 
 export const LABEL_STATUS_PAGAMENTO_RESERVA: Record<StatusPagamentoReserva, string> = {
-  cancelled: "Pagamento cancelado",
-  overdue: "Pagamento atrasado",
-  paid: "Pagamento quitado",
-  partial: "Pagamento parcial",
-  received: "Pagamento recebido",
-  pending: "Pagamento pendente",
-  refunded: "Pagamento estornado"
+  cancelled: "Cancelado",
+  overdue: "Atrasado",
+  paid: "Pago",
+  partial: "Parcial",
+  received: "Recebido",
+  pending: "Aguardando",
+  refunded: "Estornado"
 };
 
 export function obterVariantStatusPagamentoReserva(status: StatusPagamentoReserva) {
