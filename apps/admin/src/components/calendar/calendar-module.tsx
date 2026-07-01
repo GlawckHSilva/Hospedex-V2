@@ -1,8 +1,8 @@
-import { CalendarDays, LockKeyhole, Plus, Sparkles, Wrench } from "lucide-react";
+import { LockKeyhole, Plus } from "lucide-react";
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps } from "react";
 
-import { Badge, Button, Card, CardContent, FadeIn, Input, Label, cn } from "@hospedex/ui";
+import { Button, Card, CardContent, FadeIn, Input, Label, cn } from "@hospedex/ui";
 
 import { bloquearPeriodoCalendarioAction } from "../../lib/calendar/actions";
 import {
@@ -57,7 +57,6 @@ export function CalendarModule({
   reservas,
   resumo,
   sucesso,
-  tenantNome,
 }: CalendarModuleProps) {
   const casaAtual =
     propriedades.find((propriedade) => propriedade.id === filtros.propriedadeId) ??
@@ -67,34 +66,29 @@ export function CalendarModule({
   const eventos = montarEventosFullCalendar(dias);
 
   return (
-    <FadeIn className="relative space-y-5 pb-24">
+    <FadeIn className="relative space-y-5 pb-8">
       <ModuleToast
         erro={erro}
         mensagensSucesso={MENSAGENS_SUCESSO_CALENDARIO}
         sucesso={sucesso}
       />
 
-      <section className="admin-glass-panel p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <Badge variant={podeGerenciar ? "info" : "warning"}>
-              {podeGerenciar ? "Calendario editavel" : "Somente leitura"}
-            </Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">
-              Calendario e disponibilidade
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} - agenda visual por casa, reservas e operacao.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Resumo icon={<CalendarDays />} label="Reservas" valor={String(resumo.reservasAtivas)} />
-            <Resumo icon={<LockKeyhole />} label="Bloqueios" valor={String(resumo.bloqueiosAtivos)} />
-            <Resumo icon={<Sparkles />} label="Limpezas" valor={String(resumo.limpezasPendentes)} />
-            <Resumo icon={<Wrench />} label="Manutencoes" valor={String(resumo.manutencoesPendentes)} />
-          </div>
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-normal">
+            Calendário e disponibilidade
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+            Visualize reservas, bloqueios, limpezas e manutenções por casa.
+          </p>
         </div>
+
+        <NovoEventoCalendarioModal
+          bloqueado={bloqueado}
+          casaAtual={casaAtual}
+          filtros={filtros}
+          propriedades={propriedades}
+        />
       </section>
 
       <Card className="admin-glass-card">
@@ -129,12 +123,12 @@ export function CalendarModule({
       </Card>
 
       {propriedades.length === 0 ? (
-        <EstadoVazio mensagem="Cadastre uma casa antes de visualizar o calendario." />
+        <EstadoVazio mensagem="Cadastre uma casa antes de visualizar o calendário." />
       ) : (
         <>
           <section className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <ResumoCompacto label="Proximos check-ins" valor={String(resumo.checkInsProximos)} />
-            <ResumoCompacto label="Proximos check-outs" valor={String(resumo.checkOutsProximos)} />
+            <ResumoCompacto label="Próximos check-ins" valor={String(resumo.checkInsProximos)} />
+            <ResumoCompacto label="Próximos check-outs" valor={String(resumo.checkOutsProximos)} />
             <ResumoCompacto label="Limpezas pendentes" valor={String(resumo.limpezasPendentes)} />
             <ResumoCompacto label="Bloqueios ativos" valor={String(resumo.bloqueiosAtivos)} />
             <ResumoCompacto
@@ -154,66 +148,81 @@ export function CalendarModule({
           />
         </>
       )}
-
-      <EntityModal
-        description="Crie bloqueio, manutencao ou indisponibilidade sem sair do calendario."
-        disabled={bloqueado}
-        eyebrow="Disponibilidade"
-        size="lg"
-        title="Novo evento operacional"
-        triggerClassName="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full shadow-xl shadow-cyan-950/25"
-        triggerIcon={<Plus className="h-5 w-5" />}
-        triggerLabel="+"
-        triggerSize="icon"
-        triggerVariant="default"
-      >
-        <form action={bloquearPeriodoCalendarioAction} className="grid gap-4">
-          <input name="mes" type="hidden" value={filtros.mes} />
-          <input name="semana" type="hidden" value={filtros.semana} />
-          <input name="visao" type="hidden" value={filtros.visao} />
-          <input name="filtroPropriedadeId" type="hidden" value={filtros.propriedadeId ?? ""} />
-
-          <CampoPropriedade
-            defaultValue={filtros.propriedadeId ?? casaAtual?.id ?? ""}
-            disabled={bloqueado}
-            propriedades={propriedades}
-          />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <CampoTexto disabled={bloqueado} label="Inicio" name="inicio" required type="date" />
-            <CampoTexto disabled={bloqueado} label="Fim" name="fim" required type="date" />
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <CampoMotivoBloqueio disabled={bloqueado} />
-            <CampoTexto
-              disabled={bloqueado}
-              label="Detalhe"
-              name="motivoDetalhe"
-              placeholder="Ex.: manutencao preventiva"
-            />
-          </div>
-
-          <CampoArea disabled={bloqueado} label="Observacoes internas" name="observacoes" />
-          <label className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm">
-            <input
-              defaultChecked
-              disabled={bloqueado}
-              name="bloqueiaDisponibilidade"
-              type="checkbox"
-            />
-            Bloquear disponibilidade da casa
-          </label>
-
-          <div className="flex justify-end">
-            <Button disabled={bloqueado} type="submit">
-              <LockKeyhole />
-              Salvar indisponibilidade
-            </Button>
-          </div>
-        </form>
-      </EntityModal>
     </FadeIn>
+  );
+}
+
+type NovoEventoCalendarioModalProps = {
+  bloqueado: boolean;
+  casaAtual: DadosModuloCalendario["propriedades"][number] | null;
+  filtros: DadosModuloCalendario["filtros"];
+  propriedades: DadosModuloCalendario["propriedades"];
+};
+
+function NovoEventoCalendarioModal({
+  bloqueado,
+  casaAtual,
+  filtros,
+  propriedades,
+}: NovoEventoCalendarioModalProps) {
+  return (
+    <EntityModal
+      description="Crie bloqueio, manutenção ou indisponibilidade sem sair do calendário."
+      disabled={bloqueado}
+      eyebrow="Disponibilidade"
+      size="lg"
+      title="Novo evento operacional"
+      triggerClassName="h-11 px-5 text-sm"
+      triggerIcon={<Plus className="h-4 w-4" />}
+      triggerLabel="Novo evento"
+      triggerVariant="default"
+    >
+      <form action={bloquearPeriodoCalendarioAction} className="grid gap-4">
+        <input name="mes" type="hidden" value={filtros.mes} />
+        <input name="semana" type="hidden" value={filtros.semana} />
+        <input name="visao" type="hidden" value={filtros.visao} />
+        <input name="filtroPropriedadeId" type="hidden" value={filtros.propriedadeId ?? ""} />
+
+        <CampoPropriedade
+          defaultValue={filtros.propriedadeId ?? casaAtual?.id ?? ""}
+          disabled={bloqueado}
+          propriedades={propriedades}
+        />
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <CampoTexto disabled={bloqueado} label="Início" name="inicio" required type="date" />
+          <CampoTexto disabled={bloqueado} label="Fim" name="fim" required type="date" />
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <CampoMotivoBloqueio disabled={bloqueado} />
+          <CampoTexto
+            disabled={bloqueado}
+            label="Detalhe"
+            name="motivoDetalhe"
+            placeholder="Ex.: manutenção preventiva"
+          />
+        </div>
+
+        <CampoArea disabled={bloqueado} label="Observações internas" name="observacoes" />
+        <label className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm">
+          <input
+            defaultChecked
+            disabled={bloqueado}
+            name="bloqueiaDisponibilidade"
+            type="checkbox"
+          />
+          Bloquear disponibilidade da casa
+        </label>
+
+        <div className="flex justify-end">
+          <Button disabled={bloqueado} type="submit">
+            <LockKeyhole />
+            Salvar indisponibilidade
+          </Button>
+        </div>
+      </form>
+    </EntityModal>
   );
 }
 
@@ -449,16 +458,6 @@ function CampoMotivoBloqueio({ disabled }: { disabled: boolean }) {
           <option key={motivo} value={motivo}>{LABEL_MOTIVO_BLOQUEIO[motivo]}</option>
         ))}
       </select>
-    </div>
-  );
-}
-
-function Resumo({ icon, label, valor }: { icon: ReactNode; label: string; valor: string }) {
-  return (
-    <div className="min-w-36 rounded-lg border bg-background/55 p-3 text-sm">
-      <div className="mb-2 text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="truncate font-semibold">{valor}</p>
     </div>
   );
 }
