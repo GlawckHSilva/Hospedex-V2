@@ -3,7 +3,7 @@ import { EmailTemplatesModule } from "../../components/email-templates/email-tem
 import { carregarDadosTemplatesEmail } from "../../lib/email-templates/data";
 import { exigirAcessoEmail } from "../../lib/email-templates/permissions";
 
-/** Pagina de templates editaveis de e-mail do tenant autenticado. */
+/** Página de templates editáveis de e-mail do tenant autenticado. */
 
 export const dynamic = "force-dynamic";
 

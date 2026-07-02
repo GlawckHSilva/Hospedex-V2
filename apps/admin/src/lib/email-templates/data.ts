@@ -14,15 +14,15 @@ import type { DadosCentralEmail, DadosTemplatesEmail, EmailTemplate } from "./ty
 /**
  * Carrega templates do tenant autenticado.
  *
- * Templates globais sao a base. Quando o tenant customiza um modelo, a linha
- * tenant-scoped substitui apenas aquele template, mantendo isolamento por RLS.
+ * Templates globais são a base. Quando o tenant customiza um modelo, a linha
+ * do tenant substitui apenas aquele template, mantendo isolamento por RLS.
  */
 
 export async function carregarDadosTemplatesEmail(
   contexto: ContextoAutenticacao,
 ): Promise<DadosTemplatesEmail> {
   if (!contexto.tenant) {
-    return montarDadosTemplates([], contexto, "Tenant nao encontrado.");
+    return montarDadosTemplates([], contexto, "Cliente não encontrado.");
   }
 
   const supabase = await criarClienteSupabaseServer();
@@ -34,13 +34,13 @@ export async function carregarDadosTemplatesEmail(
     .returns<MessageTemplateRow[]>();
 
   if (error) {
-    console.error("Nao foi possivel carregar templates de e-mail.", error.message);
+    console.error("Não foi possível carregar templates de e-mail.", error.message);
   }
 
   return montarDadosTemplates(
     data ?? [],
     contexto,
-    error ? "Nao foi possivel carregar os templates de e-mail." : null,
+    error ? "Não foi possível carregar os templates de e-mail." : null,
   );
 }
 
@@ -58,7 +58,7 @@ export async function carregarDadosCentralEmail(
       recebidos: 0,
       templatesAtivos: dadosTemplates.resumo.ativos,
     },
-    tenantNome: contexto.tenant?.name ?? "Tenant nao encontrado",
+    tenantNome: contexto.tenant?.name ?? "Cliente não encontrado",
   };
 }
 
@@ -103,7 +103,7 @@ function montarDadosTemplates(
       total: templates.length,
     },
     templates,
-    tenantNome: contexto.tenant?.name ?? "Tenant nao encontrado",
+    tenantNome: contexto.tenant?.name ?? "Cliente não encontrado",
   };
 }
 
@@ -112,42 +112,43 @@ function normalizarTemplate(
   globalRow: MessageTemplateRow | null,
 ): EmailTemplate {
   const templatePadrao = obterTemplatePadrao(row.template_key);
+  const padraoCodigo = !row.tenant_id ? templatePadrao : null;
   const defaultSubject =
-    globalRow?.default_subject ?? row.default_subject ?? templatePadrao?.subject ?? row.subject;
+    templatePadrao?.subject ?? globalRow?.default_subject ?? row.default_subject ?? row.subject;
   const defaultTitle =
-    globalRow?.default_title ?? row.default_title ?? templatePadrao?.title ?? row.title;
+    templatePadrao?.title ?? globalRow?.default_title ?? row.default_title ?? row.title;
   const defaultBody =
-    globalRow?.default_body ?? row.default_body ?? templatePadrao?.body ?? row.body;
+    templatePadrao?.body ?? globalRow?.default_body ?? row.default_body ?? row.body;
 
   return {
-    body: row.body,
-    buttonText: row.button_text,
-    buttonUrl: row.button_url,
+    body: padraoCodigo ? padraoCodigo.body : row.body,
+    buttonText: padraoCodigo ? padraoCodigo.buttonText : row.button_text,
+    buttonUrl: padraoCodigo ? padraoCodigo.buttonUrl : row.button_url,
     channel: "email",
     defaultBody,
     defaultButtonText:
+      templatePadrao?.buttonText ??
       globalRow?.default_button_text ??
       row.default_button_text ??
-      templatePadrao?.buttonText ??
       null,
     defaultButtonUrl:
+      templatePadrao?.buttonUrl ??
       globalRow?.default_button_url ??
       row.default_button_url ??
-      templatePadrao?.buttonUrl ??
       null,
     defaultSubject,
     defaultTitle,
-    description: row.description,
+    description: padraoCodigo ? padraoCodigo.description : row.description,
     id: row.id,
     isActive: row.is_active,
     isCustomized: row.is_customized,
     isDefault: row.is_default,
     key: row.template_key,
     lastValidationError: row.last_validation_error,
-    name: row.name,
+    name: padraoCodigo ? padraoCodigo.name : row.name,
     row,
-    subject: row.subject,
-    title: row.title,
+    subject: padraoCodigo ? padraoCodigo.subject : row.subject,
+    title: padraoCodigo ? padraoCodigo.title : row.title,
     variablesAllowed: row.variables_allowed.length
       ? row.variables_allowed
       : [...EMAIL_TEMPLATE_VARIABLES],

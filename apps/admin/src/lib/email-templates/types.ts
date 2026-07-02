@@ -1,10 +1,10 @@
 import type { MessageTemplateRow } from "@hospedex/types";
 
 /**
- * Contratos do modulo de Templates de e-mail.
+ * Contratos do módulo de Templates de e-mail.
  *
- * A UI trabalha com um template mesclado: padrao global do Hospedex mais a
- * personalizacao do tenant, quando existir.
+ * A UI trabalha com um template mesclado: padrão global do Hospedex mais a
+ * personalização do tenant, quando existir.
  */
 
 export type EmailTemplate = {

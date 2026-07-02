@@ -12,10 +12,10 @@ import { exigirAcessoEmail, podeGerenciarEmail } from "./permissions";
 import { validarTemplateEmail } from "./validation";
 
 /**
- * Mutacoes dos templates de e-mail.
+ * Mutações dos templates de e-mail.
  *
- * O tenant e o usuario autenticado sao carregados no servidor para preservar
- * isolamento multi-tenant. A interface nunca define qual tenant sera alterado.
+ * O tenant e o usuário autenticado são carregados no servidor para preservar
+ * isolamento multi-tenant. A interface nunca define qual tenant será alterado.
  */
 
 const CAMINHO_TEMPLATES_EMAIL = "/templates-email";
@@ -28,7 +28,7 @@ export async function salvarTemplateEmailAction(formData: FormData) {
   try {
     const templateKey = textoObrigatorio(formData, "templateKey", "modelo");
     const padrao = obterTemplatePadrao(templateKey);
-    if (!padrao) throw new ErroRegraTemplateEmail("Modelo de e-mail invalido.");
+    if (!padrao) throw new ErroRegraTemplateEmail("Modelo de e-mail inválido.");
 
     const entrada = {
       body: textoObrigatorio(formData, "body", "corpo da mensagem"),
@@ -38,7 +38,7 @@ export async function salvarTemplateEmailAction(formData: FormData) {
       isActive: String(formData.get("isActive") ?? "") === "true",
       name: textoObrigatorio(formData, "name", "nome do modelo"),
       subject: textoObrigatorio(formData, "subject", "assunto"),
-      title: textoObrigatorio(formData, "title", "titulo"),
+      title: textoObrigatorio(formData, "title", "título"),
     };
     const validacao = validarTemplateEmail({
       body: entrada.body,
@@ -49,7 +49,7 @@ export async function salvarTemplateEmailAction(formData: FormData) {
     });
 
     if (!validacao.valido) {
-      throw new ErroRegraTemplateEmail(validacao.erros[0] ?? "Template invalido.");
+      throw new ErroRegraTemplateEmail(validacao.erros[0] ?? "Template inválido.");
     }
 
     const supabase = await criarClienteSupabaseServer();
@@ -83,7 +83,7 @@ export async function salvarTemplateEmailAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarTemplates();
   } catch (erro) {
-    redirecionarComErro(erro, "Nao foi possivel salvar o modelo.");
+    redirecionarComErro(erro, "Não foi possível salvar o modelo.");
   }
 
   redirect(`${CAMINHO_TEMPLATES_EMAIL}?sucesso=modelo-salvo`);
@@ -95,7 +95,7 @@ export async function restaurarTemplateEmailPadraoAction(formData: FormData) {
   try {
     const templateKey = textoObrigatorio(formData, "templateKey", "modelo");
     if (!obterTemplatePadrao(templateKey)) {
-      throw new ErroRegraTemplateEmail("Modelo de e-mail invalido.");
+      throw new ErroRegraTemplateEmail("Modelo de e-mail inválido.");
     }
 
     const supabase = await criarClienteSupabaseServer();
@@ -109,7 +109,7 @@ export async function restaurarTemplateEmailPadraoAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarTemplates();
   } catch (erro) {
-    redirecionarComErro(erro, "Nao foi possivel restaurar o modelo.");
+    redirecionarComErro(erro, "Não foi possível restaurar o modelo.");
   }
 
   redirect(`${CAMINHO_TEMPLATES_EMAIL}?sucesso=modelo-restaurado`);
@@ -129,7 +129,7 @@ export async function restaurarTodosTemplatesEmailPadraoAction() {
     if (error) throw new Error(error.message);
     revalidarTemplates();
   } catch (erro) {
-    redirecionarComErro(erro, "Nao foi possivel restaurar os padroes.");
+    redirecionarComErro(erro, "Não foi possível restaurar os padrões.");
   }
 
   redirect(`${CAMINHO_TEMPLATES_EMAIL}?sucesso=padroes-restaurados`);

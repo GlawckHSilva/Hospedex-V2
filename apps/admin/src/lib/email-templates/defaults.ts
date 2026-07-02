@@ -3,8 +3,8 @@ import type { MessageTemplateRow } from "@hospedex/types";
 /**
  * Defaults dos templates transacionais de e-mail.
  *
- * Esta lista e usada pela UI, pela validacao e pela migration. Manter um
- * catalogo central evita textos divergentes entre preview, restore e envio
+ * Esta lista é usada pela UI, pela validação e pela migration. Manter um
+ * catálogo central evita textos divergentes entre preview, restore e envio
  * futuro pelo backend.
  */
 
@@ -48,10 +48,10 @@ export const DADOS_PREVIEW_EMAIL: Record<EmailTemplateVariable, string> = {
   link_painel: "/",
   link_reserva: "/reservas/RES-20260701-43EPU",
   nome_casa: "Casa do Lago",
-  nome_hospede: "Joao Silva",
+  nome_hospede: "João Silva",
   nome_proprietario: "Glawck",
   nome_tenant: "Hospedex",
-  periodo_reserva: "10/07/2026 ate 15/07/2026",
+  periodo_reserva: "10/07/2026 até 15/07/2026",
   status_pagamento: "Pendente",
   status_reserva: "Aguardando pagamento",
   telefone_hospede: "(43) 99999-0000",
@@ -62,18 +62,18 @@ export const DADOS_PREVIEW_EMAIL: Record<EmailTemplateVariable, string> = {
 export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   {
     body:
-      "Ola, {{nome_proprietario}}.\n\nVoce recebeu uma nova reserva.\n\nReserva: {{codigo_reserva}}\nHospede: {{nome_hospede}}\nCasa: {{nome_casa}}\nPeriodo: {{periodo_reserva}}\nValor total: {{valor_total}}\n\nAcesse o painel para analisar os detalhes.",
+      "Olá, {{nome_proprietario}}.\n\nVocê recebeu uma nova reserva.\n\nReserva: {{codigo_reserva}}\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}\nPeríodo: {{periodo_reserva}}\nValor total: {{valor_total}}\n\nAcesse o painel para analisar os detalhes.",
     buttonText: "Ver reserva",
     buttonUrl: "{{link_reserva}}",
     description: "Enviado quando uma nova reserva entra no sistema.",
     key: "nova_reserva_recebida",
     name: "Nova reserva recebida",
     subject: "Nova reserva recebida no Hospedex",
-    title: "Voce recebeu uma nova reserva",
+    title: "Você recebeu uma nova reserva",
   },
   {
     body:
-      "Ola, {{nome_proprietario}}.\n\nA reserva {{codigo_reserva}} esta aguardando pagamento.\nHospede: {{nome_hospede}}\nValor pendente: {{valor_pendente}}\nStatus: {{status_pagamento}}.",
+      "Olá, {{nome_proprietario}}.\n\nA reserva {{codigo_reserva}} está aguardando pagamento.\nHóspede: {{nome_hospede}}\nValor pendente: {{valor_pendente}}\nStatus: {{status_pagamento}}.",
     buttonText: "Ver reserva",
     buttonUrl: "{{link_reserva}}",
     description: "Enviado quando a reserva aguarda pagamento.",
@@ -84,10 +84,10 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   },
   {
     body:
-      "O pagamento da reserva {{codigo_reserva}} foi registrado.\nHospede: {{nome_hospede}}\nCasa: {{nome_casa}}\nValor total: {{valor_total}}.",
+      "O pagamento da reserva {{codigo_reserva}} foi registrado.\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}\nValor total: {{valor_total}}.",
     buttonText: "Abrir painel",
     buttonUrl: "{{link_painel}}",
-    description: "Enviado apos a confirmacao de um pagamento.",
+    description: "Enviado após a confirmação de um pagamento.",
     key: "pagamento_recebido",
     name: "Pagamento recebido",
     subject: "Pagamento recebido no Hospedex",
@@ -95,10 +95,10 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   },
   {
     body:
-      "A reserva {{codigo_reserva}} foi cancelada.\nHospede: {{nome_hospede}}\nCasa: {{nome_casa}}\nPeriodo: {{periodo_reserva}}.",
+      "A reserva {{codigo_reserva}} foi cancelada.\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}\nPeríodo: {{periodo_reserva}}.",
     buttonText: "Ver reserva",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado quando uma reserva e cancelada.",
+    description: "Enviado quando uma reserva é cancelada.",
     key: "reserva_cancelada",
     name: "Reserva cancelada",
     subject: "Reserva cancelada",
@@ -106,10 +106,10 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   },
   {
     body:
-      "A reserva {{codigo_reserva}} tem check-in previsto para {{data_checkin}}.\nHospede: {{nome_hospede}}\nTelefone: {{telefone_hospede}}\nCasa: {{nome_casa}}.",
+      "A reserva {{codigo_reserva}} tem check-in previsto para {{data_checkin}}.\nHóspede: {{nome_hospede}}\nTelefone: {{telefone_hospede}}\nCasa: {{nome_casa}}.",
     buttonText: "Ver detalhes",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado antes da data de check-in do hospede.",
+    description: "Enviado antes da data de check-in do hóspede.",
     key: "checkin_previsto",
     name: "Check-in previsto",
     subject: "Check-in previsto para {{data_checkin}}",
@@ -117,10 +117,10 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   },
   {
     body:
-      "A reserva {{codigo_reserva}} tem check-out previsto para {{data_checkout}}.\nHospede: {{nome_hospede}}\nCasa: {{nome_casa}}.",
+      "A reserva {{codigo_reserva}} tem check-out previsto para {{data_checkout}}.\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}.",
     buttonText: "Ver detalhes",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado antes da data de check-out do hospede.",
+    description: "Enviado antes da data de check-out do hóspede.",
     key: "checkout_previsto",
     name: "Check-out previsto",
     subject: "Check-out previsto para {{data_checkout}}",
@@ -139,32 +139,32 @@ export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   },
   {
     body:
-      "O tenant {{nome_tenant}} possui uma pendencia operacional.\nReserva: {{codigo_reserva}}\nStatus: {{status_reserva}}.",
-    buttonText: "Ver pendencias",
+      "A conta {{nome_tenant}} possui uma pendência operacional.\nReserva: {{codigo_reserva}}\nStatus: {{status_reserva}}.",
+    buttonText: "Ver pendências",
     buttonUrl: "{{link_painel}}",
-    description: "Enviado quando existe uma pendencia no gerenciamento.",
+    description: "Enviado quando existe uma pendência no gerenciamento.",
     key: "pendencia_operacional",
-    name: "Pendencia operacional",
-    subject: "Pendencia operacional no Hospedex",
-    title: "Pendencia operacional",
+    name: "Pendência operacional",
+    subject: "Pendência operacional no Hospedex",
+    title: "Pendência operacional",
   },
   {
     body:
-      "Ola, {{nome_proprietario}}.\n\nA licenca do tenant {{nome_tenant}} precisa de atencao.\nAcesse o painel para verificar os detalhes.",
+      "Olá, {{nome_proprietario}}.\n\nA licença da conta {{nome_tenant}} precisa de atenção.\nAcesse o painel para verificar os detalhes.",
     buttonText: "Abrir painel",
     buttonUrl: "{{link_painel}}",
-    description: "Enviado quando a licenca esta perto do vencimento.",
+    description: "Enviado quando a licença está perto do vencimento.",
     key: "licenca_vencendo",
-    name: "Licenca vencendo",
-    subject: "Sua licenca Hospedex esta vencendo",
-    title: "Licenca vencendo",
+    name: "Licença vencendo",
+    subject: "Sua licença Hospedex está vencendo",
+    title: "Licença vencendo",
   },
   {
     body:
-      "Ola, {{nome_proprietario}}.\n\nEste e um e-mail de teste do Hospedex para {{nome_tenant}}.",
+      "Olá, {{nome_proprietario}}.\n\nEste é um e-mail de teste do Hospedex para {{nome_tenant}}.",
     buttonText: "Abrir painel",
     buttonUrl: "{{link_painel}}",
-    description: "Modelo usado para validar a futura configuracao de envio.",
+    description: "Modelo usado para validar a futura configuração de envio.",
     key: "email_teste",
     name: "E-mail de teste",
     subject: "Teste de e-mail Hospedex",

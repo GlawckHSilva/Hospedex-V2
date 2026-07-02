@@ -399,7 +399,7 @@ const GRUPOS_MENU_GERENCIAMENTO: GrupoMenuSidebar[] = [
   },
   {
     chaves: ["/email", "/templates-email"],
-    titulo: "Comunicacoes",
+    titulo: "Comunicações",
   },
 ];
 

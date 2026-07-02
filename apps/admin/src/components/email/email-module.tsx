@@ -12,14 +12,14 @@ import { ModuleToast } from "../admin/module-toast";
 type AbaEmail = "geral" | "enviados" | "recebidos" | "falhas" | "configuracao";
 
 const ABAS: Array<{ chave: AbaEmail; label: string }> = [
-  { chave: "geral", label: "Visao geral" },
+  { chave: "geral", label: "Visão geral" },
   { chave: "enviados", label: "Enviados" },
   { chave: "recebidos", label: "Recebidos" },
   { chave: "falhas", label: "Falhas" },
-  { chave: "configuracao", label: "Configuracao" },
+  { chave: "configuracao", label: "Configuração" },
 ];
 
-/** Central visual de e-mail preparada para futura integracao com provedor. */
+/** Central visual de e-mail preparada para futura integração com serviço externo. */
 export function EmailModule({
   erro,
   erroCarregamento,
@@ -48,10 +48,10 @@ export function EmailModule({
       <section className="admin-glass-panel p-5">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
-            <Badge variant="info">Comunicacao por e-mail</Badge>
+            <Badge variant="info">Comunicação por e-mail</Badge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">E-mail</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Acompanhe notificacoes enviadas, falhas e futuras respostas por e-mail.
+              Acompanhe notificações enviadas, falhas e futuras respostas por e-mail.
             </p>
           </div>
 
@@ -87,21 +87,21 @@ export function EmailModule({
           {aba === "geral" ? <VisaoGeral tenantNome={tenantNome} /> : null}
           {aba === "enviados" ? (
             <PremiumEmptyState
-              description="Quando a integracao de envio for ativada, os e-mails enviados aparecerao aqui."
+              description="Quando a integração de envio for ativada, os e-mails enviados aparecerão aqui."
               icon={<MailCheck className="h-5 w-5" />}
               title="Nenhum e-mail enviado ainda"
             />
           ) : null}
           {aba === "recebidos" ? (
             <PremiumEmptyState
-              description="Futuramente, respostas recebidas poderao aparecer aqui apos configuracao de dominio e webhook."
+              description="Futuramente, respostas recebidas poderão aparecer aqui após configuração de domínio."
               icon={<Inbox className="h-5 w-5" />}
-              title="Recebimento de e-mails ainda nao configurado"
+              title="Recebimento de e-mails ainda não configurado"
             />
           ) : null}
           {aba === "falhas" ? (
             <PremiumEmptyState
-              description="Falhas de envio aparecerao aqui quando o provedor de e-mail estiver ativo."
+              description="Falhas de envio aparecerão aqui quando o serviço de e-mail estiver ativo."
               icon={<AlertTriangle className="h-5 w-5" />}
               title="Nenhuma falha registrada"
             />
@@ -117,10 +117,10 @@ export function EmailModule({
 
 function VisaoGeral({ tenantNome }: { tenantNome: string }) {
   const itens = [
-    ["Notificacoes automaticas por e-mail", "Preparadas para reservas, pagamentos e operacao."],
-    ["Status", "Em preparacao."],
-    ["Templates configurados", `Modelos do tenant ${tenantNome} usam defaults seguros.`],
-    ["Proxima etapa", "Conectar provedor de envio."],
+    ["Notificações automáticas por e-mail", "Preparadas para reservas, pagamentos e operação."],
+    ["Status", "Em preparação."],
+    ["Templates configurados", `Modelos de ${tenantNome} usam padrões seguros.`],
+    ["Próxima etapa", "Conectar serviço de envio."],
   ];
 
   return (
@@ -139,23 +139,23 @@ function ConfiguracaoEmail({ onFeedback }: { onFeedback: (mensagem: string) => v
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-4">
-        <h2 className="font-semibold">Configuracao</h2>
+        <h2 className="font-semibold">Configuração</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <Info label="E-mail de notificacoes" valor="Sera definido na proxima etapa" />
-          <Info label="Receber notificacoes por e-mail" valor="Preparado" />
-          <Info label="Status da integracao" valor="Em preparacao" />
+          <Info label="E-mail de notificações" valor="Será definido na próxima etapa" />
+          <Info label="Receber notificações por e-mail" valor="Preparado" />
+          <Info label="Status da integração" valor="Em preparação" />
           <Info label="Envio de teste" valor="Modo simulado" />
         </div>
       </div>
       <div className="rounded-xl border border-cyan-300/20 bg-cyan-500/10 p-4">
         <Settings className="h-5 w-5 text-cyan-200" />
         <p className="mt-3 text-sm text-cyan-100">
-          A integracao de envio sera ativada em uma proxima etapa.
+          A integração de envio será ativada em uma próxima etapa.
         </p>
         <ActionButton
           className="mt-4 w-full"
           disabled
-          onClick={() => onFeedback("Envio real ainda nao configurado.")}
+          onClick={() => onFeedback("Envio real ainda não configurado.")}
           variant="settings"
         >
           Enviar teste

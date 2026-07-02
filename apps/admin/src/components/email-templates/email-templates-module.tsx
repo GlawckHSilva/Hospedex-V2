@@ -31,9 +31,9 @@ import { FormActionButton } from "../management/form-submit-button";
 import { ModuleToast } from "../admin/module-toast";
 
 const MENSAGENS_SUCESSO: Record<string, string> = {
-  "modelo-restaurado": "Modelo restaurado para o padrao.",
+  "modelo-restaurado": "Modelo restaurado para o padrão.",
   "modelo-salvo": "Modelo de e-mail salvo.",
-  "padroes-restaurados": "Padroes restaurados.",
+  "padroes-restaurados": "Padrões restaurados.",
 };
 
 type StatusFiltro = "todos" | "ativos" | "inativos" | "alterados" | "erro";
@@ -49,7 +49,7 @@ type DraftTemplate = {
   title: string;
 };
 
-/** Tela de personalizacao de modelos de e-mail do tenant autenticado. */
+/** Tela de personalização de modelos de e-mail do tenant autenticado. */
 export function EmailTemplatesModule({
   erro,
   erroCarregamento,
@@ -151,7 +151,7 @@ export function EmailTemplatesModule({
               icon={<Mail />}
               onClick={() => {
                 const teste = templates.find((template) => template.key === "email_teste");
-                if (teste) selecionar(teste, "Novo modelo livre fica preparado para a proxima etapa.");
+                if (teste) selecionar(teste, "Criação livre de modelos ficará para a próxima etapa.");
               }}
               type="button"
               variant="add"
@@ -161,7 +161,7 @@ export function EmailTemplatesModule({
             <form
               action={restaurarTodosTemplatesEmailPadraoAction}
               onSubmit={(evento) => {
-                if (!window.confirm("Restaurar todos os modelos padrao?")) {
+                if (!window.confirm("Restaurar todos os modelos padrão?")) {
                   evento.preventDefault();
                 }
               }}
@@ -172,7 +172,7 @@ export function EmailTemplatesModule({
                 pendingLabel="Restaurando..."
                 variant="settings"
               >
-                Restaurar padroes
+                Restaurar padrões
               </FormActionButton>
             </form>
           </div>
@@ -180,9 +180,9 @@ export function EmailTemplatesModule({
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Resumo icon={<Mail />} label="Modelos ativos" valor={resumo.ativos} detalhe={`De ${resumo.total} modelos`} />
-          <Resumo icon={<Pencil />} label="Alterados" valor={resumo.alterados} detalhe="Nos ultimos ajustes" />
+          <Resumo icon={<Pencil />} label="Alterados" valor={resumo.alterados} detalhe="Nos últimos ajustes" />
           <Resumo icon={<Send />} label="E-mails" valor={resumo.canalPrincipal} detalhe="Canal principal" />
-          <Resumo icon={<AlertTriangle />} label="Erros de variavel" valor={resumo.errosVariavel} detalhe="Modelos bloqueados" />
+          <Resumo icon={<AlertTriangle />} label="Erros de variável" valor={resumo.errosVariavel} detalhe="Modelos bloqueados" />
         </div>
       </section>
 
@@ -252,7 +252,7 @@ export function EmailTemplatesModule({
 
               <CampoTexto label="Nome do modelo" name="name" onChange={(valor) => setDraft((atual) => ({ ...atual, name: valor }))} value={draft.name} />
               <CampoTexto label="Assunto" name="subject" onChange={(valor) => setDraft((atual) => ({ ...atual, subject: valor }))} value={draft.subject} />
-              <CampoTexto label="Titulo" name="title" onChange={(valor) => setDraft((atual) => ({ ...atual, title: valor }))} value={draft.title} />
+              <CampoTexto label="Título" name="title" onChange={(valor) => setDraft((atual) => ({ ...atual, title: valor }))} value={draft.title} />
 
               <label className="block space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
@@ -267,8 +267,8 @@ export function EmailTemplatesModule({
               </label>
 
               <div className="grid gap-3 md:grid-cols-2">
-                <CampoTexto label="Texto do botao" name="buttonText" onChange={(valor) => setDraft((atual) => ({ ...atual, buttonText: valor }))} value={draft.buttonText} />
-                <CampoTexto label="Link do botao" name="buttonUrl" onChange={(valor) => setDraft((atual) => ({ ...atual, buttonUrl: valor }))} value={draft.buttonUrl} />
+                <CampoTexto label="Texto do botão" name="buttonText" onChange={(valor) => setDraft((atual) => ({ ...atual, buttonText: valor }))} value={draft.buttonText} />
+                <CampoTexto label="Link do botão" name="buttonUrl" onChange={(valor) => setDraft((atual) => ({ ...atual, buttonUrl: valor }))} value={draft.buttonUrl} />
               </div>
 
               <label className="flex items-center gap-3 rounded-lg border border-slate-800 bg-slate-950/45 p-3 text-sm">
@@ -278,7 +278,7 @@ export function EmailTemplatesModule({
                   onChange={(evento) => setDraft((atual) => ({ ...atual, isActive: evento.target.checked }))}
                   type="checkbox"
                 />
-                Este modelo esta ativo e sera enviado automaticamente quando o provedor estiver configurado.
+                Este modelo está ativo e será enviado automaticamente quando o envio estiver configurado.
               </label>
 
               {!validacao.valido ? (
@@ -297,7 +297,7 @@ export function EmailTemplatesModule({
                 </ActionButton>
                 <ActionButton
                   icon={<Send />}
-                  onClick={() => setFeedbackLocal("Envio de teste preparado. Provedor de e-mail ainda nao configurado.")}
+                  onClick={() => setFeedbackLocal("Envio de teste preparado. Serviço de e-mail ainda não configurado.")}
                   type="button"
                   variant="view"
                 >
@@ -363,12 +363,12 @@ function TemplateCard({
         <ActionButton icon={<Pencil />} onClick={() => onSelecionar(template)} variant="edit">
           Editar
         </ActionButton>
-        <ActionButton onClick={() => onSelecionar(template, "Pre-visualizacao atualizada.")} variant="view">
-          Pre-visualizar
+        <ActionButton onClick={() => onSelecionar(template, "Pré-visualização atualizada.")} variant="view">
+          Pré-visualizar
         </ActionButton>
         <ActionButton
           icon={<Send />}
-          onClick={() => onSelecionar(template, "Envio de teste preparado. Provedor ainda nao configurado.")}
+          onClick={() => onSelecionar(template, "Envio de teste preparado. Serviço de e-mail ainda não configurado.")}
           variant="settings"
         >
           Enviar teste
@@ -376,7 +376,7 @@ function TemplateCard({
         <form
           action={restaurarTemplateEmailPadraoAction}
           onSubmit={(evento) => {
-            if (!window.confirm("Restaurar modelo padrao? As alteracoes personalizadas serao substituidas.")) {
+            if (!window.confirm("Restaurar modelo padrão? As alterações personalizadas serão substituídas.")) {
               evento.preventDefault();
             }
           }}
@@ -388,7 +388,7 @@ function TemplateCard({
             pendingLabel="Restaurando..."
             variant="status"
           >
-            Restaurar padrao
+            Restaurar padrão
           </FormActionButton>
         </form>
       </div>
@@ -429,7 +429,7 @@ function VariaveisDisponiveis({
 }) {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-      <h3 className="font-semibold">Variaveis disponiveis</h3>
+      <h3 className="font-semibold">Variáveis disponíveis</h3>
       <div className="mt-3 grid gap-2 sm:grid-cols-2 2xl:grid-cols-1">
         {obterVariaveisPermitidas().map((variavel) => {
           const texto = `{{${variavel}}}`;
@@ -440,7 +440,7 @@ function VariaveisDisponiveis({
               key={variavel}
               onClick={() => {
                 void navigator.clipboard.writeText(texto);
-                onCopiar("Variavel copiada.");
+                onCopiar("Variável copiada.");
               }}
               type="button"
             >
@@ -462,7 +462,7 @@ function PreviewEmail({ draft }: { draft: DraftTemplate }) {
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-      <h3 className="font-semibold">Pre-visualizacao</h3>
+      <h3 className="font-semibold">Pré-visualização</h3>
       <div className="mt-3 rounded-lg bg-white p-4 text-slate-950">
         <p className="text-xs font-semibold uppercase text-slate-500">Assunto</p>
         <p className="mt-1 font-semibold">{assunto}</p>
@@ -476,7 +476,7 @@ function PreviewEmail({ draft }: { draft: DraftTemplate }) {
               {botao}
             </div>
           ) : null}
-          <p className="mt-4 text-xs text-slate-500">Hospedex - comunicacao automatica.</p>
+          <p className="mt-4 text-xs text-slate-500">Hospedex - comunicação automática.</p>
         </div>
       </div>
     </div>

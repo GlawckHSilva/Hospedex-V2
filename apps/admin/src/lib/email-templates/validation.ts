@@ -5,11 +5,11 @@ import {
 } from "./defaults";
 
 /**
- * Validacao e renderizacao de templates.
+ * Validação e renderização de templates.
  *
  * Esta camada existe para impedir que a interface e as server actions tenham
- * regras diferentes sobre variaveis permitidas. Um template com variavel
- * invalida nao deve ser salvo porque quebraria notificacoes automaticas.
+ * regras diferentes sobre variáveis permitidas. Um template com variável
+ * inválida não deve ser salvo porque quebraria notificações automáticas.
  */
 
 const VARIAVEL_REGEX = /{{\s*([a-zA-Z0-9_]+)\s*}}/g;
@@ -45,7 +45,7 @@ export function validarTemplateEmail(
   const erros: string[] = [];
 
   if (!campos.subject.trim()) erros.push("Informe o assunto do e-mail.");
-  if (!campos.title.trim()) erros.push("Informe o titulo do e-mail.");
+  if (!campos.title.trim()) erros.push("Informe o título do e-mail.");
   if (!campos.body.trim()) erros.push("Informe o corpo da mensagem.");
 
   const textos = [
@@ -58,13 +58,13 @@ export function validarTemplateEmail(
 
   for (const variavel of extrairVariaveisTemplate(textos.join("\n"))) {
     if (!VARIAVEIS_PERMITIDAS.has(variavel)) {
-      erros.push(`Variavel invalida: {{${variavel}}}`);
+      erros.push(`Variável inválida: {{${variavel}}}`);
     }
   }
 
   const linkBotao = campos.buttonUrl.trim();
   if (linkBotao && !ehVariavelPermitida(linkBotao) && !ehUrlValida(linkBotao)) {
-    erros.push("Informe uma URL valida ou uma variavel permitida no link do botao.");
+    erros.push("Informe uma URL válida ou uma variável permitida no link do botão.");
   }
 
   return {

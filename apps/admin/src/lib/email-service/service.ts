@@ -1,8 +1,8 @@
 /**
- * Servico base de e-mail da V2.
+ * Serviço base de e-mail da V2.
  *
- * Nesta etapa o Hospedex ainda nao possui provedor ativo. As funcoes mantem um
- * contrato seguro para a proxima integracao com Resend ou SMTP, sem enviar nada
+ * Nesta etapa o Hospedex ainda não possui serviço ativo. As funções mantêm um
+ * contrato seguro para a próxima integração com envio real, sem enviar nada
  * de verdade e sem expor chaves no frontend.
  */
 
@@ -44,7 +44,7 @@ export async function getEmailDeliveryLogs() {
 
 function servicoNaoConfigurado(): EmailServiceResult {
   return {
-    message: "Provedor de e-mail ainda nao configurado.",
+    message: "Serviço de e-mail ainda não configurado.",
     status: "not_configured",
     success: false,
   };

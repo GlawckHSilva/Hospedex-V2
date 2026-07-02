@@ -163,7 +163,7 @@ const MENU_PROPRIETARIO = [
   {
     titulo: "E-mail",
     href: "/email",
-    descricao: "Central visual de notificacoes por e-mail.",
+    descricao: "Central visual de notificações por e-mail.",
     icone: "email",
     featureFlag: "integrations",
     permissoes: ["integrations.read", "integrations.manage"]
@@ -171,7 +171,7 @@ const MENU_PROPRIETARIO = [
   {
     titulo: "Templates de e-mail",
     href: "/templates-email",
-    descricao: "Modelos transacionais editaveis do tenant.",
+    descricao: "Modelos transacionais editáveis do proprietário.",
     icone: "templatesEmail",
     featureFlag: "integrations",
     permissoes: ["integrations.read", "integrations.manage"]

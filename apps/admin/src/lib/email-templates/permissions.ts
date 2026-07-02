@@ -4,10 +4,10 @@ import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
 
 /**
- * Autorizacao da Comunicacao por E-mail.
+ * Autorização da Comunicação por E-mail.
  *
- * O modulo usa a liberacao de Integracoes porque e-mail ainda depende da
- * decisao do Super Admin sobre quais conectores o tenant pode utilizar.
+ * O módulo usa a liberação de Integrações porque e-mail ainda depende da
+ * decisão do Super Admin sobre quais conectores o tenant pode utilizar.
  */
 
 export function podeLerEmail(contexto: ContextoAutenticacao): boolean {
