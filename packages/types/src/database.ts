@@ -110,6 +110,7 @@ export type IntegrationStatus =
   | "connected"
   | "error";
 export type MessageTemplateChannel = "email";
+export type MessageTemplateAudience = "owner" | "guest" | "system";
 export type MessageTemplateValidationStatus = "valid" | "invalid";
 
 export type ProfileRow = {
@@ -872,6 +873,7 @@ export type MessageTemplateRow = {
   tenant_id: UUID | null;
   template_key: string;
   channel: MessageTemplateChannel;
+  audience: MessageTemplateAudience;
   name: string;
   description: string;
   subject: string;

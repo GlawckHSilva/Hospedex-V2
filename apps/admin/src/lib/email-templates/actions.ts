@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
+  EMAIL_TEMPLATE_AUDIENCE_GUEST,
   EMAIL_TEMPLATE_VARIABLES,
   obterTemplatePadrao,
 } from "./defaults";
@@ -55,6 +56,7 @@ export async function salvarTemplateEmailAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
     const { error } = await supabase.from("message_templates").upsert(
       {
+        audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
         body: entrada.body,
         button_text: entrada.buttonText,
         button_url: entrada.buttonUrl,
@@ -77,7 +79,7 @@ export async function salvarTemplateEmailAction(formData: FormData) {
         title: entrada.title,
         variables_allowed: [...EMAIL_TEMPLATE_VARIABLES],
       },
-      { onConflict: "tenant_id,template_key,channel" },
+      { onConflict: "tenant_id,template_key,channel,audience" },
     );
 
     if (error) throw new Error(error.message);
@@ -104,6 +106,7 @@ export async function restaurarTemplateEmailPadraoAction(formData: FormData) {
       .delete()
       .eq("tenant_id", escopo.tenantId)
       .eq("channel", "email")
+      .eq("audience", EMAIL_TEMPLATE_AUDIENCE_GUEST)
       .eq("template_key", templateKey);
 
     if (error) throw new Error(error.message);
@@ -124,7 +127,8 @@ export async function restaurarTodosTemplatesEmailPadraoAction() {
       .from("message_templates")
       .delete()
       .eq("tenant_id", escopo.tenantId)
-      .eq("channel", "email");
+      .eq("channel", "email")
+      .eq("audience", EMAIL_TEMPLATE_AUDIENCE_GUEST);
 
     if (error) throw new Error(error.message);
     revalidarTemplates();

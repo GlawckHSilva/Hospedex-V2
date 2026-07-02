@@ -171,7 +171,7 @@ const MENU_PROPRIETARIO = [
   {
     titulo: "Templates de e-mail",
     href: "/templates-email",
-    descricao: "Modelos transacionais editáveis do proprietário.",
+    descricao: "Modelos enviados aos hóspedes.",
     icone: "templatesEmail",
     featureFlag: "integrations",
     permissoes: ["integrations.read", "integrations.manage"]

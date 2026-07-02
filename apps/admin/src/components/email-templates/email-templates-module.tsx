@@ -51,6 +51,7 @@ type DraftTemplate = {
 
 /** Tela de personalização de modelos de e-mail do tenant autenticado. */
 export function EmailTemplatesModule({
+  emailTeste,
   erro,
   erroCarregamento,
   podeGerenciar,
@@ -139,29 +140,22 @@ export function EmailTemplatesModule({
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-normal">
-              Templates de e-mail
+              Templates de e-mail para hóspedes
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Personalize os textos enviados automaticamente pelo Hospedex.
+              Personalize as mensagens enviadas automaticamente aos seus hóspedes.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <ActionButton
-              icon={<Mail />}
-              onClick={() => {
-                const teste = templates.find((template) => template.key === "email_teste");
-                if (teste) selecionar(teste, "Criação livre de modelos ficará para a próxima etapa.");
-              }}
-              type="button"
-              variant="add"
-            >
-              Novo modelo
-            </ActionButton>
             <form
               action={restaurarTodosTemplatesEmailPadraoAction}
               onSubmit={(evento) => {
-                if (!window.confirm("Restaurar todos os modelos padrão?")) {
+                if (
+                  !window.confirm(
+                    "Restaurar todos os modelos padrão para hóspedes? As alterações dos modelos enviados aos hóspedes serão substituídas pelo texto padrão do Hospedex.",
+                  )
+                ) {
                   evento.preventDefault();
                 }
               }}
@@ -179,9 +173,9 @@ export function EmailTemplatesModule({
         </div>
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Resumo icon={<Mail />} label="Modelos ativos" valor={resumo.ativos} detalhe={`De ${resumo.total} modelos`} />
-          <Resumo icon={<Pencil />} label="Alterados" valor={resumo.alterados} detalhe="Nos últimos ajustes" />
-          <Resumo icon={<Send />} label="E-mails" valor={resumo.canalPrincipal} detalhe="Canal principal" />
+          <Resumo icon={<Mail />} label="Templates de hóspedes" valor={resumo.total} detalhe="Modelos editáveis" />
+          <Resumo icon={<Send />} label="Ativos" valor={resumo.ativos} detalhe="Disponíveis para uso futuro" />
+          <Resumo icon={<Pencil />} label="Alterados" valor={resumo.alterados} detalhe="Personalizados neste tenant" />
           <Resumo icon={<AlertTriangle />} label="Erros de variável" valor={resumo.errosVariavel} detalhe="Modelos bloqueados" />
         </div>
       </section>
@@ -224,6 +218,7 @@ export function EmailTemplatesModule({
           {templatesFiltrados.map((template) => (
             <TemplateCard
               key={template.key}
+              emailTeste={emailTeste}
               onSelecionar={selecionar}
               podeGerenciar={podeGerenciar}
               selecionado={template.key === selecionado?.key}
@@ -245,10 +240,13 @@ export function EmailTemplatesModule({
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg font-semibold">{draft.name}</h2>
-                <Badge variant="info">E-mail</Badge>
+                <Badge variant="info">Hóspede</Badge>
                 {draft.isActive ? <Badge variant="success">Ativo</Badge> : <Badge variant="warning">Inativo</Badge>}
                 {selecionado.isCustomized ? <Badge variant="warning">Alterado</Badge> : null}
               </div>
+              <p className="rounded-lg border border-cyan-300/20 bg-cyan-500/10 p-3 text-sm text-cyan-100">
+                Este modelo será usado em mensagens enviadas aos hóspedes.
+              </p>
 
               <CampoTexto label="Nome do modelo" name="name" onChange={(valor) => setDraft((atual) => ({ ...atual, name: valor }))} value={draft.name} />
               <CampoTexto label="Assunto" name="subject" onChange={(valor) => setDraft((atual) => ({ ...atual, subject: valor }))} value={draft.subject} />
@@ -278,7 +276,7 @@ export function EmailTemplatesModule({
                   onChange={(evento) => setDraft((atual) => ({ ...atual, isActive: evento.target.checked }))}
                   type="checkbox"
                 />
-                Este modelo está ativo e será enviado automaticamente quando o envio estiver configurado.
+                Este modelo está ativo para futuras mensagens enviadas aos hóspedes.
               </label>
 
               {!validacao.valido ? (
@@ -297,12 +295,19 @@ export function EmailTemplatesModule({
                 </ActionButton>
                 <ActionButton
                   icon={<Send />}
-                  onClick={() => setFeedbackLocal("Envio de teste preparado. Serviço de e-mail ainda não configurado.")}
+                  onClick={() =>
+                    setFeedbackLocal(
+                      `Envio de teste preparado para ${emailTeste}. A integração real será ativada na próxima etapa.`,
+                    )
+                  }
                   type="button"
                   variant="view"
                 >
                   Enviar teste
                 </ActionButton>
+                <p className="basis-full text-xs text-muted-foreground">
+                  O teste será enviado para o seu próprio e-mail, simulando como o hóspede receberá a mensagem.
+                </p>
                 <FormActionButton
                   disabled={!podeGerenciar || !validacao.valido}
                   icon={<Save />}
@@ -326,11 +331,13 @@ export function EmailTemplatesModule({
 }
 
 function TemplateCard({
+  emailTeste,
   onSelecionar,
   podeGerenciar,
   selecionado,
   template,
 }: {
+  emailTeste: string;
   onSelecionar: (template: EmailTemplate, mensagem?: string) => void;
   podeGerenciar: boolean;
   selecionado: boolean;
@@ -351,7 +358,7 @@ function TemplateCard({
           <p className="mt-1 text-sm text-muted-foreground">{template.description}</p>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Badge variant="info">E-mail</Badge>
+          <Badge variant="info">Hóspede</Badge>
           <Badge variant={template.isActive ? "success" : "warning"}>
             {template.isActive ? "Ativo" : "Inativo"}
           </Badge>
@@ -368,7 +375,12 @@ function TemplateCard({
         </ActionButton>
         <ActionButton
           icon={<Send />}
-          onClick={() => onSelecionar(template, "Envio de teste preparado. Serviço de e-mail ainda não configurado.")}
+          onClick={() =>
+            onSelecionar(
+              template,
+              `Envio de teste preparado para ${emailTeste}. A integração real será ativada na próxima etapa.`,
+            )
+          }
           variant="settings"
         >
           Enviar teste
@@ -376,7 +388,11 @@ function TemplateCard({
         <form
           action={restaurarTemplateEmailPadraoAction}
           onSubmit={(evento) => {
-            if (!window.confirm("Restaurar modelo padrão? As alterações personalizadas serão substituídas.")) {
+            if (
+              !window.confirm(
+                "Restaurar modelo padrão? As alterações feitas neste modelo enviado aos hóspedes serão substituídas pelo texto padrão do Hospedex.",
+              )
+            ) {
               evento.preventDefault();
             }
           }}
@@ -459,10 +475,11 @@ function PreviewEmail({ draft }: { draft: DraftTemplate }) {
   const titulo = renderizarTemplatePreview(draft.title);
   const corpo = renderizarTemplatePreview(draft.body);
   const botao = renderizarTemplatePreview(draft.buttonText);
+  const linkBotao = renderizarTemplatePreview(draft.buttonUrl);
 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4">
-      <h3 className="font-semibold">Pré-visualização</h3>
+      <h3 className="font-semibold">Pré-visualização do hóspede</h3>
       <div className="mt-3 rounded-lg bg-white p-4 text-slate-950">
         <p className="text-xs font-semibold uppercase text-slate-500">Assunto</p>
         <p className="mt-1 font-semibold">{assunto}</p>
@@ -472,11 +489,18 @@ function PreviewEmail({ draft }: { draft: DraftTemplate }) {
             {corpo}
           </p>
           {botao ? (
-            <div className="mt-4 rounded-lg bg-cyan-500 px-4 py-2 text-center text-sm font-semibold text-white">
-              {botao}
-            </div>
+            <>
+              <div className="mt-4 rounded-lg bg-cyan-500 px-4 py-2 text-center text-sm font-semibold text-white">
+                {botao}
+              </div>
+              {linkBotao ? (
+                <p className="mt-2 break-all text-xs text-slate-500">
+                  Link do botão: {linkBotao}
+                </p>
+              ) : null}
+            </>
           ) : null}
-          <p className="mt-4 text-xs text-slate-500">Hospedex - comunicação automática.</p>
+          <p className="mt-4 text-xs text-slate-500">Mensagem simulada para o hóspede.</p>
         </div>
       </div>
     </div>

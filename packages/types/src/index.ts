@@ -48,6 +48,7 @@ export type {
   MaintenanceTaskType,
   ManagementNotificationStateRow,
   ManagementNotificationType,
+  MessageTemplateAudience,
   MessageTemplateChannel,
   MessageTemplateRow,
   MessageTemplateValidationStatus,

@@ -3,6 +3,7 @@ import type { MessageTemplateRow } from "@hospedex/types";
 import type { ContextoAutenticacao } from "../auth/types";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
+  EMAIL_TEMPLATE_AUDIENCE_GUEST,
   EMAIL_TEMPLATE_DEFAULTS,
   EMAIL_TEMPLATE_VARIABLES,
   montarLinhaPadraoTemplate,
@@ -30,6 +31,7 @@ export async function carregarDadosTemplatesEmail(
     .from("message_templates")
     .select("*")
     .eq("channel", "email")
+    .eq("audience", EMAIL_TEMPLATE_AUDIENCE_GUEST)
     .or(`tenant_id.is.null,tenant_id.eq.${contexto.tenant.id}`)
     .returns<MessageTemplateRow[]>();
 
@@ -93,6 +95,7 @@ function montarDadosTemplates(
   });
 
   return {
+    emailTeste: contexto.profile.email,
     erroCarregamento,
     podeGerenciar: podeGerenciarEmail(contexto),
     resumo: {
@@ -121,6 +124,7 @@ function normalizarTemplate(
     templatePadrao?.body ?? globalRow?.default_body ?? row.default_body ?? row.body;
 
   return {
+    audience: row.audience,
     body: padraoCodigo ? padraoCodigo.body : row.body,
     buttonText: padraoCodigo ? padraoCodigo.buttonText : row.button_text,
     buttonUrl: padraoCodigo ? padraoCodigo.buttonUrl : row.button_url,

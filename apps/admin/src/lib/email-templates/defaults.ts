@@ -1,28 +1,37 @@
-import type { MessageTemplateRow } from "@hospedex/types";
+import type { MessageTemplateAudience, MessageTemplateRow } from "@hospedex/types";
 
 /**
- * Defaults dos templates transacionais de e-mail.
+ * Defaults dos templates de e-mail editáveis pelo proprietário.
  *
- * Esta lista é usada pela UI, pela validação e pela migration. Manter um
- * catálogo central evita textos divergentes entre preview, restore e envio
- * futuro pelo backend.
+ * Esta lista representa apenas mensagens enviadas aos hóspedes. Notificações
+ * internas para o proprietário são padrões do Hospedex e não aparecem nesta UI.
  */
 
+export const EMAIL_TEMPLATE_AUDIENCE_GUEST: MessageTemplateAudience = "guest";
+
 export const EMAIL_TEMPLATE_VARIABLES = [
-  "nome_proprietario",
   "nome_hospede",
-  "codigo_reserva",
+  "nome_proprietario",
   "nome_casa",
+  "codigo_reserva",
   "periodo_reserva",
   "data_checkin",
   "data_checkout",
+  "horario_checkin",
+  "horario_checkout",
   "valor_total",
   "valor_pendente",
   "status_reserva",
   "status_pagamento",
-  "link_painel",
+  "telefone_proprietario",
+  "email_proprietario",
+  "endereco_casa",
+  "regras_casa",
+  "instrucoes_checkin",
+  "instrucoes_checkout",
   "link_reserva",
-  "telefone_hospede",
+  "link_pagamento",
+  "link_portal_hospede",
   "nome_tenant",
   "data_atual",
 ] as const;
@@ -30,6 +39,7 @@ export const EMAIL_TEMPLATE_VARIABLES = [
 export type EmailTemplateVariable = (typeof EMAIL_TEMPLATE_VARIABLES)[number];
 
 export type EmailTemplateDefault = {
+  audience: MessageTemplateAudience;
   body: string;
   buttonText: string | null;
   buttonUrl: string | null;
@@ -45,130 +55,172 @@ export const DADOS_PREVIEW_EMAIL: Record<EmailTemplateVariable, string> = {
   data_atual: "02/07/2026",
   data_checkin: "10/07/2026",
   data_checkout: "15/07/2026",
-  link_painel: "/",
-  link_reserva: "/reservas/RES-20260701-43EPU",
+  email_proprietario: "proprietario@exemplo.com",
+  endereco_casa: "Rua das Flores, 123",
+  horario_checkin: "14:00",
+  horario_checkout: "11:00",
+  instrucoes_checkin: "A chave estará disponível no local combinado.",
+  instrucoes_checkout: "Deixe a chave sobre a mesa.",
+  link_pagamento: "/pagamento/RES-20260701-43EPU",
+  link_portal_hospede: "/hospede",
+  link_reserva: "/hospede/reservas/RES-20260701-43EPU",
   nome_casa: "Casa do Lago",
   nome_hospede: "João Silva",
   nome_proprietario: "Glawck",
   nome_tenant: "Hospedex",
   periodo_reserva: "10/07/2026 até 15/07/2026",
+  regras_casa: "Não fumar. Respeitar horário de silêncio.",
   status_pagamento: "Pendente",
-  status_reserva: "Aguardando pagamento",
-  telefone_hospede: "(43) 99999-0000",
+  status_reserva: "Confirmada",
+  telefone_proprietario: "(43) 99999-0000",
   valor_pendente: "R$ 500,00",
   valor_total: "R$ 1.500,00",
 };
 
 export const EMAIL_TEMPLATE_DEFAULTS: EmailTemplateDefault[] = [
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "Olá, {{nome_proprietario}}.\n\nVocê recebeu uma nova reserva.\n\nReserva: {{codigo_reserva}}\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}\nPeríodo: {{periodo_reserva}}\nValor total: {{valor_total}}\n\nAcesse o painel para analisar os detalhes.",
-    buttonText: "Ver reserva",
+      "Olá, {{nome_hospede}}.\n\nSua reserva em {{nome_casa}} foi confirmada.\n\nReserva: {{codigo_reserva}}\nPeríodo: {{periodo_reserva}}\nCheck-in: {{data_checkin}} às {{horario_checkin}}\nCheck-out: {{data_checkout}} às {{horario_checkout}}\nValor total: {{valor_total}}\n\nEm caso de dúvida, fale com {{nome_proprietario}} pelo telefone {{telefone_proprietario}}.",
+    buttonText: "Ver minha reserva",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado quando uma nova reserva entra no sistema.",
-    key: "nova_reserva_recebida",
-    name: "Nova reserva recebida",
-    subject: "Nova reserva recebida no Hospedex",
-    title: "Você recebeu uma nova reserva",
+    description: "Enviado ao hóspede quando a reserva é confirmada.",
+    key: "guest_reservation_confirmed",
+    name: "Confirmação de reserva",
+    subject: "Sua reserva em {{nome_casa}} foi confirmada",
+    title: "Reserva confirmada",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "Olá, {{nome_proprietario}}.\n\nA reserva {{codigo_reserva}} está aguardando pagamento.\nHóspede: {{nome_hospede}}\nValor pendente: {{valor_pendente}}\nStatus: {{status_pagamento}}.",
-    buttonText: "Ver reserva",
-    buttonUrl: "{{link_reserva}}",
-    description: "Enviado quando a reserva aguarda pagamento.",
-    key: "reserva_aguardando_pagamento",
+      "Olá, {{nome_hospede}}.\n\nRecebemos sua solicitação para {{nome_casa}}.\nA reserva {{codigo_reserva}} está aguardando pagamento.\n\nValor pendente: {{valor_pendente}}\nStatus: {{status_pagamento}}.",
+    buttonText: "Ver pagamento",
+    buttonUrl: "{{link_pagamento}}",
+    description: "Enviado ao hóspede quando a reserva aguarda pagamento.",
+    key: "guest_reservation_payment_pending",
     name: "Reserva aguardando pagamento",
-    subject: "Reserva aguardando pagamento",
-    title: "Pagamento pendente da reserva",
+    subject: "Sua reserva está aguardando pagamento",
+    title: "Pagamento pendente",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "O pagamento da reserva {{codigo_reserva}} foi registrado.\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}\nValor total: {{valor_total}}.",
-    buttonText: "Abrir painel",
-    buttonUrl: "{{link_painel}}",
-    description: "Enviado após a confirmação de um pagamento.",
-    key: "pagamento_recebido",
+      "Olá, {{nome_hospede}}.\n\nExiste um pagamento pendente para a reserva {{codigo_reserva}}.\nCasa: {{nome_casa}}\nValor pendente: {{valor_pendente}}\n\nFinalize o pagamento para manter sua reserva ativa.",
+    buttonText: "Pagar agora",
+    buttonUrl: "{{link_pagamento}}",
+    description: "Mensagem de cobrança amigável para pagamento pendente.",
+    key: "guest_payment_charge",
+    name: "Cobrança de pagamento pendente",
+    subject: "Pagamento pendente da sua reserva",
+    title: "Finalize seu pagamento",
+  },
+  {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
+    body:
+      "Olá, {{nome_hospede}}.\n\nO pagamento da reserva {{codigo_reserva}} foi recebido.\nCasa: {{nome_casa}}\nValor total: {{valor_total}}\n\nSua hospedagem está confirmada.",
+    buttonText: "Ver detalhes",
+    buttonUrl: "{{link_reserva}}",
+    description: "Enviado ao hóspede após registro de pagamento.",
+    key: "guest_payment_received",
     name: "Pagamento recebido",
     subject: "Pagamento recebido no Hospedex",
     title: "Pagamento confirmado",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "A reserva {{codigo_reserva}} foi cancelada.\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}\nPeríodo: {{periodo_reserva}}.",
+      "Olá, {{nome_hospede}}.\n\nSeu check-in em {{nome_casa}} está previsto para {{data_checkin}} às {{horario_checkin}}.\nEndereço: {{endereco_casa}}\n\n{{instrucoes_checkin}}",
+    buttonText: "Abrir instruções",
+    buttonUrl: "{{link_reserva}}",
+    description: "Enviado ao hóspede com instruções de chegada.",
+    key: "guest_checkin_instructions",
+    name: "Instruções de check-in",
+    subject: "Instruções de check-in em {{nome_casa}}",
+    title: "Seu check-in está chegando",
+  },
+  {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
+    body:
+      "Olá, {{nome_hospede}}.\n\nSeu check-out em {{nome_casa}} está previsto para {{data_checkout}} às {{horario_checkout}}.\n\n{{instrucoes_checkout}}\n\nObrigado por se hospedar conosco.",
     buttonText: "Ver reserva",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado quando uma reserva é cancelada.",
-    key: "reserva_cancelada",
+    description: "Enviado ao hóspede com instruções de saída.",
+    key: "guest_checkout_instructions",
+    name: "Instruções de checkout",
+    subject: "Instruções de checkout em {{nome_casa}}",
+    title: "Orientações de checkout",
+  },
+  {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
+    body:
+      "Olá, {{nome_hospede}}.\n\nA reserva {{codigo_reserva}} em {{nome_casa}} foi cancelada.\nPeríodo: {{periodo_reserva}}\nStatus: {{status_reserva}}\n\nSe precisar de ajuda, fale com {{nome_proprietario}}.",
+    buttonText: "Ver reserva",
+    buttonUrl: "{{link_reserva}}",
+    description: "Enviado ao hóspede quando a reserva é cancelada.",
+    key: "guest_reservation_cancelled",
     name: "Reserva cancelada",
-    subject: "Reserva cancelada",
+    subject: "Sua reserva foi cancelada",
     title: "Reserva cancelada",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "A reserva {{codigo_reserva}} tem check-in previsto para {{data_checkin}}.\nHóspede: {{nome_hospede}}\nTelefone: {{telefone_hospede}}\nCasa: {{nome_casa}}.",
+      "Olá, {{nome_hospede}}.\n\nSua chegada em {{nome_casa}} está próxima.\nCheck-in: {{data_checkin}} às {{horario_checkin}}\nEndereço: {{endereco_casa}}\n\nTenha uma ótima hospedagem.",
     buttonText: "Ver detalhes",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado antes da data de check-in do hóspede.",
-    key: "checkin_previsto",
-    name: "Check-in previsto",
-    subject: "Check-in previsto para {{data_checkin}}",
-    title: "Check-in previsto",
+    description: "Lembrete enviado antes da chegada do hóspede.",
+    key: "guest_arrival_reminder",
+    name: "Lembrete de chegada",
+    subject: "Sua chegada em {{nome_casa}} está próxima",
+    title: "Lembrete de chegada",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "A reserva {{codigo_reserva}} tem check-out previsto para {{data_checkout}}.\nHóspede: {{nome_hospede}}\nCasa: {{nome_casa}}.",
-    buttonText: "Ver detalhes",
+      "Olá, {{nome_hospede}}.\n\nObrigado por se hospedar em {{nome_casa}}.\nEsperamos que sua experiência tenha sido excelente.\n\nSerá um prazer receber você novamente.",
+    buttonText: "Acessar reserva",
     buttonUrl: "{{link_reserva}}",
-    description: "Enviado antes da data de check-out do hóspede.",
-    key: "checkout_previsto",
-    name: "Check-out previsto",
-    subject: "Check-out previsto para {{data_checkout}}",
-    title: "Check-out previsto",
+    description: "Mensagem de agradecimento após a hospedagem.",
+    key: "guest_post_stay_thanks",
+    name: "Agradecimento pós-hospedagem",
+    subject: "Obrigado pela sua hospedagem",
+    title: "Obrigado por escolher {{nome_tenant}}",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "Existe uma limpeza pendente vinculada a {{nome_casa}}.\nReserva: {{codigo_reserva}}\nData atual: {{data_atual}}.",
-    buttonText: "Abrir painel",
-    buttonUrl: "{{link_painel}}",
-    description: "Enviado quando uma limpeza precisa ser realizada.",
-    key: "limpeza_pendente",
-    name: "Limpeza pendente",
-    subject: "Limpeza pendente",
-    title: "Limpeza pendente",
+      "Olá, {{nome_hospede}}.\n\nEstas são as regras principais de {{nome_casa}}:\n\n{{regras_casa}}\n\nContamos com sua colaboração para uma ótima hospedagem.",
+    buttonText: "Ver regras",
+    buttonUrl: "{{link_reserva}}",
+    description: "Enviado ao hóspede com regras da casa.",
+    key: "guest_house_rules",
+    name: "Regras da casa",
+    subject: "Regras da hospedagem em {{nome_casa}}",
+    title: "Regras da casa",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "A conta {{nome_tenant}} possui uma pendência operacional.\nReserva: {{codigo_reserva}}\nStatus: {{status_reserva}}.",
-    buttonText: "Ver pendências",
-    buttonUrl: "{{link_painel}}",
-    description: "Enviado quando existe uma pendência no gerenciamento.",
-    key: "pendencia_operacional",
-    name: "Pendência operacional",
-    subject: "Pendência operacional no Hospedex",
-    title: "Pendência operacional",
+      "Olá, {{nome_hospede}}.\n\nInformações importantes para sua hospedagem em {{nome_casa}}:\n\nEndereço: {{endereco_casa}}\nCheck-in: {{horario_checkin}}\nCheck-out: {{horario_checkout}}\n\n{{instrucoes_checkin}}",
+    buttonText: "Abrir portal do hóspede",
+    buttonUrl: "{{link_portal_hospede}}",
+    description: "Orientações gerais enviadas ao hóspede.",
+    key: "guest_stay_instructions",
+    name: "Instruções da hospedagem",
+    subject: "Orientações para sua hospedagem",
+    title: "Informações da hospedagem",
   },
   {
+    audience: EMAIL_TEMPLATE_AUDIENCE_GUEST,
     body:
-      "Olá, {{nome_proprietario}}.\n\nA licença da conta {{nome_tenant}} precisa de atenção.\nAcesse o painel para verificar os detalhes.",
-    buttonText: "Abrir painel",
-    buttonUrl: "{{link_painel}}",
-    description: "Enviado quando a licença está perto do vencimento.",
-    key: "licenca_vencendo",
-    name: "Licença vencendo",
-    subject: "Sua licença Hospedex está vencendo",
-    title: "Licença vencendo",
-  },
-  {
-    body:
-      "Olá, {{nome_proprietario}}.\n\nEste é um e-mail de teste do Hospedex para {{nome_tenant}}.",
-    buttonText: "Abrir painel",
-    buttonUrl: "{{link_painel}}",
-    description: "Modelo usado para validar a futura configuração de envio.",
-    key: "email_teste",
-    name: "E-mail de teste",
-    subject: "Teste de e-mail Hospedex",
-    title: "E-mail de teste",
+      "Olá, {{nome_hospede}}.\n\nSeguem orientações importantes da reserva {{codigo_reserva}}:\n\nCasa: {{nome_casa}}\nPeríodo: {{periodo_reserva}}\nValor total: {{valor_total}}\n\nAo prosseguir, você confirma ciência das regras e orientações da hospedagem.",
+    buttonText: "Ver orientações",
+    buttonUrl: "{{link_reserva}}",
+    description: "Modelo para contrato simples ou orientações importantes.",
+    key: "guest_contract_guidelines",
+    name: "Contrato ou orientações importantes",
+    subject: "Orientações importantes da sua reserva",
+    title: "Contrato e orientações",
   },
 ];
 
@@ -184,6 +236,7 @@ export function montarLinhaPadraoTemplate(
   template: EmailTemplateDefault,
 ): Omit<MessageTemplateRow, "id" | "created_at" | "updated_at"> {
   return {
+    audience: template.audience,
     body: template.body,
     button_text: template.buttonText,
     button_url: template.buttonUrl,

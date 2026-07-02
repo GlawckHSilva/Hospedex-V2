@@ -51,7 +51,7 @@ export function EmailModule({
             <Badge variant="info">Comunicação por e-mail</Badge>
             <h1 className="mt-3 text-2xl font-semibold tracking-normal">E-mail</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Acompanhe notificações enviadas, falhas e futuras respostas por e-mail.
+              Acompanhe mensagens enviadas aos hóspedes e notificações do sistema.
             </p>
           </div>
 
@@ -59,7 +59,7 @@ export function EmailModule({
             <Resumo icon={<MailCheck />} label="Enviados" valor={resumo.enviados} />
             <Resumo icon={<MailX />} label="Falhas" valor={resumo.falhas} />
             <Resumo icon={<Inbox />} label="Recebidos" valor={resumo.recebidos} />
-            <Resumo icon={<Send />} label="Templates ativos" valor={resumo.templatesAtivos} />
+            <Resumo icon={<Send />} label="Templates de hóspedes ativos" valor={resumo.templatesAtivos} />
           </div>
         </div>
       </section>
@@ -117,9 +117,13 @@ export function EmailModule({
 
 function VisaoGeral({ tenantNome }: { tenantNome: string }) {
   const itens = [
-    ["Notificações automáticas por e-mail", "Preparadas para reservas, pagamentos e operação."],
+    ["E-mails para hóspedes", "Usam templates editáveis pelo proprietário."],
+    [
+      "Notificações para proprietário",
+      "Usam modelos padrão do Hospedex e não aparecem no editor de hóspedes.",
+    ],
     ["Status", "Em preparação."],
-    ["Templates configurados", `Modelos de ${tenantNome} usam padrões seguros.`],
+    ["Templates configurados", `Modelos de hóspedes de ${tenantNome} usam padrões seguros.`],
     ["Próxima etapa", "Conectar serviço de envio."],
   ];
 
@@ -141,8 +145,8 @@ function ConfiguracaoEmail({ onFeedback }: { onFeedback: (mensagem: string) => v
       <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-4">
         <h2 className="font-semibold">Configuração</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <Info label="E-mail de notificações" valor="Será definido na próxima etapa" />
-          <Info label="Receber notificações por e-mail" valor="Preparado" />
+          <Info label="E-mail de teste" valor="Será o e-mail do proprietário logado" />
+          <Info label="Mensagens para hóspedes" valor="Templates editáveis preparados" />
           <Info label="Status da integração" valor="Em preparação" />
           <Info label="Envio de teste" valor="Modo simulado" />
         </div>

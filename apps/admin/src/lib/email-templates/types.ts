@@ -1,4 +1,4 @@
-import type { MessageTemplateRow } from "@hospedex/types";
+import type { MessageTemplateAudience, MessageTemplateRow } from "@hospedex/types";
 
 /**
  * Contratos do módulo de Templates de e-mail.
@@ -8,6 +8,7 @@ import type { MessageTemplateRow } from "@hospedex/types";
  */
 
 export type EmailTemplate = {
+  audience: MessageTemplateAudience;
   body: string;
   buttonText: string | null;
   buttonUrl: string | null;
@@ -32,6 +33,7 @@ export type EmailTemplate = {
 };
 
 export type DadosTemplatesEmail = {
+  emailTeste: string;
   erroCarregamento: string | null;
   podeGerenciar: boolean;
   resumo: {
