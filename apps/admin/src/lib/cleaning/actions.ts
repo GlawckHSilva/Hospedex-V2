@@ -4,6 +4,7 @@ import type { CleaningTaskStatus, ReservationRow, ReservationStatus } from "@hos
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { alterarStatusReservaOperacionalSeguro } from "../reservations/status-rpc";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   carregarEscopoLimpeza,
@@ -239,35 +240,21 @@ async function atualizarStatusReservaOperacional(
   supabase: ClienteSupabaseServer,
   escopo: EscopoLimpeza,
   reserva: ReservationRow,
-  statusDestino: ReservationStatus,
+  statusDestino: Extract<ReservationStatus, "checked_in" | "checked_out">,
   motivo: string,
   observacao: string | null
 ) {
-  const agora = new Date().toISOString();
-  const dados: Record<string, string> = { status: statusDestino };
-  if (statusDestino === "checked_in") dados.checked_in_at = agora;
-  if (statusDestino === "checked_out") dados.checked_out_at = agora;
-
-  const { error } = await supabase
-    .from("reservations")
-    .update(dados)
-    .eq("id", reserva.id)
-    .eq("tenant_id", escopo.tenantId)
-    .eq("owner_id", escopo.ownerId);
-
-  if (error) throw new Error(error.message);
-
-  await supabase.from("reservation_status_history").insert({
-    tenant_id: escopo.tenantId,
-    reservation_id: reserva.id,
-    from_status: reserva.status,
-    to_status: statusDestino,
-    changed_by: escopo.userId,
-    reason: observacao ?? motivo,
-    metadata: { origem: "limpeza_operacional" }
+  /*
+    Check-in e check-out usam a mesma RPC de Reservas para manter status,
+    datas, timeline e nota sincronizados em uma unica transacao.
+  */
+  await alterarStatusReservaOperacionalSeguro({
+    escopo,
+    motivo: observacao ?? motivo,
+    reserva,
+    statusDestino,
+    supabase
   });
-
-  await registrarNotaReserva(supabase, escopo, reserva.id, observacao ?? motivo);
 }
 
 async function criarTarefaCheckout(

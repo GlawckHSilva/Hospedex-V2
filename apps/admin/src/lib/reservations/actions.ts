@@ -1097,6 +1097,18 @@ function traduzirErroPagamentoOperacional(mensagemBanco: string) {
     return "Informe a forma de pagamento para registrar o recebimento.";
   }
 
+  if (mensagem.includes("conflito") || mensagem.includes("indisponibilidade")) {
+    return "Conflito de datas encontrado para esta casa. Verifique reservas sobrepostas antes de registrar o pagamento.";
+  }
+
+  if (
+    mensagem.includes("reservation_status_history") ||
+    mensagem.includes("from_status_check") ||
+    mensagem.includes("to_status_check")
+  ) {
+    return "Nao foi possivel registrar a timeline financeira da reserva.";
+  }
+
   if (mensagem.includes("encerrada")) {
     return "Reserva encerrada nao permite alterar pagamento.";
   }
