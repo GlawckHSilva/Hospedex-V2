@@ -26,11 +26,12 @@ import type { DadosModuloLimpeza, ReservaOperacional, TarefaLimpezaCompleta } fr
  */
 
 export async function carregarDadosModuloLimpeza(
-  contexto: ContextoAutenticacao
+  contexto: ContextoAutenticacao,
+  dataReferencia?: string
 ): Promise<DadosModuloLimpeza> {
   const tenantId = contexto.tenant?.id;
   const ownerId = contexto.tenant?.owner_id;
-  const hoje = obterHojeSaoPaulo();
+  const hoje = normalizarDataOperacional(dataReferencia);
 
   if (!tenantId || !ownerId || !podeLerLimpeza(contexto)) {
     return criarDadosVazios(contexto, hoje);
@@ -182,6 +183,16 @@ function obterHojeSaoPaulo() {
   return new Intl.DateTimeFormat("sv-SE", {
     timeZone: "America/Sao_Paulo"
   }).format(new Date());
+}
+
+function normalizarDataOperacional(dataReferencia?: string) {
+  // A data da operacao vem da query string apenas para navegacao visual da tela.
+  // Quando ausente ou invalida, mantemos o dia atual de Sao Paulo como regra segura.
+  if (dataReferencia && /^\d{4}-\d{2}-\d{2}$/.test(dataReferencia)) {
+    return dataReferencia;
+  }
+
+  return obterHojeSaoPaulo();
 }
 
 function registrarErro(modulo: string, erro: { message: string } | null) {

@@ -5,6 +5,11 @@ import { CleaningModule } from "../../components/cleaning/cleaning-module";
 import { exigirAutenticacao } from "../../lib/auth/context";
 import { carregarDadosModuloLimpeza } from "../../lib/cleaning/data";
 import { podeLerLimpeza } from "../../lib/cleaning/permissions";
+import {
+  STATUS_TAREFA_LIMPEZA,
+  type TarefaLimpezaCompleta,
+  type SearchParamsLimpeza,
+} from "../../lib/cleaning/types";
 
 /**
  * Pagina operacional de Limpeza da V2.
@@ -31,14 +36,17 @@ export default async function LimpezaPage({ searchParams }: PageProps) {
   }
 
   const params = await searchParams;
-  const dados = await carregarDadosModuloLimpeza(contexto);
+  const dataOperacao = lerData(params, "data");
+  const dados = await carregarDadosModuloLimpeza(contexto, dataOperacao);
 
   return (
     <AdminLayoutBase contexto={contexto}>
       <CleaningModule
         {...dados}
         erro={lerParametro(params, "erro")}
+        statusLimpeza={lerStatusLimpeza(params)}
         sucesso={lerParametro(params, "sucesso")}
+        visual={lerVisual(params)}
       />
     </AdminLayoutBase>
   );
@@ -50,4 +58,29 @@ function lerParametro(
 ): string | undefined {
   const valor = params[chave];
   return Array.isArray(valor) ? valor[0] : valor;
+}
+
+function lerData(
+  params: Record<string, string | string[] | undefined>,
+  chave: string
+): string | undefined {
+  const valor = lerParametro(params, chave);
+  return valor && /^\d{4}-\d{2}-\d{2}$/.test(valor) ? valor : undefined;
+}
+
+function lerStatusLimpeza(
+  params: Record<string, string | string[] | undefined>
+): SearchParamsLimpeza["statusLimpeza"] {
+  const valor = lerParametro(params, "statusLimpeza");
+  if (!valor || valor === "todas") return "todas";
+
+  return STATUS_TAREFA_LIMPEZA.includes(valor as TarefaLimpezaCompleta["status"])
+    ? (valor as TarefaLimpezaCompleta["status"])
+    : "todas";
+}
+
+function lerVisual(
+  params: Record<string, string | string[] | undefined>
+): SearchParamsLimpeza["visual"] {
+  return lerParametro(params, "visual") === "lista" ? "lista" : "grade";
 }

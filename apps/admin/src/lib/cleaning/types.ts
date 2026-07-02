@@ -42,6 +42,8 @@ export type DadosModuloLimpeza = {
 export type SearchParamsLimpeza = {
   sucesso?: string | undefined;
   erro?: string | undefined;
+  statusLimpeza?: CleaningTaskStatus | "todas" | undefined;
+  visual?: "grade" | "lista" | undefined;
 };
 
 export const STATUS_TAREFA_LIMPEZA: CleaningTaskStatus[] = [

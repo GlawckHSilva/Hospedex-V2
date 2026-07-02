@@ -26,6 +26,13 @@ export type CleaningTaskFormProps = {
   reservas: ReservationRow[];
   responsaveis: ProfileRow[];
   tarefa?: TarefaLimpezaCompleta;
+  valoresPadrao?: {
+    propertyId?: string | undefined;
+    reservationId?: string | undefined;
+    scheduledFor?: string | undefined;
+    status?: TarefaLimpezaCompleta["status"] | undefined;
+    title?: string | undefined;
+  } | undefined;
 };
 
 const campoClasse =
@@ -40,6 +47,7 @@ export function CleaningTaskForm({
   reservas,
   responsaveis,
   tarefa,
+  valoresPadrao,
 }: CleaningTaskFormProps) {
   const action = modo === "editar" ? atualizarTarefaLimpezaAction : criarTarefaLimpezaAction;
   const bloqueado = !podeGerenciar || propriedades.length === 0;
@@ -50,23 +58,26 @@ export function CleaningTaskForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoTexto
-          defaultValue={tarefa?.title ?? ""}
+          defaultValue={tarefa?.title ?? valoresPadrao?.title ?? ""}
           disabled={bloqueado}
           label="Titulo"
           name="title"
           required
         />
-        <CampoStatus defaultValue={tarefa?.status ?? "awaiting_cleaning"} disabled={bloqueado} />
+        <CampoStatus
+          defaultValue={tarefa?.status ?? valoresPadrao?.status ?? "awaiting_cleaning"}
+          disabled={bloqueado}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoPropriedade
-          defaultValue={tarefa?.property_id ?? propriedades[0]?.id ?? ""}
+          defaultValue={tarefa?.property_id ?? valoresPadrao?.propertyId ?? propriedades[0]?.id ?? ""}
           disabled={bloqueado}
           propriedades={propriedades}
         />
         <CampoTexto
-          defaultValue={tarefa?.scheduled_for ?? ""}
+          defaultValue={tarefa?.scheduled_for ?? valoresPadrao?.scheduledFor ?? ""}
           disabled={bloqueado}
           label="Data prevista"
           name="scheduledFor"
@@ -76,7 +87,7 @@ export function CleaningTaskForm({
 
       <div className="grid gap-4 md:grid-cols-2">
         <CampoReserva
-          defaultValue={tarefa?.reservation_id ?? ""}
+          defaultValue={tarefa?.reservation_id ?? valoresPadrao?.reservationId ?? ""}
           disabled={bloqueado}
           reservas={reservas}
         />
