@@ -14,6 +14,7 @@ import { redirect } from "next/navigation";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { sincronizarHospedeCrm } from "../guests/actions";
+import { sincronizarFinanceiroReservaEditada } from "./finance-sync";
 import {
   carregarEscopoReservas,
   carregarPropriedadeDaReserva,
@@ -142,6 +143,7 @@ export async function atualizarReservaAction(formData: FormData) {
     if (error) throw new Error(error.message);
 
     await salvarHospedePrincipal(supabase, escopo, reservaId, entrada);
+    await sincronizarFinanceiroReservaEditada(supabase, escopo, reservaAtual, entrada);
     await registrarEventosAtualizacao(supabase, escopo, reservaAtual, entrada);
     revalidarReservas();
   } catch (erro) {
