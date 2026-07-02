@@ -1,14 +1,17 @@
-import type { RegionalGuideLocationRow } from "@hospedex/types";
-import { Eye, MapPin, Pencil, Trash2 } from "lucide-react";
+import type { RegionalGuideCategory, RegionalGuideLocationRow } from "@hospedex/types";
+import {
+  Clock3,
+  Eye,
+  ImageIcon,
+  MapPin,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import type { ReactNode } from "react";
 
-import { Badge } from "@hospedex/ui";
+import { Badge, Card, CardContent } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
-import {
-  EntityCard,
-  EntityCardActions,
-  EntityCardHeader,
-} from "../management/entity-card";
 import {
   ConfirmDialog,
   EntityModal,
@@ -18,11 +21,16 @@ import {
   atualizarLocalGuiaRegiaoAction,
   excluirLocalGuiaRegiaoAction,
 } from "../../lib/regional-guide/actions";
-import { LABEL_CATEGORIA_GUIA_REGIAO } from "../../lib/regional-guide/types";
+import {
+  LABEL_CATEGORIA_GUIA_REGIAO,
+} from "../../lib/regional-guide/types";
 import { RegionalGuideForm } from "./regional-guide-form";
 
 /**
- * Card compacto do Guia da Regiao, inspirado em grids de video/lugares.
+ * Card de local recomendado.
+ *
+ * O card mostra somente dados uteis para decisao operacional. Observacoes e
+ * contatos completos ficam na modal para evitar sobrecarregar o catalogo.
  */
 type RegionalGuideCardProps = {
   local: RegionalGuideLocationRow;
@@ -33,123 +41,165 @@ export function RegionalGuideCard({
   local,
   podeGerenciar,
 }: RegionalGuideCardProps) {
-  const media = local.cover_image_url ? (
-    <img
-      alt={`Foto de ${local.name}`}
-      className="h-40 w-full object-cover"
-      src={local.cover_image_url}
-    />
-  ) : (
-    <div className="flex h-36 items-center justify-center bg-primary/15 text-primary">
-      <MapPin className="h-10 w-10" />
-    </div>
-  );
+  const descricao = local.description ?? "Sem descricao cadastrada.";
 
   return (
-    <EntityCard className="flex flex-col" contentClassName="!h-auto min-h-0 flex-1" media={media}>
-      <EntityCardHeader
-        badges={
-          <>
-            <Badge variant={local.status === "active" ? "success" : "secondary"}>
-              {local.status === "active" ? "Ativo" : "Inativo"}
-            </Badge>
-            <Badge variant="info">
-              {LABEL_CATEGORIA_GUIA_REGIAO[local.category]}
-            </Badge>
-          </>
-        }
-        subtitle={local.address || "Cidade nao informada"}
-        title={local.name}
-      />
+    <Card className="admin-glass-card overflow-hidden">
+      <CardContent className="grid gap-4 p-4 sm:grid-cols-[160px_1fr]">
+        <MediaLocal local={local} />
 
-      <EntityCardActions>
-        <EntityViewModal
-          description="Dados cadastrados para orientar hospedes."
-          title={local.name}
-          triggerAction="view"
-          triggerClassName="h-9 justify-center"
-          triggerIcon={<Eye className="h-4 w-4" />}
-          triggerLabel="Visualizar"
-        >
-          <div className="grid gap-3 md:grid-cols-2">
-            <Info label="Categoria" valor={LABEL_CATEGORIA_GUIA_REGIAO[local.category]} />
-            <Info label="Status" valor={local.status === "active" ? "Ativo" : "Inativo"} />
-            <Info label="Endereco" valor={local.address || "Nao informado"} />
-            <Info label="Horario" valor={local.opening_hours || "Nao informado"} />
-            <Info label="Telefone" valor={local.phone || "Nao informado"} />
-            <Info label="WhatsApp" valor={local.whatsapp || "Nao informado"} />
-            <Info label="Site" valor={local.website_url || "Nao informado"} />
-            <div className="md:col-span-2">
-              <Info label="Descricao" valor={local.description || "Sem descricao cadastrada."} />
+        <div className="flex min-w-0 flex-col gap-3">
+          <header className="min-w-0">
+            <div className="mb-2 flex flex-wrap gap-2">
+              <Badge variant={local.status === "active" ? "success" : "secondary"}>
+                {local.status === "active" ? "Ativo" : "Inativo"}
+              </Badge>
+              <Badge className={obterClasseCategoria(local.category)} variant="outline">
+                {LABEL_CATEGORIA_GUIA_REGIAO[local.category]}
+              </Badge>
             </div>
-          </div>
-        </EntityViewModal>
+            <h3 className="truncate text-lg font-semibold">{local.name}</h3>
+            <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
+              {local.address ? <LinhaIcone icon={<MapPin />} texto={local.address} /> : null}
+              {local.opening_hours ? (
+                <LinhaIcone icon={<Clock3 />} texto={local.opening_hours} />
+              ) : null}
+            </div>
+          </header>
 
-        <EntityModal
-          description="Atualize categoria, contatos, descricao, ordem e status do local."
-          disabled={!podeGerenciar}
-          eyebrow="Edicao"
-          title="Editar local"
-          triggerAction="edit"
-          triggerClassName="h-9 justify-center"
-          triggerIcon={<Pencil className="h-4 w-4" />}
-          triggerLabel="Editar"
-        >
-          <div className="space-y-5">
-            <RegionalGuideForm
-              action={atualizarLocalGuiaRegiaoAction}
-              local={local}
-              modo="editar"
-              podeGerenciar={podeGerenciar}
-            />
+          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+            {descricao}
+          </p>
 
-            <div className="border-t pt-4">
-              <ConfirmDialog
-                description="Esta acao remove o local do Guia da Regiao deste tenant."
-                disabled={!podeGerenciar}
-                title="Excluir local"
-                triggerAction="delete"
-                triggerIcon={<Trash2 className="h-4 w-4" />}
-                triggerLabel="Excluir"
-              >
-                <form
-                  action={excluirLocalGuiaRegiaoAction}
-                  className="grid gap-3"
+          <div className="mt-auto grid gap-2 sm:grid-cols-3">
+            <EntityViewModal
+              description="Dados cadastrados para orientar hospedes."
+              title={local.name}
+              triggerAction="view"
+              triggerClassName="w-full"
+              triggerIcon={<Eye className="h-4 w-4" />}
+              triggerLabel="Visualizar"
+            >
+              <DetalhesLocal local={local} />
+            </EntityViewModal>
+
+            <EntityModal
+              description="Atualize categoria, contatos, descricao, ordem e status do local."
+              disabled={!podeGerenciar}
+              eyebrow="Edicao"
+              title="Editar local"
+              triggerAction="edit"
+              triggerClassName="w-full"
+              triggerIcon={<Pencil className="h-4 w-4" />}
+              triggerLabel="Editar"
+            >
+              <RegionalGuideForm
+                action={atualizarLocalGuiaRegiaoAction}
+                local={local}
+                modo="editar"
+                podeGerenciar={podeGerenciar}
+              />
+            </EntityModal>
+
+            <ConfirmDialog
+              description="Este local sera removido do guia da regiao e nao aparecera mais para os hospedes."
+              disabled={!podeGerenciar}
+              title="Apagar local do guia?"
+              triggerAction="delete"
+              triggerClassName="w-full"
+              triggerIcon={<Trash2 className="h-4 w-4" />}
+              triggerLabel="Apagar"
+            >
+              <form action={excluirLocalGuiaRegiaoAction} className="grid gap-4">
+                <input name="localId" type="hidden" value={local.id} />
+                <p className="text-sm text-muted-foreground">
+                  Esta acao usa exclusao logica para preservar auditoria do
+                  tenant.
+                </p>
+                <ActionButton
+                  className="w-full"
+                  disabled={!podeGerenciar}
+                  icon={<Trash2 />}
+                  type="submit"
+                  variant="delete"
                 >
-                  <input name="localId" type="hidden" value={local.id} />
-                  <label className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <input
-                      className="mt-1"
-                      disabled={!podeGerenciar}
-                      name="confirmarExclusao"
-                      required
-                      type="checkbox"
-                      value="confirmado"
-                    />
-                    Confirmo que desejo remover este local do Guia da Regiao.
-                  </label>
-                  <ActionButton
-                    disabled={!podeGerenciar}
-                    type="submit"
-                    variant="delete"
-                  >
-                    Excluir local
-                  </ActionButton>
-                </form>
-              </ConfirmDialog>
-            </div>
+                  Apagar local
+                </ActionButton>
+              </form>
+            </ConfirmDialog>
           </div>
-        </EntityModal>
-      </EntityCardActions>
-    </EntityCard>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MediaLocal({ local }: { local: RegionalGuideLocationRow }) {
+  if (local.cover_image_url) {
+    return (
+      <img
+        alt={`Foto de ${local.name}`}
+        className="h-36 w-full rounded-xl border border-border/80 object-cover sm:h-full"
+        src={local.cover_image_url}
+      />
+    );
+  }
+
+  return (
+    <div className="grid h-36 w-full place-items-center rounded-xl border border-dashed border-cyan-300/25 bg-cyan-500/10 text-cyan-200 sm:h-full">
+      <div className="text-center">
+        <ImageIcon className="mx-auto h-7 w-7" />
+        <p className="mt-2 text-xs font-medium">Sem foto</p>
+      </div>
+    </div>
+  );
+}
+
+function DetalhesLocal({ local }: { local: RegionalGuideLocationRow }) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      <Info label="Categoria" valor={LABEL_CATEGORIA_GUIA_REGIAO[local.category]} />
+      <Info label="Status" valor={local.status === "active" ? "Ativo" : "Inativo"} />
+      <Info label="Endereco" valor={local.address || "Endereco nao cadastrado"} />
+      <Info label="Horario" valor={local.opening_hours || "Horario nao cadastrado"} />
+      <Info label="Telefone" valor={local.phone || "Telefone nao cadastrado"} />
+      <Info label="WhatsApp" valor={local.whatsapp || "WhatsApp nao cadastrado"} />
+      <Info label="Site" valor={local.website_url || "Site nao cadastrado"} />
+      <Info label="Ordem" valor={String(local.display_order)} />
+      <div className="md:col-span-2">
+        <Info label="Descricao" valor={local.description || "Sem descricao cadastrada."} />
+      </div>
+    </div>
+  );
+}
+
+function LinhaIcone({ icon, texto }: { icon: ReactNode; texto: string }) {
+  return (
+    <p className="flex min-w-0 items-center gap-2">
+      <span className="text-cyan-300 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
+      <span className="min-w-0 truncate">{texto}</span>
+    </p>
   );
 }
 
 function Info({ label, valor }: { label: string; valor: string }) {
   return (
-    <div className="rounded-lg border bg-background/45 p-3">
+    <div className="rounded-lg border border-border/80 bg-background/45 p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words">{valor}</p>
+      <p className="mt-1 break-words text-sm">{valor}</p>
     </div>
   );
+}
+
+function obterClasseCategoria(categoria: RegionalGuideCategory) {
+  const classes: Partial<Record<RegionalGuideCategory, string>> = {
+    hospitals: "border-red-400/35 bg-red-500/10 text-red-200",
+    markets: "border-emerald-400/35 bg-emerald-500/10 text-emerald-200",
+    pharmacies: "border-sky-400/35 bg-sky-500/10 text-sky-200",
+    restaurants: "border-cyan-400/35 bg-cyan-500/10 text-cyan-200",
+    tourist_spots: "border-violet-400/35 bg-violet-500/10 text-violet-200",
+    tours: "border-violet-400/35 bg-violet-500/10 text-violet-200",
+  };
+
+  return classes[categoria] ?? "border-slate-400/35 bg-slate-500/10 text-slate-200";
 }

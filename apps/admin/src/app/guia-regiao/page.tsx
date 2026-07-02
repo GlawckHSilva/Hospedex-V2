@@ -46,6 +46,7 @@ export default async function GuiaRegiaoPage({ searchParams }: PageProps) {
   const erro = lerParametro(params, "erro");
   const sucesso = lerParametro(params, "sucesso");
   const dados = await carregarDadosGuiaRegiao(contexto, {
+    busca: normalizarBusca(lerParametro(params, "busca")),
     categoria: normalizarCategoriaGuiaRegiao(lerParametro(params, "categoria")),
     status: normalizarStatusGuiaRegiao(lerParametro(params, "status"))
   });
@@ -67,4 +68,8 @@ function lerParametro(
 ): string | undefined {
   const valor = params[chave];
   return Array.isArray(valor) ? valor[0] : valor;
+}
+
+function normalizarBusca(valor: string | undefined): string {
+  return valor?.trim().slice(0, 80) ?? "";
 }

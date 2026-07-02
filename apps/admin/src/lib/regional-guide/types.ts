@@ -58,12 +58,14 @@ export type FiltroCategoriaGuiaRegiao = RegionalGuideCategory | "todas";
 export type FiltroStatusGuiaRegiao = RegionalGuideStatus | "todos";
 
 export type FiltrosGuiaRegiao = {
+  busca: string;
   categoria: FiltroCategoriaGuiaRegiao;
   status: FiltroStatusGuiaRegiao;
 };
 
 export type ResumoGuiaRegiao = {
   ativos: number;
+  categorias: number;
   inativos: number;
   total: number;
 };

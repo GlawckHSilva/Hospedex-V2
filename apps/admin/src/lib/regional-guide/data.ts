@@ -93,15 +93,43 @@ function correspondeFiltros(
 ): boolean {
   if (filtros.status !== "todos" && local.status !== filtros.status) return false;
   if (filtros.categoria !== "todas" && local.category !== filtros.categoria) return false;
+  if (filtros.busca && !correspondeBusca(local, filtros.busca)) return false;
   return true;
 }
 
 function montarResumo(locais: RegionalGuideLocationRow[]) {
   return {
     ativos: locais.filter((local) => local.status === "active").length,
+    categorias: new Set(locais.map((local) => local.category)).size,
     inativos: locais.filter((local) => local.status === "inactive").length,
     total: locais.length
   };
+}
+
+function correspondeBusca(local: RegionalGuideLocationRow, busca: string) {
+  // A busca textual e aplicada apos o isolamento por tenant. Isso evita expor
+  // dados de outros proprietarios e permite localizar por categoria traduzida.
+  const termo = normalizarTexto(busca);
+  const conteudo = [
+    local.name,
+    local.address,
+    local.description,
+    local.opening_hours,
+    local.phone,
+    local.whatsapp,
+    CATEGORIAS_GUIA_REGIAO.find((categoria) => categoria.value === local.category)?.label
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return normalizarTexto(conteudo).includes(termo);
+}
+
+function normalizarTexto(valor: string) {
+  return valor
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function criarDadosVazios(
@@ -114,6 +142,7 @@ function criarDadosVazios(
     podeGerenciar: false,
     resumo: {
       ativos: 0,
+      categorias: 0,
       inativos: 0,
       total: 0
     },

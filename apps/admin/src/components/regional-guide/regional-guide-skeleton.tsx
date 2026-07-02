@@ -1,7 +1,5 @@
 import { FadeIn, Skeleton } from "@hospedex/ui";
 
-import { EntityGrid, SkeletonCard } from "../management/entity-card";
-
 /**
  * Skeleton do Guia da Regiao.
  *
@@ -12,22 +10,35 @@ export function RegionalGuideSkeleton() {
   return (
     <FadeIn className="space-y-5">
       <section className="admin-glass-panel p-5">
-        <Skeleton className="h-6 w-36" />
-        <Skeleton className="mt-4 h-8 w-64" />
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="mt-3 h-4 w-96 max-w-full" />
+          </div>
+          <Skeleton className="hidden h-11 w-36 sm:block" />
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+        </div>
+      </section>
+
+      <section className="admin-glass-card p-5">
+        <Skeleton className="h-20 w-full" />
+      </section>
+
+      <section>
+        <Skeleton className="h-6 w-52" />
         <Skeleton className="mt-3 h-4 w-full max-w-2xl" />
+        <div className="mt-4 grid gap-4 xl:grid-cols-2">
+          <Skeleton className="h-44" />
+          <Skeleton className="h-44" />
+          <Skeleton className="h-44" />
+          <Skeleton className="h-44" />
+        </div>
       </section>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-      </section>
-
-      <EntityGrid>
-        <SkeletonCard withMedia />
-        <SkeletonCard withMedia />
-        <SkeletonCard withMedia />
-      </EntityGrid>
     </FadeIn>
   );
 }
