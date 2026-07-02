@@ -34,6 +34,7 @@ import { reservaPermiteAcoesFinanceiras, STATUS_RESERVA } from "./types";
  */
 
 const CAMINHO_RESERVAS = "/reservas";
+const FORMA_PAGAMENTO_MANUAL_PADRAO: ReservationPaymentMethod = "pix";
 
 const TRANSICOES_RESERVA: Record<ReservationStatus, ReservationStatus[]> = {
   pending: ["awaiting_payment", "confirmed", "cancelled"],
@@ -288,7 +289,7 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
       escopo,
       reserva,
       valorPagamento,
-      formaPagamento ?? reserva.payment_method,
+      formaPagamento ?? reserva.payment_method ?? FORMA_PAGAMENTO_MANUAL_PADRAO,
       cobrancaId,
       comprovanteUrl,
       motivo ?? "Pagamento manual registrado pelo gerenciamento."
@@ -1090,6 +1091,10 @@ function traduzirErroPagamentoOperacional(mensagemBanco: string) {
 
   if (mensagem.includes("financeiro")) {
     return "Nao foi possivel registrar a alteracao no financeiro.";
+  }
+
+  if (mensagem.includes("forma de pagamento")) {
+    return "Informe a forma de pagamento para registrar o recebimento.";
   }
 
   if (mensagem.includes("encerrada")) {

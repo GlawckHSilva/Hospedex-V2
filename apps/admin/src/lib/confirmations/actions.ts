@@ -26,6 +26,7 @@ import {
 } from "./whatsapp";
 
 const CAMINHO_PENDENCIAS = "/pendencias";
+const FORMA_PAGAMENTO_MANUAL_PADRAO: ReservationPaymentMethod = "pix";
 
 class ErroConfirmacao extends Error {}
 
@@ -139,7 +140,7 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
       escopo,
       reserva,
       valorPagamento,
-      formaPagamento ?? reserva.payment_method,
+      formaPagamento ?? reserva.payment_method ?? FORMA_PAGAMENTO_MANUAL_PADRAO,
       cobrancaId,
       comprovanteUrl,
       observacao ?? "Pagamento manual registrado pela operacao diaria."
@@ -863,6 +864,10 @@ function traduzirErroPagamentoAtomico(mensagemBanco: string) {
 
   if (mensagem.includes("valor")) {
     return "Nao foi possivel registrar o pagamento no financeiro.";
+  }
+
+  if (mensagem.includes("forma de pagamento")) {
+    return "Informe a forma de pagamento para registrar o recebimento.";
   }
 
   return "Nao foi possivel alterar o pagamento da reserva.";

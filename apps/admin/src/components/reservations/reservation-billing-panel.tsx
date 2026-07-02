@@ -59,6 +59,7 @@ const FORMAS_PAGAMENTO: ReservationPaymentMethod[] = [
   "credit_card",
   "bank_transfer",
 ];
+const FORMA_PAGAMENTO_PADRAO: ReservationPaymentMethod = "pix";
 
 type ReservationBillingPanelProps = {
   canManagePayments?: boolean;
@@ -224,6 +225,7 @@ function CobrancaCard({
     balance > 0 &&
     ["pending", "partial", "overdue"].includes(charge.status);
   const paymentMethod = charge.payment_method ?? defaultPaymentMethod;
+  const defaultPaymentMethodForm = paymentMethod ?? FORMA_PAGAMENTO_PADRAO;
 
   return (
     <div className="rounded-xl border bg-background/45 p-3 text-sm">
@@ -280,10 +282,10 @@ function CobrancaCard({
                   Forma de pagamento
                   <select
                     className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    defaultValue={paymentMethod ?? ""}
+                    defaultValue={defaultPaymentMethodForm}
                     name="formaPagamento"
                   >
-                    <option value="">Usar forma da reserva</option>
+                    {paymentMethod ? <option value="">Usar forma da reserva</option> : null}
                     {FORMAS_PAGAMENTO.map((method) => (
                       <option key={method} value={method}>
                         {LABEL_FORMA_PAGAMENTO[method]}
