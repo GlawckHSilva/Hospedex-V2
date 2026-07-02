@@ -13,11 +13,13 @@ import {
   ChevronDown,
   ClipboardCheck,
   CreditCard,
+  FileText,
   FileBarChart,
   Flag,
   Home,
   KeyRound,
   LayoutDashboard,
+  Mail,
   MapPin,
   Menu,
   PackageCheck,
@@ -53,6 +55,7 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   calendario: CalendarDays,
   configuracoes: Settings,
   dashboard: LayoutDashboard,
+  email: Mail,
   featureFlags: Flag,
   financeiro: CreditCard,
   funcionarios: Users,
@@ -68,7 +71,8 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   propriedades: Home,
   relatorios: FileBarChart,
   reservas: BedDouble,
-  servicosExtras: ReceiptText
+  servicosExtras: ReceiptText,
+  templatesEmail: FileText
 };
 
 export type AdminShellProps = {
@@ -392,6 +396,10 @@ const GRUPOS_MENU_GERENCIAMENTO: GrupoMenuSidebar[] = [
       "/configuracoes",
     ],
     titulo: "Configurações",
+  },
+  {
+    chaves: ["/email", "/templates-email"],
+    titulo: "Comunicacoes",
   },
 ];
 

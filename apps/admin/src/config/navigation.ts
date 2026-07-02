@@ -10,6 +10,7 @@ export type IconeMenuAdmin =
   | "calendario"
   | "configuracoes"
   | "dashboard"
+  | "email"
   | "featureFlags"
   | "financeiro"
   | "funcionarios"
@@ -25,7 +26,8 @@ export type IconeMenuAdmin =
   | "propriedades"
   | "relatorios"
   | "reservas"
-  | "servicosExtras";
+  | "servicosExtras"
+  | "templatesEmail";
 
 export type ItemMenuAdmin = {
   titulo: string;
@@ -155,6 +157,22 @@ const MENU_PROPRIETARIO = [
     href: "/integracoes",
     descricao: "Conexões externas e sincronizações do tenant.",
     icone: "integracoes",
+    featureFlag: "integrations",
+    permissoes: ["integrations.read", "integrations.manage"]
+  },
+  {
+    titulo: "E-mail",
+    href: "/email",
+    descricao: "Central visual de notificacoes por e-mail.",
+    icone: "email",
+    featureFlag: "integrations",
+    permissoes: ["integrations.read", "integrations.manage"]
+  },
+  {
+    titulo: "Templates de e-mail",
+    href: "/templates-email",
+    descricao: "Modelos transacionais editaveis do tenant.",
+    icone: "templatesEmail",
     featureFlag: "integrations",
     permissoes: ["integrations.read", "integrations.manage"]
   },

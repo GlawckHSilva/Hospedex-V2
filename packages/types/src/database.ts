@@ -109,6 +109,8 @@ export type IntegrationStatus =
   | "pending_backend"
   | "connected"
   | "error";
+export type MessageTemplateChannel = "email";
+export type MessageTemplateValidationStatus = "valid" | "invalid";
 
 export type ProfileRow = {
   id: UUID;
@@ -861,6 +863,33 @@ export type TenantIntegrationRow = {
   configured_at: Timestamp | null;
   configured_by: UUID | null;
   last_synced_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type MessageTemplateRow = {
+  id: UUID;
+  tenant_id: UUID | null;
+  template_key: string;
+  channel: MessageTemplateChannel;
+  name: string;
+  description: string;
+  subject: string;
+  title: string;
+  body: string;
+  button_text: string | null;
+  button_url: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  is_customized: boolean;
+  default_subject: string;
+  default_title: string;
+  default_body: string;
+  default_button_text: string | null;
+  default_button_url: string | null;
+  variables_allowed: string[];
+  last_validation_status: MessageTemplateValidationStatus;
+  last_validation_error: string | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 };
