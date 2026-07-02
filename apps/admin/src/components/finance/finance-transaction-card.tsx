@@ -208,6 +208,12 @@ function MaisAcoesLancamento({
               </ActionButton>
             </div>
           </form>
+        ) : lancamento.reservation_id ? (
+          <p className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.04] p-3 text-sm text-muted-foreground">
+            Este lançamento está vinculado a uma reserva e fica preservado para
+            auditoria. Cancelados e estornados não entram nos totais e aparecem
+            apenas ao filtrar por esse status.
+          </p>
         ) : (
           <p className="rounded-xl border bg-background/55 p-3 text-sm text-muted-foreground">
             Não há ações secundárias destrutivas disponíveis para este lançamento.

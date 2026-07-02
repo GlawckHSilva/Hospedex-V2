@@ -2,12 +2,10 @@ import type {
   ExpenseCategoryRow,
   FinancialAccountRow,
   PropertyRow,
-  ReservationRow,
   TransactionRow
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
-import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosModuloFinanceiro,
@@ -47,8 +45,7 @@ export async function carregarDadosModuloFinanceiro(
     contasResultado,
     categoriasResultado,
     propriedadesResultado,
-    transacoesResultado,
-    reservasPendentesResultado
+    transacoesResultado
   ] = await Promise.all([
     supabase
       .from("financial_accounts")
@@ -79,26 +76,17 @@ export async function carregarDadosModuloFinanceiro(
       .in("transaction_type", ["income", "expense"])
       .order("created_at", { ascending: false })
       .limit(200)
-      .returns<TransactionRow[]>(),
-    carregarReservasPendentesMes(tenantId, ownerId, filtros.mes)
+      .returns<TransactionRow[]>()
   ]);
 
   registrarErroLeitura("contas financeiras", contasResultado.error);
   registrarErroLeitura("categorias financeiras", categoriasResultado.error);
   registrarErroLeitura("propriedades do financeiro", propriedadesResultado.error);
   registrarErroLeitura("lançamentos financeiros", transacoesResultado.error);
-  registrarErroLeitura("reservas pendentes", reservasPendentesResultado.error);
-
   const contas = contasResultado.data ?? [];
   const categorias = categoriasResultado.data ?? [];
   const propriedades = propriedadesResultado.data ?? [];
   const transacoes = transacoesResultado.data ?? [];
-  // Casas excluidas ficam arquivadas para preservar historico financeiro.
-  // O contador operacional de pendencias nao deve considerar reservas dessas casas.
-  const reservasPendentes = filtrarPorPropriedadesAtivas(
-    reservasPendentesResultado.data ?? [],
-    propriedades
-  );
   const lancamentos = montarLancamentos(transacoes, contas, categorias, propriedades).filter(
     (lancamento) => correspondeFiltros(lancamento, filtros)
   );
@@ -111,7 +99,7 @@ export async function carregarDadosModuloFinanceiro(
     pagamentosOnlineAtivo: Boolean(contexto.featureFlags.payments),
     podeGerenciar: podeGerenciarFinanceiro(contexto),
     propriedades,
-    resumo: montarResumo(transacoes, reservasPendentes, filtros.mes)
+    resumo: montarResumo(transacoes, filtros.mes)
   };
 }
 
@@ -139,17 +127,16 @@ function ehLancamentoReceitaOuDespesa(
   return transacao.transaction_type === "income" || transacao.transaction_type === "expense";
 }
 
-function montarResumo(
-  transacoes: TransactionRow[],
-  reservasPendentes: ReservationRow[],
-  mes: string
-): DadosModuloFinanceiro["resumo"] {
+function montarResumo(transacoes: TransactionRow[], mes: string): DadosModuloFinanceiro["resumo"] {
   const transacoesDoMes = transacoes.filter((transacao) => transacaoPertenceAoMes(transacao, mes));
   const receitasPagas = transacoesDoMes.filter(
     (transacao) => transacao.transaction_type === "income" && transacao.status === "paid"
   );
   const despesasPagas = transacoesDoMes.filter(
     (transacao) => transacao.transaction_type === "expense" && transacao.status === "paid"
+  );
+  const lancamentosPendentes = transacoesDoMes.filter(
+    (transacao) => ehLancamentoReceitaOuDespesa(transacao) && transacao.status === "pending"
   );
   const receitasReservasPagas = receitasPagas.filter((transacao) => transacao.reservation_id);
   const reservasPagas = new Set(
@@ -162,28 +149,16 @@ function montarResumo(
     lucroMes: somarTransacoes(receitasPagas) - somarTransacoes(despesasPagas),
     receitaMes: somarTransacoes(receitasPagas),
     reservasPagas,
-    reservasPendentes: reservasPendentes.length,
+    // No Financeiro, pendente deve refletir lancamento financeiro pendente.
+    // Reservas que exigem acao operacional ficam em Pendencias/Reservas.
+    reservasPendentes: lancamentosPendentes.length,
     ticketMedio: reservasPagas > 0 ? receitaReservas / reservasPagas : 0
   };
 }
 
-async function carregarReservasPendentesMes(tenantId: string, ownerId: string, mes: string) {
-  const periodo = obterPeriodoMes(mes);
-  const supabase = await criarClienteSupabaseServer();
-
-  return supabase
-    .from("reservations")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("owner_id", ownerId)
-    .in("status", ["pending", "awaiting_payment"])
-    .lt("check_in", periodo.fimExclusivo)
-    .gte("check_out", periodo.inicio)
-    .returns<ReservationRow[]>();
-}
-
 function correspondeFiltros(lancamento: LancamentoFinanceiro, filtros: FiltrosFinanceiro) {
   if (filtros.tipo !== "todos" && lancamento.transaction_type !== filtros.tipo) return false;
+  if (filtros.status === "todos" && lancamentoCanceladoOuEstornado(lancamento)) return false;
   if (filtros.status !== "todos" && lancamento.status !== filtros.status) return false;
   if (filtros.categoriaId !== "todas" && lancamento.expense_category_id !== filtros.categoriaId) {
     return false;
@@ -222,20 +197,13 @@ function somarTransacoes(transacoes: TransactionRow[]) {
   return transacoes.reduce((total, transacao) => total + Number(transacao.amount), 0);
 }
 
+function lancamentoCanceladoOuEstornado(transacao: TransactionRow) {
+  return transacao.status === "cancelled" || transacao.status === "refunded";
+}
+
 export function normalizarMesFinanceiro(valor: string | undefined) {
   if (valor && /^\d{4}-\d{2}$/.test(valor)) return valor;
   return new Date().toISOString().slice(0, 7);
-}
-
-function obterPeriodoMes(mes: string) {
-  const [ano = "2026", numeroMes = "01"] = mes.split("-");
-  const inicio = new Date(Date.UTC(Number(ano), Number(numeroMes) - 1, 1));
-  const fim = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth() + 1, 1));
-
-  return {
-    fimExclusivo: fim.toISOString().slice(0, 10),
-    inicio: inicio.toISOString().slice(0, 10)
-  };
 }
 
 function criarDadosVazios(filtros: FiltrosFinanceiro): DadosModuloFinanceiro {
