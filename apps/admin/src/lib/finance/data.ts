@@ -7,6 +7,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
   DadosModuloFinanceiro,
@@ -92,6 +93,12 @@ export async function carregarDadosModuloFinanceiro(
   const categorias = categoriasResultado.data ?? [];
   const propriedades = propriedadesResultado.data ?? [];
   const transacoes = transacoesResultado.data ?? [];
+  // Casas excluidas ficam arquivadas para preservar historico financeiro.
+  // O contador operacional de pendencias nao deve considerar reservas dessas casas.
+  const reservasPendentes = filtrarPorPropriedadesAtivas(
+    reservasPendentesResultado.data ?? [],
+    propriedades
+  );
   const lancamentos = montarLancamentos(transacoes, contas, categorias, propriedades).filter(
     (lancamento) => correspondeFiltros(lancamento, filtros)
   );
@@ -104,7 +111,7 @@ export async function carregarDadosModuloFinanceiro(
     pagamentosOnlineAtivo: Boolean(contexto.featureFlags.payments),
     podeGerenciar: podeGerenciarFinanceiro(contexto),
     propriedades,
-    resumo: montarResumo(transacoes, reservasPendentesResultado.data ?? [], filtros.mes)
+    resumo: montarResumo(transacoes, reservasPendentes, filtros.mes)
   };
 }
 

@@ -145,7 +145,9 @@ export function AdminShell({
         <motion.main
           animate={{ opacity: 1, y: 0 }}
           className="min-w-0"
-          initial={{ opacity: 0, y: 8 }}
+          // O conteudo principal precisa nascer visivel; se a animacao falhar,
+          // o usuario nao pode ficar com a pagina carregada e invisivel.
+          initial={false}
           transition={{ duration: 0.28, ease: "easeOut" }}
         >
           {children}
