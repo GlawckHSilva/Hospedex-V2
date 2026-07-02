@@ -190,9 +190,15 @@ function ConfiguracaoEmail({
       <div className="rounded-xl border border-cyan-300/20 bg-cyan-500/10 p-4">
         <Settings className="h-5 w-5 text-cyan-200" />
         <p className="mt-3 text-sm text-cyan-100">
-          Use a tela de templates para enviar um e-mail real de teste. Em modo teste,
-          nenhum disparo automático é feito para hóspedes.
+          {configuracao.apiKeyConfigured
+            ? "Use a tela de templates para enviar um e-mail real de teste. Em modo teste, nenhum disparo automático é feito para hóspedes."
+            : "Para enviar testes reais, configure RESEND_API_KEY no Vercel e faça um novo deploy."}
         </p>
+        {!configuracao.apiKeyConfigured ? (
+          <div className="mt-3 rounded-lg border border-amber-300/30 bg-amber-500/10 p-3 text-xs leading-5 text-amber-100">
+            Variáveis mínimas: RESEND_API_KEY, EMAIL_MODE=test e EMAIL_FROM=Hospedex &lt;onboarding@resend.dev&gt;.
+          </div>
+        ) : null}
         <ActionButton
           className="mt-4 w-full"
           onClick={() => onFeedback("Envie testes pela tela Templates de e-mail.")}

@@ -22,6 +22,8 @@ import { criarClienteSupabaseServer } from "../supabase/server";
 const REMETENTE_TESTE_PADRAO = "Hospedex <onboarding@resend.dev>";
 const MENSAGEM_RESTRICAO_TESTE =
   "Em modo teste, o envio só pode ser feito para o e-mail autorizado na conta Resend.";
+const MENSAGEM_RESEND_NAO_CONFIGURADO =
+  "Resend não configurado. Adicione RESEND_API_KEY nas variáveis de ambiente da Vercel e faça um novo deploy.";
 
 export type EmailMode = "test" | "production";
 
@@ -102,11 +104,15 @@ export async function sendEmail(payload: EmailPayload): Promise<EmailServiceResu
   const destinatario = resolveRecipientEmail(payload.to, config);
 
   if (!config.apiKey) {
-    return registrarFalhaConfiguracao(payload, destinatario, "Provedor de e-mail não configurado.");
+    return registrarFalhaConfiguracao(payload, destinatario, MENSAGEM_RESEND_NAO_CONFIGURADO);
   }
 
   if (!config.from) {
-    return registrarFalhaConfiguracao(payload, destinatario, "Remetente de e-mail não configurado.");
+    return registrarFalhaConfiguracao(
+      payload,
+      destinatario,
+      "Remetente de e-mail não configurado. Defina EMAIL_FROM nas variáveis de ambiente.",
+    );
   }
 
   if (!destinatario || !emailValido(destinatario)) {
