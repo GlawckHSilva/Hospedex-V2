@@ -65,7 +65,7 @@ function classificarErroSuperAdmin(erro: unknown) {
   if (mensagem.includes("Sessao") || mensagem.includes("sessao")) return "Sessao invalida.";
   if (mensagem.includes("profile") || mensagem.includes("Perfil")) return "Perfil nao encontrado.";
   if (mensagem.includes("role") || mensagem.includes("Role")) return "Role nao encontrada.";
-  if (mensagem.includes("tenant") || mensagem.includes("Tenant")) return "Tenant nao encontrado.";
+  if (mensagem.includes("tenant") || mensagem.includes("Tenant")) return "Cliente nao encontrado.";
   if (mensagem.includes("permiss")) return "Permissoes insuficientes.";
 
   return "Erro ao carregar dados do Super Admin.";

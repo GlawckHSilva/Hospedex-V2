@@ -253,7 +253,7 @@ export function ProvedorAutenticacao({
     setErro(null);
   }, []);
 
-  if (erro) {
+  if (erro && !rotaPublica) {
     return (
       <TelaErroSessao
         carregando={carregando}

@@ -32,7 +32,7 @@ export function AbaPerfil({ proprietario }: { proprietario: ProprietarioCompleto
         <Info label="E-mail" valor={proprietario.profile?.email ?? "Nao informado"} />
         <Info label="Telefone" valor={proprietario.profile?.phone ?? "Nao informado"} />
         <Info label="Documento" valor="Nao informado" />
-        <Info label="Empresa / tenant" valor={proprietario.tenant.name} />
+        <Info label="Empresa" valor={proprietario.tenant.name} />
         <Info label="Cadastro" valor={formatarData(proprietario.tenant.created_at)} />
         <Info label="Ultimo acesso" valor="Nao disponivel no perfil publico" />
         <Info label="Status" valor={labelTenant(proprietario.tenant.status)} />
@@ -41,8 +41,8 @@ export function AbaPerfil({ proprietario }: { proprietario: ProprietarioCompleto
       <ConfirmDialog
         description={
           bloqueado
-            ? "O proprietario voltara a acessar o tenant conforme a licenca e as permissoes atuais."
-            : "O acesso deste tenant sera restringido sem apagar o historico."
+            ? "O proprietario voltara a acessar o empreendimento conforme a licenca e as permissoes atuais."
+            : "O acesso deste empreendimento sera restringido sem apagar o historico."
         }
         title={bloqueado ? "Liberar acesso do proprietario" : "Bloquear proprietario"}
         triggerAction="status"
@@ -54,7 +54,7 @@ export function AbaPerfil({ proprietario }: { proprietario: ProprietarioCompleto
           <input name="ownerId" type="hidden" value={proprietario.tenant.owner_id} />
           <input name="acao" type="hidden" value={acao} />
           <p className="text-sm text-muted-foreground">
-            Confirme a alteracao administrativa para o tenant {proprietario.tenant.name}.
+            Confirme a alteracao administrativa para o empreendimento {proprietario.tenant.name}.
           </p>
           <ActionButton className="w-full" icon={<Power />} type="submit" variant="status">
             {bloqueado ? "Confirmar liberacao" : "Confirmar bloqueio"}
@@ -71,7 +71,7 @@ export function AbaLicenca({ proprietario }: { proprietario: ProprietarioComplet
   return (
     <div className="space-y-4">
       <CabecalhoAba
-        descricao="Plano, validade e limites aplicados ao tenant."
+        descricao="Plano, validade e limites aplicados ao empreendimento."
         icon={<ShieldCheck />}
         titulo="Licenca"
       />

@@ -99,7 +99,7 @@ export async function carregarDashboardSuperAdmin(contexto: ContextoAutenticacao
       role: contexto.role
     },
     metricas: [
-      metrica("Proprietarios ativos", proprietariosAtivos, "Tenants liberados para operar", "success"),
+      metrica("Proprietarios ativos", proprietariosAtivos, "Clientes liberados para operar", "success"),
       metrica("Proprietarios bloqueados", proprietariosBloqueados, "Suspensos ou cancelados", "danger"),
       metrica("Hospedes cadastrados", hospedes, "Contatos vindos de reservas", "info"),
       metrica("Reservas totais", reservas, "Reservas da plataforma", "warning"),
@@ -161,9 +161,9 @@ async function carregarProprietarios(): Promise<SuperAdminModuloDados> {
   return {
     titulo: "Proprietarios",
     descricao: "Visao global de clientes da plataforma, sem aplicar contexto de dono de imovel.",
-    estadoVazio: "Nenhum proprietario ou tenant encontrado.",
+    estadoVazio: "Nenhum proprietario encontrado.",
     metricas: [
-      await metricaDeTabela("Tenants", "tenants", "Clientes cadastrados", "info"),
+      await metricaDeTabela("Clientes", "tenants", "Clientes cadastrados", "info"),
       metrica(
         "Ativos",
         await contar(
@@ -173,7 +173,7 @@ async function carregarProprietarios(): Promise<SuperAdminModuloDados> {
             .eq("status", "active")
             .is("deleted_at", null)
         ),
-        "Tenants em operacao",
+        "Clientes em operacao",
         "success"
       ),
       metrica(
@@ -220,7 +220,7 @@ async function carregarHospedes(): Promise<SuperAdminModuloDados> {
     metricas: [
       await metricaDeTabela("Hospedes", "reservation_guests", "Contatos em reservas", "info"),
       await metricaDeTabela("Reservas", "reservations", "Base operacional", "warning"),
-      await metricaDeTabela("Tenants", "tenants", "Origem dos dados", "neutral")
+      await metricaDeTabela("Clientes", "tenants", "Origem dos dados", "neutral")
     ],
     registros: (data ?? []).map((guest) =>
       registro(
@@ -285,7 +285,7 @@ async function carregarLicencas(): Promise<SuperAdminModuloDados> {
 
   return {
     titulo: "Licencas",
-    descricao: "Visao global de licencas por tenant, status e proprietario responsavel.",
+    descricao: "Visao global de licencas por cliente, status e proprietario responsavel.",
     estadoVazio: "Nenhuma licenca emitida.",
     metricas: [
       await metricaDeTabela("Licencas", "licenses", "Total emitido", "info"),
@@ -305,7 +305,7 @@ async function carregarLicencas(): Promise<SuperAdminModuloDados> {
     registros: licencas.map((licenca) =>
       registro(
         licenca.id,
-        tenants.get(licenca.tenant_id)?.name ?? "Tenant nao encontrado",
+        tenants.get(licenca.tenant_id)?.name ?? "Cliente nao encontrado",
         owners.get(licenca.owner_id)?.email ?? "owner nao encontrado",
         licenca.expires_at ? `Expira em ${formatarData(licenca.expires_at)}` : "sem expiracao definida",
         licenca.status,
@@ -331,7 +331,7 @@ async function carregarFeatureFlags(): Promise<SuperAdminModuloDados> {
 
   return {
     titulo: "Feature Flags",
-    descricao: "Controle global dos recursos preparados para ativacao por tenant.",
+    descricao: "Controle global dos recursos preparados para ativacao por cliente.",
     estadoVazio: "Nenhuma feature flag cadastrada.",
     metricas: [
       await metricaDeTabela("Flags", "feature_flags", "Recursos globais", "info"),
@@ -344,7 +344,7 @@ async function carregarFeatureFlags(): Promise<SuperAdminModuloDados> {
       metricaValor(
         "Overrides",
         tenantFeatures?.length ?? 0,
-        "Configuracoes por tenant",
+        "Configuracoes por cliente",
         "warning"
       )
     ],
@@ -368,7 +368,7 @@ async function carregarAuditoria(): Promise<SuperAdminModuloDados> {
     estadoVazio: "Nenhum evento de auditoria registrado.",
     metricas: [
       await metricaDeTabela("Eventos", "audit_logs", "Total registrado", "info"),
-      await metricaDeTabela("Tenants", "tenants", "Possiveis escopos", "neutral"),
+      await metricaDeTabela("Clientes", "tenants", "Possiveis escopos", "neutral"),
       await metricaDeTabela("Profiles", "profiles", "Atores possiveis", "success")
     ],
     registros: await carregarAuditoriaRecente()
@@ -382,7 +382,7 @@ async function carregarConfiguracoes(): Promise<SuperAdminModuloDados> {
     estadoVazio: "Nenhuma configuracao global persistida ainda.",
     metricas: [
       await metricaDeTabela("Permissoes", "permissions", "Catalogo de regras", "info"),
-      await metricaDeTabela("Roles", "roles", "Papeis globais e por tenant", "neutral"),
+      await metricaDeTabela("Roles", "roles", "Papeis globais e por cliente", "neutral"),
       await metricaDeTabela("Flags", "feature_flags", "Modulos controlaveis", "warning")
     ],
     registros: [

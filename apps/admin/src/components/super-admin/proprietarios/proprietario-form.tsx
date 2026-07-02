@@ -96,7 +96,7 @@ export function ProprietarioForm({
         <CampoTexto
           defaultValue={proprietario?.tenant.name ?? ""}
           disabled={bloqueado}
-          label="Nome do tenant"
+          label="Nome do empreendimento"
           name="tenantNome"
           required
         />
