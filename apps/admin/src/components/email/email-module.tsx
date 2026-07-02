@@ -19,10 +19,12 @@ const ABAS: Array<{ chave: AbaEmail; label: string }> = [
   { chave: "configuracao", label: "Configuração" },
 ];
 
-/** Central visual de e-mail preparada para futura integração com serviço externo. */
+/** Central de e-mail com status do provedor e logs do tenant autenticado. */
 export function EmailModule({
+  configuracao,
   erro,
   erroCarregamento,
+  logs,
   resumo,
   sucesso,
   tenantNome,
@@ -84,12 +86,15 @@ export function EmailModule({
         </div>
 
         <div className="mt-5">
-          {aba === "geral" ? <VisaoGeral tenantNome={tenantNome} /> : null}
+          {aba === "geral" ? (
+            <VisaoGeral configuracao={configuracao} tenantNome={tenantNome} />
+          ) : null}
           {aba === "enviados" ? (
-            <PremiumEmptyState
-              description="Quando a integração de envio for ativada, os e-mails enviados aparecerão aqui."
+            <ListaLogsEmail
+              emptyDescription="Envios de teste e envios futuros aparecerão aqui."
+              emptyTitle="Nenhum e-mail enviado ainda"
               icon={<MailCheck className="h-5 w-5" />}
-              title="Nenhum e-mail enviado ainda"
+              logs={logs.filter((log) => ["sent", "test"].includes(log.status))}
             />
           ) : null}
           {aba === "recebidos" ? (
@@ -100,14 +105,15 @@ export function EmailModule({
             />
           ) : null}
           {aba === "falhas" ? (
-            <PremiumEmptyState
-              description="Falhas de envio aparecerão aqui quando o serviço de e-mail estiver ativo."
+            <ListaLogsEmail
+              emptyDescription="Erros de configuração e falhas do provedor aparecerão aqui."
+              emptyTitle="Nenhuma falha registrada"
               icon={<AlertTriangle className="h-5 w-5" />}
-              title="Nenhuma falha registrada"
+              logs={logs.filter((log) => ["failed", "not_configured"].includes(log.status))}
             />
           ) : null}
           {aba === "configuracao" ? (
-            <ConfiguracaoEmail onFeedback={setFeedback} />
+            <ConfiguracaoEmail configuracao={configuracao} onFeedback={setFeedback} />
           ) : null}
         </div>
       </section>
@@ -115,16 +121,27 @@ export function EmailModule({
   );
 }
 
-function VisaoGeral({ tenantNome }: { tenantNome: string }) {
+function VisaoGeral({
+  configuracao,
+  tenantNome,
+}: {
+  configuracao: DadosCentralEmail["configuracao"];
+  tenantNome: string;
+}) {
   const itens = [
     ["E-mails para hóspedes", "Usam templates editáveis pelo proprietário."],
     [
       "Notificações para proprietário",
       "Usam modelos padrão do Hospedex e não aparecem no editor de hóspedes.",
     ],
-    ["Status", "Em preparação."],
+    ["Status", labelStatusProvedor(configuracao.providerStatus)],
     ["Templates configurados", `Modelos de hóspedes de ${tenantNome} usam padrões seguros.`],
-    ["Próxima etapa", "Conectar serviço de envio."],
+    [
+      "Modo atual",
+      configuracao.mode === "test"
+        ? "Modo teste: sem envio automático real para hóspedes."
+        : "Modo produção: preparado para envios reais controlados.",
+    ],
   ];
 
   return (
@@ -139,32 +156,99 @@ function VisaoGeral({ tenantNome }: { tenantNome: string }) {
   );
 }
 
-function ConfiguracaoEmail({ onFeedback }: { onFeedback: (mensagem: string) => void }) {
+function ConfiguracaoEmail({
+  configuracao,
+  onFeedback,
+}: {
+  configuracao: DadosCentralEmail["configuracao"];
+  onFeedback: (mensagem: string) => void;
+}) {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-4">
         <h2 className="font-semibold">Configuração</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <Info label="E-mail de teste" valor="Será o e-mail do proprietário logado" />
+          <Info
+            label="RESEND_API_KEY configurada"
+            valor={configuracao.apiKeyConfigured ? "Sim" : "Não"}
+          />
+          <Info
+            label="EMAIL_FROM configurado"
+            valor={configuracao.fromConfigured ? "Sim" : "Não"}
+          />
+          <Info label="Modo" valor={configuracao.mode === "test" ? "Teste" : "Produção"} />
+          <Info label="Remetente atual" valor={configuracao.currentFrom || "Não configurado"} />
+          <Info
+            label="E-mail de teste"
+            valor={configuracao.testRecipient ?? "E-mail do proprietário logado"}
+          />
           <Info label="Mensagens para hóspedes" valor="Templates editáveis preparados" />
-          <Info label="Status da integração" valor="Em preparação" />
-          <Info label="Envio de teste" valor="Modo simulado" />
+          <Info label="Status da integração" valor={labelStatusProvedor(configuracao.providerStatus)} />
+          <Info label="Recebimento" valor="Ainda não configurado" />
         </div>
       </div>
       <div className="rounded-xl border border-cyan-300/20 bg-cyan-500/10 p-4">
         <Settings className="h-5 w-5 text-cyan-200" />
         <p className="mt-3 text-sm text-cyan-100">
-          A integração de envio será ativada em uma próxima etapa.
+          Use a tela de templates para enviar um e-mail real de teste. Em modo teste,
+          nenhum disparo automático é feito para hóspedes.
         </p>
         <ActionButton
           className="mt-4 w-full"
-          disabled
-          onClick={() => onFeedback("Envio real ainda não configurado.")}
+          onClick={() => onFeedback("Envie testes pela tela Templates de e-mail.")}
           variant="settings"
         >
-          Enviar teste
+          Ver orientação
         </ActionButton>
       </div>
+    </div>
+  );
+}
+
+function ListaLogsEmail({
+  emptyDescription,
+  emptyTitle,
+  icon,
+  logs,
+}: {
+  emptyDescription: string;
+  emptyTitle: string;
+  icon: ReactNode;
+  logs: DadosCentralEmail["logs"];
+}) {
+  if (!logs.length) {
+    return (
+      <PremiumEmptyState
+        description={emptyDescription}
+        icon={icon}
+        title={emptyTitle}
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-3">
+      {logs.map((log) => (
+        <article
+          className="rounded-xl border border-slate-800 bg-slate-950/45 p-4"
+          key={`${log.createdAt}-${log.recipientEmail}-${log.templateKey}`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold">{log.subject}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {log.templateKey ?? "Sem template"} · {log.recipientEmail}
+              </p>
+            </div>
+            <Badge variant={variantStatusLog(log.status)}>{labelStatusLog(log.status)}</Badge>
+          </div>
+          <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-3">
+            <span>Público: {log.audience === "guest" ? "Hóspede" : "Proprietário"}</span>
+            <span>Data: {new Date(log.createdAt).toLocaleString("pt-BR")}</span>
+            {log.errorMessage ? <span>Erro: {mensagemCurta(log.errorMessage)}</span> : null}
+          </div>
+        </article>
+      ))}
     </div>
   );
 }
@@ -194,4 +278,37 @@ function Resumo({
       <p className="mt-1 text-2xl font-semibold">{valor}</p>
     </div>
   );
+}
+
+function labelStatusProvedor(status: DadosCentralEmail["configuracao"]["providerStatus"]) {
+  if (status === "active") return "Ativo";
+  if (status === "test") return "Modo teste";
+  return "Não configurado";
+}
+
+function labelStatusLog(status: DadosCentralEmail["logs"][number]["status"]) {
+  const labels: Record<DadosCentralEmail["logs"][number]["status"], string> = {
+    failed: "Falha",
+    not_configured: "Não configurado",
+    pending: "Pendente",
+    sent: "Enviado",
+    skipped: "Ignorado",
+    test: "Teste enviado",
+  };
+
+  return labels[status];
+}
+
+function variantStatusLog(status: DadosCentralEmail["logs"][number]["status"]) {
+  if (status === "sent" || status === "test") return "success";
+  if (status === "failed" || status === "not_configured") return "danger";
+  return "warning";
+}
+
+function mensagemCurta(mensagem: string) {
+  if (/modo teste|autorizado na conta resend/i.test(mensagem)) {
+    return "Restrição do modo teste do Resend.";
+  }
+
+  return mensagem.length > 90 ? `${mensagem.slice(0, 90)}...` : mensagem;
 }

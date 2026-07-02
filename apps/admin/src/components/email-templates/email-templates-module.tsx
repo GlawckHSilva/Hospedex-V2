@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Badge, FadeIn, cn } from "@hospedex/ui";
 
 import {
+  enviarTesteTemplateEmailAction,
   restaurarTemplateEmailPadraoAction,
   restaurarTodosTemplatesEmailPadraoAction,
   salvarTemplateEmailAction,
@@ -34,6 +35,7 @@ const MENSAGENS_SUCESSO: Record<string, string> = {
   "modelo-restaurado": "Modelo restaurado para o padrão.",
   "modelo-salvo": "Modelo de e-mail salvo.",
   "padroes-restaurados": "Padrões restaurados.",
+  "teste-enviado": "E-mail de teste enviado para o seu e-mail.",
 };
 
 type StatusFiltro = "todos" | "ativos" | "inativos" | "alterados" | "erro";
@@ -218,7 +220,6 @@ export function EmailTemplatesModule({
           {templatesFiltrados.map((template) => (
             <TemplateCard
               key={template.key}
-              emailTeste={emailTeste}
               onSelecionar={selecionar}
               podeGerenciar={podeGerenciar}
               selecionado={template.key === selecionado?.key}
@@ -293,20 +294,17 @@ export function EmailTemplatesModule({
                 >
                   Cancelar
                 </ActionButton>
-                <ActionButton
+                <FormActionButton
+                  disabled={!podeGerenciar || !validacao.valido}
+                  formAction={enviarTesteTemplateEmailAction}
                   icon={<Send />}
-                  onClick={() =>
-                    setFeedbackLocal(
-                      `Envio de teste preparado para ${emailTeste}. A integração real será ativada na próxima etapa.`,
-                    )
-                  }
-                  type="button"
+                  pendingLabel="Enviando teste..."
                   variant="view"
                 >
                   Enviar teste
-                </ActionButton>
+                </FormActionButton>
                 <p className="basis-full text-xs text-muted-foreground">
-                  O teste será enviado para o seu próprio e-mail, simulando como o hóspede receberá a mensagem.
+                  O teste será enviado para {emailTeste}, simulando como o hóspede receberá a mensagem.
                 </p>
                 <FormActionButton
                   disabled={!podeGerenciar || !validacao.valido}
@@ -331,13 +329,11 @@ export function EmailTemplatesModule({
 }
 
 function TemplateCard({
-  emailTeste,
   onSelecionar,
   podeGerenciar,
   selecionado,
   template,
 }: {
-  emailTeste: string;
   onSelecionar: (template: EmailTemplate, mensagem?: string) => void;
   podeGerenciar: boolean;
   selecionado: boolean;
@@ -373,18 +369,22 @@ function TemplateCard({
         <ActionButton onClick={() => onSelecionar(template, "Pré-visualização atualizada.")} variant="view">
           Pré-visualizar
         </ActionButton>
-        <ActionButton
-          icon={<Send />}
-          onClick={() =>
-            onSelecionar(
-              template,
-              `Envio de teste preparado para ${emailTeste}. A integração real será ativada na próxima etapa.`,
-            )
-          }
-          variant="settings"
-        >
-          Enviar teste
-        </ActionButton>
+        <form action={enviarTesteTemplateEmailAction}>
+          <input name="templateKey" type="hidden" value={template.key} />
+          <input name="subject" type="hidden" value={template.subject} />
+          <input name="title" type="hidden" value={template.title} />
+          <input name="body" type="hidden" value={template.body} />
+          <input name="buttonText" type="hidden" value={template.buttonText ?? ""} />
+          <input name="buttonUrl" type="hidden" value={template.buttonUrl ?? ""} />
+          <FormActionButton
+            disabled={!podeGerenciar}
+            icon={<Send />}
+            pendingLabel="Enviando teste..."
+            variant="settings"
+          >
+            Enviar teste
+          </FormActionButton>
+        </form>
         <form
           action={restaurarTemplateEmailPadraoAction}
           onSubmit={(evento) => {

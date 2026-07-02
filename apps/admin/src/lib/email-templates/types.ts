@@ -1,4 +1,9 @@
-import type { MessageTemplateAudience, MessageTemplateRow } from "@hospedex/types";
+import type {
+  EmailDeliveryAudience,
+  EmailDeliveryStatus,
+  MessageTemplateAudience,
+  MessageTemplateRow,
+} from "@hospedex/types";
 
 /**
  * Contratos do módulo de Templates de e-mail.
@@ -53,7 +58,16 @@ export type SearchParamsTemplatesEmail = {
 };
 
 export type DadosCentralEmail = {
+  configuracao: {
+    apiKeyConfigured: boolean;
+    currentFrom: string;
+    fromConfigured: boolean;
+    mode: "test" | "production";
+    providerStatus: "not_configured" | "test" | "active";
+    testRecipient: string | null;
+  };
   erroCarregamento: string | null;
+  logs: EmailDeliveryLogResumo[];
   podeGerenciar: boolean;
   resumo: {
     enviados: number;
@@ -62,4 +76,14 @@ export type DadosCentralEmail = {
     templatesAtivos: number;
   };
   tenantNome: string;
+};
+
+export type EmailDeliveryLogResumo = {
+  audience: EmailDeliveryAudience;
+  createdAt: string;
+  errorMessage: string | null;
+  recipientEmail: string;
+  status: EmailDeliveryStatus;
+  subject: string;
+  templateKey: string | null;
 };

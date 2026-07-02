@@ -112,6 +112,15 @@ export type IntegrationStatus =
 export type MessageTemplateChannel = "email";
 export type MessageTemplateAudience = "owner" | "guest" | "system";
 export type MessageTemplateValidationStatus = "valid" | "invalid";
+export type EmailDeliveryAudience = "guest" | "owner";
+export type EmailDeliveryProvider = "resend";
+export type EmailDeliveryStatus =
+  | "test"
+  | "pending"
+  | "sent"
+  | "failed"
+  | "skipped"
+  | "not_configured";
 
 export type ProfileRow = {
   id: UUID;
@@ -894,6 +903,26 @@ export type MessageTemplateRow = {
   last_validation_error: string | null;
   created_at: Timestamp;
   updated_at: Timestamp;
+};
+
+export type EmailDeliveryLogRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID | null;
+  audience: EmailDeliveryAudience;
+  template_key: string | null;
+  event_type: string;
+  reference_id: UUID | null;
+  recipient_email: string;
+  subject: string;
+  status: EmailDeliveryStatus;
+  provider: EmailDeliveryProvider;
+  provider_message_id: string | null;
+  error_message: string | null;
+  payload: JsonValue;
+  created_at: Timestamp;
+  sent_at: Timestamp | null;
+  failed_at: Timestamp | null;
 };
 
 export type FinancialAccountRow = {

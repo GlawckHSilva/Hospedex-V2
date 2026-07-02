@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { sendGuestTemplateTestEmail } from "../email-service/service";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   EMAIL_TEMPLATE_AUDIENCE_GUEST,
@@ -10,7 +11,7 @@ import {
   obterTemplatePadrao,
 } from "./defaults";
 import { exigirAcessoEmail, podeGerenciarEmail } from "./permissions";
-import { validarTemplateEmail } from "./validation";
+import { renderizarTemplatePreview, validarTemplateEmail } from "./validation";
 
 /**
  * Mutações dos templates de e-mail.
@@ -139,6 +140,63 @@ export async function restaurarTodosTemplatesEmailPadraoAction() {
   redirect(`${CAMINHO_TEMPLATES_EMAIL}?sucesso=padroes-restaurados`);
 }
 
+export async function enviarTesteTemplateEmailAction(formData: FormData) {
+  const escopo = await carregarEscopoTemplates();
+  let mensagemSucesso = "teste-enviado";
+
+  try {
+    const templateKey = textoObrigatorio(formData, "templateKey", "modelo");
+    const padrao = obterTemplatePadrao(templateKey);
+    if (!padrao) throw new ErroRegraTemplateEmail("Modelo de e-mail inválido.");
+
+    const entrada = {
+      body: textoObrigatorio(formData, "body", "corpo da mensagem"),
+      buttonText: textoOpcional(formData, "buttonText", 80),
+      buttonUrl: textoOpcional(formData, "buttonUrl", 300),
+      subject: textoObrigatorio(formData, "subject", "assunto"),
+      title: textoObrigatorio(formData, "title", "título"),
+    };
+    const validacao = validarTemplateEmail({
+      body: entrada.body,
+      buttonText: entrada.buttonText ?? "",
+      buttonUrl: entrada.buttonUrl ?? "",
+      subject: entrada.subject,
+      title: entrada.title,
+    });
+
+    if (!validacao.valido) {
+      throw new ErroRegraTemplateEmail(validacao.erros[0] ?? "Template inválido.");
+    }
+
+    if (!escopo.emailProprietario) {
+      throw new ErroRegraTemplateEmail("E-mail do proprietário não encontrado.");
+    }
+
+    const resultado = await sendGuestTemplateTestEmail({
+      body: renderizarTemplatePreview(entrada.body),
+      buttonText: entrada.buttonText ? renderizarTemplatePreview(entrada.buttonText) : null,
+      buttonUrl: entrada.buttonUrl ? renderizarTemplatePreview(entrada.buttonUrl) : null,
+      ownerEmail: escopo.emailProprietario,
+      ownerId: escopo.userId,
+      subject: renderizarTemplatePreview(entrada.subject),
+      templateKey,
+      tenantId: escopo.tenantId,
+      title: renderizarTemplatePreview(entrada.title),
+    });
+
+    if (!resultado.success) {
+      throw new ErroRegraTemplateEmail(resultado.message);
+    }
+
+    if (resultado.status === "test") mensagemSucesso = "teste-enviado";
+    revalidarTemplates();
+  } catch (erro) {
+    redirecionarComErro(erro, "Não foi possível enviar o e-mail de teste.");
+  }
+
+  redirect(`${CAMINHO_TEMPLATES_EMAIL}?sucesso=${mensagemSucesso}`);
+}
+
 async function carregarEscopoTemplates() {
   const contexto = await exigirAcessoEmail();
 
@@ -147,6 +205,7 @@ async function carregarEscopoTemplates() {
   }
 
   return {
+    emailProprietario: contexto.profile.email,
     tenantId: contexto.tenant.id,
     userId: contexto.userId,
   };

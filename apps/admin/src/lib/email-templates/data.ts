@@ -1,6 +1,10 @@
 import type { MessageTemplateRow } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import {
+  getEmailDeliveryLogs,
+  getEmailServiceConfigStatus,
+} from "../email-service/service";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   EMAIL_TEMPLATE_AUDIENCE_GUEST,
@@ -50,18 +54,40 @@ export async function carregarDadosCentralEmail(
   contexto: ContextoAutenticacao,
 ): Promise<DadosCentralEmail> {
   const dadosTemplates = await carregarDadosTemplatesEmail(contexto);
+  const logs = contexto.tenant ? await getEmailDeliveryLogs(contexto.tenant.id) : [];
+  const enviados = logs.filter((log) => ["sent", "test"].includes(log.status)).length;
+  const falhas = logs.filter((log) =>
+    ["failed", "not_configured"].includes(log.status),
+  ).length;
 
   return {
+    configuracao: getEmailServiceConfigStatus(),
     erroCarregamento: dadosTemplates.erroCarregamento,
+    logs: logs.map((log) => ({
+      audience: log.audience,
+      createdAt: log.created_at,
+      errorMessage: log.error_message,
+      recipientEmail: mascararEmail(log.recipient_email),
+      status: log.status,
+      subject: log.subject,
+      templateKey: log.template_key,
+    })),
     podeGerenciar: dadosTemplates.podeGerenciar,
     resumo: {
-      enviados: 0,
-      falhas: 0,
+      enviados,
+      falhas,
       recebidos: 0,
       templatesAtivos: dadosTemplates.resumo.ativos,
     },
     tenantNome: contexto.tenant?.name ?? "Cliente não encontrado",
   };
+}
+
+function mascararEmail(email: string): string {
+  const [usuario, dominio] = email.split("@");
+  if (!usuario || !dominio) return email;
+  const inicio = usuario.slice(0, 2);
+  return `${inicio}${"*".repeat(Math.max(usuario.length - 2, 2))}@${dominio}`;
 }
 
 function montarDadosTemplates(

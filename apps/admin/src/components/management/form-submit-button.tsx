@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button } from "@hospedex/ui";
@@ -21,6 +21,7 @@ import {
 export function FormActionButton({
   children,
   disabled,
+  formAction,
   icon,
   pendingLabel,
   size = "md",
@@ -28,6 +29,7 @@ export function FormActionButton({
 }: {
   children: ReactNode;
   disabled?: boolean;
+  formAction?: ComponentProps<"button">["formAction"] | undefined;
   icon?: ReactNode;
   pendingLabel: string;
   size?: ActionButtonSize;
@@ -38,6 +40,7 @@ export function FormActionButton({
   return (
     <ActionButton
       disabled={disabled || pending}
+      formAction={formAction}
       icon={pending ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
       size={size}
       type="submit"
