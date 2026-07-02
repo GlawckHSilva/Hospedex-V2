@@ -15,10 +15,10 @@ import { podeGerenciarServicosExtras } from "./data";
 import { TIPOS_COBRANCA_SERVICO_EXTRA } from "./types";
 
 /**
- * Server actions do catalogo de Servicos Extras.
+ * Server actions do catálogo de Serviços Extras.
  *
- * Regras de negocio importantes ficam no servidor para proteger o tenant: o
- * navegador informa dados do formulario, mas o tenant e owner saem da sessao.
+ * Regras de negócio importantes ficam no servidor para proteger o tenant: o
+ * navegador informa dados do formulário, mas o tenant e owner saem da sessão.
  */
 
 const CAMINHO_SERVICOS_EXTRAS = "/servicos-extras";
@@ -73,7 +73,7 @@ export async function criarServicoExtraAction(formData: FormData) {
     await substituirVinculosCasas(supabase, escopo, data.id, entrada);
     revalidarServicosExtras();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao criar servico extra.");
+    redirecionarComErro(erro, "Erro ao criar serviço extra.");
   }
 
   redirect(`${CAMINHO_SERVICOS_EXTRAS}?sucesso=servico-criado`);
@@ -84,7 +84,7 @@ export async function atualizarServicoExtraAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
-    const servicoId = textoObrigatorio(formData, "servicoId", "servico");
+    const servicoId = textoObrigatorio(formData, "servicoId", "serviço");
     await carregarServicoExtra(supabase, escopo, servicoId);
     const entrada = await obterEntradaServicoExtra(supabase, escopo, formData);
     const { error } = await supabase
@@ -106,7 +106,7 @@ export async function atualizarServicoExtraAction(formData: FormData) {
     await substituirVinculosCasas(supabase, escopo, servicoId, entrada);
     revalidarServicosExtras();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao atualizar servico extra.");
+    redirecionarComErro(erro, "Erro ao atualizar serviço extra.");
   }
 
   redirect(`${CAMINHO_SERVICOS_EXTRAS}?sucesso=servico-atualizado`);
@@ -117,7 +117,7 @@ export async function alternarStatusServicoExtraAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
-    const servicoId = textoObrigatorio(formData, "servicoId", "servico");
+    const servicoId = textoObrigatorio(formData, "servicoId", "serviço");
     const status = validarStatus(textoObrigatorio(formData, "status", "status"));
     await carregarServicoExtra(supabase, escopo, servicoId);
     const { error } = await supabase
@@ -129,7 +129,7 @@ export async function alternarStatusServicoExtraAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarServicosExtras();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao alterar status do servico extra.");
+    redirecionarComErro(erro, "Erro ao alterar status do serviço extra.");
   }
 
   redirect(`${CAMINHO_SERVICOS_EXTRAS}?sucesso=status-atualizado`);
@@ -140,10 +140,11 @@ export async function excluirServicoExtraAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
-    const servicoId = textoObrigatorio(formData, "servicoId", "servico");
-    await carregarServicoExtra(supabase, escopo, servicoId);
+    const servicoId = textoObrigatorio(formData, "servicoId", "serviço");
+    const servico = await carregarServicoExtra(supabase, escopo, servicoId);
+    await garantirServicoPodeSerExcluido(supabase, escopo, servico.name);
 
-    // Exclusao logica preserva historico para reservas e relatorios futuros.
+    // Exclusão lógica preserva histórico para reservas e relatórios futuros.
     const { error } = await supabase
       .from("extra_services")
       .update({
@@ -163,7 +164,7 @@ export async function excluirServicoExtraAction(formData: FormData) {
 
     revalidarServicosExtras();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao excluir servico extra.");
+    redirecionarComErro(erro, "Erro ao excluir serviço extra.");
   }
 
   redirect(`${CAMINHO_SERVICOS_EXTRAS}?sucesso=servico-excluido`);
@@ -207,7 +208,7 @@ async function obterEntradaServicoExtra(
   return {
     amount: numeroMoeda(formData, "amount", "valor"),
     appliesToAllProperties,
-    chargeType: validarTipoCobranca(textoObrigatorio(formData, "chargeType", "tipo de cobranca")),
+    chargeType: validarTipoCobranca(textoObrigatorio(formData, "chargeType", "tipo de cobrança")),
     description: textoOpcional(formData, "description"),
     internalNotes: textoOpcional(formData, "internalNotes"),
     isRequired: checkboxAtivo(formData, "isRequired"),
@@ -257,7 +258,31 @@ async function validarCasasDoTenant(
 
   if (error) throw new Error(error.message);
   if ((data ?? []).length !== propertyIds.length) {
-    throw new ErroRegraServicoExtra("Uma ou mais casas nao pertencem ao tenant atual.");
+    throw new ErroRegraServicoExtra("Uma ou mais casas não pertencem ao tenant atual.");
+  }
+}
+
+async function garantirServicoPodeSerExcluido(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoServicoExtra,
+  nomeServico: string
+) {
+  const { data, error } = await supabase
+    .from("reservation_extra_services")
+    .select("id")
+    .eq("tenant_id", escopo.tenantId)
+    .eq("name", nomeServico)
+    .limit(1)
+    .returns<Array<{ id: string }>>();
+
+  if (error) throw new Error(error.message);
+
+  // Serviços usados em reservas não podem sair do catálogo sem preservar auditoria.
+  // A alternativa segura é inativar para bloquear novos usos mantendo histórico.
+  if ((data ?? []).length > 0) {
+    throw new ErroRegraServicoExtra(
+      "Não é possível apagar serviços usados em reservas. Inative o serviço para impedir novos usos."
+    );
   }
 }
 
@@ -275,7 +300,7 @@ async function carregarServicoExtra(
     .maybeSingle<ExtraServiceRow>();
 
   if (error || !data) {
-    throw new ErroRegraServicoExtra("Servico extra nao encontrado para este tenant.");
+    throw new ErroRegraServicoExtra("Serviço extra não encontrado para este tenant.");
   }
 
   return data;
@@ -287,7 +312,7 @@ function validarTipoCobranca(valor: string): ExtraServiceChargeType {
     return valor as ExtraServiceChargeType;
   }
 
-  throw new ErroRegraServicoExtra("Tipo de cobranca invalido.");
+  throw new ErroRegraServicoExtra("Tipo de cobrança inválido.");
 }
 
 function validarStatus(valor: string): ExtraServiceStatus {
@@ -295,7 +320,7 @@ function validarStatus(valor: string): ExtraServiceStatus {
     return valor as ExtraServiceStatus;
   }
 
-  throw new ErroRegraServicoExtra("Status invalido.");
+  throw new ErroRegraServicoExtra("Status inválido.");
 }
 
 function textoObrigatorio(formData: FormData, chave: string, label: string): string {
@@ -312,7 +337,7 @@ function textoOpcional(formData: FormData, chave: string): string | null {
 function numeroMoeda(formData: FormData, chave: string, label: string): number {
   const valor = Number.parseFloat(textoObrigatorio(formData, chave, label).replace(",", "."));
   if (Number.isNaN(valor) || valor < 0) {
-    throw new ErroRegraServicoExtra(`Informe ${label} valido.`);
+    throw new ErroRegraServicoExtra(`Informe ${label} válido.`);
   }
   return valor;
 }

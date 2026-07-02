@@ -5,15 +5,17 @@ import { ExtraServicesModule } from "../../components/extra-services/extra-servi
 import { exigirAutenticacao } from "../../lib/auth/context";
 import {
   carregarDadosServicosExtras,
+  normalizarObrigatoriedadeServicoExtra,
   normalizarStatusServicoExtra,
+  normalizarTipoCobrancaServicoExtra,
   podeLerServicosExtras
 } from "../../lib/extra-services/data";
 
 /**
- * Pagina de Servicos Extras do Gerenciamento.
+ * Página de Serviços Extras do Gerenciamento.
  *
- * Esta rota nao altera marketplace; apenas administra o catalogo do tenant para
- * reservas futuras e relatorios operacionais.
+ * Esta rota não altera marketplace; apenas administra o catálogo do tenant para
+ * reservas futuras e relatórios operacionais.
  */
 
 export const dynamic = "force-dynamic";
@@ -45,7 +47,12 @@ export default async function ServicosExtrasPage({ searchParams }: PageProps) {
   const erro = lerParametro(params, "erro");
   const sucesso = lerParametro(params, "sucesso");
   const dados = await carregarDadosServicosExtras(contexto, {
-    status: normalizarStatusServicoExtra(lerParametro(params, "status"))
+    busca: lerParametro(params, "busca")?.trim() ?? "",
+    obrigatoriedade: normalizarObrigatoriedadeServicoExtra(
+      lerParametro(params, "obrigatoriedade")
+    ),
+    status: normalizarStatusServicoExtra(lerParametro(params, "status")),
+    tipoCobranca: normalizarTipoCobrancaServicoExtra(lerParametro(params, "tipoCobranca"))
   });
 
   return (

@@ -6,9 +6,9 @@ import type {
 } from "@hospedex/types";
 
 /**
- * Contratos do catalogo de Servicos Extras.
+ * Contratos do catálogo de Serviços Extras.
  *
- * O catalogo define o que pode ser aplicado em reservas futuras. Itens ja
+ * O catálogo define o que pode ser aplicado em reservas futuras. Itens já
  * cobrados em reservas continuam gravados em reservation_extra_services.
  */
 
@@ -17,8 +17,8 @@ export const TIPOS_COBRANCA_SERVICO_EXTRA: Array<{
   value: ExtraServiceChargeType;
 }> = [
   { label: "Valor fixo", value: "fixed" },
-  { label: "Por diaria", value: "per_night" },
-  { label: "Por hospede", value: "per_guest" },
+  { label: "Por diária", value: "per_night" },
+  { label: "Por hóspede", value: "per_guest" },
   { label: "Por reserva", value: "per_reservation" }
 ];
 
@@ -33,8 +33,8 @@ export const STATUS_SERVICO_EXTRA: Array<{
 
 export const LABEL_TIPO_COBRANCA: Record<ExtraServiceChargeType, string> = {
   fixed: "Valor fixo",
-  per_guest: "Por hospede",
-  per_night: "Por diaria",
+  per_guest: "Por hóspede",
+  per_night: "Por diária",
   per_reservation: "Por reserva"
 };
 
@@ -44,15 +44,22 @@ export const LABEL_STATUS_SERVICO_EXTRA: Record<ExtraServiceStatus, string> = {
 };
 
 export type FiltroStatusServicoExtra = ExtraServiceStatus | "todos";
+export type FiltroObrigatoriedadeServicoExtra = "obrigatorios" | "opcionais" | "todos";
+export type FiltroTipoCobrancaServicoExtra = ExtraServiceChargeType | "todos";
 
 export type FiltrosServicosExtras = {
+  busca: string;
+  obrigatoriedade: FiltroObrigatoriedadeServicoExtra;
   status: FiltroStatusServicoExtra;
+  tipoCobranca: FiltroTipoCobrancaServicoExtra;
 };
 
 export type CasaServicoExtra = Pick<PropertyRow, "id" | "name" | "status">;
 
 export type ServicoExtraComCasas = ExtraServiceRow & {
   casas: CasaServicoExtra[];
+  usadoEmReservas: boolean;
+  usosEmReservas: number;
 };
 
 export type ResumoServicosExtras = {
