@@ -161,13 +161,15 @@ export type ValoresCasaPublica = {
   valorHospedeExtra: number;
 };
 
-export type StatusDisponibilidadePublica =
+type StatusDisponibilidadeInterna =
   | "reserved"
   | "blocked"
   | "interdicted"
   | "maintenance"
   | "cleaning"
   | "unavailable";
+
+export type StatusDisponibilidadePublica = "reserved" | "unavailable";
 
 export type PeriodoDisponibilidadePublica = {
   startsOn: string;
@@ -326,7 +328,7 @@ const TIPOS_PROPRIEDADE = new Set<PropertyType>([
   "inn",
   "small_hotel"
 ]);
-const STATUS_DISPONIBILIDADE_PUBLICA = [
+const STATUS_DISPONIBILIDADE_BLOQUEANTE = [
   "blocked",
   "interdicted",
   "maintenance",
@@ -339,7 +341,7 @@ type DisponibilidadeRowPublica = {
   ends_on: string;
   property_id: string;
   starts_on: string;
-  status: StatusDisponibilidadePublica;
+  status: StatusDisponibilidadeInterna;
 };
 
 type PerfilSolicitacaoRowPublica = {
@@ -520,7 +522,7 @@ async function carregarDisponibilidadePublica(
   return {
     erro: null,
     periodos: periodos.filter((periodo) =>
-      STATUS_DISPONIBILIDADE_PUBLICA.includes(periodo.status)
+      STATUS_DISPONIBILIDADE_BLOQUEANTE.includes(periodo.status)
     )
   };
 }
@@ -1231,14 +1233,16 @@ function montarDisponibilidadePublica(
     .filter(
       (periodo) =>
         periodo.property_id === propriedadeId &&
-        STATUS_DISPONIBILIDADE_PUBLICA.includes(
-          periodo.status as (typeof STATUS_DISPONIBILIDADE_PUBLICA)[number]
+        STATUS_DISPONIBILIDADE_BLOQUEANTE.includes(
+          periodo.status as (typeof STATUS_DISPONIBILIDADE_BLOQUEANTE)[number]
         )
     )
     .map((periodo) => ({
       endsOn: periodo.ends_on,
       startsOn: periodo.starts_on,
-      status: periodo.status as StatusDisponibilidadePublica
+      // Status internos como manutencao, limpeza e bloqueio viram apenas
+      // indisponivel no Marketplace para nao expor rotina administrativa.
+      status: periodo.status === "reserved" ? "reserved" : "unavailable"
     }));
 }
 

@@ -554,19 +554,29 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
   const tituloPublico = textoOpcional(formData, "tituloPublico");
   const descricaoPublica = textoOpcional(formData, "descricaoPublica");
   const publica = checkboxAtivo(formData, "visibilidadePublica");
+  const status = validarStatusPropriedade(
+    textoObrigatorio(formData, "status", "status"),
+  );
   const imagemCapaArquivo = obterArquivoImagem(formData, "imagemCapaArquivo");
   const galeriaArquivos = obterArquivosImagem(
     formData,
     "imagensGaleriaArquivos",
   );
   const formasPagamento = obterFormasPagamento(formData);
+  const comodidadeIds = obterValoresMultiplos(formData, "comodidadeIds");
+  const comodidadesPersonalizadas = obterComodidadesPersonalizadas(formData);
+  const comodidadesPersonalizadasExistentes =
+    obterComodidadesPersonalizadasExistentes(formData);
 
   validarPublicacaoObrigatoria({
+    comodidadeIds,
+    comodidadesPersonalizadas,
+    comodidadesPersonalizadasExistentes,
     descricaoPublica,
     formData,
     galeriaArquivos,
     imagemCapaArquivo,
-    publica,
+    publica: publica || status === "published",
     tituloPublico,
   });
 
@@ -603,10 +613,9 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       piscina: checkboxAtivo(formData, "piscina"),
       quartos,
     },
-    comodidadeIds: obterValoresMultiplos(formData, "comodidadeIds"),
-    comodidadesPersonalizadas: obterComodidadesPersonalizadas(formData),
-    comodidadesPersonalizadasExistentes:
-      obterComodidadesPersonalizadasExistentes(formData),
+    comodidadeIds,
+    comodidadesPersonalizadas,
+    comodidadesPersonalizadasExistentes,
     descricaoCompleta: textoOpcional(formData, "descricaoCompleta"),
     descricaoCurta,
     destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
@@ -632,9 +641,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       permitePets: checkboxAtivo(formData, "allowPets"),
       regrasAdicionais: textoOpcional(formData, "additionalRules"),
     },
-    status: validarStatusPropriedade(
-      textoObrigatorio(formData, "status", "status"),
-    ),
+    status,
     tipo: validarTipoPropriedade(textoObrigatorio(formData, "tipo", "tipo")),
     valores: {
       aceitaCartaoCredito: formasPagamento.cartaoCredito.ativo,
@@ -665,6 +672,9 @@ function validarTipoCobrancaHospedeExtra(
 }
 
 function validarPublicacaoObrigatoria({
+  comodidadeIds,
+  comodidadesPersonalizadas,
+  comodidadesPersonalizadasExistentes,
   descricaoPublica,
   formData,
   galeriaArquivos,
@@ -672,6 +682,9 @@ function validarPublicacaoObrigatoria({
   publica,
   tituloPublico,
 }: {
+  comodidadeIds: string[];
+  comodidadesPersonalizadas: string[];
+  comodidadesPersonalizadasExistentes: EntradaPropriedade["comodidadesPersonalizadasExistentes"];
   descricaoPublica: string | null;
   formData: FormData;
   galeriaArquivos: File[];
@@ -693,6 +706,18 @@ function validarPublicacaoObrigatoria({
     );
   }
 
+  if (
+    !possuiComodidadeValida({
+      comodidadeIds,
+      comodidadesPersonalizadas,
+      comodidadesPersonalizadasExistentes,
+    })
+  ) {
+    throw new ErroRegraNegocio(
+      "Adicione pelo menos uma comodidade antes de publicar a casa.",
+    );
+  }
+
   const possuiImagemAtual =
     Boolean(textoOpcional(formData, "propriedadeId")) &&
     formData.get("possuiImagemPrincipalAtual") === "true";
@@ -705,6 +730,22 @@ function validarPublicacaoObrigatoria({
       "Adicione uma foto principal para publicar a casa.",
     );
   }
+}
+
+function possuiComodidadeValida({
+  comodidadeIds,
+  comodidadesPersonalizadas,
+}: {
+  comodidadeIds: string[];
+  comodidadesPersonalizadas: string[];
+  comodidadesPersonalizadasExistentes: EntradaPropriedade["comodidadesPersonalizadasExistentes"];
+}) {
+  // Publicacao sem comodidade enfraquece a conversao no Marketplace e gera
+  // pagina publica vazia; rascunho continua livre para cadastro gradual.
+  return (
+    comodidadeIds.some(Boolean) ||
+    comodidadesPersonalizadas.some((nome) => Boolean(nome.trim()))
+  );
 }
 
 function obterFormasPagamento(formData: FormData): FormasPagamentoPropriedade {

@@ -134,9 +134,9 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
         ) : (
           <PremiumEmptyState
             className="mt-6 border border-dashed bg-background/60"
-            description="Esta casa ainda não possui avaliações."
+            description="Quando hóspedes avaliarem esta hospedagem, os comentários aparecerão aqui."
             icon={<Star className="h-5 w-5" />}
-            title="Sem avaliações"
+            title="Ainda sem avaliações"
           />
         )}
       </GlassCard>
@@ -381,9 +381,9 @@ export function PropertyRegionalGuideSection({
         ) : (
           <PremiumEmptyState
             className="mt-6 border border-dashed bg-background/60"
-            description="Nenhuma recomendação cadastrada para esta região."
+            description="O proprietário ainda não cadastrou recomendações locais para esta hospedagem."
             icon={<MapPin className="h-5 w-5" />}
-            title="Sem locais cadastrados"
+            title="Nenhuma recomendação local cadastrada ainda."
           />
         )}
       </GlassCard>

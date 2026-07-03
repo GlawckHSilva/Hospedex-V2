@@ -3,7 +3,7 @@
 import { CheckCircle2, Sparkles } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { Button, PremiumEmptyState } from "@hospedex/ui";
+import { Button } from "@hospedex/ui";
 
 import type { PropriedadePublica } from "../../lib/marketplace/data";
 
@@ -26,12 +26,13 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
 
   if (!amenities.length) {
     return (
-      <PremiumEmptyState
-        className="border border-dashed bg-background/60"
-        description="O proprietário ainda não publicou comodidades para esta casa."
-        icon={<Sparkles className="h-5 w-5" />}
-        title="Comodidades em breve"
-      />
+      <div className="rounded-lg border border-dashed bg-background/60 p-4 text-sm text-muted-foreground">
+        <Sparkles className="mb-3 h-5 w-5 text-primary" />
+        <p className="font-semibold text-foreground">Comodidades ainda não informadas.</p>
+        <p className="mt-1 leading-6">
+          O proprietário ainda não cadastrou comodidades públicas para esta hospedagem.
+        </p>
+      </div>
     );
   }
 

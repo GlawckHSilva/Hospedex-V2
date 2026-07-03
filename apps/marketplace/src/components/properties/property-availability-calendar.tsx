@@ -35,26 +35,6 @@ const STATUS_VISUAL: Record<
     dot: "bg-emerald-400",
     label: "Disponível"
   },
-  blocked: {
-    className: "border-rose-400/30 bg-rose-500/12 text-rose-100",
-    dot: "bg-rose-400",
-    label: "Bloqueado"
-  },
-  cleaning: {
-    className: "border-cyan-300/30 bg-cyan-400/12 text-cyan-100",
-    dot: "bg-cyan-300",
-    label: "Limpeza"
-  },
-  interdicted: {
-    className: "border-red-400/30 bg-red-500/12 text-red-100",
-    dot: "bg-red-400",
-    label: "Interditado"
-  },
-  maintenance: {
-    className: "border-violet-300/30 bg-violet-500/12 text-violet-100",
-    dot: "bg-violet-300",
-    label: "Manutenção"
-  },
   reserved: {
     className: "border-blue-300/30 bg-blue-500/12 text-blue-100",
     dot: "bg-blue-300",
@@ -172,8 +152,8 @@ export function PropertyAvailabilityCalendar({
 
       {error ? (
         <div className="border-t border-amber-400/25 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
-          Nao foi possivel carregar a disponibilidade agora. A casa continua
-          visivel, mas confirme as datas antes de enviar a solicitacao.
+          Não foi possível carregar a disponibilidade agora. A casa continua
+          visível, mas confirme as datas antes de enviar a solicitação.
         </div>
       ) : null}
 

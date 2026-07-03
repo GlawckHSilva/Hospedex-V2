@@ -196,14 +196,17 @@ export function PropertyReservationCard({
     <GlassCard className="p-5 shadow-2xl shadow-cyan-950/15">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-muted-foreground">Diaria inicial</p>
+          <p className="text-sm text-muted-foreground">Diária inicial</p>
           <p className="mt-2 text-3xl font-semibold">{formatarPreco(property.minPrice)}</p>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            Taxas e adicionais são calculados após selecionar as datas.
+          </p>
           <ConversaoInternacional
             cotacoesCambio={cotacoesCambio}
             valorBrl={property.minPrice}
           />
         </div>
-        <StatusBadge tone="info">Solicitacao</StatusBadge>
+        <StatusBadge tone="info">Solicitação</StatusBadge>
       </div>
 
       {feedback.status === "erro" ? (
@@ -211,7 +214,7 @@ export function PropertyReservationCard({
           className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
           role="alert"
         >
-          {feedback.mensagem ?? "Nao foi possivel enviar a solicitacao."}
+          {feedback.mensagem ?? "Não foi possível enviar a solicitação."}
         </div>
       ) : null}
 
@@ -319,7 +322,7 @@ function ReservationFormFields({
     <fieldset className="grid gap-4" disabled={pending}>
       {!podeSolicitarReserva ? (
         <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-          O proprietario ainda nao configurou as formas de pagamento desta casa.
+          O proprietário ainda não configurou as formas de pagamento desta casa.
         </div>
       ) : null}
 
@@ -351,7 +354,7 @@ function ReservationFormFields({
       </div>
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Field label="Horario previsto de chegada">
+        <Field label="Horário previsto de chegada">
           <Clock className={inputIconClass} />
           <GlassInput
             className={reservationInputWithIconClass}
@@ -362,10 +365,10 @@ function ReservationFormFields({
             value={horarioPrevistoCheckIn}
           />
           <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
-            Padrao da casa: {property.checkIn}.
+            Padrão da casa: {property.checkIn}.
           </span>
         </Field>
-        <Field label="Horario previsto de saida">
+        <Field label="Horário previsto de saída">
           <Clock className={inputIconClass} />
           <GlassInput
             className={reservationInputWithIconClass}
@@ -376,12 +379,12 @@ function ReservationFormFields({
             value={horarioPrevistoCheckOut}
           />
           <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
-            Padrao da casa: {property.checkOut}.
+            Padrão da casa: {property.checkOut}.
           </span>
         </Field>
       </div>
 
-      <Field label="Hospedes">
+      <Field label="Hóspedes">
         <Users className={inputIconClass} />
         <GlassInput
           className={reservationInputWithIconClass}
@@ -408,7 +411,7 @@ function ReservationFormFields({
         </span>
       </Field>
 
-      <Field label="Nome do hospede">
+      <Field label="Nome do hóspede">
         <User className={inputIconClass} />
         <GlassInput
           className={reservationInputWithIconClass}
@@ -449,7 +452,7 @@ function ReservationFormFields({
           />
           {emailHospedeBloqueado ? (
             <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
-              Este e-mail esta vinculado a sua conta.
+              Este e-mail está vinculado à sua conta.
             </span>
           ) : null}
         </Field>
@@ -463,7 +466,7 @@ function ReservationFormFields({
         />
       </Field>
 
-      <Field label="Forma de pagamento">
+      <Field label="Preferência de pagamento">
         <Banknote className={inputIconClass} />
         <select
           className={reservationSelectWithIconClass}
@@ -485,6 +488,9 @@ function ReservationFormFields({
           ))}
         </select>
         <ChevronDown className={selectIconClass} />
+        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+          Nenhum pagamento é realizado nesta etapa.
+        </span>
       </Field>
 
       {formaPagamento === "credit_card" ? (
@@ -509,12 +515,12 @@ function ReservationFormFields({
       ) : null}
 
       <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-        Observacoes
+        Observações
         <textarea
           className={reservationTextareaClass}
           disabled={bloqueado}
           name="observacoes"
-          placeholder="Conte o motivo da viagem, horario previsto de chegada ou pedidos importantes."
+          placeholder="Conte o motivo da viagem, horário previsto de chegada ou pedidos importantes."
         />
       </label>
 
@@ -532,12 +538,12 @@ function ReservationFormFields({
         size="lg"
         type="submit"
       >
-        <Send className="h-4 w-4 text-white" />
+        <Send className="h-4 w-4 text-slate-950" />
         {pending ? "Enviando..." : "Solicitar reserva"}
       </GlassButton>
       <p className="text-center text-xs leading-5 text-muted-foreground">
-        A forma de pagamento e apenas uma preferencia. Nao pedimos numero de
-        cartao, CVV, validade ou dados bancarios sensiveis.
+        A forma de pagamento é apenas uma preferência. Não pedimos número de
+        cartão, CVV, validade ou dados bancários sensíveis.
       </p>
     </fieldset>
   );
@@ -554,23 +560,35 @@ function ResumoValores({
   property: PropriedadePublica;
   resumo: ResumoReserva;
 }) {
+  if (resumo.noites <= 0) {
+    return (
+      <div className="grid gap-2 rounded-lg border border-dashed bg-background/70 p-4 text-sm text-muted-foreground">
+        <p className="font-semibold text-foreground">Selecione as datas para calcular o total.</p>
+        <p className="leading-6">
+          O valor oficial continua em BRL. Taxa de limpeza, hóspedes extras e
+          parcelas aparecem aqui antes de enviar a solicitação.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-3 rounded-lg border bg-background/70 p-4 text-sm">
-      <ResumoLinha label={`${resumo.noites || 0} diaria(s)`} valor={resumo.diarias} />
+      <ResumoLinha label={`${resumo.noites} diária(s)`} valor={resumo.diarias} />
       {resumo.taxaLimpeza ? (
         <ResumoLinha label="Taxa de limpeza" valor={resumo.taxaLimpeza} />
       ) : null}
       {resumo.hospedesExtras > 0 ? (
         <ResumoLinha
           label={`${resumo.quantidadeHospedesExtras} ${
-            resumo.quantidadeHospedesExtras === 1 ? "hospede extra" : "hospedes extras"
+            resumo.quantidadeHospedesExtras === 1 ? "hóspede extra" : "hóspedes extras"
           }`}
           valor={resumo.hospedesExtras}
         />
       ) : null}
-      {resumo.juros ? <ResumoLinha label="Juros do cartao" valor={resumo.juros} /> : null}
+      {resumo.juros ? <ResumoLinha label="Juros do cartão" valor={resumo.juros} /> : null}
       {property.pricing.caucao ? (
-        <ResumoLinha label="Caucao informativa" valor={property.pricing.caucao} />
+        <ResumoLinha label="Caução informativa" valor={property.pricing.caucao} />
       ) : null}
       <span className="flex items-center justify-between gap-3 border-t pt-3 text-muted-foreground">
         <strong className="text-foreground">Total estimado</strong>
@@ -578,7 +596,7 @@ function ResumoValores({
       </span>
       {formaPagamento === "credit_card" && resumo.parcelaValor > 0 && resumo.noites > 0 ? (
         <span className="text-xs text-muted-foreground">
-          Cartao em {Math.max(1, Math.round(resumo.total / resumo.parcelaValor))}x de{" "}
+          Cartão em {Math.max(1, Math.round(resumo.total / resumo.parcelaValor))}x de{" "}
           {formatarPreco(resumo.parcelaValor)}.
         </span>
       ) : null}
@@ -586,7 +604,7 @@ function ResumoValores({
       <span className="flex items-center justify-between gap-3 text-muted-foreground">
         <span className="inline-flex items-center gap-2">
           <Clock className="h-4 w-4 text-white" />
-          Horarios
+          Horários
         </span>
         <strong className="text-right text-foreground">
           {property.checkIn} / {property.checkOut}
@@ -624,8 +642,8 @@ function ConversaoInternacional({
       <span>Aprox. {formatarMoeda(usd, "USD")}</span>
       <span>Aprox. {formatarMoeda(eur, "EUR")}</span>
       <span>
-        Valores em dolar e euro sao aproximados
-        {dataCotacao ? `, cotacao de ${dataCotacao}` : ""}.
+        Valores em dólar e euro são aproximados
+        {dataCotacao ? `, cotação de ${dataCotacao}` : ""}.
       </span>
     </div>
   );
@@ -650,7 +668,7 @@ function ConversaoTotal({
       <p className="mt-1">Aprox. {formatarMoeda(usd, "USD")}</p>
       <p>Aprox. {formatarMoeda(eur, "EUR")}</p>
       <p className="mt-2 leading-5">
-        Conversao apenas informativa. O valor oficial da reserva permanece em BRL.
+        Conversão apenas informativa. O valor oficial da reserva permanece em BRL.
       </p>
     </div>
   );
@@ -680,11 +698,11 @@ function PerfilConfianca({ property }: { property: PropriedadePublica }) {
         </div>
       </div>
       <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-primary">
-        <ShieldCheck className="h-4 w-4 text-withe" />
-        Proprietario verificado
+        <ShieldCheck className="h-4 w-4 text-cyan-100" />
+        Proprietário verificado
       </p>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
-        Comunique-se pelos contatos oficiais desta pagina e confira os dados da
+        Comunique-se pelos contatos oficiais desta página e confira os dados da
         reserva antes de realizar qualquer pagamento.
       </p>
     </div>
@@ -716,17 +734,17 @@ function ReservationSuccess({
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
         <CheckCircle2 className="h-6 w-6 text-white" />
       </span>
-      <h2 className="mt-5 text-xl font-semibold text-whie">Solicitacao enviada com sucesso.</h2>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground text-white">
-        O proprietario ira analisar sua reserva.
+      <h2 className="mt-5 text-xl font-semibold">Solicitação enviada com sucesso.</h2>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        O proprietário irá analisar sua reserva.
       </p>
       {codigo ? (
         <p className="mt-4 rounded-lg border bg-background/70 px-3 py-2 text-sm font-semibold">
-          Codigo {codigo}
+          Código {codigo}
         </p>
       ) : null}
       <Link className={cn(buttonVariants({ size: "lg" }), "mt-6 w-full")} href={`/propriedades/${property.slug}`}>
-        Voltar a propriedade
+        Voltar à propriedade
       </Link>
     </GlassCard>
   );
@@ -767,7 +785,7 @@ function calcularResumoReserva({
       ? Math.max(0, hospedes - capacidadeSemCobrancaExtra)
       : 0;
   // Regra oficial: a capacidade cadastrada da casa e a quantidade inclusa.
-  // Hospedes acima dessa capacidade pagam o adicional uma vez por reserva.
+  // Hóspedes acima dessa capacidade pagam o adicional uma vez por reserva.
   const hospedesExtras = quantidadeHospedesExtras * property.pricing.valorHospedeExtra;
   const subtotal = diarias + taxaLimpeza + hospedesExtras;
   const juros =
@@ -798,7 +816,7 @@ function obterCapacidadeCadastrada(property: PropriedadePublica) {
 function obterMaximoHospedesSelecionavel(property: PropriedadePublica) {
   const capacidadeCadastrada = obterCapacidadeCadastrada(property);
   if (permiteHospedesExtras(property)) {
-    // Enquanto nao existir campo proprio de limite de extras, a interface
+    // Enquanto não existir campo próprio de limite de extras, a interface
     // libera uma margem operacional clara sem alterar a capacidade cadastrada.
     return capacidadeCadastrada + LIMITE_PADRAO_HOSPEDES_EXTRAS;
   }
@@ -815,10 +833,10 @@ function obterTextoLimiteHospedes(property: PropriedadePublica) {
   const maximo = obterMaximoHospedesSelecionavel(property);
 
   if (permiteHospedesExtras(property)) {
-    return `${capacidade} hospede${capacidade === 1 ? "" : "s"} incluso${capacidade === 1 ? "" : "s"} sem extra. Ate ${maximo} com adicional.`;
+    return `${capacidade} hóspede${capacidade === 1 ? "" : "s"} incluso${capacidade === 1 ? "" : "s"} sem extra. Até ${maximo} com adicional.`;
   }
 
-  return `Esta casa permite ate ${capacidade} hospede${capacidade === 1 ? "" : "s"}.`;
+  return `Esta casa permite até ${capacidade} hóspede${capacidade === 1 ? "" : "s"}.`;
 }
 
 function obterQuantidadeHospedesParaResumo(valor: string, capacidadeMaxima: number) {

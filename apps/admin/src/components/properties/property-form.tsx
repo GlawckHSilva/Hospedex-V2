@@ -191,7 +191,7 @@ type CampoObrigatorioCasa = {
   mensagem: string;
   minimo?: number;
   name: string;
-  tipo: "imagem" | "numero" | "texto";
+  tipo: "comodidade" | "imagem" | "numero" | "texto";
   validarQuando?: (dados: FormData) => boolean;
 };
 
@@ -287,23 +287,34 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     mensagem: "Adicione uma foto principal para publicar a casa.",
     name: "imagemCapaArquivo",
     tipo: "imagem",
-    validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
+    validarQuando: deveValidarPublicacao,
+  },
+  {
+    etapa: "comodidades",
+    mensagem: "Adicione pelo menos uma comodidade antes de publicar a casa.",
+    name: "comodidadeIds",
+    tipo: "comodidade",
+    validarQuando: deveValidarPublicacao,
   },
   {
     etapa: "compartilhamento",
     mensagem: "Informe o título público para publicar a casa.",
     name: "tituloPublico",
     tipo: "texto",
-    validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
+    validarQuando: deveValidarPublicacao,
   },
   {
     etapa: "compartilhamento",
     mensagem: "Informe a descrição pública para publicar a casa.",
     name: "descricaoPublica",
     tipo: "texto",
-    validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
+    validarQuando: deveValidarPublicacao,
   },
 ];
+
+function deveValidarPublicacao(dados: FormData) {
+  return dados.get("visibilidadePublica") === "on" || dados.get("status") === "published";
+}
 
 type JurosParcelaCartao =
   PropriedadeComRelacionamentos["valores"]["jurosParcelasCartao"][number];
@@ -397,7 +408,8 @@ function indiceDaEtapa(etapaId: EtapaId) {
 function validarFormularioCasa(
   formulario: HTMLFormElement,
   etapasPermitidas?: Set<EtapaId>,
-  contexto: { possuiImagemPrincipal: boolean } = {
+  contexto: { possuiComodidade: boolean; possuiImagemPrincipal: boolean } = {
+    possuiComodidade: false,
     possuiImagemPrincipal: false,
   },
 ): ErrosFormularioCasa {
@@ -415,6 +427,11 @@ function validarFormularioCasa(
     }
 
     if (campo.tipo === "imagem" && !contexto.possuiImagemPrincipal) {
+      erros[campo.name] = campo.mensagem;
+      continue;
+    }
+
+    if (campo.tipo === "comodidade" && !contexto.possuiComodidade) {
       erros[campo.name] = campo.mensagem;
       continue;
     }
@@ -472,6 +489,11 @@ export function PropertyForm({
   const [publicaSelecionada, setPublicaSelecionada] = useState(
     propriedade?.is_public ?? false,
   );
+  const [statusSelecionado, setStatusSelecionado] = useState<PropertyStatus>(
+    propriedade?.status ?? "draft",
+  );
+  const [quantidadeComodidadesValidas, setQuantidadeComodidadesValidas] =
+    useState(propriedade?.comodidades.length ?? 0);
   const formRef = useRef<HTMLFormElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
@@ -773,6 +795,7 @@ export function PropertyForm({
 
   function obterContextoValidacaoCasa() {
     return {
+      possuiComodidade: quantidadeComodidadesValidas > 0,
       possuiImagemPrincipal: Boolean(
         previewCapa ||
         propriedade?.imagemCapa?.url ||
@@ -853,6 +876,7 @@ export function PropertyForm({
             disabled={!podeGerenciar}
             erros={errosCampos}
             onPublicaChange={atualizarVisibilidadePublica}
+            onStatusChange={setStatusSelecionado}
           />
         </div>
 
@@ -909,6 +933,7 @@ export function PropertyForm({
           <PropertyAmenitiesStep
             comodidades={comodidadesDisponiveis}
             disabled={!podeGerenciar}
+            onQuantidadeValidaChange={setQuantidadeComodidadesValidas}
             selecionadas={comodidadesSelecionadas}
           />
         </div>
@@ -920,7 +945,8 @@ export function PropertyForm({
             erros={errosCampos}
             imagemCapaUrl={previewCapa ?? propriedade?.imagemCapa?.url ?? null}
             propriedade={propriedade}
-            publicaSelecionada={publicaSelecionada}
+            quantidadeComodidadesValidas={quantidadeComodidadesValidas}
+            publicaSelecionada={publicaSelecionada || statusSelecionado === "published"}
           />
         </div>
         </section>
@@ -1012,6 +1038,7 @@ function EtapaBasico({
   disabled,
   erros,
   onPublicaChange,
+  onStatusChange,
 }: {
   defaultDescricaoCompleta: string;
   defaultDescricaoCurta: string;
@@ -1024,6 +1051,7 @@ function EtapaBasico({
   disabled: boolean;
   erros: ErrosFormularioCasa;
   onPublicaChange: (ativo: boolean) => void;
+  onStatusChange: (status: PropertyStatus) => void;
 }) {
   return (
     <div className="grid gap-4">
@@ -1080,6 +1108,7 @@ function EtapaBasico({
           disabled={disabled}
           label="Status"
           name="status"
+          onChange={onStatusChange}
           options={STATUS}
         />
         <CampoCheckbox
@@ -1105,12 +1134,14 @@ function CampoStatusSegmentado({
   disabled,
   label,
   name,
+  onChange,
   options,
 }: {
   defaultValue: PropertyStatus;
   disabled: boolean;
   label: string;
   name: string;
+  onChange?: (valor: PropertyStatus) => void;
   options: Array<{ label: string; valor: PropertyStatus }>;
 }) {
   const [valorAtual, setValorAtual] = useState(defaultValue);
@@ -1134,7 +1165,10 @@ function CampoStatusSegmentado({
               className="sr-only"
               disabled={disabled}
               name={name}
-              onChange={() => setValorAtual(option.valor)}
+              onChange={() => {
+                setValorAtual(option.valor);
+                onChange?.(option.valor);
+              }}
               type="radio"
               value={option.valor}
             />
@@ -1885,6 +1919,7 @@ function EtapaCompartilhamento({
   erros,
   imagemCapaUrl,
   propriedade,
+  quantidadeComodidadesValidas,
   publicaSelecionada,
 }: {
   detalhes?: PropriedadeComRelacionamentos["detalhesPublicos"] | undefined;
@@ -1892,6 +1927,7 @@ function EtapaCompartilhamento({
   erros: ErrosFormularioCasa;
   imagemCapaUrl: string | null;
   propriedade?: PropriedadeComRelacionamentos | undefined;
+  quantidadeComodidadesValidas: number;
   publicaSelecionada: boolean;
 }) {
   const titulo = detalhes?.tituloPublico || propriedade?.name || "Título público da casa";
@@ -1906,6 +1942,12 @@ function EtapaCompartilhamento({
         <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
           Revise os dados públicos antes de salvar ou publicar a casa.
         </p>
+        {publicaSelecionada && quantidadeComodidadesValidas === 0 ? (
+          <p className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-3 text-sm text-amber-100">
+            <strong className="block text-foreground">Comodidades pendentes</strong>
+            Adicione pelo menos uma comodidade antes de publicar esta casa.
+          </p>
+        ) : null}
         <CampoTexto
           defaultValue={detalhes?.tituloPublico}
           disabled={disabled}

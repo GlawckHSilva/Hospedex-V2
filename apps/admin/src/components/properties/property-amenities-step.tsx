@@ -2,7 +2,7 @@
 
 import type { AmenityRow } from "@hospedex/types";
 import { Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Input, Label } from "@hospedex/ui";
 
@@ -17,14 +17,23 @@ import { ActionButton } from "../management/action-button";
 export function PropertyAmenitiesStep({
   comodidades,
   disabled,
+  onQuantidadeValidaChange,
   selecionadas,
 }: {
   comodidades: AmenityRow[];
   disabled: boolean;
+  onQuantidadeValidaChange?: (quantidade: number) => void;
   selecionadas: Set<string>;
 }) {
   const [novaComodidade, setNovaComodidade] = useState("");
   const [personalizadas, setPersonalizadas] = useState<string[]>([]);
+  const [selecionadasSistema, setSelecionadasSistema] = useState(() =>
+    new Set(
+      comodidades
+        .filter((comodidade) => comodidade.is_system && selecionadas.has(comodidade.id))
+        .map((comodidade) => comodidade.id),
+    ),
+  );
   const [personalizadasExistentes, setPersonalizadasExistentes] = useState(() =>
     comodidades
       .filter((comodidade) => !comodidade.is_system)
@@ -34,6 +43,19 @@ export function PropertyAmenitiesStep({
         selecionada: selecionadas.has(comodidade.id),
       })),
   );
+  const quantidadeComodidadesValidas = useMemo(
+    () =>
+      selecionadasSistema.size +
+      personalizadas.filter((nome) => nome.trim()).length +
+      personalizadasExistentes.filter(
+        (comodidade) => comodidade.selecionada && comodidade.nome.trim(),
+      ).length,
+    [personalizadas, personalizadasExistentes, selecionadasSistema],
+  );
+
+  useEffect(() => {
+    onQuantidadeValidaChange?.(quantidadeComodidadesValidas);
+  }, [onQuantidadeValidaChange, quantidadeComodidadesValidas]);
 
   function adicionarComodidade() {
     const nome = novaComodidade.trim();
@@ -61,6 +83,18 @@ export function PropertyAmenitiesStep({
 
   return (
     <div className="grid gap-4">
+      <div className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-4 text-sm text-muted-foreground">
+        <p className="font-semibold text-foreground">
+          {quantidadeComodidadesValidas > 0
+            ? `${quantidadeComodidadesValidas} comodidade${quantidadeComodidadesValidas === 1 ? "" : "s"} selecionada${quantidadeComodidadesValidas === 1 ? "" : "s"}`
+            : "Nenhuma comodidade selecionada."}
+        </p>
+        <p className="mt-1 leading-6">
+          As comodidades ajudam o hóspede a entender o que a hospedagem oferece.
+          Adicione pelo menos uma para publicar a casa.
+        </p>
+      </div>
+
       <div className="grid gap-3 rounded-xl border bg-background/45 p-4">
         <div>
           <h4 className="font-semibold">Comodidades padrão</h4>
@@ -77,9 +111,20 @@ export function PropertyAmenitiesStep({
                 key={comodidade.id}
               >
                 <input
-                  defaultChecked={selecionadas.has(comodidade.id)}
+                  checked={selecionadasSistema.has(comodidade.id)}
                   disabled={disabled}
                   name="comodidadeIds"
+                  onChange={(evento) => {
+                    setSelecionadasSistema((atuais) => {
+                      const proximas = new Set(atuais);
+                      if (evento.currentTarget.checked) {
+                        proximas.add(comodidade.id);
+                      } else {
+                        proximas.delete(comodidade.id);
+                      }
+                      return proximas;
+                    });
+                  }}
                   type="checkbox"
                   value={comodidade.id}
                 />

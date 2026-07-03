@@ -7,6 +7,7 @@ import {
   Home,
   Info,
   MapPin,
+  MessageCircle,
   ShieldCheck,
   Star,
   Users,
@@ -68,7 +69,7 @@ export default async function PropriedadePage({
           <GlassCard className="max-w-lg p-6 text-center">
             <Info className="mx-auto h-8 w-8 text-primary" />
             <h1 className="mt-5 text-2xl font-semibold">
-              Nao foi possivel carregar esta casa
+              Não foi possível carregar esta casa
             </h1>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               {resultado.erro}
@@ -86,16 +87,17 @@ export default async function PropriedadePage({
   return (
     <PublicShell>
       <PropertyHero propriedade={propriedade} />
+      <PropertyInternalNav />
 
       <section className="bg-background">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_390px] lg:py-10">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:py-10">
           <div className="grid gap-6">
             <FadeIn>
               <GlassPanel className="p-4 sm:p-5">
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
                   <ResumoItem
                     icon={Users}
-                    label="Hospedes"
+                    label="Hóspedes"
                     value={`${propriedade.maxGuests} max.`}
                   />
                   <ResumoItem
@@ -120,20 +122,20 @@ export default async function PropriedadePage({
                   />
                   <ResumoItem
                     icon={WalletCards}
-                    label="Diaria"
+                    label="Diária"
                     value={formatarPreco(propriedade.minPrice)}
                   />
                 </div>
               </GlassPanel>
             </FadeIn>
 
-            <Secao title="Sobre a casa">
+            <Secao id="sobre" title="Sobre a hospedagem">
               <p className="text-sm leading-7 text-muted-foreground sm:text-base">
                 {propriedade.description}
               </p>
             </Secao>
 
-            <Secao title="Galeria">
+            <Secao id="fotos" title="Fotos da hospedagem">
               <PropertyGallery property={propriedade} />
             </Secao>
 
@@ -142,7 +144,7 @@ export default async function PropriedadePage({
                 <ResumoItem
                   icon={Users}
                   label="Capacidade"
-                  value={`${propriedade.maxGuests} hospedes`}
+                  value={`${propriedade.maxGuests} hóspedes`}
                 />
                 <ResumoItem
                   icon={Home}
@@ -162,38 +164,44 @@ export default async function PropriedadePage({
               </div>
             </Secao>
 
-            <Secao title="Calendario de disponibilidade">
+            <Secao id="disponibilidade" title="Calendário de disponibilidade">
               <PropertyAvailabilityCalendar
                 availability={propriedade.availability}
                 error={propriedade.availabilityError}
               />
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                O calendario mostra apenas o status publico de cada data. Motivos
-                internos, observacoes e dados administrativos nao sao exibidos ao hospede.
+                O calendário mostra apenas o status público de cada data. Motivos
+                internos, observações e dados administrativos não são exibidos ao hóspede.
               </p>
             </Secao>
 
-            <Secao title="Comodidades">
+            <Secao id="comodidades" title="Comodidades">
               <PropertyAmenitiesSection amenities={propriedade.amenities} />
             </Secao>
 
-            <PropertyRulesSection rules={propriedade.houseRules} />
+            <div className="scroll-mt-32" id="regras">
+              <PropertyRulesSection rules={propriedade.houseRules} />
+            </div>
 
             <PropertyLocationSection propriedade={propriedade} />
 
             <PropertyRegionalGuideSection locations={propriedade.regionalGuide} />
 
-            <PropertyReviewsSection reviews={propriedade.reviews} />
+            <div className="scroll-mt-32" id="avaliacoes">
+              <PropertyReviewsSection reviews={propriedade.reviews} />
+            </div>
 
-            <PropertyOwnerTrustSection property={propriedade} />
           </div>
 
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <PropertyReservationCard
-              cotacoesCambio={cotacoesCambio}
-              feedback={feedback}
-              property={propriedade}
-            />
+            <div className="grid gap-4">
+              <PropertyReservationCard
+                cotacoesCambio={cotacoesCambio}
+                feedback={feedback}
+                property={propriedade}
+              />
+              <PropertyOwnerTrustCard property={propriedade} />
+            </div>
           </aside>
         </div>
       </section>
@@ -224,7 +232,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone="success">Casa publicada</StatusBadge>
             <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
-            <StatusBadge tone="neutral">{propriedade.maxGuests} hospedes</StatusBadge>
+            <StatusBadge tone="neutral">Até {propriedade.maxGuests} hóspedes</StatusBadge>
             <StatusBadge tone="warning">{formatarPreco(propriedade.minPrice)}</StatusBadge>
           </div>
           <h1 className="mt-5 text-4xl font-semibold tracking-normal sm:text-6xl">
@@ -242,7 +250,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
               <span className="inline-flex items-center gap-2">
                 <Star className="h-4 w-4 fill-cyan-300 text-cyan-300" />
                 {propriedade.reviews.average?.toFixed(1)} em{" "}
-                {propriedade.reviews.total} avaliacoes
+                {propriedade.reviews.total} avaliações
               </span>
             ) : null}
           </div>
@@ -257,6 +265,34 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
   );
 }
 
+function PropertyInternalNav() {
+  const links = [
+    ["Fotos", "#fotos"],
+    ["Sobre", "#sobre"],
+    ["Disponibilidade", "#disponibilidade"],
+    ["Comodidades", "#comodidades"],
+    ["Regras", "#regras"],
+    ["Localização", "#localizacao"],
+    ["Avaliações", "#avaliacoes"]
+  ] as const;
+
+  return (
+    <nav className="sticky top-[72px] z-20 border-b bg-background/88 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6">
+        {links.map(([label, href]) => (
+          <a
+            className="shrink-0 rounded-full border bg-background/70 px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-primary"
+            href={href}
+            key={href}
+          >
+            {label}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 function PropertyLocationSection({
   propriedade
 }: {
@@ -266,7 +302,7 @@ function PropertyLocationSection({
   const urlMapa = obterUrlMapaEmbed(propriedade.address, endereco);
 
   return (
-    <Secao title="Localizacao">
+    <Secao id="localizacao" title="Localização">
       <PropertyExpandableBlock
         preview={
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
@@ -304,7 +340,7 @@ function PropertyLocationSection({
           </div>
         ) : (
           <div className="rounded-lg border border-dashed bg-background/60 p-5 text-sm text-muted-foreground">
-            Mapa ainda nao informado pelo proprietario.
+            Mapa ainda não informado pelo proprietário.
           </div>
         )}
       </PropertyExpandableBlock>
@@ -312,50 +348,60 @@ function PropertyLocationSection({
   );
 }
 
-function PropertyOwnerTrustSection({ property }: { property: PropriedadePublica }) {
+function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) {
   const perfil = property.requestProfile;
   const iniciais = obterIniciais(perfil.ownerName || perfil.businessName);
   const local = [perfil.city, perfil.state].filter(Boolean).join(", ");
+  const contatoHref = obterContatoAnfitriaoHref(perfil.whatsapp, perfil.phone);
 
   return (
-    <Secao title="Informacoes do proprietario">
-      <PropertyExpandableBlock
-        preview={
-          <div className="grid gap-4 md:grid-cols-[auto_1fr] md:items-center">
+    <GlassCard className="p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold">Anfitrião</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Dados públicos cadastrados pelo proprietário.
+          </p>
+        </div>
+        {perfil.isVerified ? <StatusBadge tone="success">Verificado</StatusBadge> : null}
+      </div>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center lg:grid-cols-1 xl:grid-cols-[auto_1fr]">
         {perfil.avatarUrl ? (
           <img
             alt={`Foto de ${perfil.ownerName}`}
-            className="h-20 w-20 rounded-2xl object-cover"
+            className="h-20 w-20 rounded-full border border-cyan-300/20 object-cover"
             src={perfil.avatarUrl}
           />
         ) : (
-          <span className="grid h-20 w-20 place-items-center rounded-2xl bg-primary/10 text-xl font-semibold text-primary">
+          <span className="grid h-20 w-20 place-items-center rounded-full border border-cyan-300/20 bg-primary/10 text-xl font-semibold text-primary">
             {iniciais}
           </span>
         )}
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold">{perfil.ownerName}</h3>
-            {perfil.isVerified ? (
-              <StatusBadge tone="success">Proprietario verificado</StatusBadge>
-            ) : null}
-          </div>
+          <h3 className="text-lg font-semibold">{perfil.ownerName}</h3>
           <p className="mt-1 text-sm text-muted-foreground">{perfil.businessName}</p>
           {local ? <p className="mt-1 text-sm text-muted-foreground">{local}</p> : null}
-          {perfil.phone || perfil.whatsapp ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Contato publico: {perfil.whatsapp ?? perfil.phone}
-            </p>
-          ) : null}
         </div>
-          </div>
-        }
-      >
-      <div className="grid gap-3 md:grid-cols-3">
+      </div>
+
+      {contatoHref ? (
+        <a
+          className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+          href={contatoHref}
+          rel="noreferrer"
+          target={contatoHref.startsWith("http") ? "_blank" : undefined}
+        >
+          <MessageCircle className="h-4 w-4 text-cyan-100" />
+          Falar com o anfitrião
+        </a>
+      ) : null}
+
+      <div className="mt-5 grid gap-3">
         {[
-          "Comunique-se pelos contatos oficiais informados nesta pagina.",
+          "Não cobramos nada agora pelo Hospedex.",
           "Confira os dados da reserva antes de realizar qualquer pagamento.",
-          "Nunca envie dados sensiveis de cartao fora de ambiente seguro."
+          "Nunca envie dados sensíveis de cartão fora de ambiente seguro."
         ].map((texto) => (
           <div className="rounded-lg border bg-background/70 p-4 text-sm text-muted-foreground" key={texto}>
             <ShieldCheck className="mb-3 h-4 w-4 text-cyan-100" />
@@ -363,8 +409,7 @@ function PropertyOwnerTrustSection({ property }: { property: PropriedadePublica 
           </div>
         ))}
       </div>
-      </PropertyExpandableBlock>
-    </Secao>
+    </GlassCard>
   );
 }
 
@@ -386,14 +431,16 @@ function obterParametro(valor: string | string[] | undefined) {
 
 function Secao({
   children,
+  id,
   title
 }: {
   children: ReactNode;
+  id?: string;
   title: string;
 }) {
   return (
     <FadeIn>
-      <GlassCard className="p-4 sm:p-5">
+      <GlassCard className="scroll-mt-32 p-4 sm:p-5" id={id}>
         <h2 className="mb-4 text-xl font-semibold">{title}</h2>
         {children}
       </GlassCard>
@@ -449,7 +496,7 @@ function formatarEnderecoResumido(endereco: EnderecoPublico) {
     .filter(Boolean)
     .join(", ");
 
-  return linha || "Endereco completo compartilhado apos a solicitacao.";
+  return linha || "Endereço completo compartilhado após a solicitação.";
 }
 
 function obterUrlMapaEmbed(endereco: EnderecoPublico, enderecoFormatado: string) {
@@ -464,4 +511,12 @@ function obterUrlMapaEmbed(endereco: EnderecoPublico, enderecoFormatado: string)
 function obterIniciais(nome: string) {
   const partes = nome.trim().split(/\s+/).slice(0, 2);
   return partes.map((parte) => parte[0]?.toUpperCase()).join("") || "HX";
+}
+
+function obterContatoAnfitriaoHref(whatsapp: string | null, telefone: string | null) {
+  const numeroWhatsApp = whatsapp?.replace(/\D/g, "");
+  if (numeroWhatsApp) return `https://wa.me/${numeroWhatsApp}`;
+
+  const numeroTelefone = telefone?.replace(/\s+/g, "");
+  return numeroTelefone ? `tel:${numeroTelefone}` : null;
 }
