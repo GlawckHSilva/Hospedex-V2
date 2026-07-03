@@ -7,6 +7,7 @@ import type {
   JsonValue,
   UUID,
 } from "@hospedex/types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
@@ -45,6 +46,7 @@ export type EmailPayload = {
   payload?: JsonValue | undefined;
   referenceId?: UUID | null | undefined;
   replyTo?: string | null | undefined;
+  logClient?: SupabaseClient | undefined;
   subject: string;
   templateKey?: string | null | undefined;
   tenantId: UUID;
@@ -397,7 +399,10 @@ async function registrarFalhaConfiguracao(
 
 async function registrarLogSeguro(input: EmailLogInput): Promise<boolean> {
   try {
-    const supabase = await criarClienteSupabaseServer();
+    // Jobs automaticos nao possuem sessao/cookies. O cliente admin opcional so
+    // pode ser passado por codigo server-only para registrar logs sem expor
+    // service role no navegador.
+    const supabase = input.logClient ?? await criarClienteSupabaseServer();
     const agora = new Date().toISOString();
     const { error } = await supabase.from("email_delivery_logs").insert({
       audience: input.audience,

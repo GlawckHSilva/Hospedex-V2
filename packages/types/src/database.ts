@@ -121,6 +121,14 @@ export type EmailDeliveryStatus =
   | "failed"
   | "skipped"
   | "not_configured";
+export type WeatherCheckinReminderChannel = "email" | "whatsapp" | "internal" | "none";
+export type WeatherCheckinReminderStatus =
+  | "pending"
+  | "sent"
+  | "test"
+  | "failed"
+  | "skipped"
+  | "not_configured";
 
 export type ProfileRow = {
   id: UUID;
@@ -923,6 +931,27 @@ export type EmailDeliveryLogRow = {
   created_at: Timestamp;
   sent_at: Timestamp | null;
   failed_at: Timestamp | null;
+};
+
+export type WeatherCheckinReminderLogRow = {
+  id: UUID;
+  tenant_id: UUID;
+  reservation_id: UUID;
+  property_id: UUID | null;
+  guest_user_id: UUID | null;
+  reminder_type: "weather_checkin_reminder";
+  channel: WeatherCheckinReminderChannel;
+  status: WeatherCheckinReminderStatus;
+  check_in_date: string;
+  recipient_email: string | null;
+  recipient_phone: string | null;
+  message: string | null;
+  forecast: JsonValue;
+  error_message: string | null;
+  attempted_at: Timestamp;
+  sent_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
 };
 
 export type FinancialAccountRow = {
