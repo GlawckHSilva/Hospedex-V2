@@ -53,7 +53,7 @@ export function PublicShell({ children }: PublicShellProps) {
             <Link className="transition-colors hover:text-foreground" href="/#destinos">
               Destinos
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/#proprietarios">
+            <Link className="transition-colors hover:text-foreground" href="/anunciar">
               Para proprietarios
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/propriedades">

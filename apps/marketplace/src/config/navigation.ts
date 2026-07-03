@@ -15,6 +15,6 @@ export const marketplaceNavigation = [
   },
   {
     label: "Anunciar",
-    href: "/#proprietarios"
+    href: "/anunciar"
   }
 ] as const satisfies readonly NavigationItem[];
