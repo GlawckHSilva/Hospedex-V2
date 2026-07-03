@@ -15,9 +15,9 @@ import { podeGerenciarGuiaRegiao } from "./data";
 import { CATEGORIAS_GUIA_REGIAO } from "./types";
 
 /**
- * Server actions do Guia da Regiao.
+ * Server actions do Guia da região.
  *
- * O tenant e owner sao sempre derivados da sessao, nunca de campos enviados
+ * O tenant e owner são sempre derivados da sessão, nunca de campos enviados
  * pelo navegador. Isso preserva isolamento multi-tenant.
  */
 
@@ -59,7 +59,7 @@ export async function criarLocalGuiaRegiaoAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarGuiaRegiao();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao criar local do guia da regiao.");
+    redirecionarComErro(erro, "Não foi possível salvar o local. Tente novamente.");
   }
 
   redirect(`${CAMINHO_GUIA_REGIAO}?sucesso=local-criado`);
@@ -94,7 +94,7 @@ export async function atualizarLocalGuiaRegiaoAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarGuiaRegiao();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao atualizar local do guia da regiao.");
+    redirecionarComErro(erro, "Não foi possível salvar o local. Tente novamente.");
   }
 
   redirect(`${CAMINHO_GUIA_REGIAO}?sucesso=local-atualizado`);
@@ -117,7 +117,7 @@ export async function alternarStatusLocalGuiaRegiaoAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarGuiaRegiao();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao alterar status do local.");
+    redirecionarComErro(erro, "Não foi possível alterar o status do local.");
   }
 
   redirect(`${CAMINHO_GUIA_REGIAO}?sucesso=status-atualizado`);
@@ -131,7 +131,8 @@ export async function excluirLocalGuiaRegiaoAction(formData: FormData) {
     const localId = textoObrigatorio(formData, "localId", "local");
     await carregarLocalGerenciavel(supabase, escopo, localId);
 
-    // Exclusao logica preserva historico para auditoria e exibicao publica futura.
+    // Exclusão lógica preserva histórico para auditoria e remove a recomendação
+    // da exibição pública sem apagar rastreabilidade do tenant.
     const { error } = await supabase
       .from("regional_guide_locations")
       .update({
@@ -144,7 +145,7 @@ export async function excluirLocalGuiaRegiaoAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarGuiaRegiao();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao excluir local do guia da regiao.");
+    redirecionarComErro(erro, "Não foi possível apagar o local. Tente novamente.");
   }
 
   redirect(`${CAMINHO_GUIA_REGIAO}?sucesso=local-excluido`);
@@ -183,7 +184,7 @@ async function carregarLocalGerenciavel(
     .maybeSingle<RegionalGuideLocationRow>();
 
   if (error || !data) {
-    throw new ErroRegraGuiaRegiao("Local nao encontrado para este tenant.");
+    throw new ErroRegraGuiaRegiao("Local não encontrado para este tenant.");
   }
 
   return data;
@@ -195,13 +196,13 @@ function obterEntradaLocal(formData: FormData) {
     category: validarCategoria(textoObrigatorio(formData, "category", "categoria")),
     coverImageUrl: validarUrlOpcional(formData, "coverImageUrl", "foto principal"),
     description: textoOpcional(formData, "description"),
-    displayOrder: numeroInteiro(formData, "displayOrder", "ordem", 0),
-    name: textoObrigatorio(formData, "name", "nome"),
+    displayOrder: numeroInteiro(formData, "displayOrder", "prioridade", 1),
+    name: textoObrigatorio(formData, "name", "o nome do local"),
     openingHours: textoOpcional(formData, "openingHours"),
-    phone: textoOpcional(formData, "phone"),
+    phone: validarTelefoneOpcional(formData, "phone", "telefone"),
     status: validarStatus(textoObrigatorio(formData, "status", "status")),
     websiteUrl: validarUrlOpcional(formData, "websiteUrl", "site"),
-    whatsapp: textoOpcional(formData, "whatsapp")
+    whatsapp: validarTelefoneOpcional(formData, "whatsapp", "WhatsApp")
   };
 }
 
@@ -214,7 +215,7 @@ function validarCategoria(valor: string): RegionalGuideCategory {
     return valor as RegionalGuideCategory;
   }
 
-  throw new ErroRegraGuiaRegiao("Categoria invalida.");
+  throw new ErroRegraGuiaRegiao("Selecione uma categoria.");
 }
 
 function validarStatus(valor: string): RegionalGuideStatus {
@@ -222,7 +223,7 @@ function validarStatus(valor: string): RegionalGuideStatus {
     return valor as RegionalGuideStatus;
   }
 
-  throw new ErroRegraGuiaRegiao("Status invalido.");
+  throw new ErroRegraGuiaRegiao("Selecione um status.");
 }
 
 function validarUrlOpcional(formData: FormData, chave: string, label: string): string | null {
@@ -233,7 +234,7 @@ function validarUrlOpcional(formData: FormData, chave: string, label: string): s
     const url = new URL(valor);
     return url.toString();
   } catch {
-    throw new ErroRegraGuiaRegiao(`Informe ${label} como URL valida.`);
+    throw new ErroRegraGuiaRegiao(`Informe uma URL válida para ${label}.`);
   }
 }
 
@@ -251,8 +252,28 @@ function textoOpcional(formData: FormData, chave: string): string | null {
 function numeroInteiro(formData: FormData, chave: string, label: string, minimo: number): number {
   const valor = Number.parseInt(textoObrigatorio(formData, chave, label), 10);
   if (Number.isNaN(valor) || valor < minimo) {
-    throw new ErroRegraGuiaRegiao(`Informe ${label} valido.`);
+    throw new ErroRegraGuiaRegiao(
+      label === "prioridade"
+        ? "A prioridade deve ser maior que zero."
+        : `Informe ${label} válido.`
+    );
   }
+  return valor;
+}
+
+function validarTelefoneOpcional(
+  formData: FormData,
+  chave: string,
+  label: string
+): string | null {
+  const valor = textoOpcional(formData, chave);
+  if (!valor) return null;
+
+  const digitos = valor.replace(/\D/g, "");
+  if (digitos.length < 10 || digitos.length > 11) {
+    throw new ErroRegraGuiaRegiao(`Informe um número de ${label} válido.`);
+  }
+
   return valor;
 }
 

@@ -35,9 +35,9 @@ import { RegionalGuideCard } from "./regional-guide-card";
 import { RegionalGuideForm } from "./regional-guide-form";
 
 /**
- * Catalogo administrativo do Guia da Regiao.
+ * Catálogo administrativo do Guia da região.
  *
- * O modulo mostra recomendacoes do tenant atual. A leitura e as permissoes
+ * O módulo mostra recomendações do tenant atual. A leitura e as permissões
  * continuam no servidor para manter isolamento multi-tenant e feature flag.
  */
 
@@ -45,9 +45,9 @@ export type RegionalGuideModuleProps = DadosModuloGuiaRegiao &
   SearchParamsGuiaRegiao;
 
 const MENSAGENS_SUCESSO: Record<string, string> = {
-  "local-atualizado": "Local atualizado.",
-  "local-criado": "Local criado.",
-  "local-excluido": "Local excluido.",
+  "local-atualizado": "Local atualizado com sucesso.",
+  "local-criado": "Local criado com sucesso.",
+  "local-excluido": "Local excluído.",
   "status-atualizado": "Status do local atualizado.",
 };
 
@@ -79,11 +79,10 @@ export function RegionalGuideModule({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-normal">
-              Guia da regiao
+              Guia da região
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Cadastre restaurantes, mercados, passeios e pontos uteis para
-              seus hospedes.
+              Cadastre recomendações úteis para aparecer no guia da região da hospedagem.
             </p>
           </div>
 
@@ -99,16 +98,16 @@ export function RegionalGuideModule({
             valor={resumo.total}
           />
           <Resumo
-            descricao="Visiveis para hospedes"
+            descricao="Visíveis para hóspedes"
             icon={<ShieldCheck />}
-            label="Ativos"
+            label="Ativo"
             tone="success"
             valor={resumo.ativos}
           />
           <Resumo
-            descricao="Nao visiveis"
+            descricao="Não visíveis"
             icon={<ToggleLeft />}
-            label="Inativos"
+            label="Inativo"
             tone="muted"
             valor={resumo.inativos}
           />
@@ -142,7 +141,7 @@ export function RegionalGuideModule({
             <div className="xl:hidden">
               <span className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-100">
                 <SlidersHorizontal className="h-4 w-4" />
-                Filtros avancados ativos nesta area
+                Filtros avançados ativos nesta área
               </span>
             </div>
           </form>
@@ -153,8 +152,7 @@ export function RegionalGuideModule({
         <div>
           <h2 className="text-lg font-semibold">Locais recomendados</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Catalogo visual de recomendacoes que o proprietario prepara para os
-            hospedes.
+            Catálogo visual de recomendações que o proprietário prepara para os hóspedes.
           </p>
         </div>
 
@@ -185,7 +183,7 @@ export function RegionalGuideModule({
             description={
               existemFiltrosAtivos
                 ? "Altere a busca ou limpe os filtros para continuar."
-                : "Cadastre restaurantes, mercados, passeios e servicos uteis para seus hospedes."
+                : "Cadastre restaurantes, mercados, praias, passeios e serviços úteis para seus hóspedes."
             }
             icon={<MapPin className="h-5 w-5" />}
             title={
@@ -198,7 +196,7 @@ export function RegionalGuideModule({
       </section>
 
       <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100/90">
-        Locais inativos nao aparecem para os hospedes, mas continuam salvos no
+        Locais inativos não aparecem para os hóspedes, mas continuam salvos no
         painel.
       </div>
     </FadeIn>
@@ -208,11 +206,11 @@ export function RegionalGuideModule({
 function BotaoNovoLocal({ podeGerenciar }: { podeGerenciar: boolean }) {
   return (
     <EntityModal
-      description="Informe categoria, contato, endereco, horario e imagem de capa."
+      description="Cadastre um local útil para aparecer no guia da região da hospedagem."
       disabled={!podeGerenciar}
-      eyebrow="Cadastro"
-      size="lg"
-      title="Novo local"
+      eyebrow="CADASTRO"
+      size="xl"
+      title="Nova recomendação local"
       triggerAction="add"
       triggerClassName="w-full sm:w-auto"
       triggerIcon={<Plus className="h-4 w-4" />}
@@ -280,7 +278,7 @@ function CampoBusca({ defaultValue }: { defaultValue: string }) {
           defaultValue={defaultValue}
           id="busca"
           name="busca"
-          placeholder="Buscar por nome, endereco ou categoria..."
+          placeholder="Buscar por nome, endereço ou categoria..."
         />
       </div>
     </div>

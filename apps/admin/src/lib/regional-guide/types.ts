@@ -5,10 +5,10 @@ import type {
 } from "@hospedex/types";
 
 /**
- * Contratos do Guia da Regiao no Gerenciamento.
+ * Contratos do Guia da região no Gerenciamento.
  *
- * O proprietario cadastra recomendacoes locais do tenant. A exibicao publica
- * para hospedes sera ligada em etapa futura, usando estes mesmos dados.
+ * O proprietário cadastra recomendações locais do tenant. A exibição pública
+ * para hóspedes usa estes mesmos dados sem expor informações administrativas.
  */
 
 export const CATEGORIAS_GUIA_REGIAO: Array<{
@@ -20,12 +20,12 @@ export const CATEGORIAS_GUIA_REGIAO: Array<{
   { label: "Lanchonetes", value: "snack_bars" },
   { label: "Cafeterias", value: "coffee_shops" },
   { label: "Mercados", value: "markets" },
-  { label: "Farmacias", value: "pharmacies" },
+  { label: "Farmácias", value: "pharmacies" },
   { label: "Hospitais", value: "hospitals" },
   { label: "Passeios", value: "tours" },
   { label: "Praias", value: "beaches" },
   { label: "Cachoeiras", value: "waterfalls" },
-  { label: "Pontos turisticos", value: "tourist_spots" },
+  { label: "Pontos turísticos", value: "tourist_spots" },
   { label: "Vida noturna", value: "nightlife" },
   { label: "Outros", value: "others" }
 ];
@@ -35,8 +35,8 @@ export const STATUS_GUIA_REGIAO: Array<{
   value: RegionalGuideStatus | "todos";
 }> = [
   { label: "Todos", value: "todos" },
-  { label: "Ativos", value: "active" },
-  { label: "Inativos", value: "inactive" }
+  { label: "Ativo", value: "active" },
+  { label: "Inativo", value: "inactive" }
 ];
 
 export const LABEL_CATEGORIA_GUIA_REGIAO: Record<RegionalGuideCategory, string> = {
@@ -46,10 +46,10 @@ export const LABEL_CATEGORIA_GUIA_REGIAO: Record<RegionalGuideCategory, string> 
   markets: "Mercados",
   nightlife: "Vida noturna",
   others: "Outros",
-  pharmacies: "Farmacias",
+  pharmacies: "Farmácias",
   restaurants: "Restaurantes",
   snack_bars: "Lanchonetes",
-  tourist_spots: "Pontos turisticos",
+  tourist_spots: "Pontos turísticos",
   tours: "Passeios",
   waterfalls: "Cachoeiras"
 };

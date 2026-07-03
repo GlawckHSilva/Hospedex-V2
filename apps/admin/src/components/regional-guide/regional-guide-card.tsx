@@ -41,7 +41,7 @@ export function RegionalGuideCard({
   local,
   podeGerenciar,
 }: RegionalGuideCardProps) {
-  const descricao = local.description ?? "Sem descricao cadastrada.";
+  const descricao = local.description ?? "Sem descrição cadastrada.";
 
   return (
     <Card className="admin-glass-card overflow-hidden">
@@ -84,10 +84,11 @@ export function RegionalGuideCard({
             </EntityViewModal>
 
             <EntityModal
-              description="Atualize categoria, contatos, descricao, ordem e status do local."
+              description="Atualize as informações que aparecerão para o hóspede no guia da região."
               disabled={!podeGerenciar}
-              eyebrow="Edicao"
-              title="Editar local"
+              eyebrow="EDIÇÃO"
+              size="xl"
+              title="Editar recomendação local"
               triggerAction="edit"
               triggerClassName="w-full"
               triggerIcon={<Pencil className="h-4 w-4" />}
@@ -95,6 +96,7 @@ export function RegionalGuideCard({
             >
               <RegionalGuideForm
                 action={atualizarLocalGuiaRegiaoAction}
+                deleteAction={excluirLocalGuiaRegiaoAction}
                 local={local}
                 modo="editar"
                 podeGerenciar={podeGerenciar}
@@ -102,9 +104,9 @@ export function RegionalGuideCard({
             </EntityModal>
 
             <ConfirmDialog
-              description="Este local sera removido do guia da regiao e nao aparecera mais para os hospedes."
+              description="Essa recomendação deixará de aparecer no guia da região para os hóspedes. Essa ação não poderá ser desfeita."
               disabled={!podeGerenciar}
-              title="Apagar local do guia?"
+              title="Apagar recomendação?"
               triggerAction="delete"
               triggerClassName="w-full"
               triggerIcon={<Trash2 className="h-4 w-4" />}
@@ -113,7 +115,7 @@ export function RegionalGuideCard({
               <form action={excluirLocalGuiaRegiaoAction} className="grid gap-4">
                 <input name="localId" type="hidden" value={local.id} />
                 <p className="text-sm text-muted-foreground">
-                  Esta acao usa exclusao logica para preservar auditoria do
+                  Esta ação usa exclusão lógica para preservar auditoria do
                   tenant.
                 </p>
                 <ActionButton
@@ -160,14 +162,14 @@ function DetalhesLocal({ local }: { local: RegionalGuideLocationRow }) {
     <div className="grid gap-3 md:grid-cols-2">
       <Info label="Categoria" valor={LABEL_CATEGORIA_GUIA_REGIAO[local.category]} />
       <Info label="Status" valor={local.status === "active" ? "Ativo" : "Inativo"} />
-      <Info label="Endereco" valor={local.address || "Endereco nao cadastrado"} />
-      <Info label="Horario" valor={local.opening_hours || "Horario nao cadastrado"} />
-      <Info label="Telefone" valor={local.phone || "Telefone nao cadastrado"} />
-      <Info label="WhatsApp" valor={local.whatsapp || "WhatsApp nao cadastrado"} />
-      <Info label="Site" valor={local.website_url || "Site nao cadastrado"} />
-      <Info label="Ordem" valor={String(local.display_order)} />
+      <Info label="Endereço" valor={local.address || "Endereço não cadastrado"} />
+      <Info label="Horário" valor={local.opening_hours || "Horário não cadastrado"} />
+      <Info label="Telefone" valor={local.phone || "Telefone não cadastrado"} />
+      <Info label="WhatsApp" valor={local.whatsapp || "WhatsApp não cadastrado"} />
+      <Info label="Site" valor={local.website_url || "Site não cadastrado"} />
+      <Info label="Prioridade" valor={String(local.display_order)} />
       <div className="md:col-span-2">
-        <Info label="Descricao" valor={local.description || "Sem descricao cadastrada."} />
+        <Info label="Descrição" valor={local.description || "Sem descrição cadastrada."} />
       </div>
     </div>
   );
@@ -196,6 +198,7 @@ function obterClasseCategoria(categoria: RegionalGuideCategory) {
     hospitals: "border-red-400/35 bg-red-500/10 text-red-200",
     markets: "border-emerald-400/35 bg-emerald-500/10 text-emerald-200",
     pharmacies: "border-sky-400/35 bg-sky-500/10 text-sky-200",
+    beaches: "border-cyan-300/40 bg-cyan-400/10 text-cyan-100",
     restaurants: "border-cyan-400/35 bg-cyan-500/10 text-cyan-200",
     tourist_spots: "border-violet-400/35 bg-violet-500/10 text-violet-200",
     tours: "border-violet-400/35 bg-violet-500/10 text-violet-200",
