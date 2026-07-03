@@ -15,6 +15,10 @@ export async function proxy(request: NextRequest) {
   const { resposta, usuarioAutenticado } = await atualizarSessaoSupabase(request);
   const path = request.nextUrl.pathname;
 
+  if (path.startsWith("/api/")) {
+    return resposta;
+  }
+
   if (publicRoutes.has(path)) {
     return resposta;
   }
