@@ -189,9 +189,10 @@ export function PropertyCard({
         </EntityViewModal>
 
         <EntityModal
-          description="Atualize dados principais, endereco e status publico da casa."
+          description="Atualize as informações da casa usadas no painel e na página pública."
           disabled={!podeGerenciar}
-          eyebrow="Edicao"
+          eyebrow="EDIÇÃO"
+          size="full"
           title="Editar casa"
           triggerAction="edit"
           triggerClassName="h-9 justify-center"

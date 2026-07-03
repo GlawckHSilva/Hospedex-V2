@@ -4,22 +4,28 @@ import type { AmenityRow, PropertyStatus, PropertyType } from "@hospedex/types";
 import {
   ArrowDown,
   ArrowLeft,
+  ArrowRight,
   ArrowUp,
   BedDouble,
   Banknote,
   Camera,
+  CheckCircle2,
   Clock3,
   CreditCard,
   Home,
   ImagePlus,
   Landmark,
   MapPin,
+  Minus,
+  Plus,
   Share2,
   Sparkles,
   Star,
   Smartphone,
   Trash2,
   WalletCards,
+  Save,
+  X,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
@@ -73,31 +79,31 @@ const ETAPAS: Array<{
   label: string;
 }> = [
   {
-    descricao: "Identificacao, status e textos principais da casa.",
+    descricao: "Identificação, status e textos principais da casa.",
     icon: <Home />,
     id: "basico",
-    label: "Basico",
+    label: "Básico",
   },
   {
-    descricao: "Endereco operacional e referencias para localizacao.",
+    descricao: "Endereço operacional e referências para localização.",
     icon: <MapPin />,
     id: "localizacao",
-    label: "Localizacao",
+    label: "Localização",
   },
   {
-    descricao: "Capacidade, quartos e estrutura fisica da hospedagem.",
+    descricao: "Capacidade, quartos e estrutura física da hospedagem.",
     icon: <BedDouble />,
     id: "estrutura",
     label: "Estrutura",
   },
   {
-    descricao: "Diaria, taxas e configuracao futura de cartao.",
+    descricao: "Diária, taxas e configuração futura de cartão.",
     icon: <WalletCards />,
     id: "valores",
     label: "Valores",
   },
   {
-    descricao: "Horarios, regras e observacoes internas.",
+    descricao: "Horários, regras e observações internas.",
     icon: <Clock3 />,
     id: "regras",
     label: "Regras",
@@ -109,16 +115,16 @@ const ETAPAS: Array<{
     label: "Imagens",
   },
   {
-    descricao: "Comodidades padrao e personalizadas.",
+    descricao: "Comodidades padrão e personalizadas.",
     icon: <Sparkles />,
     id: "comodidades",
     label: "Comodidades",
   },
   {
-    descricao: "Dados publicos usados no Marketplace.",
+    descricao: "Dados públicos usados no Marketplace.",
     icon: <Share2 />,
     id: "compartilhamento",
-    label: "Publicacao",
+    label: "Publicação",
   },
 ];
 
@@ -131,7 +137,7 @@ const TIPOS: Array<{ label: string; valor: PropertyType }> = [
 const STATUS: Array<{ label: string; valor: PropertyStatus }> = [
   { valor: "draft", label: "Rascunho" },
   { valor: "published", label: "Ativa" },
-  { valor: "paused", label: "Pausada" },
+  { valor: "paused", label: "Inativa" },
 ];
 
 const TIPOS_CHAVE_PIX = [
@@ -141,6 +147,36 @@ const TIPOS_CHAVE_PIX = [
   { label: "Telefone", valor: "telefone" },
   { label: "Chave aleatoria", valor: "aleatoria" },
 ];
+
+const UFS = [
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+].map((uf) => ({ label: uf, valor: uf }));
 
 const campoClasse =
   "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
@@ -162,25 +198,25 @@ type CampoObrigatorioCasa = {
 const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   {
     etapa: "basico",
-    mensagem: "Informe o nome da casa.",
+    mensagem: "Informe o nome interno da casa.",
     name: "nome",
     tipo: "texto",
   },
   {
     etapa: "basico",
-    mensagem: "Informe o tipo da casa.",
+    mensagem: "Informe o tipo da hospedagem.",
     name: "tipo",
     tipo: "texto",
   },
   {
     etapa: "basico",
-    mensagem: "Informe a descricao curta da casa.",
+    mensagem: "Informe a descrição curta da casa.",
     name: "descricaoCurta",
     tipo: "texto",
   },
   {
     etapa: "localizacao",
-    mensagem: "Informe o endereco.",
+    mensagem: "Informe o endereço.",
     name: "endereco",
     tipo: "texto",
   },
@@ -198,7 +234,7 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "estrutura",
-    mensagem: "Informe a quantidade maxima de hospedes.",
+    mensagem: "Informe a capacidade máxima de hóspedes.",
     minimo: 1,
     name: "hospedesMaximos",
     tipo: "numero",
@@ -219,7 +255,7 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "valores",
-    mensagem: "Informe o valor da diaria.",
+    mensagem: "Informe um valor de diária válido.",
     minimo: 0.01,
     name: "valorDiaria",
     tipo: "numero",
@@ -240,7 +276,7 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "valores",
-    mensagem: "Informe a quantidade maxima de parcelas.",
+    mensagem: "Informe a quantidade máxima de parcelas.",
     minimo: 1,
     name: "maxParcelasCartao",
     tipo: "numero",
@@ -255,14 +291,14 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "compartilhamento",
-    mensagem: "Informe o titulo publico para publicar a casa.",
+    mensagem: "Informe o título público para publicar a casa.",
     name: "tituloPublico",
     tipo: "texto",
     validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
   },
   {
     etapa: "compartilhamento",
-    mensagem: "Informe a descricao publica para publicar a casa.",
+    mensagem: "Informe a descrição pública para publicar a casa.",
     name: "descricaoPublica",
     tipo: "texto",
     validarQuando: (dados) => dados.get("visibilidadePublica") === "on",
@@ -682,6 +718,16 @@ export function PropertyForm({
     setEtapaAtual((indiceAtual) => Math.max(indiceAtual - 1, 0));
   }
 
+  function fecharWizard() {
+    // O formulário não controla a modal diretamente; por isso acionamos o
+    // botão oficial de fechar do AppModal para manter Portal, ESC e backdrop
+    // com uma única fonte de verdade.
+    formRef.current
+      ?.closest('[role="dialog"]')
+      ?.querySelector<HTMLButtonElement>('button[aria-label="Fechar modal"]')
+      ?.click();
+  }
+
   function avancarEtapa() {
     const formulario = formRef.current;
     if (!formulario) return;
@@ -738,7 +784,7 @@ export function PropertyForm({
   return (
     <form
       action={action}
-      className="space-y-5 pb-1"
+      className="flex min-h-full flex-col"
       onChange={limparErroDoCampo}
       onInput={limparErroDoCampo}
       onSubmit={validarEnvio}
@@ -748,23 +794,26 @@ export function PropertyForm({
         <input name="propriedadeId" type="hidden" value={propriedade.id} />
       ) : null}
 
-      {erroServidor ? (
-        <p className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
-          {erroServidor}
-        </p>
-      ) : null}
+      <div className="sticky top-0 z-20 border-b border-cyan-300/10 bg-card/95 px-5 py-5 backdrop-blur-xl sm:px-8">
+        <WizardStepper
+          etapaAtual={etapaAtual}
+          etapas={ETAPAS}
+          etapasComErro={etapasComErro}
+          etapasConcluidas={etapasConcluidas}
+          onEtapaClick={(indice) => navegarParaEtapa(indice)}
+        />
+      </div>
 
-      <WizardStepper
-        etapaAtual={etapaAtual}
-        etapas={ETAPAS}
-        etapasComErro={etapasComErro}
-        etapasConcluidas={etapasConcluidas}
-        onEtapaClick={(indice) => navegarParaEtapa(indice)}
-      />
+      <div className="flex-1 px-5 py-6 pb-32 sm:px-8 sm:pb-36">
+        {erroServidor ? (
+          <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
+            {erroServidor}
+          </p>
+        ) : null}
 
-      <section className="rounded-2xl border bg-background/45 p-4 sm:p-5">
-        <div className="mb-5 flex items-start gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-200 [&_svg]:h-4 [&_svg]:w-4">
+        <section className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-4 shadow-2xl shadow-cyan-950/10 sm:p-6">
+          <div className="mb-6 flex items-start gap-4 border-b border-cyan-300/10 pb-5">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-500/15 text-cyan-700 shadow-lg shadow-cyan-950/20 dark:text-cyan-200 [&_svg]:h-6 [&_svg]:w-6">
             {etapa.icon}
           </span>
           <div>
@@ -869,39 +918,63 @@ export function PropertyForm({
             detalhes={propriedade?.detalhesPublicos}
             disabled={!podeGerenciar}
             erros={errosCampos}
+            imagemCapaUrl={previewCapa ?? propriedade?.imagemCapa?.url ?? null}
+            propriedade={propriedade}
             publicaSelecionada={publicaSelecionada}
           />
         </div>
-      </section>
+        </section>
+      </div>
 
-      <div className="sticky bottom-0 z-10 -mx-5 -mb-5 flex flex-wrap items-center justify-between gap-3 border-t bg-background/95 px-5 py-4 backdrop-blur sm:-mx-6 sm:px-6">
-        <div>
-          {etapaAtual > 0 ? (
-            <ActionButton
-              icon={<ArrowLeft className="h-4 w-4" />}
-              onClick={voltarEtapa}
-              size="md"
-              type="button"
-              variant="view"
-            >
-              Voltar
-            </ActionButton>
-          ) : null}
+      <div className="sticky bottom-0 z-30 flex flex-col gap-3 border-t border-cyan-300/10 bg-card/95 px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <ActionButton
+            icon={<X className="h-4 w-4" />}
+            onClick={fecharWizard}
+            size="md"
+            type="button"
+            variant="cancel"
+          >
+            Cancelar
+          </ActionButton>
+          <FormActionButton
+            disabled={bloqueado}
+            icon={<Save className="h-4 w-4" />}
+            pendingLabel="Salvando..."
+            size="md"
+            variant="view"
+          >
+            Salvar rascunho
+          </FormActionButton>
         </div>
 
-        {!estaNaUltimaEtapa ? (
+        <div className="flex flex-wrap items-center justify-end gap-3">
           <ActionButton
-            disabled={!podeGerenciar}
-            onClick={avancarEtapa}
-            size="lg"
+            disabled={etapaAtual === 0}
+            icon={<ArrowLeft className="h-4 w-4" />}
+            onClick={voltarEtapa}
+            size="md"
             type="button"
-            variant="edit"
+            variant="view"
           >
-            Proximo
+            Voltar
           </ActionButton>
-        ) : (
-          <BotaoSalvarCasa bloqueado={bloqueado} modo={modo} />
-        )}
+
+          {!estaNaUltimaEtapa ? (
+            <ActionButton
+              disabled={!podeGerenciar}
+              icon={<ArrowRight className="h-4 w-4" />}
+              onClick={avancarEtapa}
+              size="lg"
+              type="button"
+              variant="edit"
+            >
+              Próximo
+            </ActionButton>
+          ) : (
+            <BotaoSalvarCasa bloqueado={bloqueado} modo={modo} />
+          )}
+        </div>
       </div>
     </form>
   );
@@ -917,6 +990,7 @@ function BotaoSalvarCasa({
   return (
     <FormActionButton
       disabled={bloqueado}
+      icon={<CheckCircle2 className="h-4 w-4" />}
       pendingLabel={modo === "editar" ? "Salvando..." : "Criando..."}
       size="lg"
       variant="add"
@@ -958,22 +1032,25 @@ function EtapaBasico({
           defaultValue={defaultNome}
           disabled={disabled}
           erro={erros.nome}
-          label="Nome da casa"
+          ajuda="Nome usado apenas internamente no painel."
+          label="Nome interno da casa"
           name="nome"
           obrigatorio
         />
         <CampoTexto
           defaultValue={defaultNomeExibicao}
           disabled={disabled}
-          label="Nome de exibicao"
+          ajuda="Nome exibido na página pública e nos cards."
+          label="Título público da hospedagem"
           name="nomeExibicao"
-          placeholder="Nome apresentado futuramente ao hospede."
+          placeholder="Casa do Lago em Manoel Ribas"
         />
         <CampoSelect
           defaultValue={defaultTipo}
           disabled={disabled}
           erro={erros.tipo}
-          label="Tipo"
+          ajuda="Selecione o tipo da hospedagem."
+          label="Tipo de hospedagem"
           name="tipo"
           obrigatorio
           options={TIPOS}
@@ -983,20 +1060,22 @@ function EtapaBasico({
         defaultValue={defaultDescricaoCurta}
         disabled={disabled}
         erro={erros.descricaoCurta}
-        label="Descricao curta"
+        ajuda="Resumo rápido que aparece nos cards e listagens."
+        label="Descrição curta"
         name="descricaoCurta"
         obrigatorio
-        placeholder="Resumo curto para cards e operacao."
+        placeholder="Casa aconchegante com vista para o lago."
       />
       <CampoArea
         defaultValue={defaultDescricaoCompleta}
         disabled={disabled}
-        label="Descricao completa"
+        ajuda="Descrição detalhada da hospedagem para a página pública."
+        label="Descrição completa"
         name="descricaoCompleta"
-        placeholder="Descreva a experiencia completa da casa."
+        placeholder="Descreva a experiência completa da casa."
       />
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoSelect
+        <CampoStatusSegmentado
           defaultValue={defaultStatus}
           disabled={disabled}
           label="Status"
@@ -1006,7 +1085,7 @@ function EtapaBasico({
         <CampoCheckbox
           defaultChecked={defaultPublica}
           disabled={disabled}
-          label="Visibilidade publica"
+          label="Visibilidade pública"
           name="visibilidadePublica"
           onChange={(evento) => onPublicaChange(evento.currentTarget.checked)}
         />
@@ -1016,6 +1095,53 @@ function EtapaBasico({
           label="Destaque no marketplace"
           name="destaqueMarketplace"
         />
+      </div>
+    </div>
+  );
+}
+
+function CampoStatusSegmentado({
+  defaultValue,
+  disabled,
+  label,
+  name,
+  options,
+}: {
+  defaultValue: PropertyStatus;
+  disabled: boolean;
+  label: string;
+  name: string;
+  options: Array<{ label: string; valor: PropertyStatus }>;
+}) {
+  const [valorAtual, setValorAtual] = useState(defaultValue);
+
+  return (
+    <div className="grid gap-2 md:col-span-2">
+      <LabelCampo>{label}</LabelCampo>
+      <div className="grid overflow-hidden rounded-xl border bg-background/60 p-1 sm:grid-cols-3">
+        {options.map((option) => (
+          <label
+            className={cn(
+              "flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition",
+              valorAtual === option.valor &&
+                "bg-cyan-500/20 text-cyan-100 ring-1 ring-cyan-300/40",
+              disabled && "cursor-not-allowed opacity-60",
+            )}
+            key={option.valor}
+          >
+            <input
+              checked={valorAtual === option.valor}
+              className="sr-only"
+              disabled={disabled}
+              name={name}
+              onChange={() => setValorAtual(option.valor)}
+              type="radio"
+              value={option.valor}
+            />
+            {option.label}
+            {valorAtual === option.valor ? <CheckCircle2 className="h-4 w-4" /> : null}
+          </label>
+        ))}
       </div>
     </div>
   );
@@ -1037,15 +1163,17 @@ function EtapaLocalizacao({
           defaultValue={endereco?.linha1}
           disabled={disabled}
           erro={erros.endereco}
-          label="Endereco"
+          label="Endereço"
           name="endereco"
           obrigatorio
+          placeholder="Rua das Palmeiras"
         />
         <CampoTexto
           defaultValue={endereco?.numero}
           disabled={disabled}
-          label="Numero"
+          label="Número"
           name="numero"
+          placeholder="123"
         />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
@@ -1062,15 +1190,16 @@ function EtapaLocalizacao({
           label="Cidade"
           name="cidade"
           obrigatorio
+          placeholder="Manoel Ribas"
         />
-        <CampoTexto
-          defaultValue={endereco?.estado}
+        <CampoSelect
+          defaultValue={endereco?.estado || "PR"}
           disabled={disabled}
           erro={erros.estado}
           label="Estado"
-          maxLength={2}
           name="estado"
           obrigatorio
+          options={UFS}
         />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
@@ -1078,7 +1207,9 @@ function EtapaLocalizacao({
           defaultValue={endereco?.cep}
           disabled={disabled}
           label="CEP"
+          maxLength={9}
           name="cep"
+          placeholder="85260-000"
         />
         <CampoTexto
           defaultValue={endereco?.complemento}
@@ -1089,8 +1220,9 @@ function EtapaLocalizacao({
         <CampoTexto
           defaultValue={endereco?.referencia}
           disabled={disabled}
-          label="Referencia"
+          label="Referência"
           name="referencia"
+          placeholder="Próximo ao mercado X"
         />
       </div>
       <CampoTexto
@@ -1098,7 +1230,8 @@ function EtapaLocalizacao({
         disabled={disabled}
         label="Link do Google Maps"
         name="googleMapsLink"
-        placeholder="https://maps.google.com/..."
+        placeholder="Cole o link da localização da casa no Google Maps."
+        type="url"
       />
       <div className="grid gap-4 md:grid-cols-2">
         <CampoNumero
@@ -1136,16 +1269,16 @@ function EtapaEstrutura({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-3">
-        <CampoNumero
+        <CampoContador
           defaultValue={estrutura?.hospedesMaximos ?? 1}
           disabled={disabled}
           erro={erros.hospedesMaximos}
-          label="Quantidade maxima de hospedes"
+          label="Capacidade máxima de hóspedes"
           min={1}
           name="hospedesMaximos"
           obrigatorio
         />
-        <CampoNumero
+        <CampoContador
           defaultValue={estrutura?.quartos ?? 1}
           disabled={disabled}
           erro={erros.quartosCasa}
@@ -1154,14 +1287,14 @@ function EtapaEstrutura({
           name="quartosCasa"
           obrigatorio
         />
-        <CampoNumero
+        <CampoContador
           defaultValue={estrutura?.camas ?? 1}
           disabled={disabled}
           label="Camas"
           min={1}
           name="camasCasa"
         />
-        <CampoNumero
+        <CampoContador
           defaultValue={estrutura?.banheiros ?? 1}
           disabled={disabled}
           erro={erros.banheirosCasa}
@@ -1170,10 +1303,10 @@ function EtapaEstrutura({
           name="banheirosCasa"
           obrigatorio
         />
-        <CampoNumero
+        <CampoContador
           defaultValue={estrutura?.garagemVagas ?? 0}
           disabled={disabled}
-          label="Garagem/vagas"
+          label="Garagem / vagas"
           min={0}
           name="garagemVagas"
         />
@@ -1182,7 +1315,7 @@ function EtapaEstrutura({
         <CampoCheckbox
           defaultChecked={estrutura?.areaExterna ?? false}
           disabled={disabled}
-          label="Area externa"
+          label="Área externa"
           name="areaExterna"
         />
         <CampoCheckbox
@@ -1290,9 +1423,10 @@ function EtapaValores({
           defaultValue={valores?.valorDiaria ?? 0}
           disabled={disabled}
           erro={erros.valorDiaria}
-          label="Valor da diaria"
+          label="Valor da diária"
           name="valorDiaria"
           obrigatorio
+          placeholder="R$ 450,00"
         />
         <CampoMoeda
           defaultValue={valores?.taxaLimpeza ?? 0}
@@ -1303,19 +1437,21 @@ function EtapaValores({
         <CampoMoeda
           defaultValue={valores?.caucao ?? 0}
           disabled={disabled}
-          label="Caucao"
+          label="Caução / depósito"
           name="caucao"
+          placeholder="R$ 300,00"
         />
         <CampoMoeda
           defaultValue={valores?.valorHospedeExtra ?? 0}
           disabled={disabled}
-          label="Valor por hospede extra por reserva"
+          label="Valor por hóspede extra"
           name="valorHospedeExtra"
+          placeholder="R$ 150,00"
         />
         <CampoSelect
           defaultValue={valores?.tipoCobrancaHospedeExtra ?? "per_stay"}
           disabled={disabled}
-          label="Cobranca do hospede extra"
+          label="Cobrança do hóspede extra"
           name="tipoCobrancaHospedeExtra"
           options={[
             { label: "Por reserva", valor: "per_stay" },
@@ -1325,30 +1461,34 @@ function EtapaValores({
       <CampoCheckbox
         defaultChecked={valores?.cobraHospedeExtra ?? false}
         disabled={disabled}
-        label="Cobrar hospede extra"
+        label="Cobrar hóspede extra?"
         name="cobraHospedeExtra"
       />
+      <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
+        O valor extra será cobrado somente quando a reserva ultrapassar a
+        capacidade máxima da casa.
+      </p>
 
       <section className="grid gap-4 rounded-xl border bg-background/45 p-4">
         <div>
           <h4 className="font-semibold">Pagamento da hospedagem</h4>
           <p className="mt-1 text-sm text-muted-foreground">
-            Configure apenas os metodos aceitos pelo proprietario. Nao salve
-            dados de cartao, tokens ou senhas.
+            Configure apenas os métodos aceitos pelo proprietário. Não salve
+            dados de cartão, tokens ou senhas.
           </p>
         </div>
 
         {!possuiPagamentoAtivo ? (
           <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-900 dark:text-amber-100">
-            Nenhuma forma de pagamento foi configurada. O hospede nao vera
-            opcoes de pagamento no Marketplace.
+            Nenhuma forma de pagamento foi configurada. O hóspede não verá
+            opções de pagamento no Marketplace.
           </p>
         ) : null}
 
         <div className="grid gap-3">
           <CartaoFormaPagamento
             ativo={pixAtivo}
-            descricao="Chave e instrucoes para pagamento manual por Pix."
+            descricao="Chave e instruções para pagamento manual por Pix."
             disabled={disabled}
             icon={<Smartphone className="h-4 w-4" />}
             label="Pix"
@@ -1382,7 +1522,7 @@ function EtapaValores({
               <CampoTexto
                 defaultValue={pagamentos?.pix.banco ?? ""}
                 disabled={disabled || !pixAtivo}
-                label="Banco/instituicao"
+                label="Banco/instituição"
                 name="pixBanco"
               />
             </div>
@@ -1390,7 +1530,7 @@ function EtapaValores({
               className="min-h-16"
               defaultValue={pagamentos?.pix.instrucoes ?? ""}
               disabled={disabled || !pixAtivo}
-              label="Instrucao Pix"
+              label="Instrução Pix"
               name="pixInstrucoes"
               placeholder="Ex.: Enviar comprovante apos o pagamento."
             />
@@ -1398,7 +1538,7 @@ function EtapaValores({
 
           <CartaoFormaPagamento
             ativo={dinheiroAtivo}
-            descricao="Instrucao simples para pagamento presencial ou combinado."
+            descricao="Instrução simples para pagamento presencial ou combinado."
             disabled={disabled}
             icon={<Banknote className="h-4 w-4" />}
             label="Dinheiro"
@@ -1409,7 +1549,7 @@ function EtapaValores({
               className="min-h-16"
               defaultValue={pagamentos?.dinheiro.instrucoes ?? ""}
               disabled={disabled || !dinheiroAtivo}
-              label="Instrucao para dinheiro"
+              label="Instrução para dinheiro"
               name="dinheiroInstrucoes"
               placeholder="Ex.: Pagamento no check-in."
             />
@@ -1417,10 +1557,10 @@ function EtapaValores({
 
           <CartaoFormaPagamento
             ativo={cartaoDebitoAtivo}
-            descricao="Instrucao operacional sem coletar dados de cartao."
+            descricao="Instrução operacional sem coletar dados de cartão."
             disabled={disabled}
             icon={<CreditCard className="h-4 w-4" />}
-            label="Cartao de debito"
+            label="Cartão de débito"
             name="pagamentoCartaoDebitoAtivo"
             onChange={setCartaoDebitoAtivo}
           >
@@ -1428,7 +1568,7 @@ function EtapaValores({
               className="min-h-16"
               defaultValue={pagamentos?.cartaoDebito.instrucoes ?? ""}
               disabled={disabled || !cartaoDebitoAtivo}
-              label="Instrucao para debito"
+              label="Instrução para débito"
               name="cartaoDebitoInstrucoes"
               placeholder="Ex.: Pagamento via maquininha no local."
             />
@@ -1436,10 +1576,10 @@ function EtapaValores({
 
           <CartaoFormaPagamento
             ativo={aceitaCartaoCredito}
-            descricao="Parcelamento manual preparado para calculo futuro."
+            descricao="Parcelamento manual preparado para cálculo futuro."
             disabled={disabled}
             icon={<CreditCard className="h-4 w-4" />}
-            label="Cartao de credito"
+            label="Cartão de crédito"
             name="aceitaCartaoCredito"
             onChange={setAceitaCartaoCredito}
           >
@@ -1447,7 +1587,7 @@ function EtapaValores({
               <CampoNumero
                 disabled={disabled || !aceitaCartaoCredito}
                 erro={erros.maxParcelasCartao}
-                label="Quantidade maxima de parcelas"
+                label="Quantidade máxima de parcelas"
                 max={MAX_PARCELAS_CARTAO}
                 min={1}
                 name="maxParcelasCartao"
@@ -1461,7 +1601,7 @@ function EtapaValores({
                 className="min-h-16"
                 defaultValue={pagamentos?.cartaoCredito.instrucoes ?? ""}
                 disabled={disabled || !aceitaCartaoCredito}
-                label="Instrucao para credito"
+                label="Instrução para crédito"
                 name="cartaoCreditoInstrucoes"
                 placeholder="Ex.: Link enviado pelo proprietario."
               />
@@ -1486,7 +1626,7 @@ function EtapaValores({
                   <div className="grid grid-cols-[0.7fr_1fr_auto] gap-3 border-b bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
                     <span>Parcela</span>
                     <span>Juros</span>
-                    <span className="text-right">Acao</span>
+                    <span className="text-right">Ação</span>
                   </div>
                   <div className="divide-y">
                     {parcelasCartao.map((parcela) => (
@@ -1514,7 +1654,7 @@ function EtapaValores({
 
                 <AppModal
                   description="Informe o percentual aplicado a esta parcela."
-                  eyebrow="Cartao de credito"
+                  eyebrow="Cartão de crédito"
                   onOpenChange={(open) => {
                     if (!open) setParcelaEmEdicao(null);
                   }}
@@ -1564,10 +1704,10 @@ function EtapaValores({
 
           <CartaoFormaPagamento
             ativo={transferenciaAtiva}
-            descricao="Dados opcionais para transferencia manual."
+            descricao="Dados opcionais para transferência manual."
             disabled={disabled}
             icon={<Landmark className="h-4 w-4" />}
-            label="Transferencia bancaria"
+            label="Transferência bancária"
             name="pagamentoTransferenciaAtivo"
             onChange={setTransferenciaAtiva}
           >
@@ -1587,7 +1727,7 @@ function EtapaValores({
               <CampoTexto
                 defaultValue={pagamentos?.transferenciaBancaria.agencia ?? ""}
                 disabled={disabled || !transferenciaAtiva}
-                label="Agencia"
+                label="Agência"
                 name="transferenciaAgencia"
               />
               <CampoTexto
@@ -1601,7 +1741,7 @@ function EtapaValores({
               className="min-h-16"
               defaultValue={pagamentos?.transferenciaBancaria.instrucoes ?? ""}
               disabled={disabled || !transferenciaAtiva}
-              label="Instrucao para transferencia"
+              label="Instrução para transferência"
               name="transferenciaInstrucoes"
               placeholder="Ex.: Dados enviados apos confirmacao da reserva."
             />
@@ -1672,14 +1812,14 @@ function EtapaRegras({
         <CampoTexto
           defaultValue={normalizarHoraInput(regras?.check_in_time)}
           disabled={disabled}
-          label="Horario de check-in"
+          label="Horário de check-in"
           name="checkInTime"
           type="time"
         />
         <CampoTexto
           defaultValue={normalizarHoraInput(regras?.check_out_time)}
           disabled={disabled}
-          label="Horario de check-out"
+          label="Horário de check-out"
           name="checkOutTime"
           type="time"
         />
@@ -1694,7 +1834,7 @@ function EtapaRegras({
         <CampoCheckbox
           defaultChecked={regras?.allow_children ?? true}
           disabled={disabled}
-          label="Aceita criancas"
+          label="Aceita crianças"
           name="allowChildren"
         />
         <CampoCheckbox
@@ -1719,14 +1859,14 @@ function EtapaRegras({
       <CampoArea
         defaultValue={regras?.special_instructions ?? ""}
         disabled={disabled}
-        label="Instrucoes especiais"
+        label="Instruções especiais"
         name="specialInstructions"
-        placeholder="Informacoes que poderao ser apresentadas ao hospede."
+        placeholder="Informações que poderão ser apresentadas ao hóspede."
       />
       <CampoArea
         defaultValue={regras?.internal_notes ?? ""}
         disabled={disabled}
-        label="Observacoes internas"
+        label="Observações internas"
         name="internalNotes"
         placeholder="Visivel apenas no Gerenciamento."
       />
@@ -1743,43 +1883,98 @@ function EtapaCompartilhamento({
   detalhes,
   disabled,
   erros,
+  imagemCapaUrl,
+  propriedade,
   publicaSelecionada,
 }: {
   detalhes?: PropriedadeComRelacionamentos["detalhesPublicos"] | undefined;
   disabled: boolean;
   erros: ErrosFormularioCasa;
+  imagemCapaUrl: string | null;
+  propriedade?: PropriedadeComRelacionamentos | undefined;
   publicaSelecionada: boolean;
 }) {
+  const titulo = detalhes?.tituloPublico || propriedade?.name || "Título público da casa";
+  const cidade = propriedade?.enderecoFormatado?.cidade;
+  const estado = propriedade?.enderecoFormatado?.estado;
+  const estrutura = propriedade?.estrutura;
+  const valorDiaria = propriedade?.valores?.valorDiaria ?? 0;
+
   return (
-    <div className="grid gap-4">
-      <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
-        Campos opcionais preparados para publicacao e compartilhamento futuros.
-        Nenhuma regra de SEO e aplicada agora.
-      </p>
-      <CampoTexto
-        defaultValue={detalhes?.tituloPublico}
-        disabled={disabled}
-        erro={erros.tituloPublico}
-        label="Titulo publico"
-        name="tituloPublico"
-        obrigatorio={publicaSelecionada}
-      />
-      <CampoArea
-        defaultValue={detalhes?.descricaoPublica}
-        disabled={disabled}
-        erro={erros.descricaoPublica}
-        label="Descricao publica"
-        name="descricaoPublica"
-        obrigatorio={publicaSelecionada}
-      />
-      <CampoTexto
-        defaultValue={detalhes?.imagemCompartilhamento}
-        disabled={disabled}
-        label="Imagem de compartilhamento"
-        name="imagemCompartilhamento"
-        placeholder="https://..."
-        type="url"
-      />
+    <div className="grid gap-5 lg:grid-cols-[1fr_24rem]">
+      <div className="grid gap-4">
+        <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
+          Revise os dados públicos antes de salvar ou publicar a casa.
+        </p>
+        <CampoTexto
+          defaultValue={detalhes?.tituloPublico}
+          disabled={disabled}
+          erro={erros.tituloPublico}
+          label="Título público"
+          name="tituloPublico"
+          obrigatorio={publicaSelecionada}
+        />
+        <CampoArea
+          defaultValue={detalhes?.descricaoPublica}
+          disabled={disabled}
+          erro={erros.descricaoPublica}
+          ajuda="Resumo que será usado na página pública da hospedagem."
+          label="Descrição pública"
+          name="descricaoPublica"
+          obrigatorio={publicaSelecionada}
+        />
+        <CampoTexto
+          defaultValue={detalhes?.imagemCompartilhamento}
+          disabled={disabled}
+          label="Imagem de compartilhamento"
+          name="imagemCompartilhamento"
+          placeholder="https://..."
+          type="url"
+        />
+      </div>
+
+      <aside className="overflow-hidden rounded-2xl border border-cyan-300/15 bg-background/55">
+        <div className="relative h-48 bg-cyan-950/40">
+          {imagemCapaUrl ? (
+            <img
+              alt={titulo}
+              className="h-full w-full object-cover"
+              src={imagemCapaUrl}
+            />
+          ) : (
+            <div className="grid h-full place-items-center text-center text-sm text-muted-foreground">
+              <div>
+                <ImagePlus className="mx-auto h-8 w-8 text-cyan-300" />
+                <p className="mt-2">Adicione uma imagem de capa.</p>
+              </div>
+            </div>
+          )}
+          <span className="absolute right-3 top-3 rounded-full bg-cyan-500 px-3 py-1 text-xs font-bold text-cyan-950">
+            Prévia
+          </span>
+        </div>
+        <div className="grid gap-3 p-4">
+          <h4 className="text-lg font-semibold">{titulo}</h4>
+          <p className="text-sm text-muted-foreground">
+            {[cidade, estado].filter(Boolean).join(" / ") || "Localização ainda não informada"}
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span>{estrutura?.hospedesMaximos ?? 0} hóspedes</span>
+            <span>{estrutura?.quartos ?? 0} quartos</span>
+            <span>{estrutura?.banheiros ?? 0} banheiros</span>
+          </div>
+          <p className="border-t border-cyan-300/10 pt-3 text-sm text-muted-foreground">
+            A partir de{" "}
+            <strong className="text-xl text-foreground">
+              {new Intl.NumberFormat("pt-BR", {
+                currency: "BRL",
+                style: "currency",
+              }).format(valorDiaria)}
+            </strong>
+            /noite
+          </p>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -1835,7 +2030,7 @@ function EtapaImagens({
         <CampoArquivo
           botaoLabel="Adicionar foto"
           inputRef={galeriaRef}
-          label="Galeria com multiplas fotos"
+          label="Galeria com múltiplas fotos"
           multiple
           name="imagensGaleriaArquivos"
           onChange={(evento) => selecionarGaleria(evento.currentTarget.files)}
@@ -1861,6 +2056,9 @@ function EtapaImagens({
         ) : null}
         <div className="rounded-xl border bg-background/45 p-3">
           <p className="mb-3 text-sm font-semibold">Galeria</p>
+          <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+            Adicione fotos dos quartos, área externa, cozinha e lazer.
+          </p>
           {previewsGaleria.length ? (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {previewsGaleria.map((preview, indice) => (
@@ -1896,7 +2094,7 @@ function EtapaImagens({
                   />
                   <CampoTexto
                     disabled={disabled}
-                    label="Nome/titulo da foto"
+                    label="Nome/título da foto"
                     name={`tituloGaleriaVisual${indice}`}
                     onChange={(evento) =>
                       atualizarTituloGaleria(indice, evento.currentTarget.value)
@@ -1958,7 +2156,7 @@ function EtapaImagens({
                 <ImagePlus className="mx-auto h-6 w-6 text-cyan-600" />
                 <p className="mt-2 text-sm font-medium">
                   {totalImagensAtuais
-                    ? `${totalImagensAtuais} foto(s) ja cadastrada(s)`
+                    ? `${totalImagensAtuais} foto(s) já cadastrada(s)`
                     : "Nenhuma foto cadastrada"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -1975,6 +2173,7 @@ function EtapaImagens({
 }
 
 type CampoTextoProps = ComponentProps<typeof Input> & {
+  ajuda?: string | undefined;
   erro?: string | undefined;
   label: string;
   name: string;
@@ -1982,6 +2181,7 @@ type CampoTextoProps = ComponentProps<typeof Input> & {
 };
 
 function CampoTexto({
+  ajuda,
   className,
   erro,
   label,
@@ -1996,6 +2196,7 @@ function CampoTexto({
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
+      {ajuda ? <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p> : null}
       <Input
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
@@ -2021,11 +2222,86 @@ function CampoNumero(props: CampoTextoProps) {
   return <CampoTexto {...props} type="number" />;
 }
 
+function CampoContador({
+  defaultValue,
+  disabled,
+  erro,
+  label,
+  max,
+  min = 0,
+  name,
+  obrigatorio,
+}: CampoTextoProps) {
+  const minimo = typeof min === "number" ? min : Number(min ?? 0);
+  const maximo = typeof max === "number" ? max : undefined;
+  const [valor, setValor] = useState(() => {
+    const inicial = Number(defaultValue ?? minimo);
+    return Number.isFinite(inicial) ? Math.max(inicial, minimo) : minimo;
+  });
+  const erroId = erro ? `${name}-erro` : undefined;
+
+  function atualizarValor(novoValor: number) {
+    const limitado = Math.max(minimo, maximo ? Math.min(novoValor, maximo) : novoValor);
+    setValor(limitado);
+  }
+
+  return (
+    <div className="grid gap-2">
+      <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
+        {label}
+      </LabelCampo>
+      <div
+        className={cn(
+          "grid h-11 grid-cols-[2.75rem_1fr_2.75rem] overflow-hidden rounded-xl border bg-background/70 shadow-sm",
+          erro && "border-destructive/70 bg-destructive/5",
+        )}
+      >
+        <button
+          aria-label={`Diminuir ${label}`}
+          className="grid place-items-center border-r text-muted-foreground transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={disabled || valor <= minimo}
+          onClick={() => atualizarValor(valor - 1)}
+          type="button"
+        >
+          <Minus className="h-4 w-4" />
+        </button>
+        <Input
+          aria-describedby={erroId}
+          aria-invalid={Boolean(erro)}
+          className="h-full rounded-none border-0 bg-transparent text-center font-semibold shadow-none focus-visible:ring-0"
+          disabled={disabled}
+          id={name}
+          min={minimo}
+          name={name}
+          onChange={(evento) => atualizarValor(Number(evento.currentTarget.value || minimo))}
+          type="number"
+          value={valor}
+        />
+        <button
+          aria-label={`Aumentar ${label}`}
+          className="grid place-items-center border-l text-muted-foreground transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+          disabled={disabled || (maximo ? valor >= maximo : false)}
+          onClick={() => atualizarValor(valor + 1)}
+          type="button"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+      {erro ? (
+        <p className="text-xs font-medium text-destructive" id={erroId}>
+          {erro}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function CampoMoeda(props: CampoTextoProps) {
-  return <CampoTexto {...props} min={0} step="0.01" type="number" />;
+  return <CampoTexto {...props} inputMode="decimal" min={0} placeholder="R$ 0,00" step="0.01" type="number" />;
 }
 
 function CampoArea({
+  ajuda,
   className,
   erro,
   label,
@@ -2033,6 +2309,7 @@ function CampoArea({
   obrigatorio,
   ...props
 }: {
+  ajuda?: string | undefined;
   erro?: string | undefined;
   label: string;
   name: string;
@@ -2045,6 +2322,7 @@ function CampoArea({
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
+      {ajuda ? <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p> : null}
       <textarea
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
@@ -2068,6 +2346,7 @@ function CampoArea({
 }
 
 function CampoSelect({
+  ajuda,
   defaultValue,
   disabled,
   erro,
@@ -2076,6 +2355,7 @@ function CampoSelect({
   obrigatorio,
   options,
 }: {
+  ajuda?: string | undefined;
   defaultValue: string;
   disabled: boolean;
   erro?: string | undefined;
@@ -2091,6 +2371,7 @@ function CampoSelect({
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
+      {ajuda ? <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p> : null}
       <select
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
@@ -2135,7 +2416,7 @@ function CampoCheckbox({
   value?: string;
 }) {
   return (
-    <label className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm">
+    <label className="flex cursor-pointer items-center gap-3 rounded-xl border bg-background/45 px-3 py-3 text-sm transition hover:border-cyan-300/35 hover:bg-cyan-500/5">
       <input
         defaultChecked={defaultChecked}
         disabled={disabled}

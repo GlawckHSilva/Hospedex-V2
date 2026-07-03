@@ -115,9 +115,10 @@ function VisaoPropriedades({
             </p>
           </div>
           <EntityModal
-            description="Preencha os dados públicos e operacionais da casa."
+            description="Cadastre as informações principais para publicar sua hospedagem."
             disabled={!podeGerenciar}
-            eyebrow="Cadastro"
+            eyebrow="CADASTRO"
+            size="full"
             title="Nova casa"
             triggerIcon={<Plus className="h-4 w-4" />}
             triggerLabel="Nova casa"

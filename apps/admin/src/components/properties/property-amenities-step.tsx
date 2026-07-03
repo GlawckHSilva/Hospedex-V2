@@ -37,7 +37,15 @@ export function PropertyAmenitiesStep({
 
   function adicionarComodidade() {
     const nome = novaComodidade.trim();
-    if (!nome || personalizadas.includes(nome)) return;
+    const jaExiste = [
+      ...personalizadas,
+      ...personalizadasExistentes.map((item) => item.nome),
+    ].some(
+      (item) =>
+        item.trim().toLocaleLowerCase("pt-BR") ===
+        nome.toLocaleLowerCase("pt-BR"),
+    );
+    if (!nome || jaExiste) return;
     setPersonalizadas((atuais) => [...atuais, nome]);
     setNovaComodidade("");
   }
@@ -53,24 +61,32 @@ export function PropertyAmenitiesStep({
 
   return (
     <div className="grid gap-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {comodidades
-          .filter((comodidade) => comodidade.is_system)
-          .map((comodidade) => (
-            <label
-              className="flex items-center gap-2 rounded-xl border bg-background/45 px-3 py-2 text-sm"
-              key={comodidade.id}
-            >
-              <input
-                defaultChecked={selecionadas.has(comodidade.id)}
-                disabled={disabled}
-                name="comodidadeIds"
-                type="checkbox"
-                value={comodidade.id}
-              />
-              {comodidade.name}
-            </label>
-          ))}
+      <div className="grid gap-3 rounded-xl border bg-background/45 p-4">
+        <div>
+          <h4 className="font-semibold">Comodidades padrão</h4>
+          <p className="text-sm text-muted-foreground">
+            Selecione os itens principais que aparecem para o hóspede.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {comodidades
+            .filter((comodidade) => comodidade.is_system)
+            .map((comodidade) => (
+              <label
+                className="flex cursor-pointer items-center gap-3 rounded-xl border bg-background/45 px-3 py-3 text-sm transition hover:border-cyan-300/35 hover:bg-cyan-500/5"
+                key={comodidade.id}
+              >
+                <input
+                  defaultChecked={selecionadas.has(comodidade.id)}
+                  disabled={disabled}
+                  name="comodidadeIds"
+                  type="checkbox"
+                  value={comodidade.id}
+                />
+                {comodidade.name}
+              </label>
+            ))}
+        </div>
       </div>
 
       {personalizadasExistentes.length ? (
@@ -142,7 +158,7 @@ export function PropertyAmenitiesStep({
             id="novaComodidade"
             maxLength={80}
             onChange={(evento) => setNovaComodidade(evento.currentTarget.value)}
-            placeholder="Ex.: Vista para o rio"
+            placeholder="Ex.: Fogão a lenha, academia, canoa..."
             value={novaComodidade}
           />
           <ActionButton

@@ -20,7 +20,7 @@ import {
   type ActionButtonVariant,
 } from "./action-button";
 
-type ModalSize = "sm" | "md" | "lg" | "xl";
+type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
 type AppModalProps = {
   children: ReactNode;
@@ -51,6 +51,8 @@ type EntityModalProps = {
 };
 
 const sizeClass: Record<ModalSize, string> = {
+  full:
+    "h-[100svh] max-h-[100svh] max-w-none rounded-none sm:h-[calc(100svh-2rem)] sm:max-h-[calc(100svh-2rem)] sm:max-w-[min(96vw,92rem)] sm:rounded-2xl",
   lg: "max-w-3xl",
   md: "max-w-2xl",
   sm: "max-w-md",
@@ -156,7 +158,10 @@ export function AppModal({
       {open ? (
         <motion.div
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-[2147483647] isolate grid place-items-center overflow-y-auto overscroll-contain bg-black/72 px-4 py-6 backdrop-blur-md"
+          className={cn(
+            "fixed inset-0 z-[2147483647] isolate grid place-items-center overflow-y-auto overscroll-contain bg-black/72 backdrop-blur-md",
+            size === "full" ? "p-0 sm:p-4" : "px-4 py-6",
+          )}
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           onMouseDown={() => onOpenChange(false)}
@@ -208,7 +213,12 @@ export function AppModal({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+            <div
+              className={cn(
+                "min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6",
+                size === "full" && "px-0 py-0 sm:px-0",
+              )}
+            >
               {children}
             </div>
           </motion.div>
