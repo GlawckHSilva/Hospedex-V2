@@ -116,7 +116,7 @@ export function AdminShell({
   return (
     <div
       className={cn(
-        "admin-shell-bg premium-grid-bg dark min-h-screen text-foreground",
+        "admin-shell-bg premium-grid-bg min-h-screen text-foreground",
         // O ajuste visual de scrollbar pertence ao Gerenciamento, sem alterar a experiencia do Super Admin.
         "admin-management-shell",
       )}
@@ -200,7 +200,7 @@ function TopbarAdmin({
   tituloPerfil
 }: TopbarAdminProps) {
   return (
-    <header className="glass-navbar sticky top-0 z-40 bg-[#030712]/88">
+    <header className="glass-navbar sticky top-0 z-40 bg-card/88">
       <div className="flex h-16 w-full items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
@@ -435,10 +435,10 @@ function SidebarAdmin({
 
   return (
     <aside className="hidden min-h-0 lg:block">
-      <div className="sticky top-20 flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden border-r border-slate-800/90 bg-slate-950/45 px-4 py-4 shadow-[18px_0_50px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+      <div className="sticky top-20 flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden border-r border-border/80 bg-card/72 px-4 py-4 shadow-[18px_0_50px_rgba(0,0,0,0.10)] dark:shadow-[18px_0_50px_rgba(0,0,0,0.16)] backdrop-blur-xl">
         <div className="flex shrink-0 items-center gap-2 pb-5">
           <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
-          <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-200" variant="outline">
+          <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
             V2
           </Badge>
         </div>
@@ -461,7 +461,7 @@ function SidebarAdmin({
         </div>
         <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
           <MenuAgrupado grupos={grupos} pathname={pathname} />
-          <div className="mt-5 border-t border-slate-800/80 pt-3">{acaoSairSidebar}</div>
+          <div className="mt-5 border-t border-border/80 pt-3">{acaoSairSidebar}</div>
         </nav>
       </div>
     </aside>
@@ -504,7 +504,7 @@ function MenuMobileAdmin({
         <div className="flex shrink-0 items-center justify-between pb-5">
           <div className="flex items-center gap-2">
             <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
-            <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-200" variant="outline">
+            <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
               V2
             </Badge>
           </div>
@@ -530,7 +530,7 @@ function MenuMobileAdmin({
 
         <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
           <MenuAgrupado grupos={grupos} onNavigate={onFechar} pathname={pathname} />
-          <div className="mt-5 border-t border-slate-800/80 pt-3">{acaoSairMobile}</div>
+          <div className="mt-5 border-t border-border/80 pt-3">{acaoSairMobile}</div>
         </nav>
       </motion.aside>
     </motion.div>
@@ -558,7 +558,7 @@ function MenuAgrupado({ grupos, onNavigate, pathname }: MenuAgrupadoProps) {
       {grupos.map((grupo) =>
         grupo.itens.length > 0 ? (
           <section className="space-y-2" key={grupo.titulo}>
-            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-500">
+            <p className="px-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {grupo.titulo}
             </p>
             <div className="space-y-1">
@@ -592,7 +592,7 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
       <Icone
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
-          ativo ? "text-cyan-200" : "text-slate-400",
+          ativo ? "text-cyan-700 dark:text-cyan-200" : "text-muted-foreground",
         )}
       />
       <span className="min-w-0 flex-1 truncate">{item.titulo}</span>
@@ -606,8 +606,8 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
   const classes = cn(
     "relative flex h-10 items-center gap-3 rounded-lg px-3 pl-3.5 text-sm font-medium transition-colors duration-200",
     ativo
-      ? "bg-cyan-500/14 text-cyan-50 shadow-sm shadow-cyan-950/20"
-      : "text-slate-400 hover:bg-cyan-500/8 hover:text-slate-100",
+      ? "bg-cyan-500/14 text-cyan-900 shadow-sm shadow-cyan-950/10 dark:text-cyan-50 dark:shadow-cyan-950/20"
+      : "text-muted-foreground hover:bg-cyan-500/8 hover:text-foreground",
     item.bloqueadoPorFeatureFlag && "cursor-not-allowed opacity-55 hover:bg-transparent"
   );
 
