@@ -2,9 +2,11 @@ import {
   ArrowRight,
   BadgeCheck,
   Building2,
+  CheckCircle2,
   Hotel,
   House,
   MapPin,
+  Rocket,
   ShieldCheck,
   Sparkles
 } from "lucide-react";
@@ -71,6 +73,45 @@ const categoriasMarketplace = [
     description: "Pequenos hotéis preparados para receber reservas com gestão profissional.",
     href: "/propriedades?tipo=small_hotel",
     icon: Hotel
+  }
+] as const;
+
+const planosGerenciamento = [
+  {
+    nome: "Essencial",
+    preco: "R$ 97",
+    descricao: "Para proprietários que estão começando com poucas casas.",
+    destaque: false,
+    recursos: [
+      "Até 2 casas publicadas",
+      "Reservas e calendário",
+      "Página pública da propriedade",
+      "Guia da região"
+    ]
+  },
+  {
+    nome: "Profissional",
+    preco: "R$ 197",
+    descricao: "Para operação ativa com mais reservas e controle financeiro.",
+    destaque: true,
+    recursos: [
+      "Até 5 casas publicadas",
+      "Financeiro e pendências",
+      "Serviços extras",
+      "Relatórios gerenciais"
+    ]
+  },
+  {
+    nome: "Premium",
+    preco: "R$ 297",
+    descricao: "Para pousadas, pequenos hotéis e operação multiunidade.",
+    destaque: false,
+    recursos: [
+      "Até 8 casas publicadas",
+      "Funcionários e permissões",
+      "Integrações preparadas",
+      "Suporte prioritário"
+    ]
   }
 ] as const;
 
@@ -289,21 +330,63 @@ export default async function MarketplaceHomePage() {
       </section>
 
       <GlassPanel className="rounded-none border-x-0 border-b-0" id="proprietarios">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[1fr_auto] lg:items-center lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:py-20">
           <div className="max-w-3xl">
             <StatusBadge tone="info">Para proprietários</StatusBadge>
             <h2 className="mt-4 text-3xl font-semibold tracking-normal sm:text-4xl">
-              Publique sua propriedade a partir da gestão Hospedex
+              Escolha a assinatura para anunciar suas casas
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-              A vitrine pública nasce conectada à estrutura de propriedades,
-              estrutura, mídia e comodidades da V2.
+              Os planos liberam o gerenciamento de casas, reservas, calendário,
+              financeiro e publicação no Marketplace Hospedex.
             </p>
           </div>
-          <Link className={cn(buttonVariants({ size: "lg" }), "justify-self-start")} href="/propriedades">
-            <Building2 className="h-4 w-4" />
-            Conhecer a gestão
-          </Link>
+
+          <div className="grid gap-5 lg:grid-cols-3" id="planos-gerenciamento">
+            {planosGerenciamento.map((plano) => (
+              <GlassCard
+                className={cn(
+                  "relative p-6",
+                  plano.destaque &&
+                    "border-cyan-300/50 bg-cyan-500/10 shadow-xl shadow-cyan-950/10"
+                )}
+                key={plano.nome}
+              >
+                {plano.destaque ? (
+                  <span className="absolute right-4 top-4 rounded-full border border-cyan-300/40 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-100">
+                    Mais escolhido
+                  </span>
+                ) : null}
+                <span className="grid h-11 w-11 place-items-center rounded-md bg-primary/10 text-primary">
+                  <Rocket className="h-5 w-5" />
+                </span>
+                <h3 className="mt-5 text-xl font-semibold">{plano.nome}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{plano.descricao}</p>
+                <div className="mt-5">
+                  <span className="text-3xl font-semibold">{plano.preco}</span>
+                  <span className="ml-1 text-sm text-muted-foreground">/mês</span>
+                </div>
+                <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
+                  {plano.recursos.map((recurso) => (
+                    <li className="flex gap-2" key={recurso}>
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{recurso}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  className={cn(
+                    buttonVariants({ size: "lg", variant: plano.destaque ? "default" : "outline" }),
+                    "mt-6 w-full justify-center"
+                  )}
+                  href="https://hospedex.vercel.app/cadastro"
+                >
+                  <Building2 className="h-4 w-4" />
+                  Começar agora
+                </Link>
+              </GlassCard>
+            ))}
+          </div>
         </div>
       </GlassPanel>
     </PublicShell>
