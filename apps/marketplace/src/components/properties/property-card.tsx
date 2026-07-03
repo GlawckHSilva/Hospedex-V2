@@ -27,7 +27,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         ) : (
           <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,var(--secondary),var(--accent))] px-8 text-center">
             <span className="text-sm font-semibold text-accent-foreground">
-              Fotos em preparaÃ§Ã£o
+              Fotos em preparação
             </span>
           </div>
         )}

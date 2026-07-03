@@ -2,7 +2,7 @@ import type { NavigationItem } from "@hospedex/types";
 
 export const marketplaceNavigation = [
   {
-    label: "Inicio",
+    label: "Início",
     href: "/"
   },
   {
