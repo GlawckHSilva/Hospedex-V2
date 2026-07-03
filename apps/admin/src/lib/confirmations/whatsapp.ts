@@ -218,6 +218,7 @@ function montarInstrucoesPagamento(
     return [
       configuracoes?.pix_key ? `Chave Pix: ${configuracoes.pix_key}` : "Chave Pix ainda nao cadastrada.",
       configuracoes?.pix_receiver_name ? `Recebedor: ${configuracoes.pix_receiver_name}` : null,
+      configuracoes?.payment_receiver_document ? `CPF/CNPJ: ${configuracoes.payment_receiver_document}` : null,
       configuracoes?.pix_bank_name ? `Banco/instituicao: ${configuracoes.pix_bank_name}` : null,
       configuracoes?.pix_payment_note ?? "Envie o comprovante apos realizar o pagamento.",
     ].filter(Boolean).join("\n");

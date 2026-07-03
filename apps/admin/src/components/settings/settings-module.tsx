@@ -1,12 +1,15 @@
 import {
+  Banknote,
   Building2,
   Clock3,
   CreditCard,
   KeyRound,
+  Landmark,
   LogOut,
   Palette,
   ShieldCheck,
   SlidersHorizontal,
+  Smartphone,
 } from "lucide-react";
 
 import {
@@ -60,6 +63,14 @@ const campoClasse =
   "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 const areaClasse =
   "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
+const TIPOS_CHAVE_PIX_CONFIGURACOES = [
+  { label: "CPF", valor: "cpf" },
+  { label: "CNPJ", valor: "cnpj" },
+  { label: "E-mail", valor: "email" },
+  { label: "Telefone", valor: "telefone" },
+  { label: "Chave aleatoria", valor: "aleatoria" },
+];
 
 export function SettingsModule({
   configuracoes,
@@ -298,82 +309,120 @@ export function SettingsModule({
           <CardContent className="p-5">
             <CabecalhoCard
               icon={<CreditCard />}
-              titulo="Instrucoes de pagamento"
+              titulo="Dados de recebimento"
             />
             <p className="mt-3 text-sm text-muted-foreground">
-              Dados simples usados para preparar mensagens manuais ao hospede.
+              Pix, documento e instrucoes globais do proprietario. Cada casa
+              escolhe apenas quais formas aceita.
             </p>
             <EntityModal
-              description="Configure instrucoes visiveis em mensagens de confirmacao. Nenhum gateway ou dado sensivel e salvo."
+              description="Configure os dados globais de recebimento do tenant. As casas reutilizam estas informacoes e apenas ativam ou desativam cada forma de pagamento."
               disabled={!podeGerenciarConfiguracoes}
               eyebrow="Pagamentos"
-              title="Instrucoes de pagamento"
+              title="Dados de recebimento do proprietario"
               triggerClassName="mt-5"
-              triggerLabel="Editar instrucoes"
+              triggerLabel="Configurar recebimento"
               triggerVariant="default"
             >
               <form
                 action={atualizarInstrucoesPagamentoAction}
                 className="grid gap-4"
               >
-                <div className="grid gap-4 md:grid-cols-2">
-                  <CampoTexto
-                    defaultValue={configuracoes.pix_key ?? ""}
+                <SecaoFormulario
+                  descricao="Dados que podem aparecer em mensagens de cobranca e orientacoes ao hospede."
+                  icon={<Smartphone />}
+                  titulo="Pix e identificacao do recebedor"
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <CampoSelectConfiguracoes
+                      defaultValue={configuracoes.pix_key_type}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Tipo da chave Pix"
+                      name="pixKeyType"
+                      options={TIPOS_CHAVE_PIX_CONFIGURACOES}
+                    />
+                    <CampoTexto
+                      defaultValue={configuracoes.pix_key ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Chave Pix"
+                      name="pixKey"
+                      placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatoria"
+                    />
+                    <CampoTexto
+                      defaultValue={configuracoes.pix_receiver_name ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Nome do recebedor"
+                      name="pixReceiverName"
+                    />
+                    <CampoTexto
+                      defaultValue={configuracoes.payment_receiver_document ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="CPF/CNPJ do recebedor"
+                      name="paymentReceiverDocument"
+                      placeholder="Usado apenas em orientacoes de pagamento"
+                    />
+                    <CampoTexto
+                      defaultValue={configuracoes.pix_bank_name ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Banco ou instituicao"
+                      name="pixBankName"
+                    />
+                  </div>
+                  <CampoTextoArea
+                    defaultValue={configuracoes.pix_payment_note ?? ""}
                     disabled={!podeGerenciarConfiguracoes}
-                    label="Chave Pix"
-                    name="pixKey"
+                    label="Observacao Pix"
+                    name="pixPaymentNote"
                   />
-                  <CampoTexto
-                    defaultValue={configuracoes.pix_receiver_name ?? ""}
+                </SecaoFormulario>
+
+                <SecaoFormulario
+                  descricao="Textos reutilizados quando uma casa aceitar dinheiro, cartao ou transferencia."
+                  icon={<Banknote />}
+                  titulo="Instrucoes por forma de pagamento"
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <CampoTextoArea
+                      defaultValue={configuracoes.cash_payment_instructions ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Instrucao para dinheiro"
+                      name="cashPaymentInstructions"
+                    />
+                    <CampoTextoArea
+                      defaultValue={configuracoes.debit_card_payment_instructions ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Instrucao para cartao de debito"
+                      name="debitCardPaymentInstructions"
+                    />
+                    <CampoTextoArea
+                      defaultValue={configuracoes.bank_transfer_payment_instructions ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Instrucao para transferencia bancaria"
+                      name="bankTransferPaymentInstructions"
+                    />
+                    <CampoTextoArea
+                      defaultValue={configuracoes.credit_card_payment_instructions ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Instrucao para cartao de credito"
+                      name="creditCardPaymentInstructions"
+                    />
+                  </div>
+                </SecaoFormulario>
+
+                <SecaoFormulario
+                  descricao="A casa ainda define se aceita cartao e as regras de parcelas/juros."
+                  icon={<Landmark />}
+                  titulo="Parcelamento"
+                >
+                  <CampoTextoArea
+                    defaultValue={configuracoes.credit_card_installments_note ?? ""}
                     disabled={!podeGerenciarConfiguracoes}
-                    label="Nome do recebedor"
-                    name="pixReceiverName"
+                    label="Observacao sobre parcelamento"
+                    name="creditCardInstallmentsNote"
                   />
-                  <CampoTexto
-                    defaultValue={configuracoes.pix_bank_name ?? ""}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="Banco ou instituicao"
-                    name="pixBankName"
-                  />
-                </div>
-                <CampoTextoArea
-                  defaultValue={configuracoes.pix_payment_note ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Observacao Pix"
-                  name="pixPaymentNote"
-                />
-                <CampoTextoArea
-                  defaultValue={configuracoes.cash_payment_instructions ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Instrucao para dinheiro"
-                  name="cashPaymentInstructions"
-                />
-                <CampoTextoArea
-                  defaultValue={configuracoes.debit_card_payment_instructions ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Instrucao para cartao de debito"
-                  name="debitCardPaymentInstructions"
-                />
-                <CampoTextoArea
-                  defaultValue={configuracoes.bank_transfer_payment_instructions ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Instrucao para transferencia bancaria"
-                  name="bankTransferPaymentInstructions"
-                />
-                <CampoTextoArea
-                  defaultValue={configuracoes.credit_card_payment_instructions ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Instrucao para cartao de credito"
-                  name="creditCardPaymentInstructions"
-                />
-                <CampoTextoArea
-                  defaultValue={configuracoes.credit_card_installments_note ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Observacao sobre parcelamento"
-                  name="creditCardInstallmentsNote"
-                />
+                </SecaoFormulario>
                 <Button disabled={!podeGerenciarConfiguracoes} type="submit">
-                  Salvar instrucoes
+                  Salvar dados de recebimento
                 </Button>
               </form>
             </EntityModal>
@@ -492,6 +541,68 @@ function CabecalhoCard({
     <div className="flex items-center gap-2">
       <span className="text-primary [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
       <h2 className="text-base font-semibold">{titulo}</h2>
+    </div>
+  );
+}
+
+function SecaoFormulario({
+  children,
+  descricao,
+  icon,
+  titulo,
+}: {
+  children: React.ReactNode;
+  descricao: string;
+  icon: React.ReactNode;
+  titulo: string;
+}) {
+  return (
+    <section className="grid gap-4 rounded-xl border bg-background/45 p-4">
+      <div className="flex items-start gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200 [&_svg]:h-4 [&_svg]:w-4">
+          {icon}
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold">{titulo}</h3>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {descricao}
+          </p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function CampoSelectConfiguracoes({
+  defaultValue,
+  disabled,
+  label,
+  name,
+  options,
+}: {
+  defaultValue: string;
+  disabled?: boolean;
+  label: string;
+  name: string;
+  options: Array<{ label: string; valor: string }>;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={name}>{label}</Label>
+      <select
+        className={campoClasse}
+        defaultValue={defaultValue}
+        disabled={disabled}
+        id={name}
+        name={name}
+      >
+        {options.map((option) => (
+          <option key={option.valor} value={option.valor}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

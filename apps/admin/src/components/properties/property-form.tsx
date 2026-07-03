@@ -140,14 +140,6 @@ const STATUS: Array<{ label: string; valor: PropertyStatus }> = [
   { valor: "paused", label: "Inativa" },
 ];
 
-const TIPOS_CHAVE_PIX = [
-  { label: "CPF", valor: "cpf" },
-  { label: "CNPJ", valor: "cnpj" },
-  { label: "E-mail", valor: "email" },
-  { label: "Telefone", valor: "telefone" },
-  { label: "Chave aleatoria", valor: "aleatoria" },
-];
-
 const UFS = [
   "AC",
   "AL",
@@ -259,20 +251,6 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     minimo: 0.01,
     name: "valorDiaria",
     tipo: "numero",
-  },
-  {
-    etapa: "valores",
-    mensagem: "Informe a chave Pix.",
-    name: "pixChave",
-    tipo: "texto",
-    validarQuando: (dados) => dados.get("pagamentoPixAtivo") === "on",
-  },
-  {
-    etapa: "valores",
-    mensagem: "Informe o nome do recebedor do Pix.",
-    name: "pixRecebedor",
-    tipo: "texto",
-    validarQuando: (dados) => dados.get("pagamentoPixAtivo") === "on",
   },
   {
     etapa: "valores",
@@ -1522,95 +1500,43 @@ function EtapaValores({
         <div className="grid gap-3">
           <CartaoFormaPagamento
             ativo={pixAtivo}
-            descricao="Chave e instruções para pagamento manual por Pix."
+            descricao="Usa os dados de Pix cadastrados nas Configurações do proprietário."
             disabled={disabled}
             icon={<Smartphone className="h-4 w-4" />}
             label="Pix"
             name="pagamentoPixAtivo"
             onChange={setPixAtivo}
           >
-            <div className="grid gap-3 md:grid-cols-2">
-              <CampoSelect
-                defaultValue={pagamentos?.pix.tipoChave ?? "aleatoria"}
-                disabled={disabled || !pixAtivo}
-                label="Tipo da chave Pix"
-                name="pixTipoChave"
-                options={TIPOS_CHAVE_PIX}
-              />
-              <CampoTexto
-                defaultValue={pagamentos?.pix.chave ?? ""}
-                disabled={disabled || !pixAtivo}
-                erro={erros.pixChave}
-                label="Chave Pix"
-                name="pixChave"
-                obrigatorio={pixAtivo}
-              />
-              <CampoTexto
-                defaultValue={pagamentos?.pix.recebedor ?? ""}
-                disabled={disabled || !pixAtivo}
-                erro={erros.pixRecebedor}
-                label="Nome do recebedor"
-                name="pixRecebedor"
-                obrigatorio={pixAtivo}
-              />
-              <CampoTexto
-                defaultValue={pagamentos?.pix.banco ?? ""}
-                disabled={disabled || !pixAtivo}
-                label="Banco/instituição"
-                name="pixBanco"
-              />
-            </div>
-            <CampoArea
-              className="min-h-16"
-              defaultValue={pagamentos?.pix.instrucoes ?? ""}
-              disabled={disabled || !pixAtivo}
-              label="Instrução Pix"
-              name="pixInstrucoes"
-              placeholder="Ex.: Enviar comprovante apos o pagamento."
-            />
+            <AvisoDadosPagamentoTenant metodo="Pix" />
           </CartaoFormaPagamento>
 
           <CartaoFormaPagamento
             ativo={dinheiroAtivo}
-            descricao="Instrução simples para pagamento presencial ou combinado."
+            descricao="Usa a instrução global cadastrada nas Configurações."
             disabled={disabled}
             icon={<Banknote className="h-4 w-4" />}
             label="Dinheiro"
             name="pagamentoDinheiroAtivo"
             onChange={setDinheiroAtivo}
           >
-            <CampoArea
-              className="min-h-16"
-              defaultValue={pagamentos?.dinheiro.instrucoes ?? ""}
-              disabled={disabled || !dinheiroAtivo}
-              label="Instrução para dinheiro"
-              name="dinheiroInstrucoes"
-              placeholder="Ex.: Pagamento no check-in."
-            />
+            <AvisoDadosPagamentoTenant metodo="dinheiro" />
           </CartaoFormaPagamento>
 
           <CartaoFormaPagamento
             ativo={cartaoDebitoAtivo}
-            descricao="Instrução operacional sem coletar dados de cartão."
+            descricao="Usa a instrução global sem coletar dados de cartão."
             disabled={disabled}
             icon={<CreditCard className="h-4 w-4" />}
             label="Cartão de débito"
             name="pagamentoCartaoDebitoAtivo"
             onChange={setCartaoDebitoAtivo}
           >
-            <CampoArea
-              className="min-h-16"
-              defaultValue={pagamentos?.cartaoDebito.instrucoes ?? ""}
-              disabled={disabled || !cartaoDebitoAtivo}
-              label="Instrução para débito"
-              name="cartaoDebitoInstrucoes"
-              placeholder="Ex.: Pagamento via maquininha no local."
-            />
+            <AvisoDadosPagamentoTenant metodo="cartão de débito" />
           </CartaoFormaPagamento>
 
           <CartaoFormaPagamento
             ativo={aceitaCartaoCredito}
-            descricao="Parcelamento manual preparado para cálculo futuro."
+            descricao="A casa define parcelas e juros; os dados de recebimento ficam nas Configurações."
             disabled={disabled}
             icon={<CreditCard className="h-4 w-4" />}
             label="Cartão de crédito"
@@ -1631,14 +1557,7 @@ function EtapaValores({
                 }
                 value={maxParcelasCartao}
               />
-              <CampoArea
-                className="min-h-16"
-                defaultValue={pagamentos?.cartaoCredito.instrucoes ?? ""}
-                disabled={disabled || !aceitaCartaoCredito}
-                label="Instrução para crédito"
-                name="cartaoCreditoInstrucoes"
-                placeholder="Ex.: Link enviado pelo proprietario."
-              />
+              <AvisoDadosPagamentoTenant metodo="cartão de crédito" />
             </div>
 
             {aceitaCartaoCredito ? (
@@ -1738,47 +1657,14 @@ function EtapaValores({
 
           <CartaoFormaPagamento
             ativo={transferenciaAtiva}
-            descricao="Dados opcionais para transferência manual."
+            descricao="Usa os dados globais de transferência cadastrados nas Configurações."
             disabled={disabled}
             icon={<Landmark className="h-4 w-4" />}
             label="Transferência bancária"
             name="pagamentoTransferenciaAtivo"
             onChange={setTransferenciaAtiva}
           >
-            <div className="grid gap-3 md:grid-cols-2">
-              <CampoTexto
-                defaultValue={pagamentos?.transferenciaBancaria.banco ?? ""}
-                disabled={disabled || !transferenciaAtiva}
-                label="Banco"
-                name="transferenciaBanco"
-              />
-              <CampoTexto
-                defaultValue={pagamentos?.transferenciaBancaria.recebedor ?? ""}
-                disabled={disabled || !transferenciaAtiva}
-                label="Nome do recebedor"
-                name="transferenciaRecebedor"
-              />
-              <CampoTexto
-                defaultValue={pagamentos?.transferenciaBancaria.agencia ?? ""}
-                disabled={disabled || !transferenciaAtiva}
-                label="Agência"
-                name="transferenciaAgencia"
-              />
-              <CampoTexto
-                defaultValue={pagamentos?.transferenciaBancaria.conta ?? ""}
-                disabled={disabled || !transferenciaAtiva}
-                label="Conta"
-                name="transferenciaConta"
-              />
-            </div>
-            <CampoArea
-              className="min-h-16"
-              defaultValue={pagamentos?.transferenciaBancaria.instrucoes ?? ""}
-              disabled={disabled || !transferenciaAtiva}
-              label="Instrução para transferência"
-              name="transferenciaInstrucoes"
-              placeholder="Ex.: Dados enviados apos confirmacao da reserva."
-            />
+            <AvisoDadosPagamentoTenant metodo="transferência bancária" />
           </CartaoFormaPagamento>
         </div>
       </section>
@@ -1830,6 +1716,16 @@ function CartaoFormaPagamento({
         <div className="grid gap-3 border-t pt-3">{children}</div>
       ) : null}
     </section>
+  );
+}
+
+function AvisoDadosPagamentoTenant({ metodo }: { metodo: string }) {
+  return (
+    <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm leading-6 text-muted-foreground">
+      Os dados de {metodo} são cadastrados uma vez em Configurações do
+      proprietário. Nesta casa, marque apenas se essa forma de pagamento será
+      aceita.
+    </p>
   );
 }
 

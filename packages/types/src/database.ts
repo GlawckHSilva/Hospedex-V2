@@ -272,7 +272,9 @@ export type TenantSettingRow = {
   phone: string | null;
   whatsapp: string | null;
   pix_key: string | null;
+  pix_key_type: "cpf" | "cnpj" | "email" | "telefone" | "aleatoria";
   pix_receiver_name: string | null;
+  payment_receiver_document: string | null;
   pix_bank_name: string | null;
   pix_payment_note: string | null;
   cash_payment_instructions: string | null;

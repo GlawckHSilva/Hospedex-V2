@@ -121,7 +121,9 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
         tenant_id: escopo.tenantId,
         owner_id: escopo.ownerId,
         pix_key: textoOpcional(formData, "pixKey"),
+        pix_key_type: validarTipoChavePix(textoOpcional(formData, "pixKeyType") ?? "aleatoria"),
         pix_receiver_name: textoOpcional(formData, "pixReceiverName"),
+        payment_receiver_document: textoOpcional(formData, "paymentReceiverDocument"),
         pix_bank_name: textoOpcional(formData, "pixBankName"),
         pix_payment_note: textoOpcional(formData, "pixPaymentNote"),
         cash_payment_instructions:
@@ -319,6 +321,14 @@ function validarPoliticaLimpeza(valor: string): TenantCleaningPolicy {
   }
 
   throw new ErroRegraConfiguracoes("Politica de limpeza invalida.");
+}
+
+function validarTipoChavePix(valor: string) {
+  if (["cpf", "cnpj", "email", "telefone", "aleatoria"].includes(valor)) {
+    return valor;
+  }
+
+  throw new ErroRegraConfiguracoes("Tipo de chave Pix invalido.");
 }
 
 function validarCor(valor: string): string {

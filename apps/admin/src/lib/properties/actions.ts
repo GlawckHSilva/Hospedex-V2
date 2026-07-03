@@ -27,7 +27,6 @@ import type { EnderecoPropriedade } from "./types";
 import type {
   FormasPagamentoPropriedade,
   TipoCobrancaHospedeExtra,
-  TipoChavePixPropriedade,
 } from "./types";
 
 /**
@@ -751,22 +750,11 @@ function possuiComodidadeValida({
 function obterFormasPagamento(formData: FormData): FormasPagamentoPropriedade {
   const pixAtivo = checkboxAtivo(formData, "pagamentoPixAtivo");
   const cartaoCreditoAtivo = checkboxAtivo(formData, "aceitaCartaoCredito");
-  const pixChave = textoOpcional(formData, "pixChave") ?? "";
-  const pixRecebedor = textoOpcional(formData, "pixRecebedor") ?? "";
-
-  if (pixAtivo && !pixChave) {
-    throw new ErroRegraNegocio(
-      "Informe a chave Pix para ativar pagamento por Pix.",
-    );
-  }
-  if (pixAtivo && !pixRecebedor) {
-    throw new ErroRegraNegocio("Informe o nome do recebedor do Pix.");
-  }
 
   return {
     cartaoCredito: {
       ativo: cartaoCreditoAtivo,
-      instrucoes: textoOpcional(formData, "cartaoCreditoInstrucoes") ?? "",
+      instrucoes: "",
       jurosParcelas: obterJurosParcelasCartao(formData),
       maxParcelas: cartaoCreditoAtivo
         ? Math.min(
@@ -777,39 +765,29 @@ function obterFormasPagamento(formData: FormData): FormasPagamentoPropriedade {
     },
     cartaoDebito: {
       ativo: checkboxAtivo(formData, "pagamentoCartaoDebitoAtivo"),
-      instrucoes: textoOpcional(formData, "cartaoDebitoInstrucoes") ?? "",
+      instrucoes: "",
     },
     dinheiro: {
       ativo: checkboxAtivo(formData, "pagamentoDinheiroAtivo"),
-      instrucoes: textoOpcional(formData, "dinheiroInstrucoes") ?? "",
+      instrucoes: "",
     },
     pix: {
       ativo: pixAtivo,
-      banco: textoOpcional(formData, "pixBanco") ?? "",
-      chave: pixChave,
-      instrucoes: textoOpcional(formData, "pixInstrucoes") ?? "",
-      recebedor: pixRecebedor,
-      tipoChave: validarTipoChavePix(
-        textoOpcional(formData, "pixTipoChave") ?? "aleatoria",
-      ),
+      banco: "",
+      chave: "",
+      instrucoes: "",
+      recebedor: "",
+      tipoChave: "aleatoria",
     },
     transferenciaBancaria: {
-      agencia: textoOpcional(formData, "transferenciaAgencia") ?? "",
+      agencia: "",
       ativo: checkboxAtivo(formData, "pagamentoTransferenciaAtivo"),
-      banco: textoOpcional(formData, "transferenciaBanco") ?? "",
-      conta: textoOpcional(formData, "transferenciaConta") ?? "",
-      instrucoes: textoOpcional(formData, "transferenciaInstrucoes") ?? "",
-      recebedor: textoOpcional(formData, "transferenciaRecebedor") ?? "",
+      banco: "",
+      conta: "",
+      instrucoes: "",
+      recebedor: "",
     },
   };
-}
-
-function validarTipoChavePix(valor: string): TipoChavePixPropriedade {
-  if (["cpf", "cnpj", "email", "telefone", "aleatoria"].includes(valor)) {
-    return valor as TipoChavePixPropriedade;
-  }
-
-  throw new ErroRegraNegocio("Tipo de chave Pix invalido.");
 }
 
 function obterJurosParcelasCartao(formData: FormData) {
