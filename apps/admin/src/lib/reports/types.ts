@@ -70,13 +70,32 @@ export type ServicoExtraRelatorio = {
   valorTotal: number;
 };
 
+export type ReservaDetalhadaRelatorio = {
+  codigo: string;
+  hospede: string;
+  pagamento: string;
+  propriedade: string;
+  status: string;
+  total: number;
+};
+
+export type LancamentoDetalhadoRelatorio = {
+  categoria: string;
+  data: string;
+  descricao: string;
+  tipo: "Receita" | "Despesa";
+  valor: number;
+};
+
 export type DadosModuloRelatorios = {
   categoriasFinanceiras: ExpenseCategoryRow[];
   filtros: FiltrosRelatorios;
   hospedesRecorrentes: HospedeRecorrenteRelatorio[];
+  lancamentosDetalhados: LancamentoDetalhadoRelatorio[];
   linhasCsv: string[][];
   propriedades: PropertyRow[];
   propriedadesRentaveis: PropriedadeRentavelRelatorio[];
+  reservasDetalhadas: ReservaDetalhadaRelatorio[];
   reservasPorStatus: StatusReservaRelatorio[];
   resumo: ResumoRelatorios;
   serieFinanceira: PontoSerieRelatorio[];

@@ -19,8 +19,10 @@ import {
   type DadosModuloRelatorios,
   type FiltrosRelatorios,
   type HospedeRecorrenteRelatorio,
+  type LancamentoDetalhadoRelatorio,
   type PontoSerieRelatorio,
   type PropriedadeRentavelRelatorio,
+  type ReservaDetalhadaRelatorio,
   type ServicoExtraRelatorio,
   type StatusReservaRelatorio
 } from "./types";
@@ -109,15 +111,26 @@ export async function carregarDadosModuloRelatorios(
   const propriedadesRentaveis = montarPropriedadesRentaveis(dados);
   const hospedesRecorrentes = montarHospedesRecorrentes(dados);
   const servicosExtras = montarServicosExtras(dados);
+  const reservasDetalhadas = montarReservasDetalhadas(dados);
+  const lancamentosDetalhados = montarLancamentosDetalhados(dados);
   const resumo = montarResumo(dados, filtros, periodo.fimExclusivo);
 
   return {
     categoriasFinanceiras: dados.categorias,
     filtros,
     hospedesRecorrentes,
-    linhasCsv: montarLinhasCsv(resumo, serieFinanceira, propriedadesRentaveis, servicosExtras),
+    lancamentosDetalhados,
+    linhasCsv: montarLinhasCsv(
+      resumo,
+      serieFinanceira,
+      propriedadesRentaveis,
+      servicosExtras,
+      reservasDetalhadas,
+      lancamentosDetalhados
+    ),
     propriedades: dados.propriedades,
     propriedadesRentaveis,
+    reservasDetalhadas,
     reservasPorStatus: montarReservasPorStatus(dados.reservas),
     resumo,
     serieFinanceira,
@@ -223,7 +236,7 @@ function montarResumo(
     propriedadesRentaveis: montarPropriedadesRentaveis(dados).length,
     receitaPeriodo: somarTransacoes(receitasPagas),
     reservasPeriodo: dados.reservas.length,
-    servicosExtras: dados.extras.length,
+    servicosExtras: dados.extras.reduce((total, extra) => total + Number(extra.total_amount), 0),
     taxaOcupacao:
       noitesDisponiveis > 0 ? Math.min(100, (noitesOcupadas / noitesDisponiveis) * 100) : 0,
     ticketMedio: reservasValidas.length > 0 ? receitaReservas / reservasValidas.length : 0
@@ -336,11 +349,47 @@ function montarServicosExtras(dados: DadosBaseRelatorios): ServicoExtraRelatorio
     .slice(0, 8);
 }
 
+function montarReservasDetalhadas(dados: DadosBaseRelatorios): ReservaDetalhadaRelatorio[] {
+  const propriedades = new Map(dados.propriedades.map((propriedade) => [propriedade.id, propriedade.name]));
+  const hospedesPrincipais = new Map(
+    dados.hospedes
+      .filter((hospede) => hospede.is_primary)
+      .map((hospede) => [hospede.reservation_id, hospede.full_name])
+  );
+
+  return dados.reservas.map((reserva) => ({
+    codigo: reserva.code,
+    hospede: hospedesPrincipais.get(reserva.id) ?? "Hospede nao informado",
+    pagamento: LABEL_PAGAMENTO_RELATORIOS[reserva.payment_status] ?? reserva.payment_status,
+    propriedade: propriedades.get(reserva.property_id) ?? "Propriedade removida",
+    status: LABEL_STATUS_RESERVA_RELATORIOS[reserva.status],
+    total: Number(reserva.total_amount)
+  }));
+}
+
+function montarLancamentosDetalhados(dados: DadosBaseRelatorios): LancamentoDetalhadoRelatorio[] {
+  const categorias = new Map(dados.categorias.map((categoria) => [categoria.id, categoria.name]));
+
+  return dados.transacoes.map((transacao) => ({
+    categoria: transacao.expense_category_id
+      ? categorias.get(transacao.expense_category_id) ?? "Categoria"
+      : transacao.transaction_type === "income"
+        ? "Receita"
+        : "Despesa",
+    data: obterDataTransacao(transacao),
+    descricao: transacao.description ?? transacao.guest_name ?? "Lancamento financeiro",
+    tipo: transacao.transaction_type === "income" ? "Receita" : "Despesa",
+    valor: Number(transacao.amount)
+  }));
+}
+
 function montarLinhasCsv(
   resumo: DadosModuloRelatorios["resumo"],
   serie: PontoSerieRelatorio[],
   propriedades: PropriedadeRentavelRelatorio[],
-  servicosExtras: ServicoExtraRelatorio[]
+  servicosExtras: ServicoExtraRelatorio[],
+  reservasDetalhadas: ReservaDetalhadaRelatorio[],
+  lancamentosDetalhados: LancamentoDetalhadoRelatorio[]
 ) {
   return [
     ["Tipo", "Nome", "Receita", "Despesas", "Lucro", "Reservas", "Valor"],
@@ -376,6 +425,24 @@ function montarLinhasCsv(
       "",
       String(servico.quantidade),
       ""
+    ]),
+    ...reservasDetalhadas.map((reserva) => [
+      "Reserva",
+      reserva.codigo,
+      "",
+      "",
+      "",
+      reserva.status,
+      String(reserva.total)
+    ]),
+    ...lancamentosDetalhados.map((lancamento) => [
+      "Lancamento financeiro",
+      lancamento.descricao,
+      lancamento.tipo === "Receita" ? String(lancamento.valor) : "",
+      lancamento.tipo === "Despesa" ? String(lancamento.valor) : "",
+      "",
+      lancamento.categoria,
+      lancamento.data
     ])
   ];
 }
@@ -520,9 +587,11 @@ function criarDadosVazios(
     categoriasFinanceiras: [],
     filtros,
     hospedesRecorrentes: [],
+    lancamentosDetalhados: [],
     linhasCsv: [],
     propriedades: [],
     propriedadesRentaveis: [],
+    reservasDetalhadas: [],
     reservasPorStatus: [],
     resumo: {
       despesasPeriodo: 0,
@@ -540,6 +609,13 @@ function criarDadosVazios(
     tenantNome: contexto.tenant?.name ?? "Tenant"
   };
 }
+
+const LABEL_PAGAMENTO_RELATORIOS: Record<string, string> = {
+  cancelled: "Cancelado",
+  paid: "Pago",
+  pending: "Pendente",
+  refunded: "Estornado"
+};
 
 function registrarErro(modulo: string, erro: { message: string } | null) {
   if (!erro) return;
