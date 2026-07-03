@@ -20,14 +20,14 @@ import { PublicShell } from "../../components/layout/public-shell";
 const planos = [
   {
     nome: "Essencial",
-    preco: "R$ 97",
+    preco: "Plano sob consulta",
     descricao: "Para começar a receber reservas diretas com organização.",
     destaque: false,
     recursos: ["Até 2 casas", "Marketplace público", "Reservas", "Calendário", "Guia da região"]
   },
   {
     nome: "Profissional",
-    preco: "R$ 197",
+    preco: "Plano sob consulta",
     descricao: "Para proprietários que querem operar com mais controle.",
     destaque: true,
     recursos: [
@@ -40,7 +40,7 @@ const planos = [
   },
   {
     nome: "Premium",
-    preco: "R$ 297",
+    preco: "Plano sob consulta",
     descricao: "Para pousadas, pequenos hotéis e operação com equipe.",
     destaque: false,
     recursos: [
@@ -223,10 +223,7 @@ export default function AnunciarPage() {
                 ) : null}
                 <h3 className="text-xl font-semibold">{plano.nome}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{plano.descricao}</p>
-                <div className="mt-5">
-                  <span className="text-3xl font-semibold">{plano.preco}</span>
-                  <span className="ml-1 text-sm text-muted-foreground">/mês</span>
-                </div>
+                <p className="mt-5 text-lg font-semibold text-foreground">{plano.preco}</p>
                 <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
                   {plano.recursos.map((recurso) => (
                     <li className="flex gap-2" key={recurso}>

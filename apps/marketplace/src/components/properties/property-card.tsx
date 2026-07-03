@@ -1,4 +1,4 @@
-import { ArrowUpRight, BedDouble, MapPin, Sparkles, Users } from "lucide-react";
+﻿import { ArrowUpRight, BedDouble, MapPin, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 
 import { GlassCard, StatusBadge } from "@hospedex/ui";
@@ -27,7 +27,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         ) : (
           <div className="grid h-full w-full place-items-center bg-[linear-gradient(135deg,var(--secondary),var(--accent))] px-8 text-center">
             <span className="text-sm font-semibold text-accent-foreground">
-              Fotos em preparação
+              Fotos em preparaÃ§Ã£o
             </span>
           </div>
         )}
@@ -56,18 +56,24 @@ export function PropertyCard({ property }: PropertyCardProps) {
             {property.headline}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 border-t pt-4 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Users className="h-4 w-4" />
-            até {property.maxGuests}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <BedDouble className="h-4 w-4" />
-            {property.bedrooms} quarto{property.bedrooms === 1 ? "" : "s"}
-          </span>
-          <span className="ml-auto font-semibold text-foreground">
-            {formatarPreco(property.minPrice)}
-          </span>
+        <div className="grid gap-3 border-t pt-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              até {property.maxGuests}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <BedDouble className="h-4 w-4" />
+              {property.bedrooms} quarto{property.bedrooms === 1 ? "" : "s"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="font-semibold text-foreground">{formatarPreco(property.minPrice)}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 px-3 py-1.5 text-xs font-semibold text-primary">
+              Ver hospedagem
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
         </div>
       </div>
       </GlassCard>
@@ -78,9 +84,10 @@ export function PropertyCard({ property }: PropertyCardProps) {
 function formatarPreco(valor: number | null) {
   if (!valor) return "Sob consulta";
 
-  return `desde ${new Intl.NumberFormat("pt-BR", {
+  return `A partir de ${new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
     maximumFractionDigits: 0,
     style: "currency"
-  }).format(valor)}`;
+  }).format(valor)}/noite`;
 }
+

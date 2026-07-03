@@ -1,12 +1,10 @@
-import {
+﻿import {
   ArrowRight,
   BadgeCheck,
   Building2,
-  CheckCircle2,
   Hotel,
   House,
   MapPin,
-  Rocket,
   ShieldCheck,
   Sparkles
 } from "lucide-react";
@@ -39,18 +37,18 @@ export const dynamic = "force-dynamic";
 
 const motivosReserva = [
   {
-    title: "Canal direto",
-    description: "Contato claro com hospedagens independentes, sem ruído de intermediários.",
+    title: "Contato direto",
+    description: "Converse diretamente com o anfitrião e tire suas dúvidas antes de reservar.",
     icon: BadgeCheck
   },
   {
-    title: "Operação organizada",
-    description: "Propriedades publicadas a partir da gestão multi-tenant da V2.",
+    title: "Informações organizadas",
+    description: "Encontre fotos, regras, comodidades e valores em uma só página.",
     icon: ShieldCheck
   },
   {
-    title: "Curadoria visual",
-    description: "Fotos, estrutura e comodidades reunidas em uma experiência premium.",
+    title: "Solicitação acompanhada",
+    description: "Acompanhe suas reservas e comunique-se com mais segurança.",
     icon: Sparkles
   }
 ] as const;
@@ -64,56 +62,18 @@ const categoriasMarketplace = [
   },
   {
     title: "Pousadas",
-    description: "Hospedagens independentes com atendimento próximo e operação organizada.",
+    description: "Hospedagens charmosas com atendimento acolhedor e experiências locais.",
     href: "/propriedades?tipo=inn",
     icon: Building2
   },
   {
-    title: "Hotéis compactos",
-    description: "Pequenos hotéis preparados para receber reservas com gestão profissional.",
+    title: "Pequenos hotéis",
+    description: "Hotéis compactos com estrutura profissional e atenção aos detalhes.",
     href: "/propriedades?tipo=small_hotel",
     icon: Hotel
   }
 ] as const;
 
-const planosGerenciamento = [
-  {
-    nome: "Essencial",
-    preco: "R$ 97",
-    descricao: "Para proprietários que estão começando com poucas casas.",
-    destaque: false,
-    recursos: [
-      "Até 2 casas publicadas",
-      "Reservas e calendário",
-      "Página pública da propriedade",
-      "Guia da região"
-    ]
-  },
-  {
-    nome: "Profissional",
-    preco: "R$ 197",
-    descricao: "Para operação ativa com mais reservas e controle financeiro.",
-    destaque: true,
-    recursos: [
-      "Até 5 casas publicadas",
-      "Financeiro e pendências",
-      "Serviços extras",
-      "Relatórios gerenciais"
-    ]
-  },
-  {
-    nome: "Premium",
-    preco: "R$ 297",
-    descricao: "Para pousadas, pequenos hotéis e operação multiunidade.",
-    destaque: false,
-    recursos: [
-      "Até 8 casas publicadas",
-      "Funcionários e permissões",
-      "Integrações preparadas",
-      "Suporte prioritário"
-    ]
-  }
-] as const;
 
 export default async function MarketplaceHomePage() {
   const resultado = await carregarPropriedadesPublicas({ limite: 6 });
@@ -134,34 +94,37 @@ export default async function MarketplaceHomePage() {
           <FadeIn className="max-w-4xl space-y-7">
             <div className="flex flex-wrap gap-2">
               <StatusBadge className="border-white/20 bg-white/15 text-white" tone="neutral">
-                Marketplace V2
+                Reserva direta
               </StatusBadge>
               <StatusBadge className="border-cyan-200/30 bg-cyan-300/20 text-cyan-50" tone="info">
                 Hospedagens independentes
               </StatusBadge>
+              <StatusBadge className="border-white/20 bg-white/15 text-white" tone="neutral">
+                Casas, pousadas e pequenos hotéis
+              </StatusBadge>
             </div>
             <div className="space-y-5">
               <h1 className="max-w-3xl text-5xl font-semibold leading-none tracking-normal sm:text-6xl lg:text-7xl">
-                Hospedex
+                Encontre hospedagens independentes com reserva simples e direta.
               </h1>
               <p className="max-w-2xl text-base leading-8 text-cyan-50/85 sm:text-lg">
-                Encontre casas, pousadas e pequenos hotéis publicados por
-                proprietários que operam com a gestão Hospedex.
+                Casas de temporada, pousadas e pequenos hotéis publicados por anfitriões.
+                Conecte-se direto, escolha seu destino e viva experiências incríveis.
               </p>
             </div>
             <PropertySearchForm />
             <div className="grid max-w-3xl gap-3 text-sm text-cyan-50/85 sm:grid-cols-3">
               <div className="rounded-lg border border-white/20 bg-white/10 p-4 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
                 <strong className="block text-2xl text-white">{propriedades.length}</strong>
-                propriedades publicadas
+                hospedagem{propriedades.length === 1 ? "" : "s"} publicada{propriedades.length === 1 ? "" : "s"}
               </div>
               <div className="rounded-lg border border-white/20 bg-white/10 p-4 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
                 <strong className="block text-2xl text-white">{destinos.length}</strong>
-                destinos ativos
+                destino{destinos.length === 1 ? "" : "s"} disponível{destinos.length === 1 ? "" : "s"}
               </div>
               <div className="rounded-lg border border-white/20 bg-white/10 p-4 shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
-                <strong className="block text-2xl text-white">V2</strong>
-                base multi-tenant
+                <strong className="block text-2xl text-white">Direto</strong>
+                reserva com anfitrião
               </div>
             </div>
           </FadeIn>
@@ -173,10 +136,10 @@ export default async function MarketplaceHomePage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-normal text-primary">
-                Destinos em destaque
+                Destinos disponíveis
               </p>
               <h2 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
-                Propriedades publicadas por cidade
+                Explore cidades com hospedagens publicadas
               </h2>
             </div>
             <Link
@@ -220,8 +183,12 @@ export default async function MarketplaceHomePage() {
                         {destino.estado ? `, ${destino.estado}` : ""}
                       </p>
                       <p className="mt-1 text-xs text-cyan-50/75">
-                        {destino.total} propriedade{destino.total === 1 ? "" : "s"}
+                        {destino.total} hospedagem{destino.total === 1 ? "" : "s"}
                       </p>
+                      <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-cyan-100">
+                        Ver hospedagens
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -229,8 +196,8 @@ export default async function MarketplaceHomePage() {
             </div>
           ) : (
             <PremiumEmptyState
-              description="As primeiras propriedades publicadas aparecerão aqui."
-              title="Nenhum destino publicado"
+              description="Assim que novas hospedagens forem publicadas, os destinos aparecerão aqui."
+              title="Nenhum destino disponível ainda"
             />
           )}
         </div>
@@ -243,7 +210,7 @@ export default async function MarketplaceHomePage() {
               Hospedagens
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
-              Propriedades em destaque
+              Hospedagens em destaque
             </h2>
           </div>
           {propriedades.length ? (
@@ -254,8 +221,8 @@ export default async function MarketplaceHomePage() {
             </div>
           ) : (
             <PremiumEmptyState
-              description="Nenhuma propriedade publicada foi encontrada no momento."
-              title="Vitrine em preparação"
+              description="As primeiras hospedagens aparecerão aqui em breve."
+              title="Nenhuma hospedagem publicada ainda"
             />
           )}
         </div>
@@ -303,10 +270,10 @@ export default async function MarketplaceHomePage() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:py-20">
           <div className="max-w-2xl">
             <p className="text-sm font-semibold uppercase tracking-normal text-primary">
-              Por que reservar pelo Hospedex
+              Benefícios para hóspedes
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
-              Uma vitrine pública ligada à operação real
+              Por que reservar pelo Hospedex?
             </h2>
           </div>
           <div className="grid gap-5 md:grid-cols-3">
@@ -330,60 +297,45 @@ export default async function MarketplaceHomePage() {
       </section>
 
       <GlassPanel className="rounded-none border-x-0 border-b-0" id="proprietarios">
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:py-20">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:py-20">
           <div className="max-w-3xl">
             <StatusBadge tone="info">Para proprietários</StatusBadge>
             <h2 className="mt-4 text-3xl font-semibold tracking-normal sm:text-4xl">
-              Escolha a assinatura para anunciar suas casas
+              Anuncie sua propriedade no Hospedex
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-              Os planos liberam o gerenciamento de casas, reservas, calendário,
-              financeiro e publicação no Marketplace Hospedex.
+              Publique sua casa, pousada ou pequeno hotel e gerencie reservas, calendário,
+              hóspedes e financeiro em um só lugar.
             </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Link
+                className={cn(buttonVariants({ size: "lg" }), "justify-center")}
+                href="/anunciar"
+              >
+                Quero anunciar
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                className={cn(buttonVariants({ size: "lg", variant: "outline" }), "justify-center")}
+                href="https://hospedex.vercel.app/cadastro"
+              >
+                Conhecer a gestão
+              </Link>
+            </div>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-3" id="planos-gerenciamento">
-            {planosGerenciamento.map((plano) => (
-              <GlassCard
-                className={cn(
-                  "relative p-6",
-                  plano.destaque &&
-                    "border-cyan-300/50 bg-cyan-500/10 shadow-xl shadow-cyan-950/10"
-                )}
-                key={plano.nome}
-              >
-                {plano.destaque ? (
-                  <span className="absolute right-4 top-4 rounded-full border border-cyan-300/40 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-100">
-                    Mais escolhido
-                  </span>
-                ) : null}
-                <span className="grid h-11 w-11 place-items-center rounded-md bg-primary/10 text-primary">
-                  <Rocket className="h-5 w-5" />
+          <div className="grid gap-4 md:grid-cols-3">
+            {[
+              ["1", "Cadastre sua propriedade", "Informe os detalhes e envie fotos."],
+              ["2", "Publique no marketplace", "Sua hospedagem fica visível para viajantes."],
+              ["3", "Receba solicitações", "Gerencie reservas e calendário com facilidade."]
+            ].map(([numero, titulo, texto]) => (
+              <GlassCard className="p-5" key={numero}>
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                  {numero}
                 </span>
-                <h3 className="mt-5 text-xl font-semibold">{plano.nome}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{plano.descricao}</p>
-                <div className="mt-5">
-                  <span className="text-3xl font-semibold">{plano.preco}</span>
-                  <span className="ml-1 text-sm text-muted-foreground">/mês</span>
-                </div>
-                <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
-                  {plano.recursos.map((recurso) => (
-                    <li className="flex gap-2" key={recurso}>
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <span>{recurso}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  className={cn(
-                    buttonVariants({ size: "lg", variant: plano.destaque ? "default" : "outline" }),
-                    "mt-6 w-full justify-center"
-                  )}
-                  href="https://hospedex.vercel.app/cadastro"
-                >
-                  <Building2 className="h-4 w-4" />
-                  Começar agora
-                </Link>
+                <h3 className="mt-4 font-semibold">{titulo}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{texto}</p>
               </GlassCard>
             ))}
           </div>

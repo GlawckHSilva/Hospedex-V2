@@ -43,7 +43,7 @@ export function PropertySearchForm({
         "glass-panel grid gap-3 p-3 shadow-2xl shadow-cyan-950/10",
         compact
           ? "md:grid-cols-2 xl:grid-cols-[1fr_90px_150px_150px_160px_120px_120px_auto_auto]"
-          : "md:grid-cols-2 xl:grid-cols-[1fr_90px_150px_150px_130px_auto]"
+          : "md:grid-cols-2 xl:grid-cols-[1fr_150px_150px_130px_auto]"
       )}
     >
       <label className="relative">
@@ -57,16 +57,18 @@ export function PropertySearchForm({
         />
       </label>
 
-      <label className="relative">
-        <span className="sr-only">Estado</span>
-        <GlassInput
-          className="h-12 uppercase"
-          defaultValue={estado}
-          maxLength={2}
-          name="estado"
-          placeholder="UF"
-        />
-      </label>
+      {compact ? (
+        <label className="relative">
+          <span className="sr-only">Estado</span>
+          <GlassInput
+            className="h-12 uppercase"
+            defaultValue={estado}
+            maxLength={2}
+            name="estado"
+            placeholder="UF"
+          />
+        </label>
+      ) : null}
 
       <label className="relative">
         <span className="sr-only">Check-in</span>
@@ -98,7 +100,7 @@ export function PropertySearchForm({
           defaultValue={hospedes}
           min={1}
           name="hospedes"
-          placeholder="Hospedes"
+          placeholder="Hóspedes"
           type="number"
         />
       </label>
@@ -149,7 +151,7 @@ export function PropertySearchForm({
 
       <GlassButton className="h-12" size="lg" type="submit">
         <Search className="h-4 w-4" />
-        Buscar
+        {compact ? "Buscar" : "Buscar hospedagens"}
       </GlassButton>
 
       {compact ? (

@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Hospedex"
   },
   description:
-    "Marketplace público da V2 para casas, pousadas e pequenos hotéis independentes."
+    "Marketplace público para casas, pousadas e pequenos hotéis independentes com reserva direta."
 };
 
 export const viewport: Viewport = {

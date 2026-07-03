@@ -1,4 +1,4 @@
-import { Home, Search } from "lucide-react";
+﻿import { Home, Search } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -36,8 +36,8 @@ export function PublicShell({ children }: PublicShellProps) {
               Hospedex
             </div>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Marketplace publico da V2 para hospedagens independentes,
-              conectado a gestao multi-tenant da plataforma.
+              Encontre casas, pousadas e pequenos hotéis com reserva direta e
+              informações organizadas para sua viagem.
             </p>
           </div>
           <nav className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-3 sm:gap-8">
@@ -54,7 +54,13 @@ export function PublicShell({ children }: PublicShellProps) {
               Destinos
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/anunciar">
-              Para proprietarios
+              Anunciar
+            </Link>
+            <Link className="transition-colors hover:text-foreground" href="/#por-que">
+              Como funciona
+            </Link>
+            <Link className="transition-colors hover:text-foreground" href="/propriedades">
+              Central de ajuda
             </Link>
             <Link className="transition-colors hover:text-foreground" href="/propriedades">
               <Search className="mr-1 inline h-3.5 w-3.5" />
@@ -65,7 +71,7 @@ export function PublicShell({ children }: PublicShellProps) {
         <div className="border-t">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <span>(c) {new Date().getFullYear()} Hospedex.</span>
-            <span>V2 Marketplace publico.</span>
+            <span>Hospedagens independentes com reserva direta.</span>
           </div>
         </div>
       </footer>
@@ -76,8 +82,7 @@ export function PublicShell({ children }: PublicShellProps) {
 /**
  * Marca publica do Marketplace.
  *
- * Usa o asset oficial da V2 para evitar o antigo quadrado com "H" e manter a
- * navegação coerente com o restante do produto.
+ * Usa o asset oficial da marca para manter a navegação coerente com o produto.
  */
 function MarketplaceBrand() {
   return (
