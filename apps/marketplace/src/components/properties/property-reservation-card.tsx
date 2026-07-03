@@ -193,11 +193,14 @@ export function PropertyReservationCard({
   }, []);
 
   return (
-    <GlassCard className="p-5 shadow-2xl shadow-cyan-950/15">
+    <GlassCard className="border-slate-600/45 bg-slate-950/82 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Diária inicial</p>
-          <p className="mt-2 text-3xl font-semibold">{formatarPreco(property.minPrice)}</p>
+          <p className="mt-2 text-4xl font-semibold text-white">
+            {formatarPreco(property.minPrice)}
+            <span className="ml-1 text-base font-medium text-slate-300">/noite</span>
+          </p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             Taxas e adicionais são calculados após selecionar as datas.
           </p>
@@ -327,7 +330,7 @@ function ReservationFormFields({
       ) : null}
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Field label="Check-in">
+        <Field label="Entrada">
           <CalendarDays className={inputIconClass} />
           <GlassInput
             className={reservationInputWithIconClass}
@@ -339,7 +342,7 @@ function ReservationFormFields({
             value={checkIn}
           />
         </Field>
-        <Field label="Check-out">
+        <Field label="Saída">
           <CalendarDays className={inputIconClass} />
           <GlassInput
             className={reservationInputWithIconClass}
@@ -533,7 +536,7 @@ function ReservationFormFields({
       <PerfilConfianca property={property} />
 
       <GlassButton
-        className="w-full border-cyan-300/50 bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-500/20 hover:bg-cyan-200 disabled:border-cyan-900/50 disabled:bg-cyan-950/50 disabled:text-cyan-100/60"
+        className="h-14 w-full border-sky-400/50 bg-sky-500 text-base text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400 disabled:border-cyan-900/50 disabled:bg-cyan-950/50 disabled:text-cyan-100/60"
         disabled={bloqueado}
         size="lg"
         type="submit"

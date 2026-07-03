@@ -10,6 +10,7 @@ import { Button, cn } from "@hospedex/ui";
 import type { PropriedadePublica } from "../../lib/marketplace/data";
 
 export type PropertyGalleryProps = {
+  compact?: boolean;
   property: PropriedadePublica;
 };
 
@@ -19,7 +20,7 @@ export type PropertyGalleryProps = {
  * Centraliza navegacao por teclado, swipe e modal para que a pagina nao
  * replique regras de acessibilidade ou controle de indice.
  */
-export function PropertyGallery({ property }: PropertyGalleryProps) {
+export function PropertyGallery({ compact = false, property }: PropertyGalleryProps) {
   const imagens = ordenarImagens(property.images);
   const [indiceAtivo, setIndiceAtivo] = useState(0);
   const [modalAberta, setModalAberta] = useState(false);
@@ -73,6 +74,7 @@ export function PropertyGallery({ property }: PropertyGalleryProps) {
 
   const imagemAtiva = imagens[indiceAtivo] ?? imagens[0]!;
   const miniaturas = imagens.slice(1, 5);
+  const miniaturasCompactas = imagens.slice(0, 4);
 
   function concluirSwipe(posicaoFinal: number) {
     if (toqueInicial.current === null) return;
@@ -84,6 +86,43 @@ export function PropertyGallery({ property }: PropertyGalleryProps) {
 
   return (
     <>
+      {compact ? (
+        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_160px] gap-2 max-lg:grid-cols-2">
+          {miniaturasCompactas.map((imagem, indice) => (
+            <button
+              aria-label={`Abrir foto ${indice + 1}`}
+              className={cn(
+                "group relative aspect-[1.45/1] overflow-hidden rounded-xl border bg-secondary",
+                indice === 0 ? "border-cyan-300" : "border-slate-700/70"
+              )}
+              key={imagem.id}
+              onClick={() => {
+                setIndiceAtivo(indice);
+                setModalAberta(true);
+              }}
+              type="button"
+            >
+              <img
+                alt={imagem.alt}
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
+                loading={indice === 0 ? "eager" : "lazy"}
+                src={imagem.url}
+              />
+            </button>
+          ))}
+          <button
+            aria-label="Ver todas as fotos"
+            className="grid aspect-[1.45/1] place-items-center rounded-xl border border-slate-700/70 bg-slate-900/80 text-center text-white transition hover:border-cyan-300/60 max-lg:col-span-2"
+            onClick={() => setModalAberta(true)}
+            type="button"
+          >
+            <span>
+              <strong className="block text-2xl">+{Math.max(imagens.length - 4, 0)}</strong>
+              <span className="mt-1 block text-sm text-slate-400">Ver todas</span>
+            </span>
+          </button>
+        </div>
+      ) : (
       <div className="grid gap-2 overflow-hidden rounded-lg lg:grid-cols-[1.55fr_0.75fr]">
         <button
           aria-label="Abrir galeria de fotos"
@@ -133,6 +172,7 @@ export function PropertyGallery({ property }: PropertyGalleryProps) {
           })}
         </div>
       </div>
+      )}
 
       {typeof document !== "undefined"
         ? createPortal(

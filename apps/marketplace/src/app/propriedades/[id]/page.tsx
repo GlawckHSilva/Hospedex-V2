@@ -4,6 +4,7 @@ import {
   Car,
   Clock,
   ExternalLink,
+  Heart,
   Home,
   Info,
   MapPin,
@@ -86,15 +87,14 @@ export default async function PropriedadePage({
 
   return (
     <PublicShell>
-      <PropertyHero propriedade={propriedade} />
-      <PropertyInternalNav />
+      <section className="relative isolate overflow-hidden bg-slate-950">
+        <PropertyHero propriedade={propriedade} />
 
-      <section className="bg-background">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:py-10">
-          <div className="grid gap-6">
+        <div className="relative z-10 mx-auto grid max-w-[1480px] gap-6 px-4 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-start lg:pb-14">
+          <div className="-mt-36 grid min-w-0 gap-5 lg:-mt-52">
             <FadeIn>
-              <GlassPanel className="p-4 sm:p-5">
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+              <GlassPanel className="border-slate-600/45 bg-slate-950/70 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl">
+                <div className="grid divide-y divide-slate-700/55 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-6">
                   <ResumoItem
                     icon={Users}
                     label="Hóspedes"
@@ -193,15 +193,14 @@ export default async function PropriedadePage({
 
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
-            <div className="grid gap-4">
-              <PropertyReservationCard
-                cotacoesCambio={cotacoesCambio}
-                feedback={feedback}
-                property={propriedade}
-              />
-              <PropertyOwnerTrustCard property={propriedade} />
-            </div>
+          <aside className="-mt-28 grid gap-4 lg:sticky lg:top-24 lg:-mt-52 lg:self-start">
+            <PropertyReservationCard
+              cotacoesCambio={cotacoesCambio}
+              feedback={feedback}
+              property={propriedade}
+            />
+            <PropertyOwnerTrustCard property={propriedade} />
+            <PropertyTrustHighlights />
           </aside>
         </div>
       </section>
@@ -213,7 +212,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
   const imagem = propriedade.coverImage;
 
   return (
-    <section className="relative isolate overflow-hidden border-b">
+    <section className="relative isolate min-h-[720px] overflow-hidden">
       {imagem ? (
         <img
           alt={imagem.alt}
@@ -222,25 +221,32 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
           src={imagem.url}
         />
       ) : null}
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.34),transparent_32%),linear-gradient(180deg,rgba(2,6,23,0.48),rgba(2,6,23,0.86))]" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(2,6,23,0.78)_0%,rgba(2,6,23,0.34)_45%,rgba(2,6,23,0.84)_100%),linear-gradient(180deg,rgba(2,6,23,0.08)_0%,rgba(2,6,23,0.46)_52%,rgba(2,6,23,1)_100%)]" />
       {!imagem ? (
         <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
       ) : null}
 
-      <div className="mx-auto flex min-h-[520px] max-w-7xl flex-col justify-end gap-8 px-4 pb-10 pt-28 text-white sm:px-6 lg:min-h-[620px] lg:pb-14">
-        <FadeIn className="max-w-4xl">
+      <div className="mx-auto flex min-h-[620px] max-w-[1480px] flex-col justify-end px-4 pb-44 pt-28 text-white sm:px-6 lg:min-h-[720px] lg:pb-60">
+        <FadeIn className="max-w-5xl">
+          <div className="mb-36 flex flex-wrap gap-3 lg:mb-40">
+            <ShareButton />
+            <button
+              aria-label="Salvar hospedagem"
+              className="grid h-11 w-11 place-items-center rounded-xl border border-white/15 bg-black/32 text-white backdrop-blur-xl transition hover:border-cyan-300/45 hover:text-cyan-200"
+              type="button"
+            >
+              <Heart className="h-5 w-5" />
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             <StatusBadge tone="success">Casa publicada</StatusBadge>
             <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
             <StatusBadge tone="neutral">Até {propriedade.maxGuests} hóspedes</StatusBadge>
             <StatusBadge tone="warning">{formatarPreco(propriedade.minPrice)}</StatusBadge>
           </div>
-          <h1 className="mt-5 text-4xl font-semibold tracking-normal sm:text-6xl">
+          <h1 className="mt-5 max-w-4xl text-5xl font-semibold tracking-normal drop-shadow-xl sm:text-7xl">
             {propriedade.name}
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-white/82 sm:text-lg">
-            {propriedade.headline}
-          </p>
           <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/78">
             <span className="inline-flex items-center gap-2">
               <MapPin className="h-4 w-4 text-cyan-300" />
@@ -255,41 +261,8 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
             ) : null}
           </div>
         </FadeIn>
-        <FadeIn>
-          <div className="inline-flex rounded-xl border border-white/15 bg-black/22 p-2 backdrop-blur-xl">
-            <ShareButton />
-          </div>
-        </FadeIn>
       </div>
     </section>
-  );
-}
-
-function PropertyInternalNav() {
-  const links = [
-    ["Fotos", "#fotos"],
-    ["Sobre", "#sobre"],
-    ["Disponibilidade", "#disponibilidade"],
-    ["Comodidades", "#comodidades"],
-    ["Regras", "#regras"],
-    ["Localização", "#localizacao"],
-    ["Avaliações", "#avaliacoes"]
-  ] as const;
-
-  return (
-    <nav className="sticky top-[72px] z-20 border-b bg-background/88 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-3 sm:px-6">
-        {links.map(([label, href]) => (
-          <a
-            className="shrink-0 rounded-full border bg-background/70 px-4 py-2 text-xs font-semibold text-muted-foreground transition hover:border-primary/50 hover:text-primary"
-            href={href}
-            key={href}
-          >
-            {label}
-          </a>
-        ))}
-      </div>
-    </nav>
   );
 }
 
@@ -355,7 +328,7 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
   const contatoHref = obterContatoAnfitriaoHref(perfil.whatsapp, perfil.phone);
 
   return (
-    <GlassCard className="p-5">
+    <GlassCard className="border-slate-600/45 bg-slate-950/78 p-6 shadow-2xl shadow-black/25 backdrop-blur-xl">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Anfitrião</h2>
@@ -397,7 +370,7 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
         </a>
       ) : null}
 
-      <div className="mt-5 grid gap-3">
+      <div className="hidden">
         {[
           "Não cobramos nada agora pelo Hospedex.",
           "Confira os dados da reserva antes de realizar qualquer pagamento.",
@@ -409,6 +382,38 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
           </div>
         ))}
       </div>
+    </GlassCard>
+  );
+}
+
+function PropertyTrustHighlights() {
+  const itens = [
+    {
+      icon: ShieldCheck,
+      label: "Pagamento seguro",
+      texto: "Nenhum pagamento antecipado"
+    },
+    {
+      icon: Star,
+      label: "Suporte dedicado",
+      texto: "Antes, durante e depois da viagem"
+    },
+    {
+      icon: ShieldCheck,
+      label: "Anfitrião verificado",
+      texto: "Mais segurança para você"
+    }
+  ];
+
+  return (
+    <GlassCard className="grid gap-4 border-slate-600/45 bg-slate-950/78 p-5 shadow-2xl shadow-black/25 backdrop-blur-xl sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+      {itens.map(({ icon: Icone, label, texto }) => (
+        <div className="border-slate-700/55 sm:border-r sm:pr-4 last:border-r-0" key={label}>
+          <Icone className="h-6 w-6 text-emerald-400" />
+          <p className="mt-3 text-sm font-semibold text-white">{label}</p>
+          <p className="mt-1 text-xs leading-5 text-slate-400">{texto}</p>
+        </div>
+      ))}
     </GlassCard>
   );
 }
@@ -440,8 +445,11 @@ function Secao({
 }) {
   return (
     <FadeIn>
-      <GlassCard className="scroll-mt-32 p-4 sm:p-5" id={id}>
-        <h2 className="mb-4 text-xl font-semibold">{title}</h2>
+      <GlassCard
+        className="scroll-mt-32 border-slate-600/45 bg-slate-950/72 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6"
+        id={id}
+      >
+        <h2 className="mb-4 text-2xl font-semibold text-white">{title}</h2>
         {children}
       </GlassCard>
     </FadeIn>
@@ -458,10 +466,12 @@ function ResumoItem({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border bg-background/70 p-4">
-      <Icone className="h-4 w-4 text-cyan-100" />
-      <p className="mt-3 text-xs uppercase tracking-normal text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold">{value}</p>
+    <div className="flex items-center gap-4 px-4 py-3 first:pl-0 last:pr-0">
+      <Icone className="h-7 w-7 shrink-0 text-cyan-300" />
+      <div>
+        <p className="text-lg font-semibold text-white">{value}</p>
+        <p className="mt-0.5 text-sm text-slate-400">{label}</p>
+      </div>
     </div>
   );
 }
