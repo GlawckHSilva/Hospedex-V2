@@ -87,7 +87,7 @@ export function RegionalGuideCard({
               description="Atualize as informações que aparecerão para o hóspede no guia da região."
               disabled={!podeGerenciar}
               eyebrow="EDIÇÃO"
-              size="xl"
+              size="full"
               title="Editar recomendação local"
               triggerAction="edit"
               triggerClassName="w-full"
@@ -166,7 +166,7 @@ function DetalhesLocal({ local }: { local: RegionalGuideLocationRow }) {
       <Info label="Horário" valor={local.opening_hours || "Horário não cadastrado"} />
       <Info label="Telefone" valor={local.phone || "Telefone não cadastrado"} />
       <Info label="WhatsApp" valor={local.whatsapp || "WhatsApp não cadastrado"} />
-      <Info label="Site" valor={local.website_url || "Site não cadastrado"} />
+      <Info label="Link do mapa" valor={local.website_url || "Link não cadastrado"} />
       <Info label="Prioridade" valor={String(local.display_order)} />
       <div className="md:col-span-2">
         <Info label="Descrição" valor={local.description || "Sem descrição cadastrada."} />

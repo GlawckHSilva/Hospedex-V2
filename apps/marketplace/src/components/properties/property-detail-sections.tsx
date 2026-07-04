@@ -356,7 +356,7 @@ export function PropertyRegionalGuideSection({
                               target="_blank"
                             >
                               <Globe2 className="h-4 w-4" />
-                              Site
+                              Ver no mapa
                               <ExternalLink className="h-3.5 w-3.5" />
                             </a>
                           ) : null}

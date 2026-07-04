@@ -32,6 +32,11 @@ export type DestinoLogoTenant = {
   tenantId: string;
 };
 
+export type DestinoGuiaRegiao = {
+  tenantId: string;
+  localId?: string;
+};
+
 export function obterArquivosImagem(formData: FormData, chave: string): File[] {
   return formData
     .getAll(chave)
@@ -111,6 +116,36 @@ export async function enviarLogoTenantParaStorage(
   };
 }
 
+export async function enviarImagemGuiaRegiaoParaStorage(
+  supabase: ClienteSupabaseServer,
+  destino: DestinoGuiaRegiao,
+  arquivo: File
+) {
+  validarImagemGuiaRegiao(arquivo);
+
+  const caminho = montarCaminhoGuiaRegiao(destino, arquivo);
+  const { error } = await supabase.storage
+    .from(BUCKET_MIDIA_PROPRIEDADES)
+    .upload(caminho, arquivo, {
+      contentType: arquivo.type,
+      upsert: false
+    });
+
+  if (error) {
+    throw new ErroRegraNegocio(`Erro ao enviar imagem do guia da região: ${error.message}`);
+  }
+
+  const { data } = supabase.storage
+    .from(BUCKET_MIDIA_PROPRIEDADES)
+    .getPublicUrl(caminho);
+
+  return {
+    bucket: BUCKET_MIDIA_PROPRIEDADES,
+    path: caminho,
+    url: data.publicUrl
+  };
+}
+
 export async function removerLogoTenantDoStorage(
   supabase: ClienteSupabaseServer,
   destino: DestinoLogoTenant,
@@ -147,6 +182,16 @@ function validarLogoTenant(arquivo: File) {
   }
 }
 
+function validarImagemGuiaRegiao(arquivo: File) {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(arquivo.type)) {
+    throw new ErroRegraNegocio("Formato de imagem inválido. Use JPG, PNG ou WebP.");
+  }
+
+  if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
+    throw new ErroRegraNegocio(`Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+  }
+}
+
 function montarCaminhoStorage(destino: DestinoMidia, arquivo: File): string {
   const nomeSeguro = normalizarNomeArquivo(arquivo.name);
   return `${destino.tenantId}/properties/${destino.propertyId}/${destino.escopo}/${Date.now()}-${nomeSeguro}`;
@@ -157,6 +202,15 @@ function montarCaminhoLogoTenant(destino: DestinoLogoTenant, arquivo: File): str
 
   // O tenant_id fica no inicio do path para preservar isolamento multi-tenant no Storage.
   return `${destino.tenantId}/tenant/logo/${Date.now()}-${nomeSeguro}`;
+}
+
+function montarCaminhoGuiaRegiao(destino: DestinoGuiaRegiao, arquivo: File): string {
+  const nomeSeguro = normalizarNomeArquivo(arquivo.name);
+  const local = destino.localId ?? "novo";
+
+  // O tenant_id no início do caminho permite que a policy de Storage bloqueie
+  // uploads fora do tenant do proprietário autenticado.
+  return `${destino.tenantId}/regional-guide/${local}/${Date.now()}-${nomeSeguro}`;
 }
 
 function extrairCaminhoLogoTenant(logoUrl: string | null, tenantId: string): string | null {

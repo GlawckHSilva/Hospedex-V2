@@ -10,6 +10,10 @@ import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
+import {
+  enviarImagemGuiaRegiaoParaStorage,
+  obterArquivoImagem
+} from "../properties/media-storage";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { podeGerenciarGuiaRegiao } from "./data";
 import { CATEGORIAS_GUIA_REGIAO } from "./types";
@@ -39,6 +43,12 @@ export async function criarLocalGuiaRegiaoAction(formData: FormData) {
   try {
     const supabase = await criarClienteSupabaseServer();
     const entrada = obterEntradaLocal(formData);
+    const coverImageUrl = await resolverImagemGuiaRegiao(
+      supabase,
+      escopo,
+      formData,
+      entrada.coverImageUrl
+    );
     const { error } = await supabase.from("regional_guide_locations").insert({
       tenant_id: escopo.tenantId,
       owner_id: escopo.ownerId,
@@ -50,7 +60,7 @@ export async function criarLocalGuiaRegiaoAction(formData: FormData) {
       whatsapp: entrada.whatsapp,
       website_url: entrada.websiteUrl,
       opening_hours: entrada.openingHours,
-      cover_image_url: entrada.coverImageUrl,
+      cover_image_url: coverImageUrl,
       display_order: entrada.displayOrder,
       status: entrada.status,
       created_by: escopo.userId
@@ -73,6 +83,13 @@ export async function atualizarLocalGuiaRegiaoAction(formData: FormData) {
     const localId = textoObrigatorio(formData, "localId", "local");
     await carregarLocalGerenciavel(supabase, escopo, localId);
     const entrada = obterEntradaLocal(formData);
+    const coverImageUrl = await resolverImagemGuiaRegiao(
+      supabase,
+      escopo,
+      formData,
+      entrada.coverImageUrl,
+      localId
+    );
     const { error } = await supabase
       .from("regional_guide_locations")
       .update({
@@ -84,7 +101,7 @@ export async function atualizarLocalGuiaRegiaoAction(formData: FormData) {
         whatsapp: entrada.whatsapp,
         website_url: entrada.websiteUrl,
         opening_hours: entrada.openingHours,
-        cover_image_url: entrada.coverImageUrl,
+        cover_image_url: coverImageUrl,
         display_order: entrada.displayOrder,
         status: entrada.status
       })
@@ -190,6 +207,34 @@ async function carregarLocalGerenciavel(
   return data;
 }
 
+async function resolverImagemGuiaRegiao(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoGuiaRegiao,
+  formData: FormData,
+  coverImageUrl: string | null,
+  localId?: string
+) {
+  const arquivo = obterArquivoImagem(formData, "coverImageFile");
+  if (!arquivo) return coverImageUrl;
+
+  // O upload passa pelo servidor autenticado e usa tenant_id da sessão.
+  // Assim o navegador nunca envia service role e o Storage mantém isolamento multi-tenant.
+  const imagem = await enviarImagemGuiaRegiaoParaStorage(
+    supabase,
+    localId
+      ? {
+          localId,
+          tenantId: escopo.tenantId
+        }
+      : {
+          tenantId: escopo.tenantId
+        },
+    arquivo
+  );
+
+  return imagem.url;
+}
+
 function obterEntradaLocal(formData: FormData) {
   return {
     address: textoOpcional(formData, "address"),
@@ -286,6 +331,18 @@ function redirecionarComErro(erro: unknown, mensagemPadrao: string): never {
     console.error(mensagemPadrao, erro);
   }
 
-  const mensagem = erro instanceof ErroRegraGuiaRegiao ? erro.message : mensagemPadrao;
+  const mensagem =
+    erro instanceof ErroRegraGuiaRegiao
+      ? erro.message
+      : erro instanceof Error && mensagemPodeAparecerParaUsuario(erro.message)
+        ? erro.message
+        : mensagemPadrao;
   redirect(`${CAMINHO_GUIA_REGIAO}?erro=${encodeURIComponent(mensagem)}`);
+}
+
+function mensagemPodeAparecerParaUsuario(mensagem: string) {
+  return (
+    mensagem.startsWith("Formato de imagem") ||
+    mensagem.startsWith("Imagem acima")
+  );
 }

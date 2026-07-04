@@ -209,7 +209,7 @@ function BotaoNovoLocal({ podeGerenciar }: { podeGerenciar: boolean }) {
       description="Cadastre um local útil para aparecer no guia da região da hospedagem."
       disabled={!podeGerenciar}
       eyebrow="CADASTRO"
-      size="xl"
+      size="full"
       title="Nova recomendação local"
       triggerAction="add"
       triggerClassName="w-full sm:w-auto"
