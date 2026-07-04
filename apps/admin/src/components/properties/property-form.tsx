@@ -1,17 +1,21 @@
 "use client";
 
-import type { AmenityRow, PropertyStatus, PropertyType } from "@hospedex/types";
+import type {
+  AmenityRow,
+  MediaAssetRow,
+  PropertyStatus,
+  PropertyType,
+} from "@hospedex/types";
 import {
-  ArrowDown,
   ArrowLeft,
   ArrowRight,
-  ArrowUp,
   BedDouble,
   Banknote,
   Camera,
   CheckCircle2,
   Clock3,
   CreditCard,
+  GripVertical,
   Home,
   ImagePlus,
   Landmark,
@@ -291,7 +295,10 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
 ];
 
 function deveValidarPublicacao(dados: FormData) {
-  return dados.get("visibilidadePublica") === "on" || dados.get("status") === "published";
+  return (
+    dados.get("visibilidadePublica") === "on" ||
+    dados.get("status") === "published"
+  );
 }
 
 type JurosParcelaCartao =
@@ -337,10 +344,12 @@ function criarJurosParcelasIniciais(
 }
 
 type PreviewGaleria = {
-  arquivo: File;
+  arquivo: File | null;
+  existenteId: string | null;
   id: string;
   nome: string;
   ordem: number;
+  origem: "existente" | "nova";
   principal: boolean;
   titulo: string;
   url: string;
@@ -353,16 +362,40 @@ function criarPreviewGaleria(
 ): PreviewGaleria {
   return {
     arquivo,
+    existenteId: null,
     id: `${arquivo.name}-${arquivo.lastModified}-${arquivo.size}-${crypto.randomUUID()}`,
     nome: arquivo.name,
     ordem,
+    origem: "nova",
     principal,
     titulo: arquivo.name.replace(/\.[^.]+$/, ""),
     url: URL.createObjectURL(arquivo),
   };
 }
 
+function criarPreviewsGaleriaExistente(
+  imagens: MediaAssetRow[],
+): PreviewGaleria[] {
+  return normalizarGaleria(
+    imagens
+      .filter((imagem) => Boolean(imagem.url))
+      .map((imagem, indice) => ({
+        arquivo: null,
+        existenteId: imagem.id,
+        id: `existente-${imagem.id}`,
+        nome: imagem.alt || `Foto ${indice + 1}`,
+        ordem: indice + 1,
+        origem: "existente" as const,
+        principal: imagem.is_cover,
+        titulo: imagem.alt || `Foto ${indice + 1}`,
+        url: imagem.url ?? "",
+      })),
+  );
+}
+
 function normalizarGaleria(previews: PreviewGaleria[]): PreviewGaleria[] {
+  if (!previews.length) return [];
+
   const indicePrincipal = Math.max(
     previews.findIndex((preview) => preview.principal),
     0,
@@ -374,6 +407,19 @@ function normalizarGaleria(previews: PreviewGaleria[]): PreviewGaleria[] {
     // Toda galeria precisa manter uma imagem principal para uso futuro no marketplace.
     principal: indice === indicePrincipal,
   }));
+}
+
+function revogarPreviewLocal(preview: PreviewGaleria) {
+  if (preview.origem === "nova") URL.revokeObjectURL(preview.url);
+}
+
+function obterArquivosPreviews(previews: PreviewGaleria[]) {
+  return previews
+    .filter(
+      (preview): preview is PreviewGaleria & { arquivo: File } =>
+        preview.origem === "nova" && Boolean(preview.arquivo),
+    )
+    .map((preview) => preview.arquivo);
 }
 
 function indiceDaEtapa(etapaId: EtapaId) {
@@ -463,7 +509,10 @@ export function PropertyForm({
   const [errosCampos, setErrosCampos] = useState<ErrosFormularioCasa>({});
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
-  const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>([]);
+  const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>(() =>
+    criarPreviewsGaleriaExistente(propriedade?.imagens ?? []),
+  );
+  const [idsImagensRemovidas, setIdsImagensRemovidas] = useState<string[]>([]);
   const [publicaSelecionada, setPublicaSelecionada] = useState(
     propriedade?.is_public ?? false,
   );
@@ -493,6 +542,11 @@ export function PropertyForm({
   const estaNaUltimaEtapa = etapaAtual === ETAPAS.length - 1;
   const etapasConcluidas = ETAPAS.slice(0, etapaAtual).map((item) => item.id);
   const etapasComErro = obterEtapasComErro(errosCampos);
+  const imagemPrincipalSelecionada =
+    previewCapa ??
+    previewsGaleria.find((preview) => preview.principal)?.url ??
+    propriedade?.imagemCapa?.url ??
+    null;
 
   useEffect(() => {
     previewCapaRef.current = previewCapa;
@@ -505,9 +559,7 @@ export function PropertyForm({
   useEffect(() => {
     return () => {
       if (previewCapaRef.current) URL.revokeObjectURL(previewCapaRef.current);
-      previewsGaleriaRef.current.forEach((preview) =>
-        URL.revokeObjectURL(preview.url),
-      );
+      previewsGaleriaRef.current.forEach(revogarPreviewLocal);
     };
   }, []);
 
@@ -530,7 +582,8 @@ export function PropertyForm({
     if (arquivo && !erro) removerErrosDosCampos(["imagemCapaArquivo"]);
   }
 
-  function sincronizarArquivosGaleria(arquivos: File[]) {
+  function sincronizarArquivosGaleria(previews: PreviewGaleria[]) {
+    const arquivos = obterArquivosPreviews(previews);
     arquivosGaleriaRef.current = arquivos;
 
     if (!galeriaRef.current) return;
@@ -551,20 +604,16 @@ export function PropertyForm({
     setErroImagem(erro);
 
     if (erro) {
-      sincronizarArquivosGaleria(arquivosGaleriaRef.current);
+      sincronizarArquivosGaleria(previewsGaleriaRef.current);
       return;
     }
 
     // O input file do navegador substitui a selecao a cada upload.
     // A ref preserva a colecao real para que novas fotos sejam adicionadas sem apagar as anteriores.
-    sincronizarArquivosGaleria([
-      ...arquivosGaleriaRef.current,
-      ...novasImagens,
-    ]);
     removerErrosDosCampos(["imagemCapaArquivo"]);
 
-    setPreviewsGaleria((previewsAtuais) =>
-      normalizarGaleria([
+    setPreviewsGaleria((previewsAtuais) => {
+      const normalizados = normalizarGaleria([
         ...previewsAtuais,
         ...novasImagens.map((arquivo, indice) =>
           criarPreviewGaleria(
@@ -573,40 +622,53 @@ export function PropertyForm({
             previewsAtuais.length === 0 && indice === 0,
           ),
         ),
-      ]),
-    );
+      ]);
+      sincronizarArquivosGaleria(normalizados);
+      return normalizados;
+    });
   }
 
   function removerGaleria(indiceRemovido: number) {
     setPreviewsGaleria((previewsAtuais) => {
       const previewRemovido = previewsAtuais[indiceRemovido];
-      if (previewRemovido) URL.revokeObjectURL(previewRemovido.url);
+      if (previewRemovido) {
+        revogarPreviewLocal(previewRemovido);
+        if (previewRemovido.existenteId) {
+          setIdsImagensRemovidas((idsAtuais) =>
+            idsAtuais.includes(previewRemovido.existenteId!)
+              ? idsAtuais
+              : [...idsAtuais, previewRemovido.existenteId!],
+          );
+        }
+      }
 
       const atualizados = normalizarGaleria(
         previewsAtuais.filter((_, indice) => indice !== indiceRemovido),
       );
-      sincronizarArquivosGaleria(atualizados.map((preview) => preview.arquivo));
+      sincronizarArquivosGaleria(atualizados);
       return atualizados;
     });
   }
 
-  function moverGaleria(indiceAtual: number, deslocamento: -1 | 1) {
+  function reordenarGaleria(indiceAtual: number, indiceDestino: number) {
     setPreviewsGaleria((previewsAtuais) => {
-      const indiceDestino = indiceAtual + deslocamento;
-      if (indiceDestino < 0 || indiceDestino >= previewsAtuais.length)
+      if (
+        indiceAtual === indiceDestino ||
+        indiceAtual < 0 ||
+        indiceDestino < 0 ||
+        indiceAtual >= previewsAtuais.length ||
+        indiceDestino >= previewsAtuais.length
+      ) {
         return previewsAtuais;
+      }
 
       const atualizados = [...previewsAtuais];
-      const itemAtual = atualizados[indiceAtual];
-      const itemDestino = atualizados[indiceDestino];
-      if (!itemAtual || !itemDestino) return previewsAtuais;
+      const [itemAtual] = atualizados.splice(indiceAtual, 1);
+      if (!itemAtual) return previewsAtuais;
 
-      atualizados[indiceAtual] = itemDestino;
-      atualizados[indiceDestino] = itemAtual;
+      atualizados.splice(indiceDestino, 0, itemAtual);
       const normalizados = normalizarGaleria(atualizados);
-      sincronizarArquivosGaleria(
-        normalizados.map((preview) => preview.arquivo),
-      );
+      sincronizarArquivosGaleria(normalizados);
       return normalizados;
     });
   }
@@ -775,9 +837,7 @@ export function PropertyForm({
     return {
       possuiComodidade: quantidadeComodidadesValidas > 0,
       possuiImagemPrincipal: Boolean(
-        previewCapa ||
-        propriedade?.imagemCapa?.url ||
-        previewsGaleria.some((preview) => preview.principal),
+        previewCapa || previewsGaleria.some((preview) => preview.principal),
       ),
     };
   }
@@ -815,118 +875,121 @@ export function PropertyForm({
         <section className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-4 shadow-2xl shadow-cyan-950/10 sm:p-6">
           <div className="mb-6 flex items-start gap-4 border-b border-cyan-300/10 pb-5">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-500/15 text-cyan-700 shadow-lg shadow-cyan-950/20 dark:text-cyan-200 [&_svg]:h-6 [&_svg]:w-6">
-            {etapa.icon}
-          </span>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
-              Etapa {etapaAtual + 1} de {ETAPAS.length}
-            </p>
-            <h3 className="font-semibold">{etapa.label}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {etapa.descricao}
-            </p>
+              {etapa.icon}
+            </span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
+                Etapa {etapaAtual + 1} de {ETAPAS.length}
+              </p>
+              <h3 className="font-semibold">{etapa.label}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {etapa.descricao}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/*
+          {/*
           Mantemos todas as etapas montadas para que o FormData envie todos os
           campos ao salvar. A troca visual ocorre com hidden, sem formulários
           duplicados ou perda de dados entre abas da modal.
         */}
-        <div hidden={etapa.id !== "basico"}>
-          <EtapaBasico
-            defaultDescricaoCompleta={
-              propriedade?.full_description ?? propriedade?.description ?? ""
-            }
-            defaultDescricaoCurta={
-              propriedade?.short_description ?? propriedade?.headline ?? ""
-            }
-            defaultDestaque={propriedade?.marketplace_featured ?? false}
-            defaultNome={propriedade?.name}
-            defaultNomeExibicao={
-              propriedade?.detalhesPublicos.nomeExibicao ||
-              propriedade?.name ||
-              ""
-            }
-            defaultPublica={propriedade?.is_public ?? false}
-            defaultStatus={propriedade?.status ?? "draft"}
-            defaultTipo={propriedade?.property_type ?? "seasonal_home"}
-            disabled={!podeGerenciar}
-            erros={errosCampos}
-            onPublicaChange={atualizarVisibilidadePublica}
-            onStatusChange={setStatusSelecionado}
-          />
-        </div>
+          <div hidden={etapa.id !== "basico"}>
+            <EtapaBasico
+              defaultDescricaoCompleta={
+                propriedade?.full_description ?? propriedade?.description ?? ""
+              }
+              defaultDescricaoCurta={
+                propriedade?.short_description ?? propriedade?.headline ?? ""
+              }
+              defaultDestaque={propriedade?.marketplace_featured ?? false}
+              defaultNome={propriedade?.name}
+              defaultNomeExibicao={
+                propriedade?.detalhesPublicos.nomeExibicao ||
+                propriedade?.name ||
+                ""
+              }
+              defaultPublica={propriedade?.is_public ?? false}
+              defaultStatus={propriedade?.status ?? "draft"}
+              defaultTipo={propriedade?.property_type ?? "seasonal_home"}
+              disabled={!podeGerenciar}
+              erros={errosCampos}
+              onPublicaChange={atualizarVisibilidadePublica}
+              onStatusChange={setStatusSelecionado}
+            />
+          </div>
 
-        <div hidden={etapa.id !== "localizacao"}>
-          <EtapaLocalizacao
-            endereco={endereco}
-            disabled={!podeGerenciar}
-            erros={errosCampos}
-          />
-        </div>
+          <div hidden={etapa.id !== "localizacao"}>
+            <EtapaLocalizacao
+              endereco={endereco}
+              disabled={!podeGerenciar}
+              erros={errosCampos}
+            />
+          </div>
 
-        <div hidden={etapa.id !== "estrutura"}>
-          <EtapaEstrutura
-            disabled={!podeGerenciar}
-            erros={errosCampos}
-            estrutura={estrutura}
-          />
-        </div>
+          <div hidden={etapa.id !== "estrutura"}>
+            <EtapaEstrutura
+              disabled={!podeGerenciar}
+              erros={errosCampos}
+              estrutura={estrutura}
+            />
+          </div>
 
-        <div hidden={etapa.id !== "valores"}>
-          <EtapaValores
-            disabled={!podeGerenciar}
-            erros={errosCampos}
-            valores={valores}
-          />
-        </div>
+          <div hidden={etapa.id !== "valores"}>
+            <EtapaValores
+              disabled={!podeGerenciar}
+              erros={errosCampos}
+              valores={valores}
+            />
+          </div>
 
-        <div hidden={etapa.id !== "regras"}>
-          <EtapaRegras disabled={!podeGerenciar} regras={regras} />
-        </div>
+          <div hidden={etapa.id !== "regras"}>
+            <EtapaRegras disabled={!podeGerenciar} regras={regras} />
+          </div>
 
-        <div hidden={etapa.id !== "imagens"}>
-          <EtapaImagens
-            capaRef={capaRef}
-            disabled={!podeGerenciar}
-            erroImagem={erroImagem}
-            galeriaRef={galeriaRef}
-            imagemCapaAtual={propriedade?.imagemCapa?.url ?? null}
-            publicaSelecionada={publicaSelecionada}
-            previewCapa={previewCapa}
-            previewsGaleria={previewsGaleria}
-            erros={errosCampos}
-            atualizarTituloGaleria={atualizarTituloGaleria}
-            definirPrincipalGaleria={definirPrincipalGaleria}
-            moverGaleria={moverGaleria}
-            removerGaleria={removerGaleria}
-            selecionarCapa={selecionarCapa}
-            selecionarGaleria={selecionarGaleria}
-            totalImagensAtuais={propriedade?.imagens.length ?? 0}
-          />
-        </div>
+          <div hidden={etapa.id !== "imagens"}>
+            <EtapaImagens
+              capaRef={capaRef}
+              disabled={!podeGerenciar}
+              erroImagem={erroImagem}
+              galeriaRef={galeriaRef}
+              idsImagensRemovidas={idsImagensRemovidas}
+              imagemCapaAtual={propriedade?.imagemCapa?.url ?? null}
+              publicaSelecionada={publicaSelecionada}
+              previewCapa={previewCapa}
+              previewsGaleria={previewsGaleria}
+              erros={errosCampos}
+              atualizarTituloGaleria={atualizarTituloGaleria}
+              definirPrincipalGaleria={definirPrincipalGaleria}
+              reordenarGaleria={reordenarGaleria}
+              removerGaleria={removerGaleria}
+              selecionarCapa={selecionarCapa}
+              selecionarGaleria={selecionarGaleria}
+              totalImagensAtuais={propriedade?.imagens.length ?? 0}
+            />
+          </div>
 
-        <div hidden={etapa.id !== "comodidades"}>
-          <PropertyAmenitiesStep
-            comodidades={comodidadesDisponiveis}
-            disabled={!podeGerenciar}
-            onQuantidadeValidaChange={setQuantidadeComodidadesValidas}
-            selecionadas={comodidadesSelecionadas}
-          />
-        </div>
+          <div hidden={etapa.id !== "comodidades"}>
+            <PropertyAmenitiesStep
+              comodidades={comodidadesDisponiveis}
+              disabled={!podeGerenciar}
+              onQuantidadeValidaChange={setQuantidadeComodidadesValidas}
+              selecionadas={comodidadesSelecionadas}
+            />
+          </div>
 
-        <div hidden={etapa.id !== "compartilhamento"}>
-          <EtapaCompartilhamento
-            detalhes={propriedade?.detalhesPublicos}
-            disabled={!podeGerenciar}
-            erros={errosCampos}
-            imagemCapaUrl={previewCapa ?? propriedade?.imagemCapa?.url ?? null}
-            propriedade={propriedade}
-            quantidadeComodidadesValidas={quantidadeComodidadesValidas}
-            publicaSelecionada={publicaSelecionada || statusSelecionado === "published"}
-          />
-        </div>
+          <div hidden={etapa.id !== "compartilhamento"}>
+            <EtapaCompartilhamento
+              detalhes={propriedade?.detalhesPublicos}
+              disabled={!podeGerenciar}
+              erros={errosCampos}
+              imagemCapaUrl={imagemPrincipalSelecionada}
+              propriedade={propriedade}
+              quantidadeComodidadesValidas={quantidadeComodidadesValidas}
+              publicaSelecionada={
+                publicaSelecionada || statusSelecionado === "published"
+              }
+            />
+          </div>
         </section>
       </div>
 
@@ -1151,7 +1214,9 @@ function CampoStatusSegmentado({
               value={option.valor}
             />
             {option.label}
-            {valorAtual === option.valor ? <CheckCircle2 className="h-4 w-4" /> : null}
+            {valorAtual === option.valor ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : null}
           </label>
         ))}
       </div>
@@ -1465,9 +1530,7 @@ function EtapaValores({
           disabled={disabled}
           label="Cobrança do hóspede extra"
           name="tipoCobrancaHospedeExtra"
-          options={[
-            { label: "Por reserva", valor: "per_stay" },
-          ]}
+          options={[{ label: "Por reserva", valor: "per_stay" }]}
         />
       </div>
       <CampoCheckbox
@@ -1826,7 +1889,8 @@ function EtapaCompartilhamento({
   quantidadeComodidadesValidas: number;
   publicaSelecionada: boolean;
 }) {
-  const titulo = detalhes?.tituloPublico || propriedade?.name || "Título público da casa";
+  const titulo =
+    detalhes?.tituloPublico || propriedade?.name || "Título público da casa";
   const cidade = propriedade?.enderecoFormatado?.cidade;
   const estado = propriedade?.enderecoFormatado?.estado;
   const estrutura = propriedade?.estrutura;
@@ -1840,7 +1904,9 @@ function EtapaCompartilhamento({
         </p>
         {publicaSelecionada && quantidadeComodidadesValidas === 0 ? (
           <p className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-3 text-sm text-amber-100">
-            <strong className="block text-foreground">Comodidades pendentes</strong>
+            <strong className="block text-foreground">
+              Comodidades pendentes
+            </strong>
             Adicione pelo menos uma comodidade antes de publicar esta casa.
           </p>
         ) : null}
@@ -1894,7 +1960,8 @@ function EtapaCompartilhamento({
         <div className="grid gap-3 p-4">
           <h4 className="text-lg font-semibold">{titulo}</h4>
           <p className="text-sm text-muted-foreground">
-            {[cidade, estado].filter(Boolean).join(" / ") || "Localização ainda não informada"}
+            {[cidade, estado].filter(Boolean).join(" / ") ||
+              "Localização ainda não informada"}
           </p>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span>{estrutura?.hospedesMaximos ?? 0} hóspedes</span>
@@ -1925,11 +1992,12 @@ function EtapaImagens({
   erroImagem,
   erros,
   galeriaRef,
+  idsImagensRemovidas,
   imagemCapaAtual,
-  moverGaleria,
   previewCapa,
   previewsGaleria,
   publicaSelecionada,
+  reordenarGaleria,
   removerGaleria,
   selecionarCapa,
   selecionarGaleria,
@@ -1942,16 +2010,26 @@ function EtapaImagens({
   erroImagem: string | null;
   erros: ErrosFormularioCasa;
   galeriaRef: RefObject<HTMLInputElement | null>;
+  idsImagensRemovidas: string[];
   imagemCapaAtual: string | null;
-  moverGaleria: (indice: number, deslocamento: -1 | 1) => void;
   previewCapa: string | null;
   previewsGaleria: PreviewGaleria[];
   publicaSelecionada: boolean;
+  reordenarGaleria: (indiceAtual: number, indiceDestino: number) => void;
   removerGaleria: (indice: number) => void;
   selecionarCapa: (arquivo?: File) => void;
   selecionarGaleria: (arquivos: FileList | null) => void;
   totalImagensAtuais: number;
 }) {
+  const [indiceArrastado, setIndiceArrastado] = useState<number | null>(null);
+  const imagemPrincipal =
+    previewCapa ??
+    previewsGaleria.find((preview) => preview.principal)?.url ??
+    imagemCapaAtual;
+  const possuiPrincipalExistente = previewsGaleria.some(
+    (preview) => preview.origem === "existente" && preview.principal,
+  );
+
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-2">
@@ -1981,121 +2059,186 @@ function EtapaImagens({
         </p>
       ) : null}
       <div className="grid gap-3">
-        {imagemCapaAtual ? (
+        {possuiPrincipalExistente ? (
           <input name="possuiImagemPrincipalAtual" type="hidden" value="true" />
         ) : null}
-        {previewCapa || imagemCapaAtual ? (
+        {idsImagensRemovidas.map((imagemId) => (
+          <input
+            key={imagemId}
+            name="imagensExistentesRemovidasIds"
+            readOnly
+            type="hidden"
+            value={imagemId}
+          />
+        ))}
+        {imagemPrincipal ? (
           <PreviewImagem
             titulo={
               previewCapa ? "Nova imagem principal" : "Imagem principal atual"
             }
-            url={previewCapa ?? imagemCapaAtual ?? ""}
+            url={imagemPrincipal}
           />
         ) : null}
         <div className="rounded-xl border bg-background/45 p-3">
-          <p className="mb-3 text-sm font-semibold">Galeria</p>
+          <p className="mb-3 text-sm font-semibold">Galeria da hospedagem</p>
           <p className="-mt-2 mb-3 text-xs text-muted-foreground">
-            Adicione fotos dos quartos, área externa, cozinha e lazer.
+            Visualize as fotos salvas, adicione novas imagens e arraste os cards
+            para definir a ordem pública.
           </p>
           {previewsGaleria.length ? (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {previewsGaleria.map((preview, indice) => (
-                <div
-                  className="grid gap-3 overflow-hidden rounded-lg border bg-background/55 p-3"
-                  key={preview.id}
-                >
-                  <input
-                    name="titulosGaleria"
-                    readOnly
-                    type="hidden"
-                    value={preview.titulo}
-                  />
-                  <input
-                    name="ordensGaleria"
-                    readOnly
-                    type="hidden"
-                    value={preview.ordem}
-                  />
-                  {preview.principal ? (
-                    <input
-                      name="imagemPrincipalGaleriaIndice"
-                      readOnly
-                      type="hidden"
-                      value={indice}
-                    />
-                  ) : null}
+              {previewsGaleria.map((preview, indice) => {
+                const indiceNovaGaleria = previewsGaleria
+                  .slice(0, indice)
+                  .filter((item) => item.origem === "nova").length;
+                const arrastando = indiceArrastado === indice;
 
-                  <img
-                    alt={preview.titulo || preview.nome}
-                    className="h-28 w-full rounded-lg object-cover"
-                    src={preview.url}
-                  />
-                  <CampoTexto
-                    disabled={disabled}
-                    label="Nome/título da foto"
-                    name={`tituloGaleriaVisual${indice}`}
-                    onChange={(evento) =>
-                      atualizarTituloGaleria(indice, evento.currentTarget.value)
-                    }
-                    value={preview.titulo}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <ActionButton
-                      disabled={disabled}
-                      icon={<Star className="h-4 w-4" />}
-                      onClick={() => definirPrincipalGaleria(indice)}
-                      size="sm"
-                      type="button"
-                      variant={preview.principal ? "status" : "settings"}
-                    >
-                      Principal
-                    </ActionButton>
-                    <ActionButton
-                      aria-label="Mover foto para cima"
-                      disabled={disabled || indice === 0}
-                      icon={<ArrowUp className="h-4 w-4" />}
-                      onClick={() => moverGaleria(indice, -1)}
-                      size="icon"
-                      type="button"
-                      variant="settings"
-                    >
-                      Subir
-                    </ActionButton>
-                    <ActionButton
-                      aria-label="Mover foto para baixo"
-                      disabled={
-                        disabled || indice === previewsGaleria.length - 1
+                return (
+                  <div
+                    className={cn(
+                      "grid gap-3 overflow-hidden rounded-lg border bg-background/55 p-3 transition",
+                      !disabled &&
+                        "cursor-grab hover:bg-cyan-300/5 active:cursor-grabbing",
+                      arrastando &&
+                        "border-cyan-300/60 bg-cyan-300/10 opacity-80",
+                    )}
+                    draggable={!disabled}
+                    key={preview.id}
+                    onDragEnd={() => setIndiceArrastado(null)}
+                    onDragOver={(evento) => evento.preventDefault()}
+                    onDragStart={() => setIndiceArrastado(indice)}
+                    onDrop={(evento) => {
+                      evento.preventDefault();
+                      if (indiceArrastado !== null) {
+                        reordenarGaleria(indiceArrastado, indice);
                       }
-                      icon={<ArrowDown className="h-4 w-4" />}
-                      onClick={() => moverGaleria(indice, 1)}
-                      size="icon"
-                      type="button"
-                      variant="settings"
-                    >
-                      Descer
-                    </ActionButton>
-                    <ActionButton
+                      setIndiceArrastado(null);
+                    }}
+                  >
+                    {preview.origem === "existente" && preview.existenteId ? (
+                      <>
+                        <input
+                          name="imagensExistentesIds"
+                          readOnly
+                          type="hidden"
+                          value={preview.existenteId}
+                        />
+                        <input
+                          name="titulosImagensExistentes"
+                          readOnly
+                          type="hidden"
+                          value={preview.titulo}
+                        />
+                        <input
+                          name="ordensImagensExistentes"
+                          readOnly
+                          type="hidden"
+                          value={preview.ordem}
+                        />
+                        {preview.principal ? (
+                          <input
+                            name="imagemPrincipalExistenteId"
+                            readOnly
+                            type="hidden"
+                            value={preview.existenteId}
+                          />
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          name="titulosGaleria"
+                          readOnly
+                          type="hidden"
+                          value={preview.titulo}
+                        />
+                        <input
+                          name="ordensGaleria"
+                          readOnly
+                          type="hidden"
+                          value={preview.ordem}
+                        />
+                        {preview.principal ? (
+                          <input
+                            name="imagemPrincipalGaleriaIndice"
+                            readOnly
+                            type="hidden"
+                            value={indiceNovaGaleria}
+                          />
+                        ) : null}
+                      </>
+                    )}
+
+                    <div className="relative overflow-hidden rounded-lg">
+                      {preview.url ? (
+                        <img
+                          alt={preview.titulo || preview.nome}
+                          className="h-28 w-full object-cover"
+                          src={preview.url}
+                        />
+                      ) : (
+                        <div className="grid h-28 place-items-center border border-dashed text-xs text-muted-foreground">
+                          Sem prévia
+                        </div>
+                      )}
+                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full border border-white/15 bg-black/55 px-2 py-1 text-[0.68rem] font-semibold text-white backdrop-blur">
+                        <GripVertical className="h-3.5 w-3.5" />
+                        Arrastar
+                      </div>
+                      {preview.principal ? (
+                        <span className="absolute right-2 top-2 rounded-full bg-cyan-300 px-2 py-1 text-[0.68rem] font-bold text-slate-950">
+                          Principal
+                        </span>
+                      ) : null}
+                    </div>
+                    <CampoTexto
                       disabled={disabled}
-                      icon={<Trash2 className="h-4 w-4" />}
-                      onClick={() => removerGaleria(indice)}
-                      size="sm"
-                      type="button"
-                      variant="delete"
-                    >
-                      Remover foto
-                    </ActionButton>
+                      label="Nome/título da foto"
+                      name={`tituloGaleriaVisual${indice}`}
+                      onChange={(evento) =>
+                        atualizarTituloGaleria(
+                          indice,
+                          evento.currentTarget.value,
+                        )
+                      }
+                      value={preview.titulo}
+                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ActionButton
+                        disabled={disabled}
+                        icon={<Star className="h-4 w-4" />}
+                        onClick={() => definirPrincipalGaleria(indice)}
+                        size="sm"
+                        type="button"
+                        variant={preview.principal ? "status" : "settings"}
+                      >
+                        Principal
+                      </ActionButton>
+                      <ActionButton
+                        disabled={disabled}
+                        icon={<Trash2 className="h-4 w-4" />}
+                        onClick={() => removerGaleria(indice)}
+                        size="sm"
+                        type="button"
+                        variant="delete"
+                      >
+                        Remover foto
+                      </ActionButton>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="grid min-h-28 place-items-center rounded-xl border border-dashed p-4 text-center">
               <div>
                 <ImagePlus className="mx-auto h-6 w-6 text-cyan-600" />
                 <p className="mt-2 text-sm font-medium">
-                  {totalImagensAtuais
-                    ? `${totalImagensAtuais} foto(s) já cadastrada(s)`
-                    : "Nenhuma foto cadastrada"}
+                  {idsImagensRemovidas.length
+                    ? "Todas as fotos foram marcadas para remoção"
+                    : totalImagensAtuais
+                      ? `${totalImagensAtuais} foto(s) já cadastrada(s)`
+                      : "Nenhuma foto cadastrada"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Adicione novas fotos aqui. A galeria salva permite definir
@@ -2134,7 +2277,9 @@ function CampoTexto({
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
-      {ajuda ? <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p> : null}
+      {ajuda ? (
+        <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p>
+      ) : null}
       <Input
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
@@ -2179,7 +2324,10 @@ function CampoContador({
   const erroId = erro ? `${name}-erro` : undefined;
 
   function atualizarValor(novoValor: number) {
-    const limitado = Math.max(minimo, maximo ? Math.min(novoValor, maximo) : novoValor);
+    const limitado = Math.max(
+      minimo,
+      maximo ? Math.min(novoValor, maximo) : novoValor,
+    );
     setValor(limitado);
   }
 
@@ -2211,7 +2359,9 @@ function CampoContador({
           id={name}
           min={minimo}
           name={name}
-          onChange={(evento) => atualizarValor(Number(evento.currentTarget.value || minimo))}
+          onChange={(evento) =>
+            atualizarValor(Number(evento.currentTarget.value || minimo))
+          }
           type="number"
           value={valor}
         />
@@ -2235,7 +2385,16 @@ function CampoContador({
 }
 
 function CampoMoeda(props: CampoTextoProps) {
-  return <CampoTexto {...props} inputMode="decimal" min={0} placeholder="R$ 0,00" step="0.01" type="number" />;
+  return (
+    <CampoTexto
+      {...props}
+      inputMode="decimal"
+      min={0}
+      placeholder="R$ 0,00"
+      step="0.01"
+      type="number"
+    />
+  );
 }
 
 function CampoArea({
@@ -2260,7 +2419,9 @@ function CampoArea({
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
-      {ajuda ? <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p> : null}
+      {ajuda ? (
+        <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p>
+      ) : null}
       <textarea
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
@@ -2309,7 +2470,9 @@ function CampoSelect({
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
-      {ajuda ? <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p> : null}
+      {ajuda ? (
+        <p className="-mt-1 text-xs text-muted-foreground">{ajuda}</p>
+      ) : null}
       <select
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}

@@ -1,6 +1,7 @@
 "use server";
 
 import type {
+  MediaAssetRow,
   PropertyRow,
   PropertyStatus,
   PropertyType,
@@ -15,6 +16,7 @@ import {
   enviarImagemParaStorage,
   obterArquivoImagem,
   obterArquivosImagem,
+  removerImagemDoStorage,
 } from "./media-storage";
 import {
   carregarEscopoGerenciamento,
@@ -47,6 +49,13 @@ const TIPOS_PROPRIEDADE: PropertyType[] = [
 ];
 const MAX_PARCELAS_CARTAO = 12;
 
+type ImagemExistenteEntrada = {
+  id: string;
+  ordem: number;
+  principal: boolean;
+  titulo: string;
+};
+
 type EntradaPropriedade = {
   detalhesPublicos: {
     descricaoPublica: string | null;
@@ -76,8 +85,10 @@ type EntradaPropriedade = {
   destaqueMarketplace: boolean;
   galeriaArquivos: File[];
   galeriaIndicePrincipal: number | null;
+  galeriaExistente: ImagemExistenteEntrada[];
   galeriaOrdens: number[];
   galeriaTitulos: string[];
+  imagensExistentesRemovidasIds: string[];
   imagemCapaArquivo: File | null;
   nome: string;
   publica: boolean;
@@ -229,6 +240,12 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       salvarConfiguracoesDaCasa(supabase, escopo, propriedade.id, entrada),
       salvarComodidadesDaCasa(supabase, escopo, propriedade.id, entrada),
     ]);
+    await atualizarGaleriaExistentePropriedade(
+      supabase,
+      escopo.tenantId,
+      propriedade.id,
+      entrada,
+    );
     await salvarImagemCapa(supabase, escopo.tenantId, propriedade.id, entrada);
     await salvarGaleriaPropriedade(
       supabase,
@@ -561,6 +578,10 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     formData,
     "imagensGaleriaArquivos",
   );
+  const imagemPrincipalExistenteId = textoOpcional(
+    formData,
+    "imagemPrincipalExistenteId",
+  );
   const formasPagamento = obterFormasPagamento(formData);
   const comodidadeIds = obterValoresMultiplos(formData, "comodidadeIds");
   const comodidadesPersonalizadas = obterComodidadesPersonalizadas(formData);
@@ -619,6 +640,10 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     descricaoCurta,
     destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
     galeriaArquivos,
+    galeriaExistente: obterGaleriaExistente(
+      formData,
+      imagemPrincipalExistenteId,
+    ),
     galeriaIndicePrincipal: numeroInteiroOpcionalOuNulo(
       formData,
       "imagemPrincipalGaleriaIndice",
@@ -626,6 +651,10 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     ),
     galeriaOrdens: obterNumerosInteirosMultiplos(formData, "ordensGaleria"),
     galeriaTitulos: obterValoresMultiplos(formData, "titulosGaleria"),
+    imagensExistentesRemovidasIds: obterValoresMultiplos(
+      formData,
+      "imagensExistentesRemovidasIds",
+    ),
     imagemCapaArquivo,
     nome,
     publica,
@@ -843,6 +872,25 @@ function obterComodidadesPersonalizadasExistentes(formData: FormData) {
     }
     return { id, nome };
   });
+}
+
+function obterGaleriaExistente(
+  formData: FormData,
+  imagemPrincipalId: string | null,
+): ImagemExistenteEntrada[] {
+  const ids = obterValoresMultiplos(formData, "imagensExistentesIds");
+  const titulos = obterValoresMultiplos(formData, "titulosImagensExistentes");
+  const ordens = obterNumerosInteirosMultiplos(
+    formData,
+    "ordensImagensExistentes",
+  );
+
+  return ids.map((id, indice) => ({
+    id,
+    ordem: ordens[indice] ?? indice + 1,
+    principal: Boolean(imagemPrincipalId && id === imagemPrincipalId),
+    titulo: titulos[indice]?.trim() || `Foto ${indice + 1}`,
+  }));
 }
 
 async function salvarConfiguracoesDaCasa(
@@ -1165,6 +1213,114 @@ async function obterProximaOrdemMidia(
     );
   }
   return (data?.sort_order ?? -1) + 1;
+}
+
+async function atualizarGaleriaExistentePropriedade(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedadeId: string,
+  entrada: EntradaPropriedade,
+) {
+  await removerImagensExistentesPropriedade(
+    supabase,
+    tenantId,
+    propriedadeId,
+    entrada.imagensExistentesRemovidasIds,
+  );
+
+  if (!entrada.galeriaExistente.length) return;
+
+  const usaPrincipalNova =
+    Boolean(entrada.imagemCapaArquivo) ||
+    entrada.galeriaIndicePrincipal !== null;
+  const principalExistente = entrada.galeriaExistente.find(
+    (imagem) => imagem.principal,
+  );
+
+  if (principalExistente && !usaPrincipalNova) {
+    // A capa publica deve ser unica por casa. Ao escolher uma imagem existente,
+    // limpamos as demais antes de marcar a nova principal.
+    const { error } = await supabase
+      .from("media_assets")
+      .update({ is_cover: false })
+      .eq("tenant_id", tenantId)
+      .eq("property_id", propriedadeId)
+      .eq("status", "active");
+
+    if (error) {
+      throw erroOperacaoCasa(
+        error.message,
+        "Erro ao atualizar imagem principal.",
+      );
+    }
+  }
+
+  for (const imagem of entrada.galeriaExistente) {
+    const atualizacao: {
+      alt: string;
+      is_cover?: boolean;
+      sort_order: number;
+    } = {
+      alt: imagem.titulo,
+      sort_order: imagem.ordem,
+    };
+
+    if (principalExistente && !usaPrincipalNova) {
+      atualizacao.is_cover = imagem.id === principalExistente.id;
+    }
+
+    const { error } = await supabase
+      .from("media_assets")
+      .update(atualizacao)
+      .eq("id", imagem.id)
+      .eq("tenant_id", tenantId)
+      .eq("property_id", propriedadeId)
+      .eq("status", "active");
+
+    if (error) {
+      throw erroOperacaoCasa(error.message, "Erro ao atualizar galeria.");
+    }
+  }
+}
+
+async function removerImagensExistentesPropriedade(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedadeId: string,
+  imagemIds: string[],
+) {
+  if (!imagemIds.length) return;
+
+  const { data, error } = await supabase
+    .from("media_assets")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("property_id", propriedadeId)
+    .eq("status", "active")
+    .in("id", imagemIds)
+    .returns<MediaAssetRow[]>();
+
+  if (error) {
+    throw erroOperacaoCasa(
+      error.message,
+      "Erro ao localizar imagens removidas.",
+    );
+  }
+
+  await Promise.all(
+    (data ?? []).map((imagem) => removerImagemDoStorage(supabase, imagem)),
+  );
+
+  const { error: erroRemocao } = await supabase
+    .from("media_assets")
+    .update({ is_cover: false, status: "deleted" })
+    .eq("tenant_id", tenantId)
+    .eq("property_id", propriedadeId)
+    .in("id", imagemIds);
+
+  if (erroRemocao) {
+    throw erroOperacaoCasa(erroRemocao.message, "Erro ao remover imagens.");
+  }
 }
 
 async function salvarImagemCapa(
