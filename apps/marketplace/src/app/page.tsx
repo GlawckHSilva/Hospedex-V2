@@ -274,7 +274,7 @@ function MarketplaceSearchCard() {
   return (
     <form
       action="/propriedades"
-      className="grid w-full max-w-full gap-1 overflow-hidden rounded-[2rem] border border-white/18 bg-white p-2 shadow-2xl shadow-cyan-950/35 lg:grid-cols-[minmax(0,1.25fr)_170px_170px_140px_auto] lg:items-center"
+      className="grid w-full max-w-full gap-1 overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/55 p-2 shadow-2xl shadow-cyan-950/35 backdrop-blur-2xl lg:grid-cols-[minmax(0,1.25fr)_170px_170px_140px_auto] lg:items-center"
     >
       <SearchField
         icon={<MapPin className="h-5 w-5" />}
@@ -303,7 +303,7 @@ function MarketplaceSearchCard() {
         type="number"
       />
       <button
-        className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[1.5rem] bg-cyan-500 px-6 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-300 lg:mt-0 lg:w-auto"
+        className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[1.5rem] bg-cyan-400 px-6 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-300 lg:mt-0 lg:w-auto"
         type="submit"
       >
         <Search className="h-4 w-4" />
@@ -329,12 +329,12 @@ function SearchField({
   type?: string;
 }) {
   return (
-    <label className="grid min-w-0 gap-1 rounded-[1.5rem] px-4 py-3 text-slate-950 transition hover:bg-slate-100 lg:border-r lg:border-slate-200 lg:last:border-r-0">
-      <span className="text-xs font-bold uppercase tracking-normal text-slate-500">{label}</span>
+    <label className="grid min-w-0 gap-1 rounded-[1.5rem] px-4 py-3 text-cyan-50 transition hover:bg-white/8 lg:border-r lg:border-cyan-100/12 lg:last:border-r-0">
+      <span className="text-xs font-bold uppercase tracking-normal text-cyan-200/78">{label}</span>
       <span className="flex items-center gap-2">
-        <span className="text-cyan-600">{icon}</span>
+        <span className="text-cyan-300">{icon}</span>
         <input
-          className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-slate-950 outline-none placeholder:text-slate-500"
+          className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-cyan-50/70"
           min={min}
           name={name}
           placeholder={placeholder}
