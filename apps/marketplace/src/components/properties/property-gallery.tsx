@@ -15,18 +15,21 @@ export type PropertyGalleryProps = {
 };
 
 /**
- * Galeria publica da Casa.
+ * Galeria publica da casa.
  *
- * Centraliza navegacao por teclado, swipe e modal para que a pagina nao
- * replique regras de acessibilidade ou controle de indice.
+ * Mantem a foto grande principal no hero da pagina e transforma esta secao em
+ * uma previa compacta, com lightbox para quem quiser explorar todas as fotos.
  */
 export function PropertyGallery({ compact = false, property }: PropertyGalleryProps) {
-  const imagens = ordenarImagens(property.images);
+  const imagens = obterImagensGaleria(property);
   const [indiceAtivo, setIndiceAtivo] = useState(0);
   const [modalAberta, setModalAberta] = useState(false);
   const toqueInicial = useRef<number | null>(null);
+
   const navegar = useCallback(
     (direcao: -1 | 1) => {
+      if (imagens.length <= 1) return;
+
       setIndiceAtivo((indiceAtual) => {
         const proximo = indiceAtual + direcao;
         if (proximo < 0) return imagens.length - 1;
@@ -36,6 +39,10 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
     },
     [imagens.length]
   );
+
+  useEffect(() => {
+    if (indiceAtivo >= imagens.length) setIndiceAtivo(0);
+  }, [imagens.length, indiceAtivo]);
 
   useEffect(() => {
     if (!modalAberta) return;
@@ -58,14 +65,14 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
 
   if (!imagens.length) {
     return (
-      <div className="glass-panel grid min-h-[360px] place-items-center border-dashed p-8 text-center">
+      <div className="glass-panel grid min-h-[180px] place-items-center border-dashed p-6 text-center">
         <div>
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-lg bg-primary/10 text-primary">
             <Images className="h-5 w-5" />
           </span>
-          <p className="mt-4 font-semibold">Fotos em preparação</p>
+          <p className="mt-4 font-semibold">Fotos em preparacao</p>
           <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-            O proprietário ainda está preparando a galeria pública desta casa.
+            O proprietario ainda nao adicionou fotos a galeria.
           </p>
         </div>
       </div>
@@ -75,6 +82,7 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
   const imagemAtiva = imagens[indiceAtivo] ?? imagens[0]!;
   const miniaturas = imagens.slice(1, 5);
   const miniaturasCompactas = imagens.slice(0, 4);
+  const fotosRestantes = Math.max(imagens.length - 5, 0);
 
   function concluirSwipe(posicaoFinal: number) {
     if (toqueInicial.current === null) return;
@@ -87,91 +95,125 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
   return (
     <>
       {compact ? (
-        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_160px] gap-2 max-lg:grid-cols-2">
-          {miniaturasCompactas.map((imagem, indice) => (
+        <GaleriaCompacta
+          imagens={imagens}
+          imagensVisiveis={miniaturasCompactas}
+          onAbrir={(indice) => {
+            setIndiceAtivo(indice);
+            setModalAberta(true);
+          }}
+        />
+      ) : (
+        <div className="grid gap-3">
+          <div
+            className={cn(
+              "hidden gap-3 md:grid",
+              imagens.length > 1
+                ? "md:grid-cols-[minmax(0,1.65fr)_minmax(220px,0.9fr)]"
+                : "md:grid-cols-1"
+            )}
+          >
             <button
-              aria-label={`Abrir foto ${indice + 1}`}
-              className={cn(
-                "group relative aspect-[1.45/1] overflow-hidden rounded-xl border bg-secondary",
-                indice === 0 ? "border-cyan-300" : "border-slate-700/70"
-              )}
-              key={imagem.id}
-              onClick={() => {
-                setIndiceAtivo(indice);
-                setModalAberta(true);
-              }}
+              aria-label="Abrir foto da hospedagem"
+              className="group relative h-[320px] overflow-hidden rounded-3xl border border-slate-700/70 bg-secondary text-left shadow-2xl shadow-black/20 lg:h-[360px]"
+              onClick={() => setModalAberta(true)}
               type="button"
             >
               <img
-                alt={imagem.alt}
-                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
-                loading={indice === 0 ? "eager" : "lazy"}
-                src={imagem.url}
+                alt={obterAlt(imagemAtiva, property.name, indiceAtivo)}
+                className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.015]"
+                loading="lazy"
+                src={imagemAtiva.url}
               />
+              <OverlayGaleria atual={indiceAtivo + 1} total={imagens.length} />
             </button>
-          ))}
-          <button
-            aria-label="Ver todas as fotos"
-            className="grid aspect-[1.45/1] place-items-center rounded-xl border border-slate-700/70 bg-slate-900/80 text-center text-white transition hover:border-cyan-300/60 max-lg:col-span-2"
-            onClick={() => setModalAberta(true)}
-            type="button"
-          >
-            <span>
-              <strong className="block text-2xl">+{Math.max(imagens.length - 4, 0)}</strong>
-              <span className="mt-1 block text-sm text-slate-400">Ver todas</span>
-            </span>
-          </button>
-        </div>
-      ) : (
-      <div className="grid gap-2 overflow-hidden rounded-lg lg:grid-cols-[1.55fr_0.75fr]">
-        <button
-          aria-label="Abrir galeria de fotos"
-          className="group relative min-h-[360px] overflow-hidden bg-secondary text-left lg:min-h-[520px]"
-          onClick={() => setModalAberta(true)}
-          type="button"
-        >
-          <img
-            alt={imagemAtiva.alt}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.015]"
-            fetchPriority="high"
-            src={imagemAtiva.url}
-          />
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/65 to-transparent p-4 text-white">
-            <span className="text-sm font-medium">Ver galeria completa</span>
-            <Contador atual={indiceAtivo + 1} total={imagens.length} />
-          </div>
-        </button>
 
-        <div className="grid grid-cols-2 gap-2 lg:grid-rows-2">
-          {miniaturas.map((imagem, indice) => {
-            const indiceReal = indice + 1;
-            return (
-              <button
-                aria-label={`Abrir foto ${indiceReal + 1}`}
-                className="group relative min-h-36 overflow-hidden bg-secondary lg:min-h-0"
-                key={imagem.id}
-                onClick={() => {
-                  setIndiceAtivo(indiceReal);
-                  setModalAberta(true);
-                }}
-                type="button"
-              >
-                <img
-                  alt={imagem.alt}
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
-                  loading="lazy"
-                  src={imagem.url}
-                />
-                {indice === miniaturas.length - 1 && imagens.length > 5 ? (
-                  <span className="absolute inset-0 grid place-items-center bg-black/48 text-sm font-semibold text-white">
-                    +{imagens.length - 5} fotos
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
+            {imagens.length > 1 ? (
+              <div className="grid h-[320px] grid-cols-2 grid-rows-2 gap-3 lg:h-[360px]">
+                {miniaturas.map((imagem, indice) => {
+                  const indiceReal = indice + 1;
+                  const mostrarRestantes = indice === miniaturas.length - 1 && fotosRestantes > 0;
+
+                  return (
+                    <button
+                      aria-label={`Abrir foto ${indiceReal + 1} da hospedagem`}
+                      className={cn(
+                        "group relative overflow-hidden rounded-2xl border border-slate-700/70 bg-secondary transition hover:border-cyan-300/60",
+                        miniaturas.length === 1 ? "col-span-2 row-span-2" : null,
+                        miniaturas.length === 2 ? "row-span-2" : null,
+                        miniaturas.length === 3 && indice === 0 ? "row-span-2" : null
+                      )}
+                      key={imagem.id}
+                      onClick={() => {
+                        setIndiceAtivo(indiceReal);
+                        setModalAberta(true);
+                      }}
+                      type="button"
+                    >
+                      <img
+                        alt={obterAlt(imagem, property.name, indiceReal)}
+                        className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.025]"
+                        loading="lazy"
+                        src={imagem.url}
+                      />
+                      {mostrarRestantes ? (
+                        <span className="absolute inset-0 grid place-items-center bg-black/55 text-lg font-semibold text-white">
+                          +{fotosRestantes} fotos
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="grid gap-3 md:hidden">
+            <button
+              aria-label="Abrir galeria de fotos"
+              className="group relative h-[260px] overflow-hidden rounded-3xl border border-slate-700/70 bg-secondary text-left shadow-2xl shadow-black/20"
+              onClick={() => setModalAberta(true)}
+              type="button"
+            >
+              <img
+                alt={obterAlt(imagemAtiva, property.name, indiceAtivo)}
+                className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.015]"
+                loading="lazy"
+                src={imagemAtiva.url}
+              />
+              <OverlayGaleria atual={indiceAtivo + 1} total={imagens.length} compacto />
+            </button>
+
+            {imagens.length > 1 ? (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {imagens.map((imagem, indice) => (
+                  <button
+                    aria-label={`Abrir foto ${indice + 1} da hospedagem`}
+                    className={cn(
+                      "h-20 w-28 shrink-0 overflow-hidden rounded-2xl border transition",
+                      indice === indiceAtivo
+                        ? "border-cyan-300"
+                        : "border-slate-700/70 opacity-75 hover:opacity-100"
+                    )}
+                    key={imagem.id}
+                    onClick={() => {
+                      setIndiceAtivo(indice);
+                      setModalAberta(true);
+                    }}
+                    type="button"
+                  >
+                    <img
+                      alt={obterAlt(imagem, property.name, indice)}
+                      className="h-full w-full object-cover object-center"
+                      loading="lazy"
+                      src={imagem.url}
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
-      </div>
       )}
 
       {typeof document !== "undefined"
@@ -208,63 +250,69 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
                     }}
                     onPointerUp={(evento) => concluirSwipe(evento.clientX)}
                   >
-                    <Button
-                      aria-label="Foto anterior"
-                      className="absolute left-0 z-10 border-white/15 bg-black/35 text-white hover:bg-black/55"
-                      onClick={() => navegar(-1)}
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    >
-                      <ChevronLeft />
-                    </Button>
+                    {imagens.length > 1 ? (
+                      <Button
+                        aria-label="Foto anterior"
+                        className="absolute left-0 z-10 border-white/15 bg-black/35 text-white hover:bg-black/55"
+                        onClick={() => navegar(-1)}
+                        size="icon"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ChevronLeft />
+                      </Button>
+                    ) : null}
                     <motion.div
-                      className="flex h-full w-full items-center justify-center px-12"
-                      key={imagemAtiva.id}
-                      initial={{ opacity: 0.4 }}
                       animate={{ opacity: 1 }}
+                      className="flex h-full w-full items-center justify-center px-12"
+                      initial={{ opacity: 0.4 }}
+                      key={imagemAtiva.id}
                     >
                       <img
-                        alt={imagemAtiva.alt}
+                        alt={obterAlt(imagemAtiva, property.name, indiceAtivo)}
                         className="max-h-full max-w-full select-none object-contain"
                         draggable={false}
                         src={imagemAtiva.url}
                       />
                     </motion.div>
-                    <Button
-                      aria-label="Próxima foto"
-                      className="absolute right-0 z-10 border-white/15 bg-black/35 text-white hover:bg-black/55"
-                      onClick={() => navegar(1)}
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                    >
-                      <ChevronRight />
-                    </Button>
+                    {imagens.length > 1 ? (
+                      <Button
+                        aria-label="Proxima foto"
+                        className="absolute right-0 z-10 border-white/15 bg-black/35 text-white hover:bg-black/55"
+                        onClick={() => navegar(1)}
+                        size="icon"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ChevronRight />
+                      </Button>
+                    ) : null}
                   </div>
 
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {imagens.map((imagem, indice) => (
-                      <button
-                        aria-label={`Selecionar foto ${indice + 1}`}
-                        className={cn(
-                          "h-16 w-24 shrink-0 overflow-hidden rounded-md border-2 transition",
-                          indice === indiceAtivo
-                            ? "border-cyan-300"
-                            : "border-transparent opacity-65 hover:opacity-100"
-                        )}
-                        key={imagem.id}
-                        onClick={() => setIndiceAtivo(indice)}
-                        type="button"
-                      >
-                        <img
-                          alt=""
-                          className="h-full w-full object-cover"
-                          src={imagem.url}
-                        />
-                      </button>
-                    ))}
-                  </div>
+                  {imagens.length > 1 ? (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {imagens.map((imagem, indice) => (
+                        <button
+                          aria-label={`Selecionar foto ${indice + 1}`}
+                          className={cn(
+                            "h-16 w-24 shrink-0 overflow-hidden rounded-md border-2 transition",
+                            indice === indiceAtivo
+                              ? "border-cyan-300"
+                              : "border-transparent opacity-65 hover:opacity-100"
+                          )}
+                          key={imagem.id}
+                          onClick={() => setIndiceAtivo(indice)}
+                          type="button"
+                        >
+                          <img
+                            alt={obterAlt(imagem, property.name, indice)}
+                            className="h-full w-full object-cover"
+                            src={imagem.url}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </motion.div>
               ) : null}
             </AnimatePresence>,
@@ -275,8 +323,104 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
   );
 }
 
+function GaleriaCompacta({
+  imagens,
+  imagensVisiveis,
+  onAbrir
+}: {
+  imagens: PropriedadePublica["images"];
+  imagensVisiveis: PropriedadePublica["images"];
+  onAbrir: (indice: number) => void;
+}) {
+  return (
+    <div className="grid grid-cols-[repeat(4,minmax(0,1fr))_160px] gap-2 max-lg:grid-cols-2">
+      {imagensVisiveis.map((imagem, indice) => (
+        <button
+          aria-label={`Abrir foto ${indice + 1}`}
+          className={cn(
+            "group relative aspect-[1.45/1] overflow-hidden rounded-xl border bg-secondary",
+            indice === 0 ? "border-cyan-300" : "border-slate-700/70"
+          )}
+          key={imagem.id}
+          onClick={() => onAbrir(indice)}
+          type="button"
+        >
+          <img
+            alt={imagem.alt}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]"
+            loading={indice === 0 ? "eager" : "lazy"}
+            src={imagem.url}
+          />
+        </button>
+      ))}
+
+      {imagens.length > 1 ? (
+        <button
+          aria-label="Ver todas as fotos"
+          className="grid aspect-[1.45/1] place-items-center rounded-xl border border-slate-700/70 bg-slate-900/80 text-center text-white transition hover:border-cyan-300/60 max-lg:col-span-2"
+          onClick={() => onAbrir(0)}
+          type="button"
+        >
+          <span>
+            <strong className="block text-2xl">
+              {imagens.length > 4 ? `+${imagens.length - 4}` : imagens.length}
+            </strong>
+            <span className="mt-1 block text-sm text-slate-400">Ver todas</span>
+          </span>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function OverlayGaleria({
+  atual,
+  compacto = false,
+  total
+}: {
+  atual: number;
+  compacto?: boolean;
+  total: number;
+}) {
+  return (
+    <div
+      className={cn(
+        "absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/72 to-transparent text-white",
+        compacto ? "p-3" : "p-4"
+      )}
+    >
+      <span
+        className={cn(
+          "rounded-full bg-white/12 font-semibold backdrop-blur-md",
+          compacto ? "px-3 py-1.5 text-xs" : "px-3 py-1.5 text-sm"
+        )}
+      >
+        Ver todas as fotos
+      </span>
+      <Contador atual={atual} total={total} />
+    </div>
+  );
+}
+
 function ordenarImagens(imagens: PropriedadePublica["images"]) {
   return [...imagens].sort((a, b) => Number(b.isCover) - Number(a.isCover));
+}
+
+function obterImagensGaleria(property: PropriedadePublica) {
+  const imagensOrdenadas = ordenarImagens(property.images);
+
+  // A capa e usada como fallback para evitar bloco vazio grande quando o
+  // proprietario ainda nao adicionou fotos extras na galeria.
+  if (imagensOrdenadas.length) return imagensOrdenadas;
+  return property.coverImage ? [property.coverImage] : [];
+}
+
+function obterAlt(
+  imagem: PropriedadePublica["images"][number],
+  nomePropriedade: string,
+  indice: number
+) {
+  return imagem.alt || `Foto ${indice + 1} da hospedagem ${nomePropriedade}`;
 }
 
 function Contador({ atual, total }: { atual: number; total: number }) {
