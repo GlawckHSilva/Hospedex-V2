@@ -65,7 +65,9 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
 
   body.printing-voucher .guest-voucher-print-root,
   body.printing-voucher .guest-voucher-print-root * {
+    print-color-adjust: exact !important;
     box-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
     text-shadow: none !important;
     visibility: visible !important;
   }
@@ -74,6 +76,8 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
     border: 0 !important;
     border-radius: 0 !important;
     inset: 0 auto auto 0 !important;
+    margin: 0 auto !important;
+    max-width: 794px !important;
     position: absolute !important;
     width: 100% !important;
   }
