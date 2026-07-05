@@ -26,7 +26,7 @@ import {
   tomStatusReserva
 } from "../../lib/guest/format";
 import type { ReservaHospedeDetalhe } from "../../lib/guest/types";
-import { VoucherActions } from "./voucher-actions";
+import { ReservationVoucher } from "./reservation-voucher";
 
 export function GuestReservationDetail({
   reserva
@@ -39,7 +39,6 @@ export function GuestReservationDetail({
   const formaPagamento = reserva.formaPagamento
     ? LABEL_FORMA_PAGAMENTO[reserva.formaPagamento]
     : "Nao informada";
-  const textoVoucher = montarTextoVoucher(reserva);
 
   return (
     <div className="grid gap-6">
@@ -282,32 +281,7 @@ export function GuestReservationDetail({
         </div>
 
         <aside className="grid gap-6 self-start lg:sticky lg:top-24">
-          <GlassCard className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                  Voucher
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold">Comprovante</h2>
-              </div>
-              <VoucherActions texto={textoVoucher} />
-            </div>
-            <div className="mt-5 grid gap-3 text-sm">
-              <Linha label="Reserva" value={reserva.codigo} />
-              <Linha label="Hospede" value={reserva.hospede?.nome ?? "Hospede nao informado."} />
-              <Linha label="Casa" value={propriedade?.nome ?? "Casa vinculada nao encontrada."} />
-              <Linha label="Periodo" value={`${formatarDataHospede(reserva.checkIn)} a ${formatarDataHospede(reserva.checkOut)}`} />
-              <Linha
-                label="Chegada prevista"
-                value={
-                  formatarHorarioPrevisto(reserva.horarioPrevistoCheckIn) ??
-                  "Nao informada pelo hospede."
-                }
-              />
-              <Linha label="Pagamento" value={`${formaPagamento} - ${LABEL_STATUS_PAGAMENTO[reserva.statusPagamento]}`} />
-              <Linha label="Valor" value={formatarMoedaHospede(reserva.total)} />
-            </div>
-          </GlassCard>
+          <ReservationVoucher reserva={reserva} />
 
           <GlassCard className="p-5">
             <h2 className="text-lg font-semibold">Localizacao e contato</h2>
@@ -425,25 +399,6 @@ function ListaSimples({
       )}
     </div>
   );
-}
-
-function montarTextoVoucher(reserva: ReservaHospedeDetalhe) {
-  return [
-    `Reserva: ${reserva.codigo}`,
-    `Hospede: ${reserva.hospede?.nome ?? "Hospede nao informado"}`,
-    `Casa: ${reserva.propriedade?.nome ?? "Casa vinculada nao encontrada"}`,
-    `Periodo: ${formatarDataHospede(reserva.checkIn)} a ${formatarDataHospede(reserva.checkOut)}`,
-    `Chegada prevista: ${formatarHorarioPrevisto(reserva.horarioPrevistoCheckIn) ?? "Nao informada pelo hospede"}`,
-    `Saida prevista: ${formatarHorarioPrevisto(reserva.horarioPrevistoCheckOut) ?? "Nao informada pelo hospede"}`,
-    `Hospedes: ${reserva.hospedesQuantidade}`,
-    `Valor: ${formatarMoedaHospede(reserva.total)}`,
-    `Status: ${LABEL_STATUS_RESERVA[reserva.status]}`,
-    `Pagamento: ${LABEL_STATUS_PAGAMENTO[reserva.statusPagamento]}`,
-    `Valor pago: ${formatarMoedaHospede(reserva.financeiro.valorPago)}`,
-    `Valor pendente: ${formatarMoedaHospede(reserva.financeiro.valorPendente)}`,
-    `Endereco: ${montarEnderecoCompleto(reserva.propriedade) ?? "Endereco ainda nao informado pelo proprietario"}`,
-    `Contato: ${reserva.proprietario?.whatsapp ?? reserva.proprietario?.telefone ?? reserva.pagamento?.proprietarioWhatsapp ?? reserva.pagamento?.proprietarioTelefone ?? "Contato do proprietario ainda nao informado"}`
-  ].join("\n");
 }
 
 function formatarStatusCobranca(status: ReservaHospedeDetalhe["financeiro"]["cobrancaAberta"] extends infer Cobranca

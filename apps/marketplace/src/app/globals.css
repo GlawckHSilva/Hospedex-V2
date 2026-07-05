@@ -47,3 +47,34 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
 .marketplace-reservation-control::-webkit-datetime-edit-fields-wrapper {
   color: currentColor;
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
+  body.printing-voucher {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  body.printing-voucher * {
+    visibility: hidden !important;
+  }
+
+  body.printing-voucher .guest-voucher-print-root,
+  body.printing-voucher .guest-voucher-print-root * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    visibility: visible !important;
+  }
+
+  body.printing-voucher .guest-voucher-print-root {
+    border: 0 !important;
+    border-radius: 0 !important;
+    inset: 0 auto auto 0 !important;
+    position: absolute !important;
+    width: 100% !important;
+  }
+}
