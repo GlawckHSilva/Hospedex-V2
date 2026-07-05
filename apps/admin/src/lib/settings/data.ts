@@ -6,6 +6,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { carregarResumoCredencialMercadoPago } from "../payments/mercado-pago-credentials";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   MODULOS_GERENCIAMENTO_CONFIGURAVEIS,
@@ -58,13 +59,19 @@ export async function carregarDadosConfiguracoesGerenciamento(
 
   const supabase = await criarClienteSupabaseServer();
   const chaves = MODULOS_GERENCIAMENTO_CONFIGURAVEIS.map((modulo) => modulo.key);
-  const [configuracoesResultado, flagsResultado, tenantFeaturesResultado] =
+  const [
+    configuracoesResultado,
+    credencialMercadoPago,
+    flagsResultado,
+    tenantFeaturesResultado
+  ] =
     await Promise.all([
       supabase
         .from("tenant_settings")
         .select("*")
         .eq("tenant_id", tenant.id)
         .maybeSingle<TenantSettingRow>(),
+      carregarResumoCredencialMercadoPago(tenant.id),
       supabase
         .from("feature_flags")
         .select("*")
@@ -85,7 +92,11 @@ export async function carregarDadosConfiguracoesGerenciamento(
   const tenantFeatures = tenantFeaturesResultado.data ?? [];
 
   return {
-    configuracoes: normalizarConfiguracoes(tenant, configuracoesResultado.data ?? null),
+    configuracoes: normalizarConfiguracoes(
+      tenant,
+      configuracoesResultado.data ?? null,
+      credencialMercadoPago
+    ),
     modulos: montarModulos(contexto, flags, tenantFeatures),
     podeGerenciarConfiguracoes: podeGerenciarConfiguracoes(contexto),
     podeGerenciarModulos: podeGerenciarModulosConfiguracoes(contexto),
@@ -96,7 +107,8 @@ export async function carregarDadosConfiguracoesGerenciamento(
 
 function normalizarConfiguracoes(
   tenant: TenantRow,
-  configuracoes: TenantSettingRow | null
+  configuracoes: TenantSettingRow | null,
+  mercadoPagoCredencial = { conectado: false, last4: null as string | null }
 ): ConfiguracoesTenantGerenciamento {
   return {
     allow_manual_reservations: configuracoes?.allow_manual_reservations ?? true,
@@ -128,6 +140,7 @@ function normalizarConfiguracoes(
       configuracoes?.mercado_pago_default_deposit_fixed ?? null,
     mercado_pago_default_deadline_hours:
       configuracoes?.mercado_pago_default_deadline_hours ?? 24,
+    mercadoPagoCredencial,
     primary_color: configuracoes?.primary_color ?? "#06b6d4",
     require_checkin_confirmation: configuracoes?.require_checkin_confirmation ?? true,
     require_checkout_confirmation: configuracoes?.require_checkout_confirmation ?? true,
@@ -216,6 +229,7 @@ function criarDadosVazios(tenantNome: string): DadosConfiguracoesGerenciamento {
       mercado_pago_default_deposit_percent: null,
       mercado_pago_default_deposit_fixed: null,
       mercado_pago_default_deadline_hours: 24,
+      mercadoPagoCredencial: { conectado: false, last4: null },
       primary_color: "#06b6d4",
       require_checkin_confirmation: true,
       require_checkout_confirmation: true,

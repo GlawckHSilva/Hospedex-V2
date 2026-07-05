@@ -440,10 +440,24 @@ export function SettingsModule({
                 </SecaoFormulario>
 
                 <SecaoFormulario
-                  descricao="Mercado Pago gera link de pagamento direto para a conta do proprietario. O token real fica somente no servidor/Vercel."
+                  descricao="Mercado Pago gera link de pagamento direto para a conta do proprietario. O token e salvo criptografado no servidor e nunca aparece para o hospede."
                   icon={<CreditCard />}
                   titulo="Mercado Pago"
                 >
+                  <div className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                    <p className="font-semibold text-foreground">
+                      Status:{" "}
+                      {configuracoes.mercadoPagoCredencial.conectado
+                        ? `conectado ao token final ${configuracoes.mercadoPagoCredencial.last4 ?? "****"}`
+                        : "nao conectado"}
+                    </p>
+                    <p>
+                      Para conectar, acesse sua conta Mercado Pago, copie o Access Token
+                      de producao ou teste e cole no campo abaixo. Depois de salvo, o
+                      Hospedex usa esse token apenas no servidor para criar links de
+                      cobranca.
+                    </p>
+                  </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <CampoSelectConfiguracoes
                       defaultValue={configuracoes.payment_collection_method}
@@ -483,12 +497,35 @@ export function SettingsModule({
                       placeholder="APP_USR-..."
                     />
                     <CampoTexto
+                      defaultValue=""
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Access token Mercado Pago"
+                      name="mercadoPagoAccessToken"
+                      placeholder={
+                        configuracoes.mercadoPagoCredencial.conectado
+                          ? "Novo token opcional para substituir o atual"
+                          : "APP_USR-... ou TEST-..."
+                      }
+                      type="password"
+                    />
+                    <CampoTexto
                       defaultValue={configuracoes.mercado_pago_access_token_secret_name ?? ""}
                       disabled={!podeGerenciarConfiguracoes}
-                      label="Variavel server-side do access token"
+                      label="Fallback tecnico por variavel de ambiente"
                       name="mercadoPagoAccessTokenSecretName"
-                      placeholder="MERCADO_PAGO_ACCESS_TOKEN_TENANT_X"
+                      placeholder="Opcional: MERCADO_PAGO_ACCESS_TOKEN_TENANT_X"
                     />
+                    <label className="flex items-center gap-3 rounded-lg border bg-background/45 px-3 py-2 text-sm">
+                      <input
+                        disabled={
+                          !podeGerenciarConfiguracoes ||
+                          !configuracoes.mercadoPagoCredencial.conectado
+                        }
+                        name="removerMercadoPago"
+                        type="checkbox"
+                      />
+                      Remover credencial Mercado Pago salva
+                    </label>
                     <CampoSelectConfiguracoes
                       defaultValue={configuracoes.mercado_pago_default_charge_strategy}
                       disabled={!podeGerenciarConfiguracoes}
@@ -525,9 +562,9 @@ export function SettingsModule({
                     />
                   </div>
                   <p className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
-                    Salve no Vercel a variavel informada acima com o access token do
-                    proprietario. O Hospedex apenas gera cobranca; o dinheiro cai direto
-                    na conta Mercado Pago configurada.
+                    O dinheiro cai diretamente na conta Mercado Pago do proprietario
+                    dona do token. O Hospedex nao armazena dados de cartao e nao cobra
+                    em nome do hospede nesta etapa.
                   </p>
                 </SecaoFormulario>
                 <Button disabled={!podeGerenciarConfiguracoes} type="submit">

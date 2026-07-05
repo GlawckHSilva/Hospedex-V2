@@ -140,6 +140,10 @@ export type ConfiguracoesTenantGerenciamento = Pick<
   | "mercado_pago_public_key"
   | "payment_collection_method"
 > & {
+  mercadoPagoCredencial: {
+    conectado: boolean;
+    last4: string | null;
+  };
   tenantName: string;
 };
 

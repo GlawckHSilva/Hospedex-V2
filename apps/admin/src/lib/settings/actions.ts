@@ -11,6 +11,11 @@ import {
   obterArquivoImagem,
   removerLogoTenantDoStorage
 } from "../properties/media-storage";
+import {
+  carregarResumoCredencialMercadoPago,
+  removerCredencialMercadoPago,
+  salvarCredencialMercadoPago
+} from "../payments/mercado-pago-credentials";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   podeGerenciarConfiguracoes,
@@ -115,6 +120,33 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
+    const mercadoPagoEnabled = checkboxAtivo(formData, "mercadoPagoEnabled");
+    const mercadoPagoEnvironment = validarAmbienteMercadoPago(
+      textoOpcional(formData, "mercadoPagoEnvironment") ?? "sandbox"
+    );
+    const mercadoPagoPublicKey = textoOpcional(formData, "mercadoPagoPublicKey");
+    const mercadoPagoAccessToken = textoOpcional(formData, "mercadoPagoAccessToken");
+    const mercadoPagoAccessTokenSecretName = textoOpcional(
+      formData,
+      "mercadoPagoAccessTokenSecretName"
+    );
+    const removerMercadoPago = checkboxAtivo(formData, "removerMercadoPago");
+    const credencialAtual = await carregarResumoCredencialMercadoPago(escopo.tenantId);
+
+    /*
+      O Mercado Pago pode ser configurado pelo Hospedex ou, temporariamente,
+      por variavel de ambiente legada. O token digitado nunca volta para a UI.
+    */
+    if (
+      mercadoPagoEnabled &&
+      !mercadoPagoAccessToken &&
+      (!credencialAtual.conectado || removerMercadoPago) &&
+      !mercadoPagoAccessTokenSecretName
+    ) {
+      throw new ErroRegraConfiguracoes(
+        "Informe o access token do Mercado Pago ou conecte uma credencial antes de ativar."
+      );
+    }
 
     const { error } = await supabase.from("tenant_settings").upsert(
       {
@@ -148,15 +180,10 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
           "manualPaymentDeadlineHours",
           24
         ),
-        mercado_pago_enabled: checkboxAtivo(formData, "mercadoPagoEnabled"),
-        mercado_pago_environment: validarAmbienteMercadoPago(
-          textoOpcional(formData, "mercadoPagoEnvironment") ?? "sandbox"
-        ),
-        mercado_pago_public_key: textoOpcional(formData, "mercadoPagoPublicKey"),
-        mercado_pago_access_token_secret_name: textoOpcional(
-          formData,
-          "mercadoPagoAccessTokenSecretName"
-        ),
+        mercado_pago_enabled: mercadoPagoEnabled,
+        mercado_pago_environment: mercadoPagoEnvironment,
+        mercado_pago_public_key: mercadoPagoPublicKey,
+        mercado_pago_access_token_secret_name: mercadoPagoAccessTokenSecretName,
         mercado_pago_default_charge_strategy: validarEstrategiaMercadoPago(
           textoOpcional(formData, "mercadoPagoDefaultChargeStrategy") ?? "full"
         ),
@@ -178,6 +205,20 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
     );
 
     if (error) throw new Error(error.message);
+
+    if (mercadoPagoAccessToken) {
+      await salvarCredencialMercadoPago({
+        accessToken: mercadoPagoAccessToken,
+        ambiente: mercadoPagoEnvironment,
+        ownerId: escopo.ownerId,
+        publicKey: mercadoPagoPublicKey,
+        tenantId: escopo.tenantId,
+        userId: escopo.contexto.userId
+      });
+    } else if (removerMercadoPago) {
+      await removerCredencialMercadoPago(escopo.tenantId);
+    }
+
     revalidarConfiguracoes();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao salvar instrucoes de pagamento.");
@@ -369,8 +410,8 @@ function validarMetodoCobranca(valor: string) {
   throw new ErroRegraConfiguracoes("Metodo de cobranca invalido.");
 }
 
-function validarAmbienteMercadoPago(valor: string) {
-  if (["sandbox", "production"].includes(valor)) return valor;
+function validarAmbienteMercadoPago(valor: string): "sandbox" | "production" {
+  if (["sandbox", "production"].includes(valor)) return valor as "sandbox" | "production";
   throw new ErroRegraConfiguracoes("Ambiente do Mercado Pago invalido.");
 }
 

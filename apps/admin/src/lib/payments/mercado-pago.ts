@@ -8,13 +8,15 @@ import { normalizarVariavelAmbiente } from "../supabase/env";
  * Cliente server-side mínimo do Mercado Pago.
  *
  * A V2 nao usa SDK no navegador: o access token do proprietario e resolvido
- * apenas no servidor por variavel de ambiente, mantendo isolamento por tenant.
+ * apenas no servidor. O token pode vir do cofre por tenant ou do fallback por
+ * variavel de ambiente enquanto a migracao operacional e concluida.
  */
 
 const API_BASE_PADRAO = "https://api.mercadopago.com";
 
 export type PreferenciaMercadoPagoEntrada = {
-  accessTokenSecretName: string | null;
+  accessToken: string | null;
+  accessTokenSecretName?: string | null;
   amount: number;
   currency: string;
   description: string;
@@ -49,7 +51,10 @@ export type PagamentoMercadoPago = {
 export async function criarPreferenciaMercadoPago(
   entrada: PreferenciaMercadoPagoEntrada
 ): Promise<PreferenciaMercadoPagoResposta> {
-  const token = obterAccessTokenMercadoPago(entrada.accessTokenSecretName);
+  const token = obterAccessTokenMercadoPago(
+    entrada.accessToken,
+    entrada.accessTokenSecretName ?? null
+  );
   const body = {
     auto_return: "approved",
     back_urls: obterBackUrls(),
@@ -102,10 +107,11 @@ export async function criarPreferenciaMercadoPago(
 }
 
 export async function buscarPagamentoMercadoPago(
+  tenantAccessToken: string | null,
   tenantAccessTokenSecretName: string | null,
   paymentId: string
 ): Promise<PagamentoMercadoPago> {
-  const token = obterAccessTokenMercadoPago(tenantAccessTokenSecretName);
+  const token = obterAccessTokenMercadoPago(tenantAccessToken, tenantAccessTokenSecretName);
   const resposta = await fetch(`${obterBaseApiMercadoPago()}/v1/payments/${paymentId}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
@@ -165,7 +171,9 @@ export function obterWebhookSecretMercadoPago() {
   return normalizarVariavelAmbiente(process.env.MERCADO_PAGO_WEBHOOK_SECRET) ?? null;
 }
 
-function obterAccessTokenMercadoPago(secretName: string | null) {
+function obterAccessTokenMercadoPago(accessToken: string | null, secretName: string | null) {
+  if (accessToken) return accessToken;
+
   const tokenPorTenant = secretName
     ? normalizarVariavelAmbiente(process.env[secretName])
     : null;

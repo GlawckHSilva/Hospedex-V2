@@ -12,6 +12,7 @@ import {
   criarPreferenciaMercadoPago,
   type PreferenciaMercadoPagoResposta
 } from "../payments/mercado-pago";
+import { carregarAccessTokenMercadoPago } from "../payments/mercado-pago-credentials";
 import { normalizarVariavelAmbiente } from "../supabase/env";
 import type { ClienteSupabaseServer } from "./permissions";
 
@@ -94,8 +95,12 @@ export async function aprovarReservaComMotorDeCobranca({
 
   if (cobranca.method === "mercado_pago") {
     validarContatoGateway(hospede);
+    const accessToken = await carregarAccessTokenMercadoPago({
+      fallbackSecretName: configuracao.mercado_pago_access_token_secret_name,
+      tenantId: escopo.tenantId
+    });
     preferencia = await criarPreferenciaMercadoPago({
-      accessTokenSecretName: configuracao.mercado_pago_access_token_secret_name,
+      accessToken,
       amount: cobranca.amount,
       currency: reserva.currency,
       description: `Cobranca da reserva ${reserva.code}`,

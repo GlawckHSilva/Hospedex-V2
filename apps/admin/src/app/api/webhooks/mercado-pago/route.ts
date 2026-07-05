@@ -8,6 +8,7 @@ import {
   obterWebhookSecretMercadoPago,
   validarAssinaturaMercadoPago
 } from "../../../../lib/payments/mercado-pago";
+import { carregarAccessTokenMercadoPago } from "../../../../lib/payments/mercado-pago-credentials";
 import { criarClienteSupabaseAdmin } from "../../../../lib/supabase/admin";
 
 /**
@@ -54,7 +55,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const accessToken = await carregarAccessTokenMercadoPago({
+    fallbackSecretName: configuracao.mercado_pago_access_token_secret_name,
+    tenantId
+  });
   const pagamento = await buscarPagamentoMercadoPago(
+    accessToken,
     configuracao.mercado_pago_access_token_secret_name,
     paymentId
   );
