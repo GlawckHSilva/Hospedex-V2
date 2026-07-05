@@ -54,7 +54,7 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
 
 @media print {
   @page {
-    margin: 10mm;
+    margin: 8mm;
     size: A4;
   }
 
@@ -98,8 +98,8 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
     border-radius: 0 !important;
     box-shadow: none !important;
     color: #111827 !important;
-    font-size: 9.5pt !important;
-    line-height: 1.25 !important;
+    font-size: 9pt !important;
+    line-height: 1.18 !important;
     margin: 0 auto !important;
     max-width: 190mm !important;
     min-height: auto !important;
@@ -112,13 +112,13 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
   }
 
   body.printing-voucher .voucher-header {
-    padding: 5mm !important;
+    padding: 4mm !important;
   }
 
   body.printing-voucher .voucher-header h2 {
-    font-size: 17pt !important;
+    font-size: 15pt !important;
     line-height: 1.1 !important;
-    margin-top: 2mm !important;
+    margin-top: 1.5mm !important;
   }
 
   body.printing-voucher .voucher-header p {
@@ -127,35 +127,36 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
 
   body.printing-voucher .voucher-content {
     display: grid !important;
-    gap: 3mm !important;
+    gap: 2.5mm !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    padding: 4mm !important;
+    padding: 3mm !important;
   }
 
   body.printing-voucher .voucher-notice,
   body.printing-voucher .voucher-footer {
     grid-column: 1 / -1 !important;
-    padding: 3mm !important;
+    padding: 2.5mm !important;
   }
 
   body.printing-voucher .voucher-section {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
-    padding: 3mm !important;
+    padding: 2.5mm !important;
   }
 
   body.printing-voucher .voucher-section h3 {
-    font-size: 8.5pt !important;
-    margin-bottom: 2mm !important;
+    font-size: 8pt !important;
+    margin-bottom: 1.5mm !important;
   }
 
   body.printing-voucher .voucher-section > div {
-    gap: 1.5mm !important;
-    margin-top: 2mm !important;
+    gap: 1.2mm !important;
+    margin-top: 1.5mm !important;
   }
 
-  body.printing-voucher .voucher-long-text {
-    max-height: 22mm !important;
+  body.printing-voucher .voucher-observation,
+  body.printing-voucher .voucher-footer {
+    max-height: 18mm !important;
     overflow: hidden !important;
   }
 

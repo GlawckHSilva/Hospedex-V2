@@ -1,4 +1,4 @@
-import { CalendarDays, CopyCheck, Home, MapPin, User, WalletCards } from "lucide-react";
+import { CalendarDays, Home, MapPin, User, WalletCards } from "lucide-react";
 
 import {
   formatarDataHoraHospede,
@@ -49,19 +49,16 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
       </div>
 
       {statusVoucher === "provisorio" ? (
-          <VoucherNotice>
-            Este voucher so tera validade completa apos a confirmacao do pagamento pelo proprietario.
-          </VoucherNotice>
+        <VoucherNotice>Este voucher so tera validade completa apos a confirmacao do pagamento.</VoucherNotice>
       ) : null}
       {statusVoucher === "cancelado" ? (
         <VoucherNotice tone="danger">
-          Esta reserva foi cancelada e este comprovante nao possui validade para hospedagem.
+          Reserva cancelada. Este voucher nao possui validade para hospedagem.
         </VoucherNotice>
       ) : null}
 
-        <div className="voucher-content grid gap-5 p-5 sm:p-6">
-        <VoucherSection icon={Home} title="Dados da reserva">
-          <VoucherLine label="Codigo da reserva" value={reserva.codigo} />
+      <div className="voucher-content grid gap-4 p-4 sm:grid-cols-2 sm:p-5">
+        <VoucherSection icon={Home} title="Reserva">
           <VoucherLine label="Hospedagem" value={reserva.propriedade?.nome} />
           <VoucherLine
             label="Cidade/estado"
@@ -73,14 +70,13 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
           />
         </VoucherSection>
 
-        <VoucherSection icon={User} title="Dados do hospede">
+        <VoucherSection icon={User} title="Hospede">
           <VoucherLine label="Nome" value={reserva.hospede?.nome} />
-          <VoucherLine label="E-mail" value={reserva.hospede?.email} />
           <VoucherLine label="Telefone/WhatsApp" value={reserva.hospede?.telefone} />
-          <VoucherLine label="Documento" value={reserva.hospede?.documento} />
+          <VoucherLine label="E-mail" value={reserva.hospede?.email} />
         </VoucherSection>
 
-        <VoucherSection icon={CalendarDays} title="Periodo da hospedagem">
+        <VoucherSection icon={CalendarDays} title="Periodo">
           <VoucherLine label="Check-in" value={formatarDataComHorario(reserva.checkIn, reserva.horarioPrevistoCheckIn)} />
           <VoucherLine label="Check-out" value={formatarDataComHorario(reserva.checkOut, reserva.horarioPrevistoCheckOut)} />
           <VoucherLine label="Noites" value={formatarNoites(reserva)} />
@@ -91,16 +87,14 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
           <VoucherLine label="Forma de pagamento" value={formatarFormaPagamento(reserva)} />
           <VoucherLine label="Status" value={LABEL_STATUS_PAGAMENTO[reserva.statusPagamento]} />
           <VoucherLine label="Valor total" value={formatarMoedaHospede(reserva.financeiro.valorTotal)} />
-          <VoucherLine label="Taxa de limpeza" value={formatarMoedaHospede(reserva.taxaLimpeza)} />
           <VoucherLine label="Valor pago" value={formatarMoedaHospede(reserva.financeiro.valorPago)} />
           <VoucherLine label="Valor pendente" value={formatarMoedaHospede(reserva.financeiro.valorPendente)} />
         </VoucherSection>
 
         <VoucherSection icon={MapPin} title="Endereco e contato">
           <VoucherLine label="Endereco" value={montarEnderecoCompleto(reserva.propriedade)} />
-          <VoucherLine label="Google Maps" value={reserva.propriedade?.googleMapsLink} />
           <VoucherLine
-            label="Contato para duvidas"
+            label="Contato do anfitriao"
             value={
               reserva.proprietario?.whatsapp ??
               reserva.proprietario?.telefone ??
@@ -110,20 +104,14 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
           />
         </VoucherSection>
 
-        <VoucherSection icon={CopyCheck} title="Observacoes e instrucoes">
-          <VoucherLine label="Observacoes" value={reserva.observacoes ?? "Sem observacoes adicionais."} />
-          {reserva.pagamento?.instrucoes ? (
-            <p className="voucher-long-text text-sm leading-6 text-slate-700">{reserva.pagamento.instrucoes}</p>
-          ) : null}
-          <VoucherList label="Regras importantes" values={reserva.regrasCasa.slice(0, 8)} />
-          <VoucherList label="Comodidades principais" values={reserva.comodidades.slice(0, 10)} />
+        <VoucherSection icon={Home} title="Observacao curta">
+          <p className="voucher-observation text-sm font-medium leading-5 text-slate-800">
+            {obterObservacaoCurta(reserva.observacoes)}
+          </p>
         </VoucherSection>
 
         <footer className="voucher-footer rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
-          <p>
-            Este documento e um comprovante de reserva/hospedagem emitido pelo Hospedex.
-            A validade da reserva depende do status de confirmacao e pagamento exibido neste comprovante.
-          </p>
+          <p>Documento emitido pelo Hospedex para conferencia da reserva.</p>
         </footer>
       </div>
     </article>
@@ -225,23 +213,6 @@ function VoucherLine({ label, value }: { label: string; value: string | null | u
   );
 }
 
-function VoucherList({ label, values }: { label: string; values: string[] }) {
-  if (!values.length) return null;
-
-  return (
-    <div className="grid gap-2 text-sm">
-      <span className="font-medium text-slate-500">{label}</span>
-      <div className="flex flex-wrap gap-2">
-        {values.map((value) => (
-          <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200" key={value}>
-            {value}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function obterStatusVoucher(reserva: ReservaHospedeDetalhe): VoucherStatus {
   if (reserva.status === "pending") return "pendente";
   if (reserva.status === "cancelled") return "cancelado";
@@ -285,4 +256,12 @@ function montarEnderecoCompleto(propriedade: ReservaHospedeDetalhe["propriedade"
   ].filter(Boolean);
 
   return partes.length ? partes.join(" - ") : null;
+}
+
+function obterObservacaoCurta(observacoes: string | null) {
+  const texto = observacoes?.trim();
+  if (!texto) return "Sem observacoes adicionais.";
+
+  // O voucher impresso deve ser um comprovante compacto; textos longos continuam na pagina da reserva.
+  return texto.length > 180 ? `${texto.slice(0, 177).trim()}...` : texto;
 }
