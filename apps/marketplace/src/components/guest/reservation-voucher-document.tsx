@@ -23,10 +23,9 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
 
   return (
     <article
-      className="guest-voucher-print-root mx-auto w-full max-w-[794px] overflow-hidden rounded-2xl bg-white text-slate-950 shadow-2xl ring-1 ring-slate-200"
-      id="voucher-hospedagem"
+      className="voucher-page mx-auto w-full max-w-[794px] overflow-hidden rounded-2xl bg-white text-slate-950 shadow-2xl ring-1 ring-slate-200"
     >
-      <div className="border-b border-slate-200 bg-slate-950 px-5 py-5 text-white sm:px-6">
+      <div className="voucher-header border-b border-slate-200 bg-slate-950 px-5 py-5 text-white sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.28em] text-cyan-300">
@@ -50,9 +49,9 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
       </div>
 
       {statusVoucher === "provisorio" ? (
-        <VoucherNotice>
-          Este voucher so tera validade completa apos a confirmacao do pagamento pelo proprietario.
-        </VoucherNotice>
+          <VoucherNotice>
+            Este voucher so tera validade completa apos a confirmacao do pagamento pelo proprietario.
+          </VoucherNotice>
       ) : null}
       {statusVoucher === "cancelado" ? (
         <VoucherNotice tone="danger">
@@ -60,7 +59,7 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
         </VoucherNotice>
       ) : null}
 
-      <div className="grid gap-5 p-5 sm:p-6">
+        <div className="voucher-content grid gap-5 p-5 sm:p-6">
         <VoucherSection icon={Home} title="Dados da reserva">
           <VoucherLine label="Codigo da reserva" value={reserva.codigo} />
           <VoucherLine label="Hospedagem" value={reserva.propriedade?.nome} />
@@ -114,13 +113,13 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
         <VoucherSection icon={CopyCheck} title="Observacoes e instrucoes">
           <VoucherLine label="Observacoes" value={reserva.observacoes ?? "Sem observacoes adicionais."} />
           {reserva.pagamento?.instrucoes ? (
-            <p className="text-sm leading-6 text-slate-700">{reserva.pagamento.instrucoes}</p>
+            <p className="voucher-long-text text-sm leading-6 text-slate-700">{reserva.pagamento.instrucoes}</p>
           ) : null}
           <VoucherList label="Regras importantes" values={reserva.regrasCasa.slice(0, 8)} />
           <VoucherList label="Comodidades principais" values={reserva.comodidades.slice(0, 10)} />
         </VoucherSection>
 
-        <footer className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
+        <footer className="voucher-footer rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
           <p>
             Este documento e um comprovante de reserva/hospedagem emitido pelo Hospedex.
             A validade da reserva depende do status de confirmacao e pagamento exibido neste comprovante.
@@ -183,7 +182,7 @@ function VoucherNotice({
       ? "border-red-200 bg-red-50 text-red-800"
       : "border-amber-200 bg-amber-50 text-amber-800";
 
-  return <p className={`border-b px-5 py-3 text-sm font-medium sm:px-6 ${classe}`}>{children}</p>;
+  return <p className={`voucher-notice border-b px-5 py-3 text-sm font-medium sm:px-6 ${classe}`}>{children}</p>;
 }
 
 function VoucherSection({
@@ -196,7 +195,7 @@ function VoucherSection({
   title: string;
 }) {
   return (
-    <section className="break-inside-avoid rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+    <section className="voucher-section break-inside-avoid rounded-xl border border-slate-200 bg-slate-50/80 p-4">
       <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.16em] text-slate-700">
         <Icone className="h-4 w-4 text-cyan-700" />
         {title}

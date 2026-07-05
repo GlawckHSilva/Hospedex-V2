@@ -48,37 +48,119 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
   color: currentColor;
 }
 
+.voucher-print-root-screen {
+  display: none;
+}
+
 @media print {
   @page {
-    margin: 12mm;
+    margin: 10mm;
     size: A4;
   }
 
+  html,
   body.printing-voucher {
     background: #ffffff !important;
     color: #0f172a !important;
+    margin: 0 !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    width: 210mm !important;
   }
 
-  body.printing-voucher * {
-    visibility: hidden !important;
+  body.printing-voucher > *:not(#voucher-print-root) {
+    display: none !important;
   }
 
-  body.printing-voucher .guest-voucher-print-root,
-  body.printing-voucher .guest-voucher-print-root * {
+  body.printing-voucher #voucher-print-root {
+    background: #ffffff !important;
+    color: #111827 !important;
+    display: block !important;
+    margin: 0 auto !important;
+    max-width: 190mm !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    position: static !important;
+    width: 100% !important;
+  }
+
+  body.printing-voucher #voucher-print-root * {
     print-color-adjust: exact !important;
-    box-shadow: none !important;
     -webkit-print-color-adjust: exact !important;
-    text-shadow: none !important;
     visibility: visible !important;
   }
 
-  body.printing-voucher .guest-voucher-print-root {
+  body.printing-voucher .voucher-page {
+    background: #ffffff !important;
     border: 0 !important;
     border-radius: 0 !important;
-    inset: 0 auto auto 0 !important;
+    box-shadow: none !important;
+    color: #111827 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.25 !important;
     margin: 0 auto !important;
-    max-width: 794px !important;
-    position: absolute !important;
+    max-width: 190mm !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    position: static !important;
+    text-shadow: none !important;
     width: 100% !important;
+  }
+
+  body.printing-voucher .voucher-header {
+    padding: 5mm !important;
+  }
+
+  body.printing-voucher .voucher-header h2 {
+    font-size: 17pt !important;
+    line-height: 1.1 !important;
+    margin-top: 2mm !important;
+  }
+
+  body.printing-voucher .voucher-header p {
+    margin-top: 1mm !important;
+  }
+
+  body.printing-voucher .voucher-content {
+    display: grid !important;
+    gap: 3mm !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 4mm !important;
+  }
+
+  body.printing-voucher .voucher-notice,
+  body.printing-voucher .voucher-footer {
+    grid-column: 1 / -1 !important;
+    padding: 3mm !important;
+  }
+
+  body.printing-voucher .voucher-section {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    padding: 3mm !important;
+  }
+
+  body.printing-voucher .voucher-section h3 {
+    font-size: 8.5pt !important;
+    margin-bottom: 2mm !important;
+  }
+
+  body.printing-voucher .voucher-section > div {
+    gap: 1.5mm !important;
+    margin-top: 2mm !important;
+  }
+
+  body.printing-voucher .voucher-long-text {
+    max-height: 22mm !important;
+    overflow: hidden !important;
+  }
+
+  body.printing-voucher .print\:hidden,
+  body.printing-voucher button {
+    display: none !important;
   }
 }

@@ -92,12 +92,15 @@ export function ReservationVoucher({ reserva }: { reserva: ReservaHospedeDetalhe
       ) : null}
 
       {aberto ? (
-        <VoucherModal
-          onClose={() => setAberto(false)}
-          onImprimir={imprimirComprovante}
-          reserva={reserva}
-          texto={textoVoucher}
-        />
+        <>
+          <VoucherModal
+            onClose={() => setAberto(false)}
+            onImprimir={imprimirComprovante}
+            reserva={reserva}
+            texto={textoVoucher}
+          />
+          <VoucherPrintRoot reserva={reserva} />
+        </>
       ) : null}
     </GlassCard>
   );
@@ -161,11 +164,20 @@ function VoucherModal({
   );
 }
 
+function VoucherPrintRoot({ reserva }: { reserva: ReservaHospedeDetalhe }) {
+  return createPortal(
+    <div className="voucher-print-root-screen" id="voucher-print-root">
+      <ReservationVoucherDocument reserva={reserva} />
+    </div>,
+    document.body
+  );
+}
+
 function imprimirComprovante() {
   // A classe ativa o CSS de impressao que esconde o painel e mostra apenas o
   // documento branco do voucher.
   document.body.classList.add("printing-voucher");
-  window.setTimeout(() => window.print(), 50);
+  window.setTimeout(() => window.print(), 100);
 
   const limparClasse = () => {
     document.body.classList.remove("printing-voucher");
