@@ -113,6 +113,21 @@ function normalizarConfiguracoes(
     pix_payment_note: configuracoes?.pix_payment_note ?? null,
     pix_receiver_name: configuracoes?.pix_receiver_name ?? null,
     payment_receiver_document: configuracoes?.payment_receiver_document ?? null,
+    payment_collection_method: configuracoes?.payment_collection_method ?? "manual",
+    manual_payment_deadline_hours: configuracoes?.manual_payment_deadline_hours ?? 24,
+    mercado_pago_enabled: configuracoes?.mercado_pago_enabled ?? false,
+    mercado_pago_environment: configuracoes?.mercado_pago_environment ?? "sandbox",
+    mercado_pago_public_key: configuracoes?.mercado_pago_public_key ?? null,
+    mercado_pago_access_token_secret_name:
+      configuracoes?.mercado_pago_access_token_secret_name ?? null,
+    mercado_pago_default_charge_strategy:
+      configuracoes?.mercado_pago_default_charge_strategy ?? "full",
+    mercado_pago_default_deposit_percent:
+      configuracoes?.mercado_pago_default_deposit_percent ?? null,
+    mercado_pago_default_deposit_fixed:
+      configuracoes?.mercado_pago_default_deposit_fixed ?? null,
+    mercado_pago_default_deadline_hours:
+      configuracoes?.mercado_pago_default_deadline_hours ?? 24,
     primary_color: configuracoes?.primary_color ?? "#06b6d4",
     require_checkin_confirmation: configuracoes?.require_checkin_confirmation ?? true,
     require_checkout_confirmation: configuracoes?.require_checkout_confirmation ?? true,
@@ -191,6 +206,16 @@ function criarDadosVazios(tenantNome: string): DadosConfiguracoesGerenciamento {
       pix_payment_note: null,
       pix_receiver_name: null,
       payment_receiver_document: null,
+      payment_collection_method: "manual",
+      manual_payment_deadline_hours: 24,
+      mercado_pago_enabled: false,
+      mercado_pago_environment: "sandbox",
+      mercado_pago_public_key: null,
+      mercado_pago_access_token_secret_name: null,
+      mercado_pago_default_charge_strategy: "full",
+      mercado_pago_default_deposit_percent: null,
+      mercado_pago_default_deposit_fixed: null,
+      mercado_pago_default_deadline_hours: 24,
       primary_color: "#06b6d4",
       require_checkin_confirmation: true,
       require_checkout_confirmation: true,

@@ -13,6 +13,10 @@ import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
+import {
+  aprovarReservaComMotorDeCobranca,
+  obterEntradaCobrancaReserva
+} from "../reservations/payment-request-service";
 import { alterarStatusReservaOperacionalSeguro } from "../reservations/status-rpc";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
@@ -86,12 +90,16 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
       throw new ErroConfirmacao("A reserva ja foi decidida.");
     }
 
-    await aprovarReservaECriarCobrancaAtomica(
-      supabase,
+    await aprovarReservaComMotorDeCobranca({
+      entrada: {
+        ...obterEntradaCobrancaReserva(formData),
+        reason:
+          observacao ?? "Reserva aprovada e cobranca criada pela central de confirmacoes."
+      },
       escopo,
       reserva,
-      observacao ?? "Reserva aprovada e cobranca criada pela central de confirmacoes."
-    );
+      supabase,
+    });
 
     revalidarConfirmacoes();
   } catch (erro) {
@@ -490,34 +498,6 @@ async function carregarTarefaLimpeza(
   return data;
 }
 
-async function aprovarReservaECriarCobrancaAtomica(
-  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
-  escopo: EscopoConfirmacao,
-  reserva: ReservationRow,
-  motivo: string
-) {
-  /*
-    Aprovar reserva cria uma cobranca e um bloqueio temporario. A confirmacao
-    definitiva do calendario acontece quando um pagamento manual e registrado.
-  */
-  const { error } = await supabase.rpc("approve_reservation_charge_operational", {
-    p_charge_amount: null,
-    p_charge_type: "full",
-    p_due_at: null,
-    p_owner_id: escopo.ownerId,
-    p_reason: motivo,
-    p_reservation_id: reserva.id,
-    p_tenant_id: escopo.tenantId,
-    p_user_id: escopo.userId
-  });
-
-  if (error) {
-    throw new ErroConfirmacao(
-      traduzirErroConfirmacaoAtomica(error.message)
-    );
-  }
-}
-
 async function atualizarPagamentoReservaAtomica(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
@@ -807,40 +787,6 @@ function traduzirErroBanco(mensagemBanco: string, fallback: string) {
   }
 
   return fallback;
-}
-
-function traduzirErroConfirmacaoAtomica(mensagemBanco: string) {
-  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
-
-  if (mensagem.includes("permissao") || mensagem.includes("permission")) {
-    return "Voce nao tem permissao para confirmar esta reserva.";
-  }
-
-  if (mensagem.includes("nao encontrada")) {
-    return "Reserva nao encontrada para este tenant.";
-  }
-
-  if (mensagem.includes("cancelada")) {
-    return "Esta reserva ja foi cancelada.";
-  }
-
-  if (mensagem.includes("ja esta confirmada") || mensagem.includes("ja foi confirmada")) {
-    return "A reserva ja esta confirmada.";
-  }
-
-  if (mensagem.includes("conflito") || mensagem.includes("indisponibilidade")) {
-    return "Conflito de datas encontrado para esta casa.";
-  }
-
-  if (mensagem.includes("calendario")) {
-    return "Nao foi possivel bloquear o periodo no calendario.";
-  }
-
-  if (mensagem.includes("status atual")) {
-    return "Status atual da reserva nao permite confirmacao.";
-  }
-
-  return "Nao foi possivel confirmar a reserva.";
 }
 
 function traduzirErroPagamentoAtomico(mensagemBanco: string) {

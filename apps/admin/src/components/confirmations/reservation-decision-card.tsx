@@ -181,7 +181,7 @@ function AcaoPrincipal({
   tipoPendencia: TipoMensagemPendencia;
 }) {
   if (tipoPendencia === "reservation_request") {
-    return <AcaoConfirmarReserva disabled={!podeGerenciar} reservaId={reserva.id} />;
+    return <AcaoConfirmarReserva disabled={!podeGerenciar} reserva={reserva} />;
   }
 
   if (tipoPendencia === "payment_proof_review") {
@@ -400,10 +400,10 @@ function DetalhesReserva({
 
 function AcaoConfirmarReserva({
   disabled,
-  reservaId,
+  reserva,
 }: {
   disabled: boolean;
-  reservaId: string;
+  reserva: ReservaConfirmacao;
 }) {
   return (
     <ConfirmDialog
@@ -423,7 +423,9 @@ function AcaoConfirmarReserva({
         impacto="Ao aprovar, a reserva fica aguardando pagamento e segura o período temporariamente."
         pendingLabel="Gerando..."
         placeholder="Observação operacional opcional"
-        reservaId={reservaId}
+        mostrarCobranca
+        reservaId={reserva.id}
+        valorTotal={Number(reserva.total_amount)}
         variante="add"
       />
     </ConfirmDialog>
@@ -544,9 +546,11 @@ function FormularioConfirmacao({
   campo,
   cobrancaId,
   impacto,
+  mostrarCobranca = false,
   pendingLabel,
   placeholder,
   reservaId,
+  valorTotal,
   valorPagamentoPadrao,
   variante,
 }: {
@@ -555,9 +559,11 @@ function FormularioConfirmacao({
   campo: string;
   cobrancaId?: string;
   impacto: string;
+  mostrarCobranca?: boolean;
   pendingLabel: string;
   placeholder: string;
   reservaId: string;
+  valorTotal?: number;
   valorPagamentoPadrao?: number;
   variante: "add" | "cancel" | "status";
 }) {
@@ -568,6 +574,79 @@ function FormularioConfirmacao({
       <p className="rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm text-muted-foreground">
         {impacto}
       </p>
+      {mostrarCobranca ? (
+        <fieldset className="grid gap-3 rounded-xl border bg-background/55 p-3">
+          <legend className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-600 dark:text-cyan-300">
+            Cobranca da reserva
+          </legend>
+          <p className="text-xs leading-5 text-muted-foreground">
+            Valor total da reserva: {formatarMoeda(valorTotal ?? 0)}. Se nada for alterado, o
+            sistema usa o padrao definido em Configuracoes.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              Metodo
+              <select
+                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                defaultValue="default"
+                name="metodoCobranca"
+              >
+                <option value="default">Usar configuracao padrao</option>
+                <option value="mercado_pago">Mercado Pago</option>
+                <option value="manual">Manual</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              Tipo de cobranca
+              <select
+                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                defaultValue="default"
+                name="estrategiaCobranca"
+              >
+                <option value="default">Usar padrao</option>
+                <option value="full">Valor total</option>
+                <option value="deposit_percent">Sinal percentual</option>
+                <option value="deposit_fixed">Sinal fixo</option>
+                <option value="manual_amount">Valor manual</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              Percentual do sinal
+              <input
+                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                max="100"
+                min="1"
+                name="percentualSinal"
+                placeholder="Ex.: 30"
+                step="0.01"
+                type="number"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+              Valor fixo/manual
+              <input
+                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                min="0.01"
+                name="valorManualCobranca"
+                placeholder="Ex.: 500,00"
+                step="0.01"
+                type="number"
+              />
+            </label>
+            <label className="grid gap-1 text-xs font-medium text-muted-foreground md:col-span-2">
+              Prazo para pagamento em horas
+              <input
+                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                min="1"
+                name="prazoCobrancaHoras"
+                placeholder="Ex.: 24"
+                step="1"
+                type="number"
+              />
+            </label>
+          </div>
+        </fieldset>
+      ) : null}
       {typeof valorPagamentoPadrao === "number" ? (
         <label className="grid gap-1 text-xs font-medium text-muted-foreground">
           Valor recebido

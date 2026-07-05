@@ -282,6 +282,20 @@ export type TenantSettingRow = {
   credit_card_payment_instructions: string | null;
   credit_card_installments_note: string | null;
   bank_transfer_payment_instructions: string | null;
+  payment_collection_method: "manual" | "mercado_pago";
+  manual_payment_deadline_hours: number;
+  mercado_pago_enabled: boolean;
+  mercado_pago_environment: "sandbox" | "production";
+  mercado_pago_public_key: string | null;
+  mercado_pago_access_token_secret_name: string | null;
+  mercado_pago_default_charge_strategy:
+    | "full"
+    | "deposit_percent"
+    | "deposit_fixed"
+    | "manual_amount";
+  mercado_pago_default_deposit_percent: number | null;
+  mercado_pago_default_deposit_fixed: number | null;
+  mercado_pago_default_deadline_hours: number;
   email: string | null;
   city: string | null;
   state: string | null;
@@ -614,6 +628,16 @@ export type ReservationChargeRow = {
   status: ReservationChargeStatus;
   payment_method: ReservationPaymentMethod | null;
   payment_provider: "manual" | "gateway" | "none";
+  provider_name: "manual" | "mercado_pago" | null;
+  provider_charge_id: string | null;
+  provider_preference_id: string | null;
+  provider_external_reference: string | null;
+  payment_link_sent_at: Timestamp | null;
+  expires_at: Timestamp | null;
+  gross_amount: number | null;
+  provider_fee_amount: number | null;
+  net_amount: number | null;
+  metadata: JsonValue;
   payment_link: string | null;
   pix_copy_paste: string | null;
   pix_qr_code: string | null;
@@ -639,6 +663,13 @@ export type ReservationPaymentRow = {
   status: ReservationPaymentRecordStatus;
   proof_url: string | null;
   gateway_transaction_id: string | null;
+  provider_name: "manual" | "mercado_pago" | null;
+  provider_payment_id: string | null;
+  provider_preference_id: string | null;
+  gross_amount: number | null;
+  provider_fee_amount: number | null;
+  net_amount: number | null;
+  metadata: JsonValue;
   notes: string | null;
   confirmed_by: UUID | null;
   confirmed_at: Timestamp | null;

@@ -129,6 +129,67 @@ export function ReservationStatusActions({
                     </label>
                   </>
                 ) : null}
+                {acao.tipo === "cobranca" ? (
+                  <div className="grid gap-2 rounded-lg border bg-background/45 p-3 md:grid-cols-2">
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      Metodo de cobranca
+                      <select
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        defaultValue="default"
+                        name="metodoCobranca"
+                      >
+                        <option value="default">Usar configuracao padrao</option>
+                        <option value="mercado_pago">Mercado Pago</option>
+                        <option value="manual">Manual</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      Tipo de cobranca
+                      <select
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        defaultValue="default"
+                        name="estrategiaCobranca"
+                      >
+                        <option value="default">Usar padrao</option>
+                        <option value="full">Valor total</option>
+                        <option value="deposit_percent">Sinal percentual</option>
+                        <option value="deposit_fixed">Sinal fixo</option>
+                        <option value="manual_amount">Valor manual</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      Percentual do sinal
+                      <input
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        max="100"
+                        min="1"
+                        name="percentualSinal"
+                        step="0.01"
+                        type="number"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      Valor fixo/manual
+                      <input
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        min="0.01"
+                        name="valorManualCobranca"
+                        step="0.01"
+                        type="number"
+                      />
+                    </label>
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground md:col-span-2">
+                      Prazo para pagamento em horas
+                      <input
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        min="1"
+                        name="prazoCobrancaHoras"
+                        step="1"
+                        type="number"
+                      />
+                    </label>
+                  </div>
+                ) : null}
                 {acao.tipo === "status" ? (
                   <input name="status" type="hidden" value={acao.statusDestino} />
                 ) : null}

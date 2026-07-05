@@ -236,7 +236,7 @@ function CobrancaCard({
             <Badge variant={variantStatusCobranca(charge.status)}>
               {LABEL_STATUS_COBRANCA[charge.status]}
             </Badge>
-            <Badge variant="outline">{charge.payment_provider === "gateway" ? "Gateway futuro" : "Manual"}</Badge>
+            <Badge variant="outline">{obterLabelProvider(charge)}</Badge>
           </div>
           <div className="mt-3 grid gap-2 text-muted-foreground sm:grid-cols-2">
             <Linha label="Valor" value={formatarMoeda(Number(charge.amount), charge.currency)} />
@@ -244,7 +244,30 @@ function CobrancaCard({
             <Linha label="Saldo" value={formatarMoeda(balance, charge.currency)} />
             <Linha label="Vencimento" value={charge.due_at ? formatarDataHora(charge.due_at) : "Sem vencimento"} />
             <Linha label="Forma" value={paymentMethod ? LABEL_FORMA_PAGAMENTO[paymentMethod] : "Nao definida"} />
+            {charge.provider_fee_amount !== null ? (
+              <Linha
+                label="Taxa gateway"
+                value={formatarMoeda(Number(charge.provider_fee_amount), charge.currency)}
+              />
+            ) : null}
+            {charge.net_amount !== null ? (
+              <Linha
+                label="Liquido"
+                value={formatarMoeda(Number(charge.net_amount), charge.currency)}
+              />
+            ) : null}
           </div>
+          {charge.payment_link ? (
+            <a
+              className="mt-3 inline-flex items-center gap-2 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/15"
+              href={charge.payment_link}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Abrir link de pagamento
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          ) : null}
           {charge.manual_instructions ? (
             <p className="mt-3 rounded-lg border border-cyan-300/15 bg-cyan-400/10 p-3 text-xs leading-5 text-muted-foreground">
               {charge.manual_instructions}
@@ -367,6 +390,9 @@ function PagamentoCard({
             {payment.payment_method ? (
               <Badge variant="outline">{LABEL_FORMA_PAGAMENTO[payment.payment_method]}</Badge>
             ) : null}
+            {payment.provider_name === "mercado_pago" ? (
+              <Badge variant="outline">Mercado Pago</Badge>
+            ) : null}
             {payment.reversal_type === "refund" ? (
               <Badge variant="warning">Registro de estorno</Badge>
             ) : null}
@@ -381,6 +407,24 @@ function PagamentoCard({
             <Linha label="Confirmado em" value={payment.confirmed_at ? formatarDataHora(payment.confirmed_at) : "Nao confirmado"} />
             <Linha label="Financeiro" value={transaction ? LABEL_STATUS_LANCAMENTO[transaction.status] : "Sem lancamento vinculado"} />
             <Linha label="Observacao" value={payment.notes ?? "Sem observacao"} />
+            {payment.gross_amount !== null ? (
+              <Linha
+                label="Bruto"
+                value={formatarMoeda(Number(payment.gross_amount), payment.currency)}
+              />
+            ) : null}
+            {payment.provider_fee_amount !== null ? (
+              <Linha
+                label="Taxa gateway"
+                value={formatarMoeda(Number(payment.provider_fee_amount), payment.currency)}
+              />
+            ) : null}
+            {payment.net_amount !== null ? (
+              <Linha
+                label="Liquido"
+                value={formatarMoeda(Number(payment.net_amount), payment.currency)}
+              />
+            ) : null}
             {payment.reversal_reason ? (
               <Linha label="Motivo" value={payment.reversal_reason} />
             ) : null}
@@ -613,6 +657,12 @@ function variantStatusPagamentoRegistro(status: ReservationPaymentRecordStatus) 
   if (status === "refunded") return "warning";
   if (status === "cancelled" || status === "rejected") return "secondary";
   return "outline";
+}
+
+function obterLabelProvider(charge: ReservationChargeRow) {
+  if (charge.provider_name === "mercado_pago") return "Mercado Pago";
+  if (charge.payment_provider === "gateway") return "Gateway";
+  return "Manual";
 }
 
 function formatarMoeda(value: number, currency = "BRL") {

@@ -139,7 +139,40 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
         credit_card_payment_instructions:
           textoOpcional(formData, "creditCardPaymentInstructions") ??
           "Pagamento via credito conforme regras combinadas com o proprietario.",
-        credit_card_installments_note: textoOpcional(formData, "creditCardInstallmentsNote")
+        credit_card_installments_note: textoOpcional(formData, "creditCardInstallmentsNote"),
+        payment_collection_method: validarMetodoCobranca(
+          textoOpcional(formData, "paymentCollectionMethod") ?? "manual"
+        ),
+        manual_payment_deadline_hours: numeroInteiroOpcional(
+          formData,
+          "manualPaymentDeadlineHours",
+          24
+        ),
+        mercado_pago_enabled: checkboxAtivo(formData, "mercadoPagoEnabled"),
+        mercado_pago_environment: validarAmbienteMercadoPago(
+          textoOpcional(formData, "mercadoPagoEnvironment") ?? "sandbox"
+        ),
+        mercado_pago_public_key: textoOpcional(formData, "mercadoPagoPublicKey"),
+        mercado_pago_access_token_secret_name: textoOpcional(
+          formData,
+          "mercadoPagoAccessTokenSecretName"
+        ),
+        mercado_pago_default_charge_strategy: validarEstrategiaMercadoPago(
+          textoOpcional(formData, "mercadoPagoDefaultChargeStrategy") ?? "full"
+        ),
+        mercado_pago_default_deposit_percent: numeroDecimalOpcional(
+          formData,
+          "mercadoPagoDefaultDepositPercent"
+        ),
+        mercado_pago_default_deposit_fixed: numeroDecimalOpcional(
+          formData,
+          "mercadoPagoDefaultDepositFixed"
+        ),
+        mercado_pago_default_deadline_hours: numeroInteiroOpcional(
+          formData,
+          "mercadoPagoDefaultDeadlineHours",
+          24
+        )
       },
       { onConflict: "tenant_id" }
     );
@@ -331,6 +364,23 @@ function validarTipoChavePix(valor: string) {
   throw new ErroRegraConfiguracoes("Tipo de chave Pix invalido.");
 }
 
+function validarMetodoCobranca(valor: string) {
+  if (["manual", "mercado_pago"].includes(valor)) return valor;
+  throw new ErroRegraConfiguracoes("Metodo de cobranca invalido.");
+}
+
+function validarAmbienteMercadoPago(valor: string) {
+  if (["sandbox", "production"].includes(valor)) return valor;
+  throw new ErroRegraConfiguracoes("Ambiente do Mercado Pago invalido.");
+}
+
+function validarEstrategiaMercadoPago(valor: string) {
+  if (["full", "deposit_percent", "deposit_fixed", "manual_amount"].includes(valor)) {
+    return valor;
+  }
+  throw new ErroRegraConfiguracoes("Tipo de cobranca padrao invalido.");
+}
+
 function validarCor(valor: string): string {
   if (/^#[0-9A-Fa-f]{6}$/.test(valor)) return valor;
   throw new ErroRegraConfiguracoes("Informe uma cor principal valida.");
@@ -356,6 +406,26 @@ function textoObrigatorio(formData: FormData, chave: string, label: string): str
 function textoOpcional(formData: FormData, chave: string): string | null {
   const valor = formData.get(chave)?.toString().trim();
   return valor ? valor : null;
+}
+
+function numeroDecimalOpcional(formData: FormData, chave: string): number | null {
+  const valor = formData.get(chave)?.toString().replace(",", ".").trim();
+  if (!valor) return null;
+  const numero = Number(valor);
+  if (!Number.isFinite(numero) || numero < 0) {
+    throw new ErroRegraConfiguracoes("Informe um valor numerico valido.");
+  }
+  return numero;
+}
+
+function numeroInteiroOpcional(formData: FormData, chave: string, padrao: number): number {
+  const valor = formData.get(chave)?.toString().trim();
+  if (!valor) return padrao;
+  const numero = Number(valor);
+  if (!Number.isInteger(numero) || numero < 1 || numero > 720) {
+    throw new ErroRegraConfiguracoes("Informe um prazo entre 1 e 720 horas.");
+  }
+  return numero;
 }
 
 function checkboxAtivo(formData: FormData, chave: string): boolean {

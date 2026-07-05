@@ -72,6 +72,23 @@ const TIPOS_CHAVE_PIX_CONFIGURACOES = [
   { label: "Chave aleatoria", valor: "aleatoria" },
 ];
 
+const METODOS_COBRANCA_CONFIGURACOES = [
+  { label: "Manual", valor: "manual" },
+  { label: "Mercado Pago", valor: "mercado_pago" },
+];
+
+const AMBIENTES_MERCADO_PAGO = [
+  { label: "Teste / Sandbox", valor: "sandbox" },
+  { label: "Producao", valor: "production" },
+];
+
+const ESTRATEGIAS_COBRANCA_MERCADO_PAGO = [
+  { label: "Valor total", valor: "full" },
+  { label: "Sinal percentual", valor: "deposit_percent" },
+  { label: "Sinal fixo", valor: "deposit_fixed" },
+  { label: "Valor manual na confirmacao", valor: "manual_amount" },
+];
+
 export function SettingsModule({
   configuracoes,
   erro,
@@ -420,6 +437,98 @@ export function SettingsModule({
                     label="Observacao sobre parcelamento"
                     name="creditCardInstallmentsNote"
                   />
+                </SecaoFormulario>
+
+                <SecaoFormulario
+                  descricao="Mercado Pago gera link de pagamento direto para a conta do proprietario. O token real fica somente no servidor/Vercel."
+                  icon={<CreditCard />}
+                  titulo="Mercado Pago"
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <CampoSelectConfiguracoes
+                      defaultValue={configuracoes.payment_collection_method}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Metodo principal de cobranca"
+                      name="paymentCollectionMethod"
+                      options={METODOS_COBRANCA_CONFIGURACOES}
+                    />
+                    <CampoTexto
+                      defaultValue={String(configuracoes.manual_payment_deadline_hours)}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Prazo manual padrao em horas"
+                      name="manualPaymentDeadlineHours"
+                      type="number"
+                    />
+                    <label className="flex items-center gap-3 rounded-lg border bg-background/45 px-3 py-2 text-sm">
+                      <input
+                        defaultChecked={configuracoes.mercado_pago_enabled}
+                        disabled={!podeGerenciarConfiguracoes}
+                        name="mercadoPagoEnabled"
+                        type="checkbox"
+                      />
+                      Ativar Mercado Pago para este tenant
+                    </label>
+                    <CampoSelectConfiguracoes
+                      defaultValue={configuracoes.mercado_pago_environment}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Ambiente"
+                      name="mercadoPagoEnvironment"
+                      options={AMBIENTES_MERCADO_PAGO}
+                    />
+                    <CampoTexto
+                      defaultValue={configuracoes.mercado_pago_public_key ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Public key"
+                      name="mercadoPagoPublicKey"
+                      placeholder="APP_USR-..."
+                    />
+                    <CampoTexto
+                      defaultValue={configuracoes.mercado_pago_access_token_secret_name ?? ""}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Variavel server-side do access token"
+                      name="mercadoPagoAccessTokenSecretName"
+                      placeholder="MERCADO_PAGO_ACCESS_TOKEN_TENANT_X"
+                    />
+                    <CampoSelectConfiguracoes
+                      defaultValue={configuracoes.mercado_pago_default_charge_strategy}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Cobranca padrao"
+                      name="mercadoPagoDefaultChargeStrategy"
+                      options={ESTRATEGIAS_COBRANCA_MERCADO_PAGO}
+                    />
+                    <CampoTexto
+                      defaultValue={String(configuracoes.mercado_pago_default_deadline_hours)}
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Prazo Mercado Pago em horas"
+                      name="mercadoPagoDefaultDeadlineHours"
+                      type="number"
+                    />
+                    <CampoTexto
+                      defaultValue={
+                        configuracoes.mercado_pago_default_deposit_percent?.toString() ?? ""
+                      }
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Sinal percentual padrao"
+                      name="mercadoPagoDefaultDepositPercent"
+                      placeholder="Ex.: 30"
+                      type="number"
+                    />
+                    <CampoTexto
+                      defaultValue={
+                        configuracoes.mercado_pago_default_deposit_fixed?.toString() ?? ""
+                      }
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Sinal fixo padrao"
+                      name="mercadoPagoDefaultDepositFixed"
+                      placeholder="Ex.: 500"
+                      type="number"
+                    />
+                  </div>
+                  <p className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                    Salve no Vercel a variavel informada acima com o access token do
+                    proprietario. O Hospedex apenas gera cobranca; o dinheiro cai direto
+                    na conta Mercado Pago configurada.
+                  </p>
                 </SecaoFormulario>
                 <Button disabled={!podeGerenciarConfiguracoes} type="submit">
                   Salvar dados de recebimento

@@ -129,6 +129,16 @@ export type ConfiguracoesTenantGerenciamento = Pick<
   | "credit_card_installments_note"
   | "credit_card_payment_instructions"
   | "debit_card_payment_instructions"
+  | "manual_payment_deadline_hours"
+  | "mercado_pago_access_token_secret_name"
+  | "mercado_pago_default_charge_strategy"
+  | "mercado_pago_default_deadline_hours"
+  | "mercado_pago_default_deposit_fixed"
+  | "mercado_pago_default_deposit_percent"
+  | "mercado_pago_enabled"
+  | "mercado_pago_environment"
+  | "mercado_pago_public_key"
+  | "payment_collection_method"
 > & {
   tenantName: string;
 };

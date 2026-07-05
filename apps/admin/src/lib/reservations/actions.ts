@@ -16,6 +16,10 @@ import { criarClienteSupabaseServer } from "../supabase/server";
 import { sincronizarHospedeCrm } from "../guests/actions";
 import { sincronizarFinanceiroReservaEditada } from "./finance-sync";
 import {
+  aprovarReservaComMotorDeCobranca,
+  obterEntradaCobrancaReserva
+} from "./payment-request-service";
+import {
   carregarEscopoReservas,
   carregarPropriedadeDaReserva,
   carregarReservaGerenciavel,
@@ -240,20 +244,17 @@ export async function aprovarCobrancaReservaAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
     const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
     const reserva = await carregarReservaGerenciavel(supabase, escopo, reservaId);
-    const valorCobranca = numeroDecimalOpcional(formData, "valorCobranca");
-    const motivo = textoOpcional(formData, "motivo");
 
     if (reserva.status !== "pending") {
       throw new ErroRegraReserva("Somente reservas pendentes podem gerar cobranca inicial.");
     }
 
-    await aprovarReservaComCobrancaOperacional(
-      supabase,
+    await aprovarReservaComMotorDeCobranca({
+      entrada: obterEntradaCobrancaReserva(formData),
       escopo,
       reserva,
-      valorCobranca,
-      motivo ?? "Reserva aprovada e cobranca criada pelo gerenciamento."
-    );
+      supabase,
+    });
 
     revalidarReservas();
   } catch (erro) {
@@ -772,33 +773,6 @@ async function atualizarPagamentoReservaOperacional(
 
   if (error) {
     throw new ErroRegraReserva(traduzirErroPagamentoOperacional(error.message));
-  }
-}
-
-async function aprovarReservaComCobrancaOperacional(
-  supabase: ClienteSupabaseServer,
-  escopo: EscopoReserva,
-  reserva: ReservationRow,
-  valorCobranca: number | null,
-  motivo: string
-) {
-  /*
-    A aprovacao gera cobranca e bloqueio temporario. O status confirmado so
-    nasce depois do pagamento manual/gateway futuro.
-  */
-  const { error } = await supabase.rpc("approve_reservation_charge_operational", {
-    p_charge_amount: valorCobranca,
-    p_charge_type: "full",
-    p_due_at: null,
-    p_owner_id: escopo.ownerId,
-    p_reason: motivo,
-    p_reservation_id: reserva.id,
-    p_tenant_id: escopo.tenantId,
-    p_user_id: escopo.userId
-  });
-
-  if (error) {
-    throw new ErroRegraReserva(traduzirErroOperacaoAtomica(error.message, "aprovar"));
   }
 }
 
