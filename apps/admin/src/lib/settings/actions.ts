@@ -66,7 +66,6 @@ export async function atualizarConfiguracoesGeraisAction(formData: FormData) {
         tenant_id: escopo.tenantId,
         owner_id: escopo.ownerId,
         logo_url: entrada.logoUrl,
-        primary_color: entrada.primaryColor,
         phone: entrada.phone,
         whatsapp: entrada.whatsapp,
         email: entrada.email,
@@ -376,7 +375,6 @@ async function obterEntradaGeral(
     email: textoOpcional(formData, "email"),
     logoUrl,
     phone: textoOpcional(formData, "phone"),
-    primaryColor: validarCor(textoObrigatorio(formData, "primaryColor", "cor principal")),
     shortDescription: textoOpcional(formData, "shortDescription"),
     state: validarEstado(textoOpcional(formData, "state")),
     tenantName: textoObrigatorio(formData, "tenantName", "nome do empreendimento"),
@@ -441,11 +439,6 @@ function validarEstrategiaMercadoPago(valor: string) {
     return valor;
   }
   throw new ErroRegraConfiguracoes("Tipo de cobranca padrao invalido.");
-}
-
-function validarCor(valor: string): string {
-  if (/^#[0-9A-Fa-f]{6}$/.test(valor)) return valor;
-  throw new ErroRegraConfiguracoes("Informe uma cor principal valida.");
 }
 
 function validarEstado(valor: string | null): string | null {

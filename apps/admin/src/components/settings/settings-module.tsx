@@ -6,7 +6,6 @@ import {
   KeyRound,
   Landmark,
   LogOut,
-  Palette,
   ShieldCheck,
   SlidersHorizontal,
   Smartphone,
@@ -123,16 +122,11 @@ export function SettingsModule({
             </p>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Resumo
               icon={<Building2 />}
               label="Tenant"
               valor={configuracoes.tenantName}
-            />
-            <Resumo
-              icon={<Palette />}
-              label="Cor principal"
-              valor={configuracoes.primary_color}
             />
             <Resumo
               icon={<SlidersHorizontal />}
@@ -175,14 +169,6 @@ export function SettingsModule({
                   <LogoUploadField
                     disabled={!podeGerenciarConfiguracoes}
                     logoUrl={configuracoes.logo_url}
-                  />
-                  <CampoTexto
-                    defaultValue={configuracoes.primary_color}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="Cor principal"
-                    name="primaryColor"
-                    required
-                    type="color"
                   />
                   <CampoTexto
                     defaultValue={configuracoes.phone ?? ""}
