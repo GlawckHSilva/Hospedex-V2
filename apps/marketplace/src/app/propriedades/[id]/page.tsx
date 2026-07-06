@@ -10,9 +10,9 @@ import {
   MapPin,
   MessageCircle,
   ShieldCheck,
+  Sparkles,
   Star,
   Users,
-  WalletCards
 } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
@@ -121,13 +121,14 @@ export default async function PropriedadePage({
                     value={formatarVagas(propriedade.structure.garageSpaces)}
                   />
                   <ResumoItem
-                    icon={WalletCards}
-                    label="Diária"
-                    value={formatarPreco(propriedade.minPrice)}
+                    icon={Sparkles}
+                    label="Destaque"
+                    value={propriedade.amenities[0]?.name ?? "Comodidades"}
                   />
                 </div>
               </GlassPanel>
             </FadeIn>
+            <PropertyAnchorNav />
 
             <Secao id="sobre" title="Sobre a hospedagem">
               <p className="text-sm leading-7 text-muted-foreground sm:text-base">
@@ -212,7 +213,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
   const imagem = propriedade.coverImage;
 
   return (
-    <section className="relative isolate min-h-[720px] overflow-hidden">
+    <section className="relative isolate min-h-[520px] overflow-hidden sm:min-h-[620px] lg:min-h-[720px]">
       {imagem ? (
         <img
           alt={imagem.alt}
@@ -226,7 +227,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
         <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
       ) : null}
 
-      <div className="mx-auto flex min-h-[620px] max-w-[1480px] flex-col justify-end px-4 pb-44 pt-28 text-white sm:px-6 lg:min-h-[720px] lg:pb-60">
+      <div className="mx-auto flex min-h-[520px] max-w-[1480px] flex-col justify-end px-4 pb-36 pt-28 text-white sm:min-h-[620px] sm:px-6 sm:pb-44 lg:min-h-[720px] lg:pb-60">
         <FadeIn className="max-w-5xl">
           <div className="mb-36 flex flex-wrap gap-3 lg:mb-40">
             <ShareButton />
@@ -263,6 +264,37 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
         </FadeIn>
       </div>
     </section>
+  );
+}
+
+function PropertyAnchorNav() {
+  const links = [
+    ["#fotos", "Fotos"],
+    ["#sobre", "Sobre"],
+    ["#disponibilidade", "Disponibilidade"],
+    ["#comodidades", "Comodidades"],
+    ["#regras", "Regras"],
+    ["#localizacao", "Localização"],
+    ["#avaliacoes", "Avaliações"]
+  ];
+
+  return (
+    <FadeIn>
+      <nav
+        aria-label="Navegação da hospedagem"
+        className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-600/45 bg-slate-950/70 p-2 text-sm backdrop-blur-xl"
+      >
+        {links.map(([href, label]) => (
+          <a
+            className="shrink-0 rounded-xl px-3 py-2 text-slate-300 transition hover:bg-cyan-300/10 hover:text-cyan-100"
+            href={href}
+            key={href}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+    </FadeIn>
   );
 }
 
@@ -355,6 +387,11 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
           <h3 className="text-lg font-semibold">{perfil.ownerName}</h3>
           <p className="mt-1 text-sm text-muted-foreground">{perfil.businessName}</p>
           {local ? <p className="mt-1 text-sm text-muted-foreground">{local}</p> : null}
+          {perfil.shortDescription ? (
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              {perfil.shortDescription}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -370,7 +407,7 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
         </a>
       ) : null}
 
-      <div className="hidden">
+      <div className="mt-5 grid gap-3">
         {[
           "Não cobramos nada agora pelo Hospedex.",
           "Confira os dados da reserva antes de realizar qualquer pagamento.",
@@ -390,8 +427,8 @@ function PropertyTrustHighlights() {
   const itens = [
     {
       icon: ShieldCheck,
-      label: "Pagamento seguro",
-      texto: "Nenhum pagamento antecipado"
+      label: "Nenhum pagamento antecipado",
+      texto: "A solicitação é analisada pelo proprietário"
     },
     {
       icon: Star,

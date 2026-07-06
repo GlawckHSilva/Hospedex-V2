@@ -745,6 +745,7 @@ export function PropertyForm({
         "tituloPublico",
         "descricaoPublica",
         "imagemCapaArquivo",
+        "comodidadeIds",
       ]);
     }
   }
@@ -837,7 +838,9 @@ export function PropertyForm({
     return {
       possuiComodidade: quantidadeComodidadesValidas > 0,
       possuiImagemPrincipal: Boolean(
-        previewCapa || previewsGaleria.some((preview) => preview.principal),
+        previewCapa ||
+          previewsGaleria.some((preview) => preview.principal) ||
+          propriedade?.imagemCapa?.url,
       ),
     };
   }

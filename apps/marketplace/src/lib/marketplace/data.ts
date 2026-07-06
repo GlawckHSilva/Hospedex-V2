@@ -401,6 +401,7 @@ export async function carregarPropriedadesPublicas(
       .from("properties")
       .select(CAMPOS_PROPRIEDADE)
       .eq("status", "published")
+      .eq("is_public", true)
       .is("deleted_at", null)
       .order("updated_at", { ascending: false })
       .limit(limiteConsulta);
@@ -577,6 +578,7 @@ export async function carregarPropriedadePublica(slugOuId: string) {
       .from("properties")
       .select(CAMPOS_PROPRIEDADE)
       .eq("status", "published")
+      .eq("is_public", true)
       .is("deleted_at", null);
 
     consulta = valorEhUuid(identificador)
