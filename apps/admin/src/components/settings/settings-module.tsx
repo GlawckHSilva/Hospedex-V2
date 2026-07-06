@@ -25,7 +25,7 @@ import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import { EntityGrid } from "../management/entity-card";
 import { sairAction } from "../../lib/auth/actions";
 import { CopyWebhookUrlButton } from "./copy-webhook-url-button";
-import { LogoUploadField } from "./logo-upload-field";
+import { GeneralSettingsForm } from "./general-settings-form";
 import {
   alterarSenhaConfiguracoesAction,
   alternarModuloGerenciamentoAction,
@@ -52,7 +52,7 @@ type SettingsModuleProps = DadosConfiguracoesGerenciamento &
   SearchParamsConfiguracoes;
 
 const MENSAGENS_SUCESSO: Record<string, string> = {
-  "configuracoes-atualizadas": "Configuracoes gerais atualizadas.",
+  "configuracoes-atualizadas": "Dados do empreendimento atualizados com sucesso.",
   "modulo-atualizado": "Modulo atualizado.",
   "pagamentos-atualizados": "Instrucoes de pagamento atualizadas.",
   "preferencias-atualizadas": "Preferencias operacionais atualizadas.",
@@ -117,15 +117,14 @@ export function SettingsModule({
               Configuracoes
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              {tenantNome} · Preferencias do empreendimento, operacao e modulos
-              do tenant.
+              {tenantNome} · Preferências do empreendimento, operação e módulos.
             </p>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Resumo
               icon={<Building2 />}
-              label="Tenant"
+              label="Empreendimento"
               valor={configuracoes.tenantName}
             />
             <Resumo
@@ -145,74 +144,20 @@ export function SettingsModule({
               Nome, marca, contato e descrição curta do empreendimento.
             </p>
             <EntityModal
-              description="Atualize informações gerais do tenant atual."
+              description="Essas informações aparecem no painel, contatos, comprovantes e materiais da sua hospedagem."
               disabled={!podeGerenciarConfiguracoes}
               eyebrow="Edição"
-              title="Configurações gerais"
+              size="xl"
+              title="Editar dados do empreendimento"
               triggerClassName="mt-5"
               triggerLabel="Editar configurações"
               triggerVariant="default"
             >
-              <form
+              <GeneralSettingsForm
                 action={atualizarConfiguracoesGeraisAction}
-                className="grid gap-4"
-                encType="multipart/form-data"
-              >
-                <CampoTexto
-                  defaultValue={configuracoes.tenantName}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Nome do empreendimento"
-                  name="tenantName"
-                  required
-                />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <LogoUploadField
-                    disabled={!podeGerenciarConfiguracoes}
-                    logoUrl={configuracoes.logo_url}
-                  />
-                  <CampoTexto
-                    defaultValue={configuracoes.phone ?? ""}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="Telefone"
-                    name="phone"
-                  />
-                  <CampoTexto
-                    defaultValue={configuracoes.whatsapp ?? ""}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="WhatsApp"
-                    name="whatsapp"
-                  />
-                  <CampoTexto
-                    defaultValue={configuracoes.email ?? ""}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="E-mail"
-                    name="email"
-                    type="email"
-                  />
-                  <CampoTexto
-                    defaultValue={configuracoes.city ?? ""}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="Cidade"
-                    name="city"
-                  />
-                  <CampoTexto
-                    defaultValue={configuracoes.state ?? ""}
-                    disabled={!podeGerenciarConfiguracoes}
-                    label="Estado"
-                    maxLength={2}
-                    name="state"
-                  />
-                </div>
-                <CampoTextoArea
-                  defaultValue={configuracoes.short_description ?? ""}
-                  disabled={!podeGerenciarConfiguracoes}
-                  label="Descricao curta"
-                  name="shortDescription"
-                />
-                <Button disabled={!podeGerenciarConfiguracoes} type="submit">
-                  Salvar configuracoes
-                </Button>
-              </form>
+                configuracoes={configuracoes}
+                podeGerenciarConfiguracoes={podeGerenciarConfiguracoes}
+              />
             </EntityModal>
           </CardContent>
         </Card>
@@ -320,7 +265,7 @@ export function SettingsModule({
               escolhe apenas quais formas aceita.
             </p>
             <EntityModal
-              description="Configure os dados globais de recebimento do tenant. As casas reutilizam estas informacoes e apenas ativam ou desativam cada forma de pagamento."
+              description="Configure os dados globais de recebimento do empreendimento. As casas reutilizam estas informações e apenas ativam ou desativam cada forma de pagamento."
               disabled={!podeGerenciarConfiguracoes}
               eyebrow="Pagamentos"
               title="Dados de recebimento do proprietario"
@@ -469,7 +414,7 @@ export function SettingsModule({
                     <p className="rounded-lg border border-amber-300/30 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-200">
                       Mercado Pago configurado parcialmente. Links de pagamento podem ser
                       gerados, mas a confirmacao automatica por webhook nao funcionara
-                      em producao ate configurar a assinatura secreta deste tenant.
+                      em produção até configurar a assinatura secreta deste empreendimento.
                     </p>
                   ) : null}
                   <div className="grid gap-2 rounded-lg border bg-background/45 p-3">
@@ -515,7 +460,7 @@ export function SettingsModule({
                         name="mercadoPagoEnabled"
                         type="checkbox"
                       />
-                      Ativar Mercado Pago para este tenant
+                      Ativar Mercado Pago para este empreendimento
                     </label>
                     <CampoSelectConfiguracoes
                       defaultValue={configuracoes.mercado_pago_environment}
@@ -560,7 +505,7 @@ export function SettingsModule({
                       disabled={!podeGerenciarConfiguracoes}
                       label="Fallback tecnico por variavel de ambiente"
                       name="mercadoPagoAccessTokenSecretName"
-                      placeholder="Opcional: MERCADO_PAGO_ACCESS_TOKEN_TENANT_X"
+                      placeholder="Opcional: MERCADO_PAGO_ACCESS_TOKEN_EMPRESA"
                     />
                     <label className="flex items-center gap-3 rounded-lg border bg-background/45 px-3 py-2 text-sm">
                       <input
@@ -654,7 +599,7 @@ export function SettingsModule({
                 ))
               ) : (
                 <p className="rounded-lg border bg-background/50 p-4 text-sm text-muted-foreground">
-                  Nenhum modulo configuravel encontrado para este tenant.
+                  Nenhum módulo configurável encontrado.
                 </p>
               )}
             </EntityGrid>
@@ -1009,7 +954,7 @@ function ModuloCard({
         </p>
       ) : null}
       <ConfirmDialog
-        description="Confirme a alteracao deste modulo para o tenant atual."
+        description="Confirme a alteração deste módulo para o empreendimento atual."
         disabled={!podeAlternar}
         title={modulo.ativo ? "Desativar modulo" : "Ativar modulo"}
         triggerClassName="mt-4"

@@ -79,7 +79,7 @@ export async function atualizarConfiguracoesGeraisAction(formData: FormData) {
     if (error) throw new Error(error.message);
     revalidarConfiguracoes();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao salvar configuracoes gerais.");
+    redirecionarComErro(erro, "Não foi possível salvar as configurações. Tente novamente.");
   }
 
   redirect(`${CAMINHO_CONFIGURACOES}?sucesso=configuracoes-atualizadas`);
@@ -374,11 +374,11 @@ async function obterEntradaGeral(
     city: textoOpcional(formData, "city"),
     email: textoOpcional(formData, "email"),
     logoUrl,
-    phone: textoOpcional(formData, "phone"),
-    shortDescription: textoOpcional(formData, "shortDescription"),
+    phone: validarTelefoneOpcional(formData, "phone"),
+    shortDescription: validarDescricaoCurta(textoOpcional(formData, "shortDescription")),
     state: validarEstado(textoOpcional(formData, "state")),
     tenantName: textoObrigatorio(formData, "tenantName", "nome do empreendimento"),
-    whatsapp: textoOpcional(formData, "whatsapp")
+    whatsapp: validarTelefoneOpcional(formData, "whatsapp")
   };
 }
 
@@ -445,6 +445,22 @@ function validarEstado(valor: string | null): string | null {
   if (!valor) return null;
   if (/^[A-Za-z]{2}$/.test(valor)) return valor.toUpperCase();
   throw new ErroRegraConfiguracoes("Informe o estado com duas letras.");
+}
+
+function validarTelefoneOpcional(formData: FormData, campo: string): string | null {
+  const valor = textoOpcional(formData, campo);
+  if (!valor) return null;
+
+  const digitos = valor.replace(/\D/g, "");
+  if (digitos.length >= 10 && digitos.length <= 11) return valor;
+
+  throw new ErroRegraConfiguracoes("Informe um número válido.");
+}
+
+function validarDescricaoCurta(valor: string | null): string | null {
+  if (!valor) return null;
+  if (valor.length <= 160) return valor;
+  throw new ErroRegraConfiguracoes("A descrição curta deve ter até 160 caracteres.");
 }
 
 function validarHora(valor: string): string {

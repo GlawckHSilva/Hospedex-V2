@@ -90,7 +90,7 @@ export function LogoUploadField({ disabled, logoUrl }: LogoUploadFieldProps) {
             htmlFor="logoFile"
           >
             <ImageUp className="h-4 w-4" />
-            Escolher logo
+            {previewLogo ? "Trocar logo" : "Escolher logo"}
           </label>
           <input
             accept={TIPOS_LOGO_ACEITOS}
@@ -118,7 +118,8 @@ export function LogoUploadField({ disabled, logoUrl }: LogoUploadFieldProps) {
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">
-          {nomeArquivo ?? "PNG, JPG, WebP ou SVG. A logo sera enviada ao salvar."}
+          {nomeArquivo ??
+            "PNG, JPG, WebP ou SVG. Recomendado: 512x512px com fundo transparente."}
         </p>
       </div>
     </div>
