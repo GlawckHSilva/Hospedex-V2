@@ -284,7 +284,7 @@ export function GuestReservationDetail({
         <aside className="grid gap-6 self-start lg:sticky lg:top-24">
           <ReservationVoucher reserva={reserva} />
 
-          <GlassCard className="p-5">
+          <GlassCard className="p-5" id="cancelamento">
             <h2 className="text-lg font-semibold">Localizacao e contato</h2>
             <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
               <p className="inline-flex gap-2">

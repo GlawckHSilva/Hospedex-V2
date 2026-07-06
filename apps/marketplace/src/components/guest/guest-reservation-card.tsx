@@ -4,7 +4,8 @@ import {
   Home,
   MapPin,
   Users,
-  WalletCards
+  WalletCards,
+  XCircle
 } from "lucide-react";
 import Link from "next/link";
 
@@ -86,17 +87,32 @@ export function GuestReservationCard({ reserva }: { reserva: ReservaHospedeResum
               <CreditCard className="h-4 w-4 text-primary" />
               {formaPagamento}
             </span>
-            <Link
-              className={cn(buttonVariants({ size: "sm", variant: "default" }), "self-start sm:self-auto")}
-              href={`/minhas-reservas/${reserva.id}`}
-            >
-              Ver detalhes
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                className={cn(buttonVariants({ size: "sm", variant: "default" }))}
+                href={`/minhas-reservas/${reserva.id}`}
+              >
+                Ver detalhes
+              </Link>
+              {reservaPermiteCancelamentoHospede(reserva.status) ? (
+                <Link
+                  className={cn(buttonVariants({ size: "sm", variant: "destructive" }))}
+                  href={`/minhas-reservas/${reserva.id}#cancelamento`}
+                >
+                  <XCircle className="h-4 w-4" />
+                  Cancelar
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
     </GlassCard>
   );
+}
+
+function reservaPermiteCancelamentoHospede(status: ReservaHospedeResumo["status"]) {
+  return ["pending", "awaiting_payment", "confirmed"].includes(status);
 }
 
 function Resumo({
