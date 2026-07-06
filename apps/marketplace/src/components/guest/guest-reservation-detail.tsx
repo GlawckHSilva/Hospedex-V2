@@ -43,19 +43,20 @@ export function GuestReservationDetail({
 
   return (
     <div className="grid gap-6">
-      <GlassPanel className="overflow-hidden p-0">
-        <div className="relative min-h-64 bg-secondary">
-          {propriedade?.imagemCapa ? (
-            <img
-              alt={`Foto de ${propriedade.nome}`}
-              className="h-full min-h-64 w-full object-cover"
-              src={propriedade.imagemCapa}
-            />
-          ) : (
-            <div className="premium-grid-bg h-full min-h-64 w-full" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8">
+      <GlassPanel className="overflow-hidden p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="h-32 w-full overflow-hidden rounded-2xl border border-border bg-secondary sm:h-28 sm:w-40 sm:flex-none">
+            {propriedade?.imagemCapa ? (
+              <img
+                alt={`Foto de ${propriedade.nome}`}
+                className="h-full w-full object-cover"
+                src={propriedade.imagemCapa}
+              />
+            ) : (
+              <div className="premium-grid-bg h-full w-full" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap gap-2">
               <StatusBadge tone={tomStatusReserva(reserva.status)}>
                 {LABEL_STATUS_RESERVA[reserva.status]}
