@@ -26,6 +26,7 @@ import {
   tomStatusReserva
 } from "../../lib/guest/format";
 import type { ReservaHospedeDetalhe } from "../../lib/guest/types";
+import { GuestReservationCancelDialog } from "./guest-reservation-cancel-dialog";
 import { ReservationVoucher } from "./reservation-voucher";
 
 export function GuestReservationDetail({
@@ -318,6 +319,17 @@ export function GuestReservationDetail({
                     : ""}
                 </p>
               ) : null}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-5">
+            <h2 className="text-lg font-semibold">Cancelamento</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Consulte as regras do proprietario antes de cancelar. A reserva
+              cancelada fica registrada para historico e financeiro.
+            </p>
+            <div className="mt-4">
+              <GuestReservationCancelDialog reserva={reserva} />
             </div>
           </GlassCard>
         </aside>

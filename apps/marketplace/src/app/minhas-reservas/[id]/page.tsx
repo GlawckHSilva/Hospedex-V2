@@ -8,9 +8,17 @@ import { GuestStateCard } from "../../../components/guest/guest-state-card";
 import { carregarReservaHospede } from "../../../lib/guest/data";
 
 type Params = Promise<{ id: string }>;
+type SearchParams = Promise<{ erro?: string; sucesso?: string }>;
 
-export default async function ReservaDetalhePage({ params }: { params: Params }) {
+export default async function ReservaDetalhePage({
+  params,
+  searchParams
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { id } = await params;
+  const query = await searchParams;
   const resultado = await carregarReservaHospede(id);
 
   return (
@@ -22,6 +30,19 @@ export default async function ReservaDetalhePage({ params }: { params: Params })
         >
           Voltar para minhas reservas
         </Link>
+
+        {query.sucesso === "reserva-cancelada" ? (
+          <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+            Reserva cancelada com sucesso. O proprietario foi notificado no
+            gerenciamento.
+          </div>
+        ) : null}
+
+        {query.erro ? (
+          <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-4 text-sm text-red-100">
+            {query.erro}
+          </div>
+        ) : null}
 
         {resultado.estado !== "ok" ? (
           <GuestStateCard estado={resultado.estado} mensagem={resultado.mensagem} />

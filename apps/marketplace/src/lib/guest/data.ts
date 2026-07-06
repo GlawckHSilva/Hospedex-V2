@@ -14,6 +14,7 @@ import type {
   InstrucaoPagamentoHospede,
   PagamentoReservaHospede,
   PerfilHospede,
+  PoliticaCancelamentoHospede,
   PropriedadeReservaHospede,
   ProprietarioReservaHospede,
   ReservaHospedeDetalhe,
@@ -118,6 +119,16 @@ type DetalhesEstadiaRow = {
   owner_details: JsonValue;
   property_details: JsonValue;
   regional_guide: JsonValue;
+  reservation_id: string;
+};
+
+type PoliticaCancelamentoRow = {
+  late_refund_percentage: number;
+  late_until_days: number;
+  no_refund_within_days: number;
+  notes: string | null;
+  refund_until_days: number;
+  refund_until_percentage: number;
   reservation_id: string;
 };
 
@@ -237,6 +248,11 @@ export async function carregarReservaHospede(
       comodidades: estadia?.comodidades ?? [],
       guiaRegiao: estadia?.guiaRegiao ?? [],
       observacoes: data.guest_notes ?? data.notes,
+      cancelamento: montarPoliticaCancelamentoHospede(
+        data,
+        complementos.politicasCancelamentoPorReserva.get(data.id) ?? null,
+        resumo.financeiro.valorPago
+      ),
       proprietario: estadia?.proprietario ?? null,
       regrasCasa: estadia?.regrasCasa ?? resumo.propriedade?.regras ?? [],
       taxaLimpeza: estadia?.taxaLimpeza ?? 0,
@@ -352,11 +368,20 @@ async function carregarComplementosReservas(
       historicoPorReserva: new Map<string, HistoricoRow[]>(),
       instrucoesPorReserva: new Map<string, InstrucaoPagamentoHospede>(),
       pagamentosPorReserva: new Map<string, PagamentoReservaHospede[]>(),
+      politicasCancelamentoPorReserva: new Map<string, PoliticaCancelamentoRow>(),
       propriedadesPorReserva: new Map<string, PropriedadeReservaHospede>()
     };
   }
 
-  const [hospedes, estadias, instrucoes, historico, cobrancas, pagamentos] = await Promise.all([
+  const [
+    hospedes,
+    estadias,
+    instrucoes,
+    historico,
+    cobrancas,
+    pagamentos,
+    politicasCancelamento
+  ] = await Promise.all([
     supabase
       .from("reservation_guests")
       .select("reservation_id,full_name,email,phone,document_number,is_primary")
@@ -395,6 +420,15 @@ async function carregarComplementosReservas(
       .in("reservation_id", reservaIds)
       .order("created_at", { ascending: true })
       .returns<PagamentoReservaRow[]>()
+    ,
+    opcoes.carregarHistorico
+      ? (supabase.rpc("get_guest_reservation_cancellation_policy", {
+          p_reservation_ids: reservaIds
+        }) as unknown as Promise<{
+          data: PoliticaCancelamentoRow[] | null;
+          error: Error | null;
+        }>)
+      : Promise.resolve({ data: [], error: null })
   ]);
 
   if (hospedes.error) console.error("Erro ao carregar hospedes da reserva.", hospedes.error);
@@ -403,6 +437,9 @@ async function carregarComplementosReservas(
   if (historico.error) console.error("Erro ao carregar timeline da reserva.", historico.error);
   if (cobrancas.error) console.error("Erro ao carregar cobrancas do hospede.", cobrancas.error);
   if (pagamentos.error) console.error("Erro ao carregar pagamentos do hospede.", pagamentos.error);
+  if (politicasCancelamento.error) {
+    console.error("Erro ao carregar politica de cancelamento do hospede.", politicasCancelamento.error);
+  }
 
   const estadiasPorReserva = mapearEstadias(estadias.data ?? [], supabase);
 
@@ -413,6 +450,7 @@ async function carregarComplementosReservas(
     historicoPorReserva: mapearHistorico(historico.data ?? []),
     instrucoesPorReserva: mapearInstrucoes(instrucoes.data ?? []),
     pagamentosPorReserva: mapearPagamentosHospede(pagamentos.data ?? []),
+    politicasCancelamentoPorReserva: mapearPoliticasCancelamento(politicasCancelamento.data ?? []),
     propriedadesPorReserva: new Map(
       [...estadiasPorReserva.entries()].map(([reservaId, estadia]) => [
         reservaId,
@@ -532,6 +570,62 @@ function mapearPagamentosHospede(pagamentos: PagamentoReservaRow[]) {
   }
 
   return mapa;
+}
+
+function mapearPoliticasCancelamento(politicas: PoliticaCancelamentoRow[]) {
+  const mapa = new Map<string, PoliticaCancelamentoRow>();
+
+  for (const politica of politicas) {
+    mapa.set(politica.reservation_id, politica);
+  }
+
+  return mapa;
+}
+
+function montarPoliticaCancelamentoHospede(
+  reserva: ReservaRow,
+  politica: PoliticaCancelamentoRow | null,
+  valorPago: number
+): PoliticaCancelamentoHospede {
+  const regra = politica ?? {
+    late_refund_percentage: 50,
+    late_until_days: 2,
+    no_refund_within_days: 1,
+    notes: null,
+    refund_until_days: 7,
+    refund_until_percentage: 100,
+    reservation_id: reserva.id
+  };
+  const diasAntesCheckIn = calcularDiasAntesCheckIn(reserva.check_in);
+  const percentual =
+    diasAntesCheckIn >= regra.refund_until_days
+      ? regra.refund_until_percentage
+      : diasAntesCheckIn >= regra.late_until_days
+        ? regra.late_refund_percentage
+        : 0;
+  const statusCancelaveis: ReservaRow["status"][] = [
+    "pending",
+    "awaiting_payment",
+    "confirmed"
+  ];
+  const podeCancelar = statusCancelaveis.includes(reserva.status);
+
+  return {
+    itens: [
+      `Ate ${regra.refund_until_days} dias antes do check-in: reembolso de ${formatarPercentualPolitica(regra.refund_until_percentage)}.`,
+      `Ate ${regra.late_until_days} dias antes do check-in: reembolso de ${formatarPercentualPolitica(regra.late_refund_percentage)}.`,
+      `Dentro dos ultimos ${regra.no_refund_within_days} dia(s): sem reembolso automatico.`
+    ],
+    mensagemBloqueio: podeCancelar
+      ? null
+      : reserva.status === "cancelled"
+        ? "Esta reserva ja foi cancelada."
+        : "Para cancelamentos em hospedagem ou reserva encerrada, fale com o proprietario.",
+    observacoes: regra.notes,
+    percentualReembolsoEstimado: percentual,
+    podeCancelar,
+    valorReembolsoEstimado: Math.max(valorPago * percentual / 100, 0)
+  };
 }
 
 function montarFinanceiroHospede(
@@ -755,6 +849,19 @@ function montarRegrasCasa(regras: Record<string, JsonValue>) {
 function formatarHorarioPadrao(horario: string | null, tipo: "check-in" | "check-out") {
   if (!horario) return null;
   return tipo === "check-in" ? `A partir das ${horario}` : `Ate ${horario}`;
+}
+
+function calcularDiasAntesCheckIn(checkIn: string) {
+  const hojeSaoPaulo = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo"
+  }).format(new Date());
+  const hoje = new Date(`${hojeSaoPaulo}T00:00:00`);
+  const entrada = new Date(`${checkIn}T00:00:00`);
+  return Math.ceil((entrada.getTime() - hoje.getTime()) / 86_400_000);
+}
+
+function formatarPercentualPolitica(valor: number) {
+  return `${Number(valor).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
 }
 
 function objetoJson(valor: JsonValue): Record<string, JsonValue> {

@@ -97,6 +97,15 @@ export type FinanceiroReservaHospede = {
   valorTotal: number;
 };
 
+export type PoliticaCancelamentoHospede = {
+  itens: string[];
+  mensagemBloqueio: string | null;
+  observacoes: string | null;
+  percentualReembolsoEstimado: number;
+  podeCancelar: boolean;
+  valorReembolsoEstimado: number;
+};
+
 export type TimelineReservaHospede = {
   data: string;
   descricao: string;
@@ -134,6 +143,7 @@ export type ReservaHospedeDetalhe = ReservaHospedeResumo & {
     whatsapp: string | null;
   }>;
   observacoes: string | null;
+  cancelamento: PoliticaCancelamentoHospede;
   proprietario: ProprietarioReservaHospede | null;
   regrasCasa: string[];
   taxaLimpeza: number;

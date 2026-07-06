@@ -107,6 +107,34 @@ export async function atualizarPerfilHospedeAction(formData: FormData) {
   redirect("/perfil?sucesso=perfil");
 }
 
+export async function cancelarReservaHospedeAction(formData: FormData) {
+  const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
+  const motivo = textoOpcional(formData, "motivo");
+  const caminhoReserva = `/minhas-reservas/${reservaId}`;
+  const supabase = await criarClienteSupabaseServer();
+
+  if (!supabase) {
+    redirect(`${caminhoReserva}?erro=${encodeURIComponent("Nao foi possivel conectar ao Supabase.")}`);
+  }
+
+  const { data: usuarioResultado } = await supabase.auth.getUser();
+  if (!usuarioResultado.user) redirect("/login");
+
+  const { error } = await supabase.rpc("cancel_guest_reservation", {
+    p_reason: motivo,
+    p_reservation_id: reservaId
+  });
+
+  if (error) {
+    console.error("Erro ao cancelar reserva pelo hospede.", error);
+    redirect(`${caminhoReserva}?erro=${encodeURIComponent(traduzirErroCancelamentoHospede(error.message))}`);
+  }
+
+  revalidatePath("/minhas-reservas");
+  revalidatePath(caminhoReserva);
+  redirect(`${caminhoReserva}?sucesso=reserva-cancelada`);
+}
+
 function textoObrigatorio(formData: FormData, chave: string, label: string) {
   const valor = formData.get(chave)?.toString().trim();
   if (!valor) throw new Error(`Informe ${label}.`);
@@ -116,6 +144,21 @@ function textoObrigatorio(formData: FormData, chave: string, label: string) {
 function textoOpcional(formData: FormData, chave: string) {
   const valor = formData.get(chave)?.toString().trim();
   return valor || null;
+}
+
+function traduzirErroCancelamentoHospede(mensagemBanco: string) {
+  const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
+
+  if (mensagem.includes("entre")) return "Entre novamente para cancelar esta reserva.";
+  if (mensagem.includes("nao encontrada")) return "Reserva nao encontrada para esta conta.";
+  if (mensagem.includes("ja foi cancelada")) return "Esta reserva ja foi cancelada.";
+  if (mensagem.includes("hospedagem") || mensagem.includes("encerrada")) {
+    return "Esta reserva ja esta em hospedagem ou encerrada. Fale com o proprietario.";
+  }
+  if (mensagem.includes("calendario")) return "Nao foi possivel liberar o periodo no calendario.";
+  if (mensagem.includes("financeiro")) return "Nao foi possivel atualizar o financeiro da reserva.";
+
+  return "Nao foi possivel cancelar a reserva.";
 }
 
 async function obterBaseUrl() {
