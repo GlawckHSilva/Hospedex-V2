@@ -14,7 +14,9 @@ import {
 import {
   carregarResumoCredencialMercadoPago,
   removerCredencialMercadoPago,
-  salvarCredencialMercadoPago
+  removerWebhookSecretMercadoPago,
+  salvarCredencialMercadoPago,
+  salvarWebhookSecretMercadoPago
 } from "../payments/mercado-pago-credentials";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
@@ -126,11 +128,16 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
     );
     const mercadoPagoPublicKey = textoOpcional(formData, "mercadoPagoPublicKey");
     const mercadoPagoAccessToken = textoOpcional(formData, "mercadoPagoAccessToken");
+    const mercadoPagoWebhookSecret = textoOpcional(formData, "mercadoPagoWebhookSecret");
     const mercadoPagoAccessTokenSecretName = textoOpcional(
       formData,
       "mercadoPagoAccessTokenSecretName"
     );
     const removerMercadoPago = checkboxAtivo(formData, "removerMercadoPago");
+    const removerMercadoPagoWebhookSecret = checkboxAtivo(
+      formData,
+      "removerMercadoPagoWebhookSecret"
+    );
     const credencialAtual = await carregarResumoCredencialMercadoPago(escopo.tenantId);
 
     /*
@@ -145,6 +152,11 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
     ) {
       throw new ErroRegraConfiguracoes(
         "Informe o access token do Mercado Pago ou conecte uma credencial antes de ativar."
+      );
+    }
+    if (mercadoPagoWebhookSecret && !mercadoPagoAccessToken && !credencialAtual.conectado) {
+      throw new ErroRegraConfiguracoes(
+        "Configure o Access Token Mercado Pago antes de salvar o Webhook Secret."
       );
     }
 
@@ -213,10 +225,19 @@ export async function atualizarInstrucoesPagamentoAction(formData: FormData) {
         ownerId: escopo.ownerId,
         publicKey: mercadoPagoPublicKey,
         tenantId: escopo.tenantId,
-        userId: escopo.contexto.userId
+        userId: escopo.contexto.userId,
+        webhookSecret: mercadoPagoWebhookSecret
       });
     } else if (removerMercadoPago) {
       await removerCredencialMercadoPago(escopo.tenantId);
+    } else if (mercadoPagoWebhookSecret) {
+      await salvarWebhookSecretMercadoPago({
+        tenantId: escopo.tenantId,
+        userId: escopo.contexto.userId,
+        webhookSecret: mercadoPagoWebhookSecret
+      });
+    } else if (removerMercadoPagoWebhookSecret) {
+      await removerWebhookSecretMercadoPago(escopo.tenantId);
     }
 
     revalidarConfiguracoes();

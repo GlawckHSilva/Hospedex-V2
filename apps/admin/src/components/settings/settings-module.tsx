@@ -25,6 +25,7 @@ import {
 import { ConfirmDialog, EntityModal } from "../management/entity-modal";
 import { EntityGrid } from "../management/entity-card";
 import { sairAction } from "../../lib/auth/actions";
+import { CopyWebhookUrlButton } from "./copy-webhook-url-button";
 import { LogoUploadField } from "./logo-upload-field";
 import {
   alterarSenhaConfiguracoesAction,
@@ -451,11 +452,46 @@ export function SettingsModule({
                         ? `conectado ao token final ${configuracoes.mercadoPagoCredencial.last4 ?? "****"}`
                         : "nao conectado"}
                     </p>
+                    <p className="font-semibold text-foreground">
+                      Webhook Secret:{" "}
+                      {configuracoes.mercadoPagoCredencial.webhookSecretConfigurado
+                        ? `configurado final ${configuracoes.mercadoPagoCredencial.webhookSecretLast4 ?? "****"}`
+                        : "nao configurado"}
+                    </p>
                     <p>
                       Para conectar, acesse sua conta Mercado Pago, copie o Access Token
-                      de producao ou teste e cole no campo abaixo. Depois de salvo, o
-                      Hospedex usa esse token apenas no servidor para criar links de
-                      cobranca.
+                      de producao ou teste, cadastre a URL do webhook abaixo no painel
+                      Mercado Pago e cole a assinatura secreta gerada. Depois de salvos,
+                      estes dados ficam criptografados e sao usados apenas no servidor.
+                    </p>
+                  </div>
+                  {configuracoes.mercado_pago_enabled &&
+                  !configuracoes.mercadoPagoCredencial.webhookSecretConfigurado ? (
+                    <p className="rounded-lg border border-amber-300/30 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-200">
+                      Mercado Pago configurado parcialmente. Links de pagamento podem ser
+                      gerados, mas a confirmacao automatica por webhook nao funcionara
+                      em producao ate configurar a assinatura secreta deste tenant.
+                    </p>
+                  ) : null}
+                  <div className="grid gap-2 rounded-lg border bg-background/45 p-3">
+                    <Label>URL do webhook para cadastrar no Mercado Pago</Label>
+                    {configuracoes.mercadoPagoWebhookUrl ? (
+                      <div className="flex flex-col gap-2 md:flex-row">
+                        <Input
+                          readOnly
+                          value={configuracoes.mercadoPagoWebhookUrl}
+                        />
+                        <CopyWebhookUrlButton url={configuracoes.mercadoPagoWebhookUrl} />
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        APP_PUBLIC_URL nao esta configurada. Defina a variavel no
+                        ambiente do Admin para exibir a URL do webhook.
+                      </p>
+                    )}
+                    <p className="text-xs leading-5 text-muted-foreground">
+                      Cadastre esta URL no painel do Mercado Pago em Webhooks e copie a
+                      assinatura secreta gerada para o campo Webhook Secret.
                     </p>
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -509,6 +545,18 @@ export function SettingsModule({
                       type="password"
                     />
                     <CampoTexto
+                      defaultValue=""
+                      disabled={!podeGerenciarConfiguracoes}
+                      label="Webhook Secret Mercado Pago"
+                      name="mercadoPagoWebhookSecret"
+                      placeholder={
+                        configuracoes.mercadoPagoCredencial.webhookSecretConfigurado
+                          ? "Novo secret opcional para substituir o atual"
+                          : "Assinatura secreta gerada no painel Mercado Pago"
+                      }
+                      type="password"
+                    />
+                    <CampoTexto
                       defaultValue={configuracoes.mercado_pago_access_token_secret_name ?? ""}
                       disabled={!podeGerenciarConfiguracoes}
                       label="Fallback tecnico por variavel de ambiente"
@@ -525,6 +573,17 @@ export function SettingsModule({
                         type="checkbox"
                       />
                       Remover credencial Mercado Pago salva
+                    </label>
+                    <label className="flex items-center gap-3 rounded-lg border bg-background/45 px-3 py-2 text-sm">
+                      <input
+                        disabled={
+                          !podeGerenciarConfiguracoes ||
+                          !configuracoes.mercadoPagoCredencial.webhookSecretConfigurado
+                        }
+                        name="removerMercadoPagoWebhookSecret"
+                        type="checkbox"
+                      />
+                      Remover apenas Webhook Secret salvo
                     </label>
                     <CampoSelectConfiguracoes
                       defaultValue={configuracoes.mercado_pago_default_charge_strategy}

@@ -8,7 +8,10 @@ import {
   obterWebhookSecretMercadoPago,
   validarAssinaturaMercadoPago
 } from "../../../../lib/payments/mercado-pago";
-import { carregarAccessTokenMercadoPago } from "../../../../lib/payments/mercado-pago-credentials";
+import {
+  carregarAccessTokenMercadoPago,
+  carregarWebhookSecretMercadoPago
+} from "../../../../lib/payments/mercado-pago-credentials";
 import { criarClienteSupabaseAdmin } from "../../../../lib/supabase/admin";
 
 /**
@@ -30,17 +33,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Evento Mercado Pago incompleto." }, { status: 400 });
   }
 
-  const signatureOk = validarAssinaturaMercadoPago({
-    dataId: paymentId,
-    requestId: request.headers.get("x-request-id"),
-    secret: obterWebhookSecretMercadoPago(),
-    signature: request.headers.get("x-signature")
-  });
-
-  if (!signatureOk) {
-    return NextResponse.json({ error: "Assinatura Mercado Pago invalida." }, { status: 401 });
-  }
-
   const supabase = criarClienteSupabaseAdmin();
   const { data: configuracao, error: erroConfig } = await supabase
     .from("tenant_settings")
@@ -53,6 +45,37 @@ export async function POST(request: NextRequest) {
       { error: "Configuracao Mercado Pago do tenant nao encontrada." },
       { status: 404 }
     );
+  }
+
+  const webhookSecretTenant = await carregarWebhookSecretMercadoPago(tenantId);
+  const webhookSecretGlobal = obterWebhookSecretMercadoPago();
+  const webhookSecret = webhookSecretTenant ?? webhookSecretGlobal;
+
+  /*
+    O padrão correto da V2 é validar a assinatura com o secret do tenant.
+    O secret global fica apenas como fallback local/teste para não travar o MVP
+    antes de todos os proprietários cadastrarem o segredo individual.
+  */
+  if (!webhookSecretTenant && process.env.NODE_ENV === "production") {
+    return NextResponse.json(
+      { error: "Webhook secret Mercado Pago nao configurado para este tenant." },
+      { status: 401 }
+    );
+  }
+
+  if (!webhookSecretTenant) {
+    console.warn("Webhook Mercado Pago usando fallback global temporario.");
+  }
+
+  const signatureOk = validarAssinaturaMercadoPago({
+    dataId: paymentId,
+    requestId: request.headers.get("x-request-id"),
+    secret: webhookSecret,
+    signature: request.headers.get("x-signature")
+  });
+
+  if (!signatureOk) {
+    return NextResponse.json({ error: "Assinatura Mercado Pago invalida." }, { status: 401 });
   }
 
   const accessToken = await carregarAccessTokenMercadoPago({

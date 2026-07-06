@@ -7,6 +7,7 @@ import type {
 
 import type { ContextoAutenticacao } from "../auth/types";
 import { carregarResumoCredencialMercadoPago } from "../payments/mercado-pago-credentials";
+import { normalizarVariavelAmbiente } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import {
   MODULOS_GERENCIAMENTO_CONFIGURAVEIS,
@@ -108,7 +109,12 @@ export async function carregarDadosConfiguracoesGerenciamento(
 function normalizarConfiguracoes(
   tenant: TenantRow,
   configuracoes: TenantSettingRow | null,
-  mercadoPagoCredencial = { conectado: false, last4: null as string | null }
+  mercadoPagoCredencial = {
+    conectado: false,
+    last4: null as string | null,
+    webhookSecretConfigurado: false,
+    webhookSecretLast4: null as string | null
+  }
 ): ConfiguracoesTenantGerenciamento {
   return {
     allow_manual_reservations: configuracoes?.allow_manual_reservations ?? true,
@@ -141,6 +147,7 @@ function normalizarConfiguracoes(
     mercado_pago_default_deadline_hours:
       configuracoes?.mercado_pago_default_deadline_hours ?? 24,
     mercadoPagoCredencial,
+    mercadoPagoWebhookUrl: montarWebhookMercadoPagoUrl(tenant.id),
     primary_color: configuracoes?.primary_color ?? "#06b6d4",
     require_checkin_confirmation: configuracoes?.require_checkin_confirmation ?? true,
     require_checkout_confirmation: configuracoes?.require_checkout_confirmation ?? true,
@@ -229,7 +236,13 @@ function criarDadosVazios(tenantNome: string): DadosConfiguracoesGerenciamento {
       mercado_pago_default_deposit_percent: null,
       mercado_pago_default_deposit_fixed: null,
       mercado_pago_default_deadline_hours: 24,
-      mercadoPagoCredencial: { conectado: false, last4: null },
+      mercadoPagoCredencial: {
+        conectado: false,
+        last4: null,
+        webhookSecretConfigurado: false,
+        webhookSecretLast4: null
+      },
+      mercadoPagoWebhookUrl: null,
       primary_color: "#06b6d4",
       require_checkin_confirmation: true,
       require_checkout_confirmation: true,
@@ -254,4 +267,10 @@ function criarDadosVazios(tenantNome: string): DadosConfiguracoesGerenciamento {
 
 function registrarErroLeitura(label: string, erro: { message: string } | null) {
   if (erro) console.error(`Erro ao carregar ${label}.`, erro.message);
+}
+
+function montarWebhookMercadoPagoUrl(tenantId: string): string | null {
+  const base = normalizarVariavelAmbiente(process.env.APP_PUBLIC_URL);
+  if (!base) return null;
+  return `${base.replace(/\/$/, "")}/api/webhooks/mercado-pago?tenant=${encodeURIComponent(tenantId)}`;
 }

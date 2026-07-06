@@ -19,11 +19,15 @@ type CredencialMercadoPagoRow = {
   access_token_last4: string | null;
   environment: AmbienteMercadoPago;
   public_key: string | null;
+  webhook_secret_encrypted: string | null;
+  webhook_secret_last4: string | null;
 };
 
 export type ResumoCredencialMercadoPago = {
   conectado: boolean;
   last4: string | null;
+  webhookSecretConfigurado: boolean;
+  webhookSecretLast4: string | null;
 };
 
 export async function salvarCredencialMercadoPago({
@@ -32,7 +36,8 @@ export async function salvarCredencialMercadoPago({
   ownerId,
   publicKey,
   tenantId,
-  userId
+  userId,
+  webhookSecret
 }: {
   accessToken: string;
   ambiente: AmbienteMercadoPago;
@@ -40,27 +45,81 @@ export async function salvarCredencialMercadoPago({
   publicKey: string | null;
   tenantId: string;
   userId: string;
+  webhookSecret?: string | null;
 }) {
   const token = normalizarTokenMercadoPago(accessToken);
+  const webhookSecretNormalizado = webhookSecret
+    ? normalizarWebhookSecretMercadoPago(webhookSecret)
+    : null;
+  const credencial: Record<string, string | null> = {
+    access_token_encrypted: criptografarSegredoTenant(token),
+    access_token_last4: token.slice(-4),
+    connected_at: new Date().toISOString(),
+    created_by: userId,
+    environment: ambiente,
+    owner_id: ownerId,
+    provider: "mercado_pago",
+    public_key: publicKey,
+    tenant_id: tenantId,
+    updated_by: userId
+  };
+  if (webhookSecretNormalizado) {
+    credencial.webhook_secret_encrypted = criptografarSegredoTenant(webhookSecretNormalizado);
+    credencial.webhook_secret_last4 = webhookSecretNormalizado.slice(-4);
+  }
+
   const supabase = criarClienteSupabaseAdmin();
   const { error } = await supabase.schema("app_private").from("tenant_payment_provider_credentials").upsert(
-    {
-      access_token_encrypted: criptografarSegredoTenant(token),
-      access_token_last4: token.slice(-4),
-      connected_at: new Date().toISOString(),
-      created_by: userId,
-      environment: ambiente,
-      owner_id: ownerId,
-      provider: "mercado_pago",
-      public_key: publicKey,
-      tenant_id: tenantId,
-      updated_by: userId
-    },
+    credencial,
     { onConflict: "tenant_id,provider" }
   );
 
   if (error) {
     throw new Error("Nao foi possivel salvar a credencial Mercado Pago.");
+  }
+}
+
+export async function salvarWebhookSecretMercadoPago({
+  tenantId,
+  userId,
+  webhookSecret
+}: {
+  tenantId: string;
+  userId: string;
+  webhookSecret: string;
+}) {
+  const secret = normalizarWebhookSecretMercadoPago(webhookSecret);
+  const supabase = criarClienteSupabaseAdmin();
+  const { error } = await supabase
+    .schema("app_private")
+    .from("tenant_payment_provider_credentials")
+    .update({
+      updated_by: userId,
+      webhook_secret_encrypted: criptografarSegredoTenant(secret),
+      webhook_secret_last4: secret.slice(-4)
+    })
+    .eq("tenant_id", tenantId)
+    .eq("provider", "mercado_pago");
+
+  if (error) {
+    throw new Error("Nao foi possivel salvar o Webhook Secret Mercado Pago.");
+  }
+}
+
+export async function removerWebhookSecretMercadoPago(tenantId: string) {
+  const supabase = criarClienteSupabaseAdmin();
+  const { error } = await supabase
+    .schema("app_private")
+    .from("tenant_payment_provider_credentials")
+    .update({
+      webhook_secret_encrypted: null,
+      webhook_secret_last4: null
+    })
+    .eq("tenant_id", tenantId)
+    .eq("provider", "mercado_pago");
+
+  if (error) {
+    throw new Error("Nao foi possivel remover o Webhook Secret Mercado Pago.");
   }
 }
 
@@ -105,6 +164,12 @@ export async function carregarAccessTokenMercadoPago({
   return token;
 }
 
+export async function carregarWebhookSecretMercadoPago(tenantId: string) {
+  const credencial = await carregarCredencialMercadoPago(tenantId);
+  if (!credencial?.webhook_secret_encrypted) return null;
+  return descriptografarSegredoTenant(credencial.webhook_secret_encrypted);
+}
+
 export async function carregarResumoCredencialMercadoPago(
   tenantId: string
 ): Promise<ResumoCredencialMercadoPago> {
@@ -112,11 +177,18 @@ export async function carregarResumoCredencialMercadoPago(
     const credencial = await carregarCredencialMercadoPago(tenantId);
     return {
       conectado: Boolean(credencial?.access_token_encrypted),
-      last4: credencial?.access_token_last4 ?? null
+      last4: credencial?.access_token_last4 ?? null,
+      webhookSecretConfigurado: Boolean(credencial?.webhook_secret_encrypted),
+      webhookSecretLast4: credencial?.webhook_secret_last4 ?? null
     };
   } catch (erro) {
     console.error("Erro ao carregar resumo da credencial Mercado Pago.", erro);
-    return { conectado: false, last4: null };
+    return {
+      conectado: false,
+      last4: null,
+      webhookSecretConfigurado: false,
+      webhookSecretLast4: null
+    };
   }
 }
 
@@ -125,7 +197,9 @@ async function carregarCredencialMercadoPago(tenantId: string) {
   const { data, error } = await supabase
     .schema("app_private")
     .from("tenant_payment_provider_credentials")
-    .select("access_token_encrypted, access_token_last4, environment, public_key")
+    .select(
+      "access_token_encrypted, access_token_last4, environment, public_key, webhook_secret_encrypted, webhook_secret_last4"
+    )
     .eq("tenant_id", tenantId)
     .eq("provider", "mercado_pago")
     .maybeSingle<CredencialMercadoPagoRow>();
@@ -140,4 +214,12 @@ function normalizarTokenMercadoPago(accessToken: string) {
     throw new Error("Access token Mercado Pago invalido.");
   }
   return token;
+}
+
+function normalizarWebhookSecretMercadoPago(webhookSecret: string) {
+  const secret = webhookSecret.trim();
+  if (secret.length < 16) {
+    throw new Error("Webhook Secret Mercado Pago invalido.");
+  }
+  return secret;
 }

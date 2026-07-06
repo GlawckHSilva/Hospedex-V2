@@ -143,7 +143,10 @@ export type ConfiguracoesTenantGerenciamento = Pick<
   mercadoPagoCredencial: {
     conectado: boolean;
     last4: string | null;
+    webhookSecretConfigurado: boolean;
+    webhookSecretLast4: string | null;
   };
+  mercadoPagoWebhookUrl: string | null;
   tenantName: string;
 };
 
