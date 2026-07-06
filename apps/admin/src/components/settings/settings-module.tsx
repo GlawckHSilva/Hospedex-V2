@@ -346,10 +346,20 @@ export function SettingsModule({
                 action={atualizarInstrucoesPagamentoAction}
                 className="grid gap-4"
               >
-                <SecaoFormulario
+                <ResumoRecebimento configuracoes={configuracoes} />
+                <div className="grid gap-3 md:grid-cols-4">
+                  <MarcadorEtapa numero={1} titulo="Pix" />
+                  <MarcadorEtapa numero={2} titulo="Instrucoes" />
+                  <MarcadorEtapa numero={3} titulo="Parcelas" />
+                  <MarcadorEtapa numero={4} titulo="Gateway" />
+                </div>
+
+                <EtapaPagamento
                   descricao="Dados que podem aparecer em mensagens de cobranca e orientacoes ao hospede."
                   icon={<Smartphone />}
+                  numero={1}
                   titulo="Pix e identificacao do recebedor"
+                  defaultOpen
                 >
                   <div className="grid gap-4 md:grid-cols-2">
                     <CampoSelectConfiguracoes
@@ -392,11 +402,12 @@ export function SettingsModule({
                     label="Observacao Pix"
                     name="pixPaymentNote"
                   />
-                </SecaoFormulario>
+                </EtapaPagamento>
 
-                <SecaoFormulario
+                <EtapaPagamento
                   descricao="Textos reutilizados quando uma casa aceitar dinheiro, cartao ou transferencia."
                   icon={<Banknote />}
+                  numero={2}
                   titulo="Instrucoes por forma de pagamento"
                 >
                   <div className="grid gap-4 md:grid-cols-2">
@@ -425,11 +436,12 @@ export function SettingsModule({
                       name="creditCardPaymentInstructions"
                     />
                   </div>
-                </SecaoFormulario>
+                </EtapaPagamento>
 
-                <SecaoFormulario
+                <EtapaPagamento
                   descricao="A casa ainda define se aceita cartao e as regras de parcelas/juros."
                   icon={<Landmark />}
+                  numero={3}
                   titulo="Parcelamento"
                 >
                   <CampoTextoArea
@@ -438,11 +450,12 @@ export function SettingsModule({
                     label="Observacao sobre parcelamento"
                     name="creditCardInstallmentsNote"
                   />
-                </SecaoFormulario>
+                </EtapaPagamento>
 
-                <SecaoFormulario
+                <EtapaPagamento
                   descricao="Mercado Pago gera link de pagamento direto para a conta do proprietario. O token e salvo criptografado no servidor e nunca aparece para o hospede."
                   icon={<CreditCard />}
+                  numero={4}
                   titulo="Mercado Pago"
                 >
                   <div className="rounded-lg border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
@@ -625,10 +638,12 @@ export function SettingsModule({
                     dona do token. O Hospedex nao armazena dados de cartao e nao cobra
                     em nome do hospede nesta etapa.
                   </p>
-                </SecaoFormulario>
-                <Button disabled={!podeGerenciarConfiguracoes} type="submit">
-                  Salvar dados de recebimento
-                </Button>
+                </EtapaPagamento>
+                <div className="sticky bottom-0 z-10 -mx-1 flex justify-end border-t bg-background/95 p-3 backdrop-blur">
+                  <Button disabled={!podeGerenciarConfiguracoes} type="submit">
+                    Salvar dados de recebimento
+                  </Button>
+                </div>
               </form>
             </EntityModal>
           </CardContent>
@@ -750,32 +765,113 @@ function CabecalhoCard({
   );
 }
 
-function SecaoFormulario({
+function ResumoRecebimento({
+  configuracoes,
+}: {
+  configuracoes: DadosConfiguracoesGerenciamento["configuracoes"];
+}) {
+  const pixConfigurado = Boolean(configuracoes.pix_key);
+  const mercadoPagoConectado = configuracoes.mercadoPagoCredencial.conectado;
+
+  return (
+    <div className="grid gap-3 md:grid-cols-3">
+      <ResumoPagamento
+        label="Pix"
+        valor={pixConfigurado ? "Configurado" : "Pendente"}
+        destaque={pixConfigurado ? "ok" : "alerta"}
+      />
+      <ResumoPagamento
+        label="Cobranca principal"
+        valor={
+          configuracoes.payment_collection_method === "mercado_pago"
+            ? "Mercado Pago"
+            : "Manual"
+        }
+        destaque="info"
+      />
+      <ResumoPagamento
+        label="Gateway"
+        valor={mercadoPagoConectado ? "Conectado" : "Nao conectado"}
+        destaque={mercadoPagoConectado ? "ok" : "neutro"}
+      />
+    </div>
+  );
+}
+
+function ResumoPagamento({
+  destaque,
+  label,
+  valor,
+}: {
+  destaque: "ok" | "alerta" | "info" | "neutro";
+  label: string;
+  valor: string;
+}) {
+  const classes = {
+    alerta: "border-amber-300/25 bg-amber-400/10 text-amber-200",
+    info: "border-cyan-300/25 bg-cyan-400/10 text-cyan-100",
+    neutro: "border-border bg-background/45 text-muted-foreground",
+    ok: "border-emerald-300/25 bg-emerald-400/10 text-emerald-200",
+  }[destaque];
+
+  return (
+    <div className={`rounded-xl border px-4 py-3 ${classes}`}>
+      <p className="text-xs uppercase tracking-[0.18em] opacity-80">{label}</p>
+      <p className="mt-1 text-sm font-semibold">{valor}</p>
+    </div>
+  );
+}
+
+function MarcadorEtapa({ numero, titulo }: { numero: number; titulo: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border bg-background/35 px-3 py-2 text-xs text-muted-foreground">
+      <span className="grid h-6 w-6 place-items-center rounded-full border border-cyan-300/40 bg-cyan-400/10 font-semibold text-cyan-100">
+        {numero}
+      </span>
+      <span className="font-medium">{titulo}</span>
+    </div>
+  );
+}
+
+function EtapaPagamento({
   children,
+  defaultOpen,
   descricao,
   icon,
+  numero,
   titulo,
 }: {
   children: React.ReactNode;
+  defaultOpen?: boolean;
   descricao: string;
   icon: React.ReactNode;
+  numero: number;
   titulo: string;
 }) {
   return (
-    <section className="grid gap-4 rounded-xl border bg-background/45 p-4">
-      <div className="flex items-start gap-3">
+    <details
+      className="group rounded-xl border bg-background/45"
+      open={defaultOpen}
+    >
+      <summary className="flex cursor-pointer list-none items-start gap-3 p-4 marker:hidden">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-cyan-300/40 bg-cyan-400/10 text-sm font-semibold text-cyan-100">
+          {numero}
+        </span>
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200 [&_svg]:h-4 [&_svg]:w-4">
           {icon}
         </span>
-        <div>
-          <h3 className="text-sm font-semibold">{titulo}</h3>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">{titulo}</span>
+          <span className="mt-1 block text-xs leading-5 text-muted-foreground">
             {descricao}
-          </p>
-        </div>
-      </div>
-      {children}
-    </section>
+          </span>
+        </span>
+        <span className="rounded-full border px-3 py-1 text-xs text-muted-foreground">
+          Abrir
+        </span>
+      </summary>
+      <div className="grid gap-4 border-t p-4">{children}</div>
+    </details>
   );
 }
 
