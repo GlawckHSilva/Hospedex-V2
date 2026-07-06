@@ -1,19 +1,25 @@
 import {
+  Bath,
+  BedDouble,
   Building2,
+  CalendarDays,
+  CircleDollarSign,
   Eye,
+  ExternalLink,
   MapPin,
+  MoreHorizontal,
   PauseCircle,
   Pencil,
   PlayCircle,
   Settings2,
   Trash2,
+  Users,
 } from "lucide-react";
 
-import { Badge } from "@hospedex/ui";
+import { Badge, cn } from "@hospedex/ui";
 
 import {
   EntityCard,
-  EntityCardActions,
   EntityCardHeader,
 } from "../management/entity-card";
 import {
@@ -47,6 +53,9 @@ export type PropertyCardProps = {
   propriedade: PropriedadeComRelacionamentos;
 };
 
+const MARKETPLACE_URL =
+  process.env.NEXT_PUBLIC_MARKETPLACE_URL ?? "https://hospedex-marketplace.vercel.app";
+
 export function PropertyCard({
   comodidadesDisponiveis,
   podeGerenciar,
@@ -54,17 +63,19 @@ export function PropertyCard({
 }: PropertyCardProps) {
   const estaPausada = propriedade.status === "paused";
   const cidadeEstado = `${propriedade.enderecoFormatado.cidade} - ${propriedade.enderecoFormatado.estado}`;
+  const paginaPublicaHref = `${MARKETPLACE_URL}/propriedades/${propriedade.slug}`;
+  const atualizacao = formatarAtualizacao(propriedade.updated_at);
 
   const media = propriedade.imagemCapa?.url ? (
     <img
       alt={propriedade.imagemCapa.alt ?? `Imagem de ${propriedade.name}`}
-      className="h-40 w-full object-cover"
+      className="h-44 w-full object-cover"
       decoding="async"
       loading="lazy"
       src={propriedade.imagemCapa.url}
     />
   ) : (
-    <div className="flex h-36 items-center justify-center bg-primary/15 text-primary">
+    <div className="flex h-44 items-center justify-center bg-primary/15 text-primary">
       <Building2 className="h-10 w-10" />
     </div>
   );
