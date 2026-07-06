@@ -51,28 +51,22 @@ export async function salvarCredencialMercadoPago({
   const webhookSecretNormalizado = webhookSecret
     ? normalizarWebhookSecretMercadoPago(webhookSecret)
     : null;
-  const credencial: Record<string, string | null> = {
-    access_token_encrypted: criptografarSegredoTenant(token),
-    access_token_last4: token.slice(-4),
-    connected_at: new Date().toISOString(),
-    created_by: userId,
-    environment: ambiente,
-    owner_id: ownerId,
-    provider: "mercado_pago",
-    public_key: publicKey,
-    tenant_id: tenantId,
-    updated_by: userId
-  };
-  if (webhookSecretNormalizado) {
-    credencial.webhook_secret_encrypted = criptografarSegredoTenant(webhookSecretNormalizado);
-    credencial.webhook_secret_last4 = webhookSecretNormalizado.slice(-4);
-  }
-
   const supabase = criarClienteSupabaseAdmin();
-  const { error } = await supabase.schema("app_private").from("tenant_payment_provider_credentials").upsert(
-    credencial,
-    { onConflict: "tenant_id,provider" }
-  );
+  const { error } = await supabase.rpc("admin_upsert_mercado_pago_credential", {
+    p_access_token_encrypted: criptografarSegredoTenant(token),
+    p_access_token_last4: token.slice(-4),
+    p_environment: ambiente,
+    p_owner_id: ownerId,
+    p_public_key: publicKey,
+    p_tenant_id: tenantId,
+    p_user_id: userId,
+    p_webhook_secret_encrypted: webhookSecretNormalizado
+      ? criptografarSegredoTenant(webhookSecretNormalizado)
+      : null,
+    p_webhook_secret_last4: webhookSecretNormalizado
+      ? webhookSecretNormalizado.slice(-4)
+      : null
+  });
 
   if (error) {
     throw new Error("Nao foi possivel salvar a credencial Mercado Pago.");
@@ -90,16 +84,12 @@ export async function salvarWebhookSecretMercadoPago({
 }) {
   const secret = normalizarWebhookSecretMercadoPago(webhookSecret);
   const supabase = criarClienteSupabaseAdmin();
-  const { error } = await supabase
-    .schema("app_private")
-    .from("tenant_payment_provider_credentials")
-    .update({
-      updated_by: userId,
-      webhook_secret_encrypted: criptografarSegredoTenant(secret),
-      webhook_secret_last4: secret.slice(-4)
-    })
-    .eq("tenant_id", tenantId)
-    .eq("provider", "mercado_pago");
+  const { error } = await supabase.rpc("admin_update_mercado_pago_webhook_secret", {
+    p_tenant_id: tenantId,
+    p_user_id: userId,
+    p_webhook_secret_encrypted: criptografarSegredoTenant(secret),
+    p_webhook_secret_last4: secret.slice(-4)
+  });
 
   if (error) {
     throw new Error("Nao foi possivel salvar o Webhook Secret Mercado Pago.");
@@ -108,15 +98,9 @@ export async function salvarWebhookSecretMercadoPago({
 
 export async function removerWebhookSecretMercadoPago(tenantId: string) {
   const supabase = criarClienteSupabaseAdmin();
-  const { error } = await supabase
-    .schema("app_private")
-    .from("tenant_payment_provider_credentials")
-    .update({
-      webhook_secret_encrypted: null,
-      webhook_secret_last4: null
-    })
-    .eq("tenant_id", tenantId)
-    .eq("provider", "mercado_pago");
+  const { error } = await supabase.rpc("admin_clear_mercado_pago_webhook_secret", {
+    p_tenant_id: tenantId
+  });
 
   if (error) {
     throw new Error("Nao foi possivel remover o Webhook Secret Mercado Pago.");
@@ -125,12 +109,9 @@ export async function removerWebhookSecretMercadoPago(tenantId: string) {
 
 export async function removerCredencialMercadoPago(tenantId: string) {
   const supabase = criarClienteSupabaseAdmin();
-  const { error } = await supabase
-    .schema("app_private")
-    .from("tenant_payment_provider_credentials")
-    .delete()
-    .eq("tenant_id", tenantId)
-    .eq("provider", "mercado_pago");
+  const { error } = await supabase.rpc("admin_delete_mercado_pago_credential", {
+    p_tenant_id: tenantId
+  });
 
   if (error) {
     throw new Error("Nao foi possivel remover a credencial Mercado Pago.");
@@ -195,13 +176,7 @@ export async function carregarResumoCredencialMercadoPago(
 async function carregarCredencialMercadoPago(tenantId: string) {
   const supabase = criarClienteSupabaseAdmin();
   const { data, error } = await supabase
-    .schema("app_private")
-    .from("tenant_payment_provider_credentials")
-    .select(
-      "access_token_encrypted, access_token_last4, environment, public_key, webhook_secret_encrypted, webhook_secret_last4"
-    )
-    .eq("tenant_id", tenantId)
-    .eq("provider", "mercado_pago")
+    .rpc("admin_get_mercado_pago_credential", { p_tenant_id: tenantId })
     .maybeSingle<CredencialMercadoPagoRow>();
 
   if (error) throw new Error("Nao foi possivel ler a credencial Mercado Pago.");
