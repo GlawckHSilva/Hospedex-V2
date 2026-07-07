@@ -1,6 +1,7 @@
 import type {
   FeatureFlagRow,
   JsonValue,
+  MediaAssetRow,
   PropertyRow,
   ReservationRow,
   TenantStatus
@@ -45,7 +46,32 @@ export type OperacaoEmpreendimento = {
   reservasTotal: number;
 };
 
+export type CasaEmpreendimento = {
+  banheiros: number;
+  capacidade: number;
+  cidade: string;
+  criadaEm: string;
+  diaria: number;
+  endereco: string;
+  estado: string;
+  id: string;
+  imagemCapaUrl: string | null;
+  imagensTotal: number;
+  isPublica: boolean;
+  nome: string;
+  paginaPublicaUrl: string | null;
+  propriedade: PropertyRow;
+  quartos: number;
+  reservasFuturas: number;
+  reservasTotal: number;
+  status: PropertyRow["status"];
+  taxaLimpeza: number;
+  tipo: PropertyRow["property_type"];
+  atualizadaEm: string;
+};
+
 export type EmpreendimentoCompleto = ProprietarioCompleto & {
+  casas: CasaEmpreendimento[];
   operacao: OperacaoEmpreendimento;
 };
 
@@ -66,6 +92,8 @@ const STATUS_TENANT: Array<FiltrosEmpreendimentos["status"]> = [
   "suspended",
   "cancelled"
 ];
+const MARKETPLACE_URL =
+  process.env.NEXT_PUBLIC_MARKETPLACE_URL ?? "https://hospedex-marketplace.vercel.app";
 
 export async function carregarDadosEmpreendimentos(
   params: Record<string, string | string[] | undefined>
@@ -75,7 +103,8 @@ export async function carregarDadosEmpreendimentos(
   const operacaoPorTenant = await carregarOperacao(base.proprietarios);
   const todos = base.proprietarios.map((proprietario) => ({
     ...proprietario,
-    operacao: operacaoPorTenant.get(proprietario.tenant.id) ?? operacaoVazia(proprietario)
+    casas: operacaoPorTenant.get(proprietario.tenant.id)?.casas ?? [],
+    operacao: operacaoPorTenant.get(proprietario.tenant.id)?.operacao ?? operacaoVazia(proprietario)
   }));
 
   const empreendimentos = ordenarEmpreendimentos(
@@ -117,54 +146,132 @@ function normalizarFiltros(
 
 async function carregarOperacao(proprietarios: ProprietarioCompleto[]) {
   const idsTenant = proprietarios.map((proprietario) => proprietario.tenant.id);
-  if (!idsTenant.length) return new Map<string, OperacaoEmpreendimento>();
+  if (!idsTenant.length) return new Map<string, { casas: CasaEmpreendimento[]; operacao: OperacaoEmpreendimento }>();
 
   const supabase = await criarClienteSupabaseServer();
   const [casasResultado, reservasResultado] = await Promise.all([
     supabase
       .from("properties")
-      .select("tenant_id,status,deleted_at")
+      .select("*")
       .in("tenant_id", idsTenant)
       .is("deleted_at", null)
-      .returns<Array<Pick<PropertyRow, "deleted_at" | "status" | "tenant_id">>>(),
+      .returns<PropertyRow[]>(),
     supabase
       .from("reservations")
-      .select("tenant_id,status,check_in,total_amount")
+      .select("tenant_id,property_id,status,check_in,total_amount")
       .in("tenant_id", idsTenant)
-      .returns<Array<Pick<ReservationRow, "check_in" | "status" | "tenant_id" | "total_amount">>>()
+      .returns<Array<Pick<ReservationRow, "check_in" | "property_id" | "status" | "tenant_id" | "total_amount">>>()
   ]);
 
   registrarErroLeitura("casas por empreendimento", casasResultado.error);
   registrarErroLeitura("reservas por empreendimento", reservasResultado.error);
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const mapa = new Map<string, OperacaoEmpreendimento>();
+  const propriedades = casasResultado.data ?? [];
+  const imagensPorPropriedade = await carregarImagens(propriedades.map((propriedade) => propriedade.id));
+  const reservasPorPropriedade = agruparPorPropriedade(reservasResultado.data ?? []);
+  const mapa = new Map<string, { casas: CasaEmpreendimento[]; operacao: OperacaoEmpreendimento }>();
 
-  proprietarios.forEach((proprietario) => mapa.set(proprietario.tenant.id, operacaoVazia(proprietario)));
+  proprietarios.forEach((proprietario) =>
+    mapa.set(proprietario.tenant.id, { casas: [], operacao: operacaoVazia(proprietario) })
+  );
 
-  (casasResultado.data ?? []).forEach((casa) => {
-    const operacao = mapa.get(casa.tenant_id);
-    if (operacao) operacao.casasUsadas += 1;
+  propriedades.forEach((casa) => {
+    const dados = mapa.get(casa.tenant_id);
+    if (!dados) return;
+    dados.operacao.casasUsadas += 1;
+    dados.casas.push(
+      montarCasaEmpreendimento(
+        casa,
+        imagensPorPropriedade.get(casa.id) ?? [],
+        reservasPorPropriedade.get(casa.id) ?? []
+      )
+    );
   });
 
   (reservasResultado.data ?? []).forEach((reserva) => {
-    const operacao = mapa.get(reserva.tenant_id);
-    if (!operacao) return;
-    operacao.reservasTotal += 1;
+    const dados = mapa.get(reserva.tenant_id);
+    if (!dados) return;
+    dados.operacao.reservasTotal += 1;
     if (reserva.status !== "cancelled" && reserva.check_in >= hoje) {
-      operacao.reservasFuturas += 1;
+      dados.operacao.reservasFuturas += 1;
     }
   });
 
   proprietarios.forEach((proprietario) => {
-    const operacao = mapa.get(proprietario.tenant.id);
-    if (!operacao) return;
-    operacao.receitaOperacional = proprietario.transactions
+    const dados = mapa.get(proprietario.tenant.id);
+    if (!dados) return;
+    dados.operacao.receitaOperacional = proprietario.transactions
       .filter((transacao) => transacao.transaction_type === "income" && transacao.status === "paid")
       .reduce((total, transacao) => total + Number(transacao.amount), 0);
   });
 
   return mapa;
+}
+
+async function carregarImagens(idsPropriedades: string[]) {
+  const unicos = [...new Set(idsPropriedades)].filter(Boolean);
+  if (!unicos.length) return new Map<string, MediaAssetRow[]>();
+
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("media_assets")
+    .select("*")
+    .in("property_id", unicos)
+    .eq("media_type", "image")
+    .eq("status", "active")
+    .order("sort_order", { ascending: true })
+    .returns<MediaAssetRow[]>();
+
+  registrarErroLeitura("imagens das casas do empreendimento", error);
+  return agruparPorPropriedade(data ?? []);
+}
+
+function montarCasaEmpreendimento(
+  propriedade: PropertyRow,
+  imagens: MediaAssetRow[],
+  reservas: Array<Pick<ReservationRow, "check_in" | "property_id" | "status" | "tenant_id" | "total_amount">>
+): CasaEmpreendimento {
+  const endereco = objetoJson(propriedade.address);
+  const estrutura = objetoJson(propriedade.structure_details);
+  const valores = objetoJson(propriedade.pricing_details);
+  const imagemCapa = imagens.find((imagem) => imagem.is_cover) ?? imagens[0] ?? null;
+  const reservasValidas = reservas.filter((reserva) => reserva.status !== "cancelled");
+  const hoje = new Date().toISOString().slice(0, 10);
+
+  return {
+    banheiros: numeroJson(estrutura, "banheiros"),
+    capacidade: numeroJson(estrutura, "hospedesMaximos", numeroJson(estrutura, "maxGuests")),
+    cidade: textoJson(endereco, "cidade") || textoJson(endereco, "city"),
+    criadaEm: propriedade.created_at,
+    diaria: numeroJson(valores, "valorDiaria", numeroJson(valores, "daily_rate")),
+    endereco: montarEndereco(endereco),
+    estado: textoJson(endereco, "estado") || textoJson(endereco, "state"),
+    id: propriedade.id,
+    imagemCapaUrl: imagemCapa?.url ?? null,
+    imagensTotal: imagens.length,
+    isPublica: propriedade.is_public,
+    nome: propriedade.name,
+    paginaPublicaUrl: propriedade.is_public ? `${MARKETPLACE_URL}/propriedades/${propriedade.slug}` : null,
+    propriedade,
+    quartos: numeroJson(estrutura, "quartos"),
+    reservasFuturas: reservasValidas.filter((reserva) => reserva.check_in >= hoje).length,
+    reservasTotal: reservas.length,
+    status: propriedade.status,
+    taxaLimpeza: numeroJson(valores, "taxaLimpeza"),
+    tipo: propriedade.property_type,
+    atualizadaEm: propriedade.updated_at
+  };
+}
+
+function agruparPorPropriedade<T extends { property_id: string | null }>(linhas: T[]) {
+  return linhas.reduce((mapa, linha) => {
+    if (!linha.property_id) return mapa;
+    const lista = mapa.get(linha.property_id) ?? [];
+    lista.push(linha);
+    mapa.set(linha.property_id, lista);
+    return mapa;
+  }, new Map<string, T[]>());
 }
 
 function operacaoVazia(proprietario: ProprietarioCompleto): OperacaoEmpreendimento {
@@ -285,6 +392,31 @@ function extrairNumero(valor: JsonValue | undefined, chave: string) {
   const bruto = valor[chave];
   const numero = typeof bruto === "number" ? bruto : typeof bruto === "string" ? Number(bruto) : NaN;
   return Number.isFinite(numero) ? numero : null;
+}
+
+function objetoJson(valor: JsonValue): Record<string, JsonValue> {
+  return valor && typeof valor === "object" && !Array.isArray(valor) ? valor : {};
+}
+
+function textoJson(valor: Record<string, JsonValue>, chave: string) {
+  const dado = valor[chave];
+  return typeof dado === "string" ? dado : "";
+}
+
+function numeroJson(valor: Record<string, JsonValue>, chave: string, padrao = 0) {
+  const dado = valor[chave];
+  return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
+}
+
+function montarEndereco(endereco: Record<string, JsonValue>) {
+  return [
+    textoJson(endereco, "linha1") || textoJson(endereco, "address"),
+    textoJson(endereco, "numero"),
+    textoJson(endereco, "bairro"),
+    textoJson(endereco, "referencia")
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 function licencaVencendo(data: string | null | undefined) {

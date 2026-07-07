@@ -17,7 +17,10 @@ import {
   alterarStatusProprietarioAction,
   alternarModuloProprietarioAction
 } from "../../../lib/super-admin/proprietarios/actions";
-import type { DadosModuloEmpreendimentos, EmpreendimentoCompleto } from "../../../lib/super-admin/empreendimentos/data";
+import type {
+  DadosModuloEmpreendimentos,
+  EmpreendimentoCompleto
+} from "../../../lib/super-admin/empreendimentos/data";
 import {
   moduloEstaAtivo,
   origemModulo
@@ -34,6 +37,7 @@ import {
   labelModulo,
   labelTenant
 } from "../proprietarios/proprietario-detail-shared";
+import { CasasDoEmpreendimento } from "./casas-do-empreendimento";
 
 /**
  * Tela dedicada aos tenants/empreendimentos do Super Admin.
@@ -301,6 +305,7 @@ function DetalhesEmpreendimento({
         <Info label="Reservas futuras" valor={String(empreendimento.operacao.reservasFuturas)} />
         <Info label="Receita operacional" valor={formatarMoeda(empreendimento.operacao.receitaOperacional)} />
       </div>
+      <CasasDoEmpreendimento empreendimento={empreendimento} />
       <ProprietarioDetails
         featureFlags={featureFlags}
         planFeatures={planFeatures}
