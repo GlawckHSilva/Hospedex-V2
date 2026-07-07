@@ -150,7 +150,7 @@ export function EmpreendimentosModule({
 
       {empreendimentos.length ? (
         <section className="admin-glass-card overflow-hidden">
-          <div className="hidden grid-cols-[1.4fr_1.2fr_0.9fr_0.9fr_0.8fr_1fr_0.9fr_auto] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground xl:grid">
+          <div className="hidden grid-cols-[1.4fr_1.2fr_0.9fr_0.9fr_1.2fr_1fr_0.9fr_auto] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground xl:grid">
             <span>Empreendimento</span>
             <span>Proprietario</span>
             <span>Plano</span>
@@ -202,7 +202,7 @@ function LinhaEmpreendimento({
   const ativo = empreendimento.tenant.status !== "suspended" && empreendimento.tenant.status !== "cancelled";
 
   return (
-    <article className="grid gap-4 px-4 py-4 xl:grid-cols-[1.4fr_1.2fr_0.9fr_0.9fr_0.8fr_1fr_0.9fr_auto] xl:items-center">
+    <article className="grid gap-4 px-4 py-4 xl:grid-cols-[1.4fr_1.2fr_0.9fr_0.9fr_1.2fr_1fr_0.9fr_auto] xl:items-center">
       <div className="min-w-0">
         <p className="truncate font-semibold">{empreendimento.tenant.name}</p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -222,23 +222,24 @@ function LinhaEmpreendimento({
           {empreendimento.license ? labelLicenca(empreendimento.license.status) : "Sem licenca"}
         </StatusBadge>
       </div>
-      <span className="text-sm font-semibold">
-        {empreendimento.operacao.casasUsadas}/{empreendimento.operacao.casasLimite}
-      </span>
+      <div className="space-y-2">
+        <p className="text-sm font-semibold">
+          {empreendimento.operacao.casasUsadas}/{empreendimento.operacao.casasLimite}
+        </p>
+        <EntityViewModal
+          description="Casas cadastradas neste tenant, sem editar dados do proprietario."
+          title={`Casas de ${empreendimento.tenant.name}`}
+          triggerIcon={<Home />}
+          triggerLabel="Ver casas deste empreendimento"
+        >
+          <CasasDoEmpreendimento abrirInicialmente empreendimento={empreendimento} />
+        </EntityViewModal>
+      </div>
       <span className="text-sm text-muted-foreground">
         {modulosAtivos.length} liberados
       </span>
       <span className="text-sm text-muted-foreground">{formatarData(empreendimento.tenant.updated_at)}</span>
       <div className="flex flex-wrap gap-2 xl:justify-end">
-        <EntityViewModal
-          description="Casas cadastradas neste tenant, sem editar dados do proprietario."
-          title={`Casas de ${empreendimento.tenant.name}`}
-          triggerIcon={<Home />}
-          triggerLabel="Casas"
-        >
-          <CasasDoEmpreendimento abrirInicialmente empreendimento={empreendimento} />
-        </EntityViewModal>
-
         <EntityViewModal
           description="Identificacao, licenca, modulos e operacao do tenant."
           title={empreendimento.tenant.name}
