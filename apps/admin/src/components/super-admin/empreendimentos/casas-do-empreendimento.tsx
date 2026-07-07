@@ -23,8 +23,14 @@ const campoClasse =
  * Lista as casas de um tenant dentro do detalhe do empreendimento.
  * O Super Admin apenas consulta dados do tenant selecionado; edicao continua no painel do proprietario.
  */
-export function CasasDoEmpreendimento({ empreendimento }: { empreendimento: EmpreendimentoCompleto }) {
-  const [aberto, setAberto] = useState(false);
+export function CasasDoEmpreendimento({
+  abrirInicialmente = false,
+  empreendimento
+}: {
+  abrirInicialmente?: boolean;
+  empreendimento: EmpreendimentoCompleto;
+}) {
+  const [aberto, setAberto] = useState(abrirInicialmente);
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState("todas");
   const [publicacao, setPublicacao] = useState("todas");

@@ -4,6 +4,7 @@ import {
   Building2,
   Eye,
   Filter,
+  Home,
   Layers3,
   Lock,
   Power,
@@ -229,6 +230,15 @@ function LinhaEmpreendimento({
       </span>
       <span className="text-sm text-muted-foreground">{formatarData(empreendimento.tenant.updated_at)}</span>
       <div className="flex flex-wrap gap-2 xl:justify-end">
+        <EntityViewModal
+          description="Casas cadastradas neste tenant, sem editar dados do proprietario."
+          title={`Casas de ${empreendimento.tenant.name}`}
+          triggerIcon={<Home />}
+          triggerLabel="Casas"
+        >
+          <CasasDoEmpreendimento abrirInicialmente empreendimento={empreendimento} />
+        </EntityViewModal>
+
         <EntityViewModal
           description="Identificacao, licenca, modulos e operacao do tenant."
           title={empreendimento.tenant.name}
