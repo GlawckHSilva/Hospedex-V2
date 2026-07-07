@@ -53,11 +53,8 @@ export async function criarProprietarioAction(formData: FormData) {
   const supabase = criarClienteSupabaseAdmin();
   const entrada = obterEntradaProprietario(formData, true);
   let authUserId: string | null = null;
-  let tenantId: string | null = null;
 
   try {
-    const plano = await carregarPlanoObrigatorio(supabase, entrada.planoId);
-    const flags = await validarFeatureFlags(supabase, entrada.featureFlagIds);
     const senha = entrada.senha;
     if (!senha) {
       throw new ErroRegraProprietario("Informe uma senha com pelo menos 8 caracteres.");
@@ -75,28 +72,19 @@ export async function criarProprietarioAction(formData: FormData) {
 
     if (erroAuth || !authData.user) {
       throw new ErroRegraProprietario(
-        erroAuth?.message ?? "Usuario Auth nao retornado pelo Supabase."
+        mensagemErroAuth(erroAuth?.message ?? "Usuario Auth nao retornado pelo Supabase.")
       );
     }
 
     authUserId = authData.user.id;
 
-    await criarProfileProprietario(supabase, authUserId, entrada);
-    const tenant = await criarTenantProprietario(supabase, authUserId, entrada);
-    tenantId = tenant.id;
-    const roleId = await criarOuObterRoleOwner(supabase, tenant.id);
-
-    await vincularOwnerAoTenant(supabase, tenant.id, authUserId, roleId, contexto.userId, entrada.status);
-    const assinatura = await salvarAssinatura(supabase, tenant, plano, entrada);
-    await salvarLicenca(supabase, tenant, assinatura, entrada);
-    await aplicarFeatureFlags(supabase, tenant.id, flags, contexto.userId);
-    await registrarAuditoria(supabase, contexto.userId, tenant.id, "super_admin.owner.created");
-    revalidarModulo();
+    await provisionarProprietarioNoBanco(supabase, contexto.userId, authUserId, entrada);
   } catch (erro) {
-    await desfazerCriacaoIncompleta(supabase, tenantId, authUserId);
+    await desfazerUsuarioAuthCriado(supabase, authUserId);
     redirecionarComErro(erro, "Erro ao criar proprietario.");
   }
 
+  revalidarModulo();
   redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=proprietario-criado`);
 }
 
@@ -123,7 +111,11 @@ export async function atualizarProprietarioAction(formData: FormData) {
     const assinatura = await salvarAssinatura(supabase, { ...tenant, status: entrada.status }, plano, entrada);
     await salvarLicenca(supabase, { ...tenant, status: entrada.status }, assinatura, entrada);
     await aplicarFeatureFlags(supabase, tenant.id, flags, contexto.userId);
-    await registrarAuditoria(supabase, contexto.userId, tenant.id, "super_admin.owner.updated");
+    await registrarAuditoria(supabase, contexto.userId, tenant.id, "super_admin.owner.updated", {
+      max_properties: entrada.limitePropriedades,
+      plan_id: entrada.planoId,
+      status: entrada.status
+    });
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao atualizar proprietario.");
@@ -150,7 +142,10 @@ export async function alterarStatusProprietarioAction(formData: FormData) {
     });
     await vincularOwnerAoTenant(supabase, tenant.id, ownerId, roleId, contexto.userId, statusDestino);
     await atualizarLicencaPorStatus(supabase, tenant.id, statusDestino);
-    await registrarAuditoria(supabase, contexto.userId, tenant.id, `super_admin.owner.${acao}`);
+    await registrarAuditoria(supabase, contexto.userId, tenant.id, `super_admin.owner.${acao}`, {
+      status_anterior: tenant.status,
+      status_destino: statusDestino
+    });
     revalidarModulo();
   } catch (erro) {
     redirecionarComErro(erro, "Erro ao alterar status do proprietario.");
@@ -188,7 +183,8 @@ export async function alternarModuloProprietarioAction(formData: FormData) {
       supabase,
       contexto.userId,
       tenantId,
-      habilitar ? "super_admin.module.enabled" : "super_admin.module.disabled"
+      habilitar ? "super_admin.module.enabled" : "super_admin.module.disabled",
+      { enabled: habilitar, feature_flag_id: featureFlagId }
     );
     revalidarModulo();
   } catch (erro) {
@@ -235,7 +231,8 @@ export async function alternarIntegracaoProprietarioAction(formData: FormData) {
       supabase,
       contexto.userId,
       tenantId,
-      habilitar ? "super_admin.integration.enabled" : "super_admin.integration.disabled"
+      habilitar ? "super_admin.integration.enabled" : "super_admin.integration.disabled",
+      { enabled: habilitar, provider }
     );
     revalidarModulo();
   } catch (erro) {
@@ -245,43 +242,33 @@ export async function alternarIntegracaoProprietarioAction(formData: FormData) {
   redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=integracao-proprietario`);
 }
 
-async function criarProfileProprietario(
+async function provisionarProprietarioNoBanco(
   supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
+  superAdminId: string,
   userId: string,
   entrada: EntradaProprietario
 ) {
-  const { error } = await supabase.from("profiles").upsert({
-    id: userId,
-    email: entrada.email,
-    full_name: entrada.nome,
-    phone: entrada.telefone,
-    platform_role: "user"
+  // A RPC executa a parte relacional em transacao unica. Se qualquer insert
+  // falhar, o Postgres desfaz tudo e a action remove o Auth user criado.
+  const { error } = await supabase.rpc("super_admin_provision_owner_tenant", {
+    p_actor_id: superAdminId,
+    p_auth_user_id: userId,
+    p_email: entrada.email,
+    p_expira_em: entrada.expiraEm,
+    p_feature_flag_ids: entrada.featureFlagIds,
+    p_license_key: gerarChaveLicenca(),
+    p_limite_propriedades: entrada.limitePropriedades,
+    p_nome: entrada.nome,
+    p_plano_id: entrada.planoId,
+    p_status: entrada.status,
+    p_telefone: entrada.telefone,
+    p_tenant_nome: entrada.tenantNome,
+    p_tenant_slug: gerarSlug(entrada.tenantNome)
   });
 
-  if (error) throw new Error(error.message);
-}
-
-async function criarTenantProprietario(
-  supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
-  ownerId: string,
-  entrada: EntradaProprietario
-): Promise<TenantRow> {
-  const { data, error } = await supabase
-    .from("tenants")
-    .insert({
-      owner_id: ownerId,
-      name: entrada.tenantNome,
-      slug: gerarSlug(entrada.tenantNome),
-      status: entrada.status
-    })
-    .select("*")
-    .single<TenantRow>();
-
-  if (error || !data) {
-    throw new Error(error?.message ?? "Tenant nao retornado apos criacao.");
+  if (error) {
+    throw new ErroRegraProprietario(error.message);
   }
-
-  return data;
 }
 
 async function atualizarProfileBasico(
@@ -579,31 +566,30 @@ async function registrarAuditoria(
   supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
   actorId: string,
   tenantId: string,
-  action: string
+  action: string,
+  metadata: Record<string, unknown> = {}
 ) {
   const { error } = await supabase.from("audit_logs").insert({
     action,
     actor_id: actorId,
     entity_id: tenantId,
     entity_table: "tenants",
-    metadata: {},
+    metadata,
     tenant_id: tenantId
   });
 
   if (error) console.error("Erro ao registrar auditoria de proprietario.", error.message);
 }
 
-async function desfazerCriacaoIncompleta(
+async function desfazerUsuarioAuthCriado(
   supabase: ReturnType<typeof criarClienteSupabaseAdmin>,
-  tenantId: string | null,
   authUserId: string | null
 ) {
-  if (tenantId) {
-    await supabase.from("tenants").delete().eq("id", tenantId);
-  }
-
   if (authUserId) {
-    await supabase.auth.admin.deleteUser(authUserId);
+    const { error } = await supabase.auth.admin.deleteUser(authUserId);
+    if (error) {
+      console.error("Erro ao remover usuario Auth apos falha no provisionamento.", error.message);
+    }
   }
 }
 
@@ -683,6 +669,17 @@ function dataOpcional(formData: FormData, chave: string) {
     throw new ErroRegraProprietario("Informe data de expiracao valida.");
   }
   return valor;
+}
+
+function mensagemErroAuth(mensagem: string) {
+  const normalizada = mensagem.toLowerCase();
+  if (normalizada.includes("already") || normalizada.includes("registered")) {
+    return "Ja existe um usuario cadastrado com este email.";
+  }
+  if (normalizada.includes("password")) {
+    return "A senha do proprietario nao atende aos criterios do Supabase Auth.";
+  }
+  return mensagem;
 }
 
 function gerarSlug(valor: string) {
