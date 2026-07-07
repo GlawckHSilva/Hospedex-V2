@@ -26,6 +26,7 @@ import { criarClienteSupabaseAdmin } from "../../supabase/admin";
  */
 
 const CAMINHO_PROPRIETARIOS = "/super-admin/proprietarios";
+const CAMINHO_EMPREENDIMENTOS = "/super-admin/empreendimentos";
 const STATUS_TENANT: TenantStatus[] = [
   "trial",
   "active",
@@ -127,6 +128,7 @@ export async function atualizarProprietarioAction(formData: FormData) {
 export async function alterarStatusProprietarioAction(formData: FormData) {
   const contexto = await exigirSuperAdmin();
   const supabase = criarClienteSupabaseAdmin();
+  const retorno = obterCaminhoRetorno(formData);
   const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
   const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
   const acao = textoObrigatorio(formData, "acao", "acao");
@@ -148,15 +150,16 @@ export async function alterarStatusProprietarioAction(formData: FormData) {
     });
     revalidarModulo();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao alterar status do proprietario.");
+    redirecionarComErro(erro, "Erro ao alterar status do proprietario.", retorno);
   }
 
-  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=status-proprietario`);
+  redirect(`${retorno}?sucesso=status-proprietario`);
 }
 
 export async function alternarModuloProprietarioAction(formData: FormData) {
   const contexto = await exigirSuperAdmin();
   const supabase = criarClienteSupabaseAdmin();
+  const retorno = obterCaminhoRetorno(formData);
   const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
   const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
   const featureFlagId = textoObrigatorio(formData, "featureFlagId", "modulo");
@@ -188,15 +191,16 @@ export async function alternarModuloProprietarioAction(formData: FormData) {
     );
     revalidarModulo();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao alterar modulo do proprietario.");
+    redirecionarComErro(erro, "Erro ao alterar modulo do proprietario.", retorno);
   }
 
-  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=modulo-proprietario`);
+  redirect(`${retorno}?sucesso=modulo-proprietario`);
 }
 
 export async function alternarIntegracaoProprietarioAction(formData: FormData) {
   const contexto = await exigirSuperAdmin();
   const supabase = criarClienteSupabaseAdmin();
+  const retorno = obterCaminhoRetorno(formData);
   const tenantId = textoObrigatorio(formData, "tenantId", "tenant");
   const ownerId = textoObrigatorio(formData, "ownerId", "proprietario");
   const providerRecebido = textoObrigatorio(formData, "provider", "integracao");
@@ -236,10 +240,10 @@ export async function alternarIntegracaoProprietarioAction(formData: FormData) {
     );
     revalidarModulo();
   } catch (erro) {
-    redirecionarComErro(erro, "Erro ao alterar integracao do proprietario.");
+    redirecionarComErro(erro, "Erro ao alterar integracao do proprietario.", retorno);
   }
 
-  redirect(`${CAMINHO_PROPRIETARIOS}?sucesso=integracao-proprietario`);
+  redirect(`${retorno}?sucesso=integracao-proprietario`);
 }
 
 async function provisionarProprietarioNoBanco(
@@ -698,7 +702,16 @@ function gerarChaveLicenca() {
   return `HSPX-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
-function redirecionarComErro(erro: unknown, mensagemLog: string): never {
+function obterCaminhoRetorno(formData: FormData) {
+  const retorno = textoOpcional(formData, "retorno");
+  return retorno === CAMINHO_EMPREENDIMENTOS ? CAMINHO_EMPREENDIMENTOS : CAMINHO_PROPRIETARIOS;
+}
+
+function redirecionarComErro(
+  erro: unknown,
+  mensagemLog: string,
+  caminho = CAMINHO_PROPRIETARIOS
+): never {
   const mensagem =
     erro instanceof ErroRegraProprietario
       ? erro.message
@@ -708,11 +721,12 @@ function redirecionarComErro(erro: unknown, mensagemLog: string): never {
     console.error(mensagemLog, erro);
   }
 
-  redirect(`${CAMINHO_PROPRIETARIOS}?erro=${encodeURIComponent(mensagem)}`);
+  redirect(`${caminho}?erro=${encodeURIComponent(mensagem)}`);
 }
 
 function revalidarModulo() {
   revalidatePath(CAMINHO_PROPRIETARIOS);
+  revalidatePath(CAMINHO_EMPREENDIMENTOS);
   revalidatePath("/super-admin");
   // O limite de casas salvo na licenca impacta diretamente o Gerenciamento.
   // Revalidar a rota evita que o proprietario veja contador antigo apos ajuste do Super Admin.

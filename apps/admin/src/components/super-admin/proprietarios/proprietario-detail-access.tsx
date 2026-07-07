@@ -26,9 +26,10 @@ type DadosAcesso = {
   featureFlags: DadosModuloProprietarios["featureFlags"];
   planFeatures: DadosModuloProprietarios["planFeatures"];
   proprietario: ProprietarioCompleto;
+  retorno?: string;
 };
 
-export function AbaModulos({ featureFlags, planFeatures, proprietario }: DadosAcesso) {
+export function AbaModulos({ featureFlags, planFeatures, proprietario, retorno }: DadosAcesso) {
   return (
     <div className="space-y-4">
       <CabecalhoAba
@@ -79,6 +80,7 @@ export function AbaModulos({ featureFlags, planFeatures, proprietario }: DadosAc
                       <input name="ownerId" type="hidden" value={proprietario.tenant.owner_id} />
                       <input name="featureFlagId" type="hidden" value={flag.id} />
                       <input name="habilitar" type="hidden" value={String(!ativo)} />
+                      {retorno ? <input name="retorno" type="hidden" value={retorno} /> : null}
                       <p className="text-sm text-muted-foreground">
                         Confirme o override administrativo para {proprietario.tenant.name}.
                       </p>

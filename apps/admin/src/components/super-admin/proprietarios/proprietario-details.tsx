@@ -37,12 +37,14 @@ type ProprietarioDetailsProps = {
   featureFlags: DadosModuloProprietarios["featureFlags"];
   planFeatures: DadosModuloProprietarios["planFeatures"];
   proprietario: ProprietarioCompleto;
+  retorno?: string;
 };
 
 export function ProprietarioDetails({
   featureFlags,
   planFeatures,
-  proprietario
+  proprietario,
+  retorno
 }: ProprietarioDetailsProps) {
   const [aba, setAba] = useState<AbaProprietario>("perfil");
 
@@ -73,6 +75,7 @@ export function ProprietarioDetails({
           featureFlags={featureFlags}
           planFeatures={planFeatures}
           proprietario={proprietario}
+          {...(retorno ? { retorno } : {})}
         />
       ) : null}
       {aba === "integracoes" ? <AbaIntegracoes proprietario={proprietario} /> : null}

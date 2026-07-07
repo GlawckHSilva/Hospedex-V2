@@ -199,6 +199,12 @@ const MENU_SUPER_ADMIN = [
     icone: "proprietarios"
   },
   {
+    titulo: "Empreendimentos",
+    href: "/super-admin/empreendimentos",
+    descricao: "Controle dos tenants e operacao liberada.",
+    icone: "proprietarios"
+  },
+  {
     titulo: "Hóspedes",
     href: "/super-admin/hospedes",
     descricao: "Visão global futura de hóspedes.",
