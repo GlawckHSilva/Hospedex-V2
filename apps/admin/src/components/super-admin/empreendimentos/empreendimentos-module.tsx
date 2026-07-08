@@ -2,11 +2,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   Building2,
+  CalendarDays,
   Eye,
   Filter,
   Home,
   Layers3,
   Lock,
+  MapPin,
+  Phone,
   Power,
   Search,
   UserRound
@@ -33,7 +36,6 @@ import { EmptyState } from "../../management/entity-card";
 import { ProprietarioDetails } from "../proprietarios/proprietario-details";
 import {
   formatarData,
-  formatarMoeda,
   labelLicenca,
   labelModulo,
   labelTenant
@@ -149,27 +151,15 @@ export function EmpreendimentosModule({
       </form>
 
       {empreendimentos.length ? (
-        <section className="admin-glass-card overflow-hidden">
-          <div className="hidden grid-cols-[1.4fr_1.2fr_0.9fr_0.9fr_1.2fr_1fr_0.9fr_auto] gap-3 border-b px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground xl:grid">
-            <span>Empreendimento</span>
-            <span>Proprietario</span>
-            <span>Plano</span>
-            <span>Status</span>
-            <span>Casas</span>
-            <span>Modulos</span>
-            <span>Atualizado</span>
-            <span>Acoes</span>
-          </div>
-          <div className="divide-y">
-            {empreendimentos.map((empreendimento) => (
-              <LinhaEmpreendimento
-                empreendimento={empreendimento}
-                featureFlags={featureFlags}
-                key={empreendimento.tenant.id}
-                planFeatures={planFeatures}
-              />
-            ))}
-          </div>
+        <section className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+          {empreendimentos.map((empreendimento) => (
+            <CardEmpreendimento
+              empreendimento={empreendimento}
+              featureFlags={featureFlags}
+              key={empreendimento.tenant.id}
+              planFeatures={planFeatures}
+            />
+          ))}
         </section>
       ) : (
         <EmptyState
@@ -189,7 +179,7 @@ export function EmpreendimentosModule({
   );
 }
 
-function LinhaEmpreendimento({
+function CardEmpreendimento({
   empreendimento,
   featureFlags,
   planFeatures
@@ -200,32 +190,74 @@ function LinhaEmpreendimento({
 }) {
   const modulosAtivos = featureFlags.filter((flag) => moduloEstaAtivo(empreendimento, flag, planFeatures));
   const ativo = empreendimento.tenant.status !== "suspended" && empreendimento.tenant.status !== "cancelled";
+  const limiteCasas = empreendimento.operacao.casasLimite;
+  const percentualCasas = limiteCasas > 0
+    ? Math.min(100, Math.round((empreendimento.operacao.casasUsadas / limiteCasas) * 100))
+    : 0;
 
   return (
-    <article className="grid gap-4 px-4 py-4 xl:grid-cols-[1.4fr_1.2fr_0.9fr_0.9fr_1.2fr_1fr_0.9fr_auto] xl:items-center">
-      <div className="min-w-0">
-        <p className="truncate font-semibold">{empreendimento.tenant.name}</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Criado em {formatarData(empreendimento.tenant.created_at)}
+    <article className="admin-glass-card flex min-h-full flex-col overflow-hidden p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-500/10 text-cyan-200">
+          <Building2 className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-lg font-semibold">{empreendimento.tenant.name}</h2>
+            <StatusBadge tone={toneTenant(empreendimento.tenant.status)}>
+              {labelTenant(empreendimento.tenant.status)}
+            </StatusBadge>
+          </div>
+          <p className="mt-1 truncate text-sm text-muted-foreground">
+            Proprietario: {empreendimento.profile?.full_name ?? "Sem nome"}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <InfoCompacta label="Plano" valor={empreendimento.plan?.name ?? "Sem plano"} />
+        <InfoCompacta
+          label="Licenca"
+          valor={empreendimento.license ? labelLicenca(empreendimento.license.status) : "Sem licenca"}
+        />
+        <InfoCompacta label="Modulos" valor={`${modulosAtivos.length} liberados`} />
+        <InfoCompacta label="Localizacao" valor={localidadeEmpreendimento(empreendimento)} />
+        <InfoCompacta label="Criado em" valor={formatarData(empreendimento.tenant.created_at)} />
+        <InfoCompacta label="Atualizado em" valor={formatarData(empreendimento.tenant.updated_at)} />
+      </div>
+
+      <div className="mt-4 rounded-xl border bg-background/40 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground">Casas cadastradas</p>
+            <p className="mt-1 text-lg font-semibold">
+              {empreendimento.operacao.casasUsadas}/{limiteCasas}
+            </p>
+          </div>
+          <Home className="h-5 w-5 text-cyan-300" />
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-cyan-950/40">
+          <div className="h-full rounded-full bg-cyan-400" style={{ width: `${percentualCasas}%` }} />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">{percentualCasas}% do limite utilizado</p>
+      </div>
+
+      <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+        <p className="flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-cyan-300" />
+          {localidadeEmpreendimento(empreendimento)}
+        </p>
+        <p className="flex items-center gap-2">
+          <Phone className="h-4 w-4 text-cyan-300" />
+          {contatoEmpreendimento(empreendimento)}
+        </p>
+        <p className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-cyan-300" />
+          Tenant atualizado em {formatarData(empreendimento.tenant.updated_at)}
         </p>
       </div>
-      <div className="min-w-0 text-sm">
-        <p className="truncate font-medium">{empreendimento.profile?.full_name ?? "Sem nome"}</p>
-        <p className="truncate text-muted-foreground">{empreendimento.profile?.email ?? "Sem e-mail"}</p>
-      </div>
-      <span className="text-sm">{empreendimento.plan?.name ?? "Sem plano"}</span>
-      <div className="flex flex-wrap gap-2">
-        <StatusBadge tone={toneTenant(empreendimento.tenant.status)}>
-          {labelTenant(empreendimento.tenant.status)}
-        </StatusBadge>
-        <StatusBadge tone={toneLicenca(empreendimento.license?.status)}>
-          {empreendimento.license ? labelLicenca(empreendimento.license.status) : "Sem licenca"}
-        </StatusBadge>
-      </div>
-      <div className="space-y-2">
-        <p className="text-sm font-semibold">
-          {empreendimento.operacao.casasUsadas}/{empreendimento.operacao.casasLimite}
-        </p>
+
+      <div className="mt-auto pt-4">
         <EntityViewModal
           description="Casas cadastradas neste tenant, sem editar dados do proprietario."
           title={`Casas de ${empreendimento.tenant.name}`}
@@ -235,11 +267,8 @@ function LinhaEmpreendimento({
           <CasasDoEmpreendimento abrirInicialmente empreendimento={empreendimento} />
         </EntityViewModal>
       </div>
-      <span className="text-sm text-muted-foreground">
-        {modulosAtivos.length} liberados
-      </span>
-      <span className="text-sm text-muted-foreground">{formatarData(empreendimento.tenant.updated_at)}</span>
-      <div className="flex flex-wrap gap-2 xl:justify-end">
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <EntityViewModal
           description="Identificacao, licenca, modulos e operacao do tenant."
           title={empreendimento.tenant.name}
@@ -308,17 +337,20 @@ function DetalhesEmpreendimento({
   featureFlags: DadosModuloEmpreendimentos["featureFlags"];
   planFeatures: DadosModuloEmpreendimentos["planFeatures"];
 }) {
+  const modulosAtivos = featureFlags.filter((flag) => moduloEstaAtivo(empreendimento, flag, planFeatures));
+
   return (
     <div className="space-y-5">
       <div className="grid gap-3 md:grid-cols-4">
         <Info label="Casas" valor={`${empreendimento.operacao.casasUsadas}/${empreendimento.operacao.casasLimite}`} />
-        <Info label="Reservas" valor={String(empreendimento.operacao.reservasTotal)} />
-        <Info label="Reservas futuras" valor={String(empreendimento.operacao.reservasFuturas)} />
-        <Info label="Receita operacional" valor={formatarMoeda(empreendimento.operacao.receitaOperacional)} />
+        <Info label="Modulos liberados" valor={String(modulosAtivos.length)} />
+        <Info label="Licenca" valor={empreendimento.license ? labelLicenca(empreendimento.license.status) : "Sem licenca"} />
+        <Info label="Localizacao" valor={localidadeEmpreendimento(empreendimento)} />
       </div>
       <CasasDoEmpreendimento empreendimento={empreendimento} />
       <ProprietarioDetails
         featureFlags={featureFlags}
+        ocultarFinanceiro
         planFeatures={planFeatures}
         proprietario={empreendimento}
         retorno={CAMINHO_RETORNO}
@@ -406,15 +438,29 @@ function Info({ label, valor }: { label: string; valor: string }) {
   );
 }
 
+function InfoCompacta({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="min-w-0 rounded-xl border bg-background/35 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold">{valor}</p>
+    </div>
+  );
+}
+
+function localidadeEmpreendimento(empreendimento: EmpreendimentoCompleto) {
+  const cidade = empreendimento.profile?.city?.trim();
+  const estado = empreendimento.profile?.state?.trim();
+  if (cidade && estado) return `${cidade} - ${estado}`;
+  return cidade || estado || "Localizacao nao informada";
+}
+
+function contatoEmpreendimento(empreendimento: EmpreendimentoCompleto) {
+  return empreendimento.profile?.phone?.trim() || empreendimento.profile?.email || "Contato nao informado";
+}
+
 function toneTenant(status: EmpreendimentoCompleto["tenant"]["status"]) {
   if (status === "active") return "success";
   if (status === "trial" || status === "past_due") return "warning";
   if (status === "suspended" || status === "cancelled") return "danger";
   return "neutral";
-}
-
-function toneLicenca(status: NonNullable<EmpreendimentoCompleto["license"]>["status"] | undefined) {
-  if (status === "active" || status === "trial") return "success";
-  if (status === "expired" || status === "suspended" || status === "cancelled") return "danger";
-  return "warning";
 }

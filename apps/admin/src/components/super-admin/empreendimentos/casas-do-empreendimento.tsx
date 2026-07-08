@@ -209,9 +209,9 @@ function DetalheCasa({
       </div>
       <div className="grid gap-3 md:grid-cols-4">
         <Info label="Taxa de limpeza" valor={casa.taxaLimpeza ? formatarMoeda(casa.taxaLimpeza) : "Nao informada"} />
-        <Info label="Reservas" valor={String(casa.reservasTotal)} />
-        <Info label="Reservas futuras" valor={String(casa.reservasFuturas)} />
         <Info label="Imagens" valor={String(casa.imagensTotal)} />
+        <Info label="Criada em" valor={formatarData(casa.criadaEm)} />
+        <Info label="Atualizada em" valor={formatarData(casa.atualizadaEm)} />
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <Info label="Publicacao" valor={casa.isPublica ? "Publicada" : "Rascunho/Nao publicada"} />

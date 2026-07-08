@@ -35,6 +35,7 @@ const ABAS: Array<{ id: AbaProprietario; label: string }> = [
 
 type ProprietarioDetailsProps = {
   featureFlags: DadosModuloProprietarios["featureFlags"];
+  ocultarFinanceiro?: boolean;
   planFeatures: DadosModuloProprietarios["planFeatures"];
   proprietario: ProprietarioCompleto;
   retorno?: string;
@@ -42,16 +43,18 @@ type ProprietarioDetailsProps = {
 
 export function ProprietarioDetails({
   featureFlags,
+  ocultarFinanceiro = false,
   planFeatures,
   proprietario,
   retorno
 }: ProprietarioDetailsProps) {
   const [aba, setAba] = useState<AbaProprietario>("perfil");
+  const abasVisiveis = ocultarFinanceiro ? ABAS.filter((item) => item.id !== "financeiro") : ABAS;
 
   return (
     <div className="space-y-5">
       <div className="admin-sidebar-scrollbar flex gap-2 overflow-x-auto border-b pb-3">
-        {ABAS.map((item) => (
+        {abasVisiveis.map((item) => (
           <button
             className={cn(
               "shrink-0 cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition",
@@ -80,7 +83,7 @@ export function ProprietarioDetails({
       ) : null}
       {aba === "integracoes" ? <AbaIntegracoes proprietario={proprietario} /> : null}
       {aba === "apis" ? <AbaApis featureFlags={featureFlags} proprietario={proprietario} /> : null}
-      {aba === "financeiro" ? <AbaFinanceiro proprietario={proprietario} /> : null}
+      {aba === "financeiro" && !ocultarFinanceiro ? <AbaFinanceiro proprietario={proprietario} /> : null}
       {aba === "logs" ? <AbaLogs proprietario={proprietario} /> : null}
     </div>
   );

@@ -3,7 +3,6 @@ import type {
   JsonValue,
   MediaAssetRow,
   PropertyRow,
-  ReservationRow,
   TenantStatus
 } from "@hospedex/types";
 
@@ -41,9 +40,6 @@ export type MetricaEmpreendimento = {
 export type OperacaoEmpreendimento = {
   casasLimite: number;
   casasUsadas: number;
-  receitaOperacional: number;
-  reservasFuturas: number;
-  reservasTotal: number;
 };
 
 export type CasaEmpreendimento = {
@@ -62,8 +58,6 @@ export type CasaEmpreendimento = {
   paginaPublicaUrl: string | null;
   propriedade: PropertyRow;
   quartos: number;
-  reservasFuturas: number;
-  reservasTotal: number;
   status: PropertyRow["status"];
   taxaLimpeza: number;
   tipo: PropertyRow["property_type"];
@@ -149,27 +143,17 @@ async function carregarOperacao(proprietarios: ProprietarioCompleto[]) {
   if (!idsTenant.length) return new Map<string, { casas: CasaEmpreendimento[]; operacao: OperacaoEmpreendimento }>();
 
   const supabase = await criarClienteSupabaseServer();
-  const [casasResultado, reservasResultado] = await Promise.all([
-    supabase
-      .from("properties")
-      .select("*")
-      .in("tenant_id", idsTenant)
-      .is("deleted_at", null)
-      .returns<PropertyRow[]>(),
-    supabase
-      .from("reservations")
-      .select("tenant_id,property_id,status,check_in,total_amount")
-      .in("tenant_id", idsTenant)
-      .returns<Array<Pick<ReservationRow, "check_in" | "property_id" | "status" | "tenant_id" | "total_amount">>>()
-  ]);
+  const casasResultado = await supabase
+    .from("properties")
+    .select("*")
+    .in("tenant_id", idsTenant)
+    .is("deleted_at", null)
+    .returns<PropertyRow[]>();
 
   registrarErroLeitura("casas por empreendimento", casasResultado.error);
-  registrarErroLeitura("reservas por empreendimento", reservasResultado.error);
 
-  const hoje = new Date().toISOString().slice(0, 10);
   const propriedades = casasResultado.data ?? [];
   const imagensPorPropriedade = await carregarImagens(propriedades.map((propriedade) => propriedade.id));
-  const reservasPorPropriedade = agruparPorPropriedade(reservasResultado.data ?? []);
   const mapa = new Map<string, { casas: CasaEmpreendimento[]; operacao: OperacaoEmpreendimento }>();
 
   proprietarios.forEach((proprietario) =>
@@ -183,27 +167,9 @@ async function carregarOperacao(proprietarios: ProprietarioCompleto[]) {
     dados.casas.push(
       montarCasaEmpreendimento(
         casa,
-        imagensPorPropriedade.get(casa.id) ?? [],
-        reservasPorPropriedade.get(casa.id) ?? []
+        imagensPorPropriedade.get(casa.id) ?? []
       )
     );
-  });
-
-  (reservasResultado.data ?? []).forEach((reserva) => {
-    const dados = mapa.get(reserva.tenant_id);
-    if (!dados) return;
-    dados.operacao.reservasTotal += 1;
-    if (reserva.status !== "cancelled" && reserva.check_in >= hoje) {
-      dados.operacao.reservasFuturas += 1;
-    }
-  });
-
-  proprietarios.forEach((proprietario) => {
-    const dados = mapa.get(proprietario.tenant.id);
-    if (!dados) return;
-    dados.operacao.receitaOperacional = proprietario.transactions
-      .filter((transacao) => transacao.transaction_type === "income" && transacao.status === "paid")
-      .reduce((total, transacao) => total + Number(transacao.amount), 0);
   });
 
   return mapa;
@@ -229,15 +195,12 @@ async function carregarImagens(idsPropriedades: string[]) {
 
 function montarCasaEmpreendimento(
   propriedade: PropertyRow,
-  imagens: MediaAssetRow[],
-  reservas: Array<Pick<ReservationRow, "check_in" | "property_id" | "status" | "tenant_id" | "total_amount">>
+  imagens: MediaAssetRow[]
 ): CasaEmpreendimento {
   const endereco = objetoJson(propriedade.address);
   const estrutura = objetoJson(propriedade.structure_details);
   const valores = objetoJson(propriedade.pricing_details);
   const imagemCapa = imagens.find((imagem) => imagem.is_cover) ?? imagens[0] ?? null;
-  const reservasValidas = reservas.filter((reserva) => reserva.status !== "cancelled");
-  const hoje = new Date().toISOString().slice(0, 10);
 
   return {
     banheiros: numeroJson(estrutura, "banheiros"),
@@ -255,8 +218,6 @@ function montarCasaEmpreendimento(
     paginaPublicaUrl: propriedade.is_public ? `${MARKETPLACE_URL}/propriedades/${propriedade.slug}` : null,
     propriedade,
     quartos: numeroJson(estrutura, "quartos"),
-    reservasFuturas: reservasValidas.filter((reserva) => reserva.check_in >= hoje).length,
-    reservasTotal: reservas.length,
     status: propriedade.status,
     taxaLimpeza: numeroJson(valores, "taxaLimpeza"),
     tipo: propriedade.property_type,
@@ -277,10 +238,7 @@ function agruparPorPropriedade<T extends { property_id: string | null }>(linhas:
 function operacaoVazia(proprietario: ProprietarioCompleto): OperacaoEmpreendimento {
   return {
     casasLimite: obterLimiteCasas(proprietario),
-    casasUsadas: 0,
-    receitaOperacional: 0,
-    reservasFuturas: 0,
-    reservasTotal: 0
+    casasUsadas: 0
   };
 }
 
