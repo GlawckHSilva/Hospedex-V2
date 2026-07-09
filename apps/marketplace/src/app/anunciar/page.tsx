@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   BadgeCheck,
@@ -13,45 +14,93 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import type { FeatureFlagRow, PlanFeatureRow, PlanRow } from "@hospedex/types";
 import { FadeIn, GlassCard, GlassPanel, StatusBadge, buttonVariants, cn } from "@hospedex/ui";
 
 import { PublicShell } from "../../components/layout/public-shell";
+import { criarClienteSupabaseServer } from "../../lib/supabase/server";
 
-const planos = [
+type PlanoComercial = {
+  codigo: string;
+  descricao: string;
+  destaque: boolean;
+  limiteCasas: number;
+  nome: string;
+  precoAnual: number;
+  precoMensal: number;
+  recursos: string[];
+};
+
+type PlanoPublicoRow = Pick<
+  PlanRow,
+  "annual_price" | "code" | "description" | "id" | "max_properties" | "monthly_price" | "name" | "status"
+>;
+
+const ORDEM_PLANOS = ["essencial", "inicial", "profissional", "premium"] as const;
+
+const PLANOS_FALLBACK: PlanoComercial[] = [
   {
+    codigo: "essencial",
     nome: "Essencial",
-    preco: "Plano sob consulta",
-    descricao: "Para começar a receber reservas diretas com organização.",
+    precoMensal: 99,
+    precoAnual: 990,
+    limiteCasas: 1,
+    descricao: "Para começar com uma casa publicada e operação básica organizada.",
     destaque: false,
-    recursos: ["Até 2 casas", "Marketplace público", "Reservas", "Calendário", "Guia da região"]
+    recursos: ["1 casa", "Página pública opcional", "Reservas", "Calendário", "Relatórios básicos"]
   },
   {
+    codigo: "inicial",
+    nome: "Inicial",
+    precoMensal: 179,
+    precoAnual: 1790,
+    limiteCasas: 3,
+    descricao: "Para proprietários com até três casas e recursos comerciais essenciais.",
+    destaque: false,
+    recursos: ["Até 3 casas", "Mercado Pago", "Guia da região", "Serviços extras", "Página pública opcional"]
+  },
+  {
+    codigo: "profissional",
     nome: "Profissional",
-    preco: "Plano sob consulta",
-    descricao: "Para proprietários que querem operar com mais controle.",
+    precoMensal: 260,
+    precoAnual: 2600,
+    limiteCasas: 5,
+    descricao: "Para operação com até cinco casas, equipe e controle avançado.",
     destaque: true,
-    recursos: [
-      "Até 5 casas",
-      "Financeiro",
-      "Pendências operacionais",
-      "Serviços extras",
-      "Relatórios"
-    ]
+    recursos: ["Até 5 casas", "Funcionários", "Inventário", "Limpeza", "CRM"]
   },
   {
+    codigo: "premium",
     nome: "Premium",
-    preco: "Plano sob consulta",
-    descricao: "Para pousadas, pequenos hotéis e operação com equipe.",
+    precoMensal: 399,
+    precoAnual: 3990,
+    limiteCasas: 8,
+    descricao: "Para pousadas, pequenos hotéis e gestão premium com até oito casas.",
     destaque: false,
-    recursos: [
-      "Até 8 casas",
-      "Funcionários",
-      "Permissões",
-      "Integrações preparadas",
-      "Suporte prioritário"
-    ]
+    recursos: ["Até 8 casas", "Automações", "iCal", "Avaliações", "IA em condição melhor"]
   }
-] as const;
+];
+
+const LABEL_RECURSO: Record<string, string> = {
+  advanced_rates: "Tarifário avançado",
+  ai_assistant: "IA",
+  ai_pricing: "IA para precificação",
+  automations: "Automações",
+  cleaning: "Limpeza",
+  crm: "Hóspedes e CRM",
+  extra_services: "Serviços extras",
+  gateway_primary: "Mercado Pago",
+  ics_sync: "Calendário/iCal",
+  integrations: "Integrações",
+  inventory: "Inventário",
+  manual_approval: "Reservas com aprovação",
+  marketplace_visibility: "Página pública opcional",
+  payments: "Pagamento manual",
+  regional_guide: "Guia da região",
+  reports: "Relatórios",
+  reviews: "Avaliações",
+  staff: "Funcionários"
+};
 
 const recursos = [
   {
@@ -83,7 +132,9 @@ const passos = [
   "Aprove, acompanhe pagamento, check-in e check-out pelo painel."
 ] as const;
 
-export default function AnunciarPage() {
+export default async function AnunciarPage() {
+  const planos = await carregarPlanosComerciais();
+
   return (
     <PublicShell>
       <section className="premium-grid-bg relative overflow-hidden border-b">
@@ -123,9 +174,7 @@ export default function AnunciarPage() {
       <section className="bg-background">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:py-20">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-normal text-primary">
-              Como funciona
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-normal text-primary">Como funciona</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
               Do anúncio à operação diária
             </h2>
@@ -169,9 +218,7 @@ export default function AnunciarPage() {
       <section className="bg-background">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 lg:py-20">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold uppercase tracking-normal text-primary">
-              Recursos
-            </p>
+            <p className="text-sm font-semibold uppercase tracking-normal text-primary">Recursos</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
               Criado para casas de temporada, pousadas e pequenos hotéis
             </h2>
@@ -202,19 +249,18 @@ export default function AnunciarPage() {
               Escolha o plano para anunciar e gerenciar suas casas
             </h2>
             <p className="mt-4 text-sm leading-7 text-muted-foreground sm:text-base">
-              Todos os planos liberam o painel de gerenciamento e a publicação das propriedades
-              no Marketplace Hospedex, conforme os limites contratados.
+              Todos os planos liberam o painel de gerenciamento. Página pública e Marketplace
+              são opcionais e seguem os limites e módulos liberados pelo Super Admin.
             </p>
           </div>
-          <div className="grid gap-5 lg:grid-cols-3">
+          <div className="grid gap-5 lg:grid-cols-4">
             {planos.map((plano) => (
               <GlassCard
                 className={cn(
                   "relative p-6",
-                  plano.destaque &&
-                    "border-cyan-300/50 bg-cyan-500/10 shadow-xl shadow-cyan-950/10"
+                  plano.destaque && "border-cyan-300/50 bg-cyan-500/10 shadow-xl shadow-cyan-950/10"
                 )}
-                key={plano.nome}
+                key={plano.codigo}
               >
                 {plano.destaque ? (
                   <span className="absolute right-4 top-4 rounded-full border border-cyan-300/40 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-100">
@@ -223,7 +269,13 @@ export default function AnunciarPage() {
                 ) : null}
                 <h3 className="text-xl font-semibold">{plano.nome}</h3>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{plano.descricao}</p>
-                <p className="mt-5 text-lg font-semibold text-foreground">{plano.preco}</p>
+                <p className="mt-5 text-2xl font-semibold text-foreground">
+                  {formatarMoeda(plano.precoMensal)}
+                  <span className="text-sm font-medium text-muted-foreground">/mês</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Anual: {formatarMoeda(plano.precoAnual)} (pague 10 meses e use 12)
+                </p>
                 <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
                   {plano.recursos.map((recurso) => (
                     <li className="flex gap-2" key={recurso}>
@@ -244,10 +296,94 @@ export default function AnunciarPage() {
               </GlassCard>
             ))}
           </div>
+          <GlassCard className="p-5 text-sm leading-7 text-muted-foreground">
+            Página pública e Marketplace podem gerar comissão comercial de 2% sobre reservas
+            públicas. Casa adicional custa R$ 50/mês e, nesta fase, é ajustada manualmente
+            pelo Super Admin no limite da licença.
+          </GlassCard>
         </div>
       </GlassPanel>
     </PublicShell>
   );
+}
+
+async function carregarPlanosComerciais(): Promise<PlanoComercial[]> {
+  const supabase = await criarClienteSupabaseServer();
+  if (!supabase) return PLANOS_FALLBACK;
+
+  const { data: plans, error } = await supabase
+    .from("plans")
+    .select("id,code,name,description,monthly_price,annual_price,max_properties,status")
+    .in("code", [...ORDEM_PLANOS])
+    .eq("status", "active")
+    .returns<PlanoPublicoRow[]>();
+
+  if (error || !plans?.length) return PLANOS_FALLBACK;
+
+  const planosBase = montarPlanosSemRecursos(plans);
+  const idsPlanos = plans.map((plan) => plan.id);
+  const { data: planFeatures, error: erroRecursos } = await supabase
+    .from("plan_features")
+    .select("plan_id,feature_flag_id,enabled")
+    .in("plan_id", idsPlanos)
+    .eq("enabled", true)
+    .returns<Pick<PlanFeatureRow, "enabled" | "feature_flag_id" | "plan_id">[]>();
+
+  if (erroRecursos) return planosBase;
+
+  const idsFlags = [...new Set((planFeatures ?? []).map((feature) => feature.feature_flag_id))];
+  const { data: flags } = idsFlags.length
+    ? await supabase
+        .from("feature_flags")
+        .select("id,key,module")
+        .in("id", idsFlags)
+        .returns<Pick<FeatureFlagRow, "id" | "key" | "module">[]>()
+    : { data: [] };
+
+  const flagPorId = new Map((flags ?? []).map((flag) => [flag.id, flag.key]));
+  const idPlanoPorCodigo = new Map(plans.map((plan) => [plan.code, plan.id]));
+
+  return planosBase.map((plano) => {
+    const recursos = (planFeatures ?? [])
+      .filter((feature) => feature.plan_id === idPlanoPorCodigo.get(plano.codigo))
+      .map((feature) => LABEL_RECURSO[flagPorId.get(feature.feature_flag_id) ?? ""])
+      .filter((recurso): recurso is string => Boolean(recurso));
+
+    return {
+      ...plano,
+      recursos: [
+        plano.limiteCasas === 1 ? "1 casa" : `Até ${plano.limiteCasas} casas`,
+        ...recursos
+      ].slice(0, 6)
+    };
+  });
+}
+
+function montarPlanosSemRecursos(plans: PlanoPublicoRow[]): PlanoComercial[] {
+  return [...plans]
+    .sort(
+      (a, b) =>
+        ORDEM_PLANOS.indexOf(a.code as (typeof ORDEM_PLANOS)[number]) -
+        ORDEM_PLANOS.indexOf(b.code as (typeof ORDEM_PLANOS)[number])
+    )
+    .map((plan) => ({
+      codigo: plan.code,
+      descricao: plan.description ?? "Plano comercial Hospedex.",
+      destaque: plan.code === "profissional",
+      limiteCasas: Number(plan.max_properties),
+      nome: plan.name,
+      precoAnual: Number(plan.annual_price),
+      precoMensal: Number(plan.monthly_price),
+      recursos: [Number(plan.max_properties) === 1 ? "1 casa" : `Até ${plan.max_properties} casas`]
+    }));
+}
+
+function formatarMoeda(valor: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: "BRL",
+    maximumFractionDigits: 0,
+    style: "currency"
+  }).format(valor);
 }
 
 function PainelPreview() {
@@ -288,7 +424,7 @@ function PainelPreview() {
   );
 }
 
-function MiniPrint({ titulo, icon, linhas }: { titulo: string; icon: React.ReactNode; linhas: string[] }) {
+function MiniPrint({ titulo, icon, linhas }: { titulo: string; icon: ReactNode; linhas: string[] }) {
   return (
     <GlassCard className="p-5">
       <div className="flex items-center gap-3">
