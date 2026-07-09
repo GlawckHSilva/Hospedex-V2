@@ -184,10 +184,12 @@ type ErrosFormularioCasa = Partial<Record<string, string>>;
 
 type CampoObrigatorioCasa = {
   etapa: EtapaId;
+  maximo?: number;
   mensagem: string;
   minimo?: number;
   name: string;
-  tipo: "comodidade" | "imagem" | "numero" | "texto";
+  obrigatorio?: boolean;
+  tipo: "comodidade" | "hora" | "imagem" | "numero" | "texto" | "url";
   validarQuando?: (dados: FormData) => boolean;
 };
 
@@ -229,6 +231,13 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     tipo: "texto",
   },
   {
+    etapa: "localizacao",
+    mensagem: "Informe um link do Google Maps valido.",
+    name: "googleMapsLink",
+    obrigatorio: false,
+    tipo: "url",
+  },
+  {
     etapa: "estrutura",
     mensagem: "Informe a capacidade máxima de hóspedes.",
     minimo: 1,
@@ -244,9 +253,25 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "estrutura",
+    mensagem: "Informe uma quantidade de camas valida.",
+    minimo: 1,
+    name: "camasCasa",
+    obrigatorio: false,
+    tipo: "numero",
+  },
+  {
+    etapa: "estrutura",
     mensagem: "Informe a quantidade de banheiros.",
     minimo: 1,
     name: "banheirosCasa",
+    tipo: "numero",
+  },
+  {
+    etapa: "estrutura",
+    mensagem: "Informe uma quantidade de vagas valida.",
+    minimo: 0,
+    name: "garagemVagas",
+    obrigatorio: false,
     tipo: "numero",
   },
   {
@@ -258,11 +283,61 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "valores",
+    mensagem: "Informe uma taxa de limpeza valida.",
+    minimo: 0,
+    name: "taxaLimpeza",
+    obrigatorio: false,
+    tipo: "numero",
+  },
+  {
+    etapa: "valores",
+    mensagem: "Informe uma caucao valida.",
+    minimo: 0,
+    name: "caucao",
+    obrigatorio: false,
+    tipo: "numero",
+  },
+  {
+    etapa: "valores",
+    mensagem: "Informe um valor por hospede extra valido.",
+    minimo: 0,
+    name: "valorHospedeExtra",
+    obrigatorio: false,
+    tipo: "numero",
+  },
+  {
+    etapa: "valores",
     mensagem: "Informe a quantidade máxima de parcelas.",
+    maximo: MAX_PARCELAS_CARTAO,
     minimo: 1,
     name: "maxParcelasCartao",
     tipo: "numero",
     validarQuando: (dados) => dados.get("aceitaCartaoCredito") === "on",
+  },
+  ...Array.from({ length: MAX_PARCELAS_CARTAO }, (_, indice) => ({
+    etapa: "valores" as const,
+    maximo: 100,
+    mensagem: "Informe juros entre 0% e 100%.",
+    minimo: 0,
+    name: `jurosParcela${indice + 1}`,
+    obrigatorio: false,
+    tipo: "numero" as const,
+    validarQuando: (dados: FormData) =>
+      dados.get("aceitaCartaoCredito") === "on",
+  })),
+  {
+    etapa: "regras",
+    mensagem: "Informe um horario de check-in valido.",
+    name: "checkInTime",
+    obrigatorio: false,
+    tipo: "hora",
+  },
+  {
+    etapa: "regras",
+    mensagem: "Informe um horario de check-out valido.",
+    name: "checkOutTime",
+    obrigatorio: false,
+    tipo: "hora",
   },
   {
     etapa: "imagens",
@@ -277,6 +352,13 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     name: "comodidadeIds",
     tipo: "comodidade",
     validarQuando: deveValidarPublicacao,
+  },
+  {
+    etapa: "compartilhamento",
+    mensagem: "Informe uma URL valida para a imagem de compartilhamento.",
+    name: "imagemCompartilhamento",
+    obrigatorio: false,
+    tipo: "url",
   },
   {
     etapa: "compartilhamento",
@@ -429,6 +511,22 @@ function indiceDaEtapa(etapaId: EtapaId) {
   );
 }
 
+function validarHoraFormulario(valor: string) {
+  if (!valor.trim()) return true;
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(valor.trim());
+}
+
+function validarUrlFormulario(valor: string) {
+  if (!valor.trim()) return true;
+
+  try {
+    const url = new URL(valor);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function validarFormularioCasa(
   formulario: HTMLFormElement,
   etapasPermitidas?: Set<EtapaId>,
@@ -450,6 +548,16 @@ function validarFormularioCasa(
       continue;
     }
 
+    if (campo.tipo === "url" && !validarUrlFormulario(valorBruto)) {
+      erros[campo.name] = campo.mensagem;
+      continue;
+    }
+
+    if (campo.tipo === "hora" && !validarHoraFormulario(valorBruto)) {
+      erros[campo.name] = campo.mensagem;
+      continue;
+    }
+
     if (campo.tipo === "imagem" && !contexto.possuiImagemPrincipal) {
       erros[campo.name] = campo.mensagem;
       continue;
@@ -461,14 +569,131 @@ function validarFormularioCasa(
     }
 
     if (campo.tipo === "numero") {
+      if (!valorBruto && campo.obrigatorio === false) continue;
+
       const valor = Number.parseFloat(valorBruto.replace(",", "."));
-      if (!Number.isFinite(valor) || valor < (campo.minimo ?? 0)) {
+      if (
+        !Number.isFinite(valor) ||
+        valor < (campo.minimo ?? 0) ||
+        (typeof campo.maximo === "number" && valor > campo.maximo)
+      ) {
         erros[campo.name] = campo.mensagem;
       }
     }
   }
 
   return erros;
+}
+
+type CampoRascunhoCasa = {
+  checked?: boolean;
+  tipo: string;
+  valor: string;
+};
+
+type RascunhoCasaLocal = {
+  campos: Record<string, CampoRascunhoCasa[]>;
+  etapaAtual: number;
+  incluiArquivos: boolean;
+  salvoEm: string;
+  versao: 1;
+};
+
+type ControleFormularioCasa =
+  | HTMLInputElement
+  | HTMLSelectElement
+  | HTMLTextAreaElement;
+
+function obterChaveRascunhoCasa(
+  modo: PropertyFormProps["modo"],
+  propriedadeId?: string,
+) {
+  return `hospedex:v2:rascunho-casa:${modo}:${propriedadeId ?? "nova"}`;
+}
+
+function deveIgnorarCampoRascunho(campo: ControleFormularioCasa) {
+  if (!campo.name) return true;
+  if (!(campo instanceof HTMLInputElement)) return false;
+
+  return ["button", "file", "hidden", "reset", "submit"].includes(campo.type);
+}
+
+function serializarRascunhoCasa(
+  formulario: HTMLFormElement,
+  etapaAtual: number,
+): RascunhoCasaLocal {
+  const campos: RascunhoCasaLocal["campos"] = {};
+  const controles = Array.from(
+    formulario.querySelectorAll<ControleFormularioCasa>(
+      "input, select, textarea",
+    ),
+  );
+  const incluiArquivos = Array.from(
+    formulario.querySelectorAll<HTMLInputElement>('input[type="file"]'),
+  ).some((campo) => Boolean(campo.files?.length));
+
+  controles.forEach((campo) => {
+    if (deveIgnorarCampoRascunho(campo)) return;
+
+    const valores = campos[campo.name] ?? [];
+    if (campo instanceof HTMLInputElement) {
+      const valor: CampoRascunhoCasa = {
+        tipo: campo.type,
+        valor: campo.value,
+      };
+      if (campo.type === "checkbox" || campo.type === "radio") {
+        valor.checked = campo.checked;
+      }
+      valores.push(valor);
+    } else {
+      valores.push({
+        tipo: campo.tagName.toLowerCase(),
+        valor: campo.value,
+      });
+    }
+    campos[campo.name] = valores;
+  });
+
+  return {
+    campos,
+    etapaAtual,
+    incluiArquivos,
+    salvoEm: new Date().toISOString(),
+    versao: 1,
+  };
+}
+
+function aplicarRascunhoCasa(
+  formulario: HTMLFormElement,
+  rascunho: RascunhoCasaLocal,
+) {
+  const controles = Array.from(
+    formulario.querySelectorAll<ControleFormularioCasa>(
+      "input, select, textarea",
+    ),
+  );
+
+  Object.entries(rascunho.campos).forEach(([nome, valores]) => {
+    controles
+      .filter((controle) => controle.name === nome)
+      .forEach((controle, indice) => {
+        const valor = valores[indice];
+        if (!valor) return;
+
+        if (controle instanceof HTMLInputElement) {
+          if (controle.type === "checkbox" || controle.type === "radio") {
+            controle.checked = Boolean(valor.checked);
+          } else {
+            controle.value = valor.valor;
+          }
+        } else {
+          controle.value = valor.valor;
+        }
+
+        controle.dispatchEvent(new Event("input", { bubbles: true }));
+        controle.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+  });
 }
 
 function removerErrosDaEtapa(
@@ -505,9 +730,11 @@ export function PropertyForm({
     modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const searchParams = useSearchParams();
   const erroServidor = searchParams.get("erro");
+  const chaveRascunho = obterChaveRascunhoCasa(modo, propriedade?.id);
   const [etapaAtual, setEtapaAtual] = useState(0);
   const [errosCampos, setErrosCampos] = useState<ErrosFormularioCasa>({});
   const [erroImagem, setErroImagem] = useState<string | null>(null);
+  const [avisoRascunho, setAvisoRascunho] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>(() =>
     criarPreviewsGaleriaExistente(propriedade?.imagens ?? []),
@@ -525,6 +752,7 @@ export function PropertyForm({
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
   const arquivosGaleriaRef = useRef<File[]>([]);
+  const timerRascunhoRef = useRef<number | null>(null);
   const previewCapaRef = useRef<string | null>(null);
   const previewsGaleriaRef = useRef<PreviewGaleria[]>([]);
   const endereco = propriedade?.enderecoFormatado;
@@ -557,11 +785,113 @@ export function PropertyForm({
   }, [previewsGaleria]);
 
   useEffect(() => {
+    const formulario = formRef.current;
+    if (!formulario) return;
+
+    let rascunhoSalvo: string | null;
+    try {
+      rascunhoSalvo = window.localStorage.getItem(chaveRascunho);
+    } catch {
+      return;
+    }
+    if (!rascunhoSalvo) return;
+
+    try {
+      const rascunho = JSON.parse(rascunhoSalvo) as RascunhoCasaLocal;
+      if (rascunho.versao !== 1) return;
+
+      aplicarRascunhoCasa(formulario, rascunho);
+      setEtapaAtual(
+        Math.min(Math.max(rascunho.etapaAtual, 0), ETAPAS.length - 1),
+      );
+      sincronizarEstadosControladosDoFormulario();
+      setAvisoRascunho(
+        rascunho.incluiArquivos
+          ? "Rascunho recuperado. Reenvie as imagens antes de salvar, pois o navegador nao restaura arquivos por seguranca."
+          : "Rascunho recuperado neste dispositivo.",
+      );
+    } catch {
+      try {
+        window.localStorage.removeItem(chaveRascunho);
+      } catch {
+        // Sem acao: armazenamento local pode estar indisponivel no navegador.
+      }
+    }
+  }, [chaveRascunho]);
+
+  useEffect(() => {
     return () => {
+      if (timerRascunhoRef.current) {
+        window.clearTimeout(timerRascunhoRef.current);
+      }
       if (previewCapaRef.current) URL.revokeObjectURL(previewCapaRef.current);
       previewsGaleriaRef.current.forEach(revogarPreviewLocal);
     };
   }, []);
+
+  function sincronizarEstadosControladosDoFormulario() {
+    const formulario = formRef.current;
+    if (!formulario) return;
+
+    const visibilidadePublica = formulario.elements.namedItem(
+      "visibilidadePublica",
+    );
+    if (visibilidadePublica instanceof HTMLInputElement) {
+      setPublicaSelecionada(visibilidadePublica.checked);
+    }
+
+    const status = formulario.querySelector<HTMLInputElement>(
+      'input[name="status"]:checked',
+    );
+    if (
+      status &&
+      ["draft", "published", "paused"].includes(status.value)
+    ) {
+      setStatusSelecionado(status.value as PropertyStatus);
+    }
+  }
+
+  function salvarRascunhoLocal(mensagem?: string | null) {
+    const formulario = formRef.current;
+    if (!formulario) return;
+
+    // O rascunho local evita perda de dados quando a validacao do servidor
+    // rejeita o envio. Arquivos nao sao restauraveis por seguranca do browser.
+    const rascunho = serializarRascunhoCasa(formulario, etapaAtual);
+    try {
+      window.localStorage.setItem(chaveRascunho, JSON.stringify(rascunho));
+    } catch {
+      setAvisoRascunho(
+        "Nao foi possivel salvar o rascunho neste navegador. Revise os campos destacados antes de sair.",
+      );
+      return;
+    }
+    if (mensagem !== null) {
+      setAvisoRascunho(
+        mensagem ??
+          "Rascunho salvo neste dispositivo. Voce pode corrigir os campos sem perder o que digitou.",
+      );
+    }
+  }
+
+  function agendarRascunhoLocal() {
+    if (timerRascunhoRef.current) {
+      window.clearTimeout(timerRascunhoRef.current);
+    }
+
+    timerRascunhoRef.current = window.setTimeout(() => {
+      salvarRascunhoLocal(null);
+    }, 700);
+  }
+
+  function descartarRascunhoLocal() {
+    try {
+      window.localStorage.removeItem(chaveRascunho);
+    } catch {
+      // Sem acao: o descarte visual ja remove o aviso para o usuario.
+    }
+    setAvisoRascunho(null);
+  }
 
   function validarImagem(arquivo?: File) {
     if (!arquivo) return null;
@@ -728,6 +1058,11 @@ export function PropertyForm({
     });
   }
 
+  function aoAlterarFormulario(evento: FormEvent<HTMLFormElement>) {
+    limparErroDoCampo(evento);
+    agendarRascunhoLocal();
+  }
+
   function removerErrosDosCampos(nomes: string[]) {
     setErrosCampos((errosAtuais) => {
       const novosErros = { ...errosAtuais };
@@ -817,6 +1152,9 @@ export function PropertyForm({
   function validarEnvio(evento: FormEvent<HTMLFormElement>) {
     if (!podeGerenciar || erroImagem) {
       evento.preventDefault();
+      salvarRascunhoLocal(
+        "Corrija os campos destacados. O rascunho foi salvo neste dispositivo.",
+      );
       return;
     }
 
@@ -827,6 +1165,9 @@ export function PropertyForm({
     );
     if (Object.keys(erros).length > 0) {
       evento.preventDefault();
+      salvarRascunhoLocal(
+        "Corrija os campos destacados. O rascunho foi salvo neste dispositivo.",
+      );
       aplicarErrosValidacao(erros);
       return;
     }
@@ -849,8 +1190,8 @@ export function PropertyForm({
     <form
       action={action}
       className="flex min-h-full flex-col"
-      onChange={limparErroDoCampo}
-      onInput={limparErroDoCampo}
+      onChange={aoAlterarFormulario}
+      onInput={aoAlterarFormulario}
       onSubmit={validarEnvio}
       ref={formRef}
     >
@@ -873,6 +1214,18 @@ export function PropertyForm({
           <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
             {erroServidor}
           </p>
+        ) : null}
+        {avisoRascunho ? (
+          <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-3 text-sm text-cyan-50 sm:flex-row sm:items-center sm:justify-between">
+            <p>{avisoRascunho}</p>
+            <button
+              className="text-left text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200 underline-offset-4 hover:underline sm:text-right"
+              onClick={descartarRascunhoLocal}
+              type="button"
+            >
+              Descartar rascunho
+            </button>
+          </div>
         ) : null}
 
         <section className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-4 shadow-2xl shadow-cyan-950/10 sm:p-6">
@@ -946,7 +1299,11 @@ export function PropertyForm({
           </div>
 
           <div hidden={etapa.id !== "regras"}>
-            <EtapaRegras disabled={!podeGerenciar} regras={regras} />
+            <EtapaRegras
+              disabled={!podeGerenciar}
+              erros={errosCampos}
+              regras={regras}
+            />
           </div>
 
           <div hidden={etapa.id !== "imagens"}>
@@ -1007,15 +1364,16 @@ export function PropertyForm({
           >
             Cancelar
           </ActionButton>
-          <FormActionButton
-            disabled={bloqueado}
+          <ActionButton
+            disabled={!podeGerenciar}
             icon={<Save className="h-4 w-4" />}
-            pendingLabel="Salvando..."
+            onClick={() => salvarRascunhoLocal()}
             size="md"
+            type="button"
             variant="view"
           >
             Salvar rascunho
-          </FormActionButton>
+          </ActionButton>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-3">
@@ -1308,6 +1666,7 @@ function EtapaLocalizacao({
       <CampoTexto
         defaultValue={endereco?.googleMapsLink}
         disabled={disabled}
+        erro={erros.googleMapsLink}
         label="Link do Google Maps"
         name="googleMapsLink"
         placeholder="Cole o link da localização da casa no Google Maps."
@@ -1370,6 +1729,7 @@ function EtapaEstrutura({
         <CampoContador
           defaultValue={estrutura?.camas ?? 1}
           disabled={disabled}
+          erro={erros.camasCasa}
           label="Camas"
           min={1}
           name="camasCasa"
@@ -1386,6 +1746,7 @@ function EtapaEstrutura({
         <CampoContador
           defaultValue={estrutura?.garagemVagas ?? 0}
           disabled={disabled}
+          erro={erros.garagemVagas}
           label="Garagem / vagas"
           min={0}
           name="garagemVagas"
@@ -1511,6 +1872,7 @@ function EtapaValores({
         <CampoMoeda
           defaultValue={valores?.taxaLimpeza ?? 0}
           disabled={disabled}
+          erro={erros.taxaLimpeza}
           label="Taxa de limpeza"
           name="taxaLimpeza"
         />
@@ -1518,6 +1880,7 @@ function EtapaValores({
           defaultValue={valores?.caucao ?? 0}
           disabled={disabled}
           label="Caução / depósito"
+          erro={erros.caucao}
           name="caucao"
           placeholder="R$ 300,00"
         />
@@ -1525,6 +1888,7 @@ function EtapaValores({
           defaultValue={valores?.valorHospedeExtra ?? 0}
           disabled={disabled}
           label="Valor por hóspede extra"
+          erro={erros.valorHospedeExtra}
           name="valorHospedeExtra"
           placeholder="R$ 150,00"
         />
@@ -1797,9 +2161,11 @@ function AvisoDadosPagamentoTenant({ metodo }: { metodo: string }) {
 
 function EtapaRegras({
   disabled,
+  erros,
   regras,
 }: {
   disabled: boolean;
+  erros: ErrosFormularioCasa;
   regras?: PropriedadeComRelacionamentos["regras"] | undefined;
 }) {
   return (
@@ -1809,6 +2175,7 @@ function EtapaRegras({
           defaultValue={normalizarHoraInput(regras?.check_in_time)}
           disabled={disabled}
           label="Horário de check-in"
+          erro={erros.checkInTime}
           name="checkInTime"
           type="time"
         />
@@ -1816,6 +2183,7 @@ function EtapaRegras({
           defaultValue={normalizarHoraInput(regras?.check_out_time)}
           disabled={disabled}
           label="Horário de check-out"
+          erro={erros.checkOutTime}
           name="checkOutTime"
           type="time"
         />
@@ -1934,6 +2302,7 @@ function EtapaCompartilhamento({
           defaultValue={detalhes?.imagemCompartilhamento}
           disabled={disabled}
           label="Imagem de compartilhamento"
+          erro={erros.imagemCompartilhamento}
           name="imagemCompartilhamento"
           placeholder="https://..."
           type="url"
