@@ -34,4 +34,5 @@ export type DadosModuloFuncionarios = {
   filtros: FiltrosFuncionarios;
   funcionarios: FuncionarioRegistro[];
   permissoes: PermissionRow[];
+  podeGerenciar: boolean;
 };

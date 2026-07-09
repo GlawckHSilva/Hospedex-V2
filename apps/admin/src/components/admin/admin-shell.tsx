@@ -44,6 +44,7 @@ import {
   type ItemMenuAdminResolvido
 } from "../../config/navigation";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
+import type { EstadoLicencaTenant } from "../../lib/license-state";
 import type { ResumoNotificacoesGerenciamento } from "../../lib/notifications/types";
 import { HospedexBrand } from "../brand/hospedex-brand";
 import { InteractiveCardEffects } from "../management/interactive-card";
@@ -81,6 +82,7 @@ export type AdminShellProps = {
   acaoSairSidebar: ReactNode;
   children: ReactNode;
   contexto: ContextoAutenticacao;
+  estadoLicenca: EstadoLicencaTenant | null;
   logoConfiguracoesUrl: string | null;
   notificacoes: ResumoNotificacoesGerenciamento;
 };
@@ -97,6 +99,7 @@ export function AdminShell({
   acaoSairSidebar,
   children,
   contexto,
+  estadoLicenca,
   logoConfiguracoesUrl,
   notificacoes
 }: AdminShellProps) {
@@ -154,6 +157,7 @@ export function AdminShell({
           initial={false}
           transition={{ duration: 0.28, ease: "easeOut" }}
         >
+          <AvisoLicenca estadoLicenca={estadoLicenca} />
           {children}
         </motion.main>
       </div>
@@ -170,6 +174,34 @@ export function AdminShell({
           />
         ) : null}
       </AnimatePresence>
+    </div>
+  );
+}
+
+function AvisoLicenca({ estadoLicenca }: { estadoLicenca: EstadoLicencaTenant | null }) {
+  if (!estadoLicenca?.licenseMessage) return null;
+
+  const bloqueado = estadoLicenca.isReadOnlyByExpiredLicense;
+  return (
+    <div
+      className={cn(
+        "mb-4 rounded-xl border px-4 py-3 text-sm",
+        bloqueado
+          ? "border-rose-400/30 bg-rose-500/10 text-rose-100"
+          : "border-amber-400/30 bg-amber-500/10 text-amber-100",
+      )}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p>{estadoLicenca.licenseMessage}</p>
+        {bloqueado ? (
+          <Link
+            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/30 px-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/10"
+            href="/configuracoes"
+          >
+            Regularizar pagamento
+          </Link>
+        ) : null}
+      </div>
     </div>
   );
 }

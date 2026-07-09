@@ -11,6 +11,7 @@ import type {
 } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import { carregarEstadoLicencaTenant } from "../license-state";
 import { filtrarPorPropriedadesAtivas } from "../properties/active-filter";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type {
@@ -56,6 +57,7 @@ export async function carregarDadosModuloReservas(
   }
 
   const supabase = await criarClienteSupabaseServer();
+  const estadoLicenca = await carregarEstadoLicencaTenant(tenantId);
   const [
     propriedadesResultado,
     reservasResultado,
@@ -143,8 +145,12 @@ export async function carregarDadosModuloReservas(
 
   return {
     filtros,
-    podeGerenciar: podeGerenciarReservas(contexto),
-    podeGerenciarPagamento: podeGerenciarPagamentoReservas(contexto),
+    podeGerenciar:
+      podeGerenciarReservas(contexto) &&
+      !estadoLicenca.isReadOnlyByExpiredLicense,
+    podeGerenciarPagamento:
+      podeGerenciarPagamentoReservas(contexto) &&
+      !estadoLicenca.isReadOnlyByExpiredLicense,
     propriedades,
     reservas,
     resumo: {

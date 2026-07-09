@@ -5,6 +5,7 @@ import { LogOut } from "lucide-react";
 
 import { sairAction } from "../../lib/auth/actions";
 import type { ContextoAutenticacao } from "../../lib/auth/types";
+import { carregarEstadoLicencaTenant } from "../../lib/license-state";
 import { carregarResumoNotificacoesGerenciamento } from "../../lib/notifications/data";
 import { criarClienteSupabaseServer } from "../../lib/supabase/server";
 import { AdminShell } from "./admin-shell";
@@ -21,9 +22,12 @@ export type AdminLayoutBaseProps = {
  * role, permissões e feature flags sem recalcular autorização no cliente.
  */
 export async function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
-  const [notificacoes, logoConfiguracoesUrl] = await Promise.all([
+  const [notificacoes, logoConfiguracoesUrl, estadoLicenca] = await Promise.all([
     carregarResumoNotificacoesGerenciamento(contexto),
-    carregarLogoConfiguracoesGerenciamento(contexto)
+    carregarLogoConfiguracoesGerenciamento(contexto),
+    contexto.tenant && contexto.role !== "super_admin"
+      ? carregarEstadoLicencaTenant(contexto.tenant.id)
+      : null
   ]);
 
   return (
@@ -32,6 +36,7 @@ export async function AdminLayoutBase({ children, contexto }: AdminLayoutBasePro
       acaoSairMobile={<AcaoSair variante="sidebar" />}
       acaoSairSidebar={<AcaoSair variante="sidebar" />}
       contexto={contexto}
+      estadoLicenca={estadoLicenca}
       logoConfiguracoesUrl={logoConfiguracoesUrl}
       notificacoes={notificacoes}
     >

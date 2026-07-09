@@ -12,6 +12,7 @@ import type {
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { exigirLicencaPermiteAcoesTenant } from "../license-state";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { sincronizarHospedeCrm } from "../guests/actions";
 import { sincronizarFinanceiroReservaEditada } from "./finance-sync";
@@ -70,6 +71,7 @@ export async function criarReservaManualAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
+    await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     const entrada = await obterEntradaReserva(supabase, escopo, formData);
     const statusInicial: ReservationStatus = "pending";
 
@@ -172,6 +174,7 @@ export async function alterarStatusReservaAction(formData: FormData) {
       validarTransicaoReserva(reserva.status, statusDestino);
 
       if (statusDestino === "confirmed") {
+        await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
         await confirmarReservaOperacional(
           supabase,
           escopo,
@@ -249,6 +252,7 @@ export async function aprovarCobrancaReservaAction(formData: FormData) {
       throw new ErroRegraReserva("Somente reservas pendentes podem gerar cobranca inicial.");
     }
 
+    await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     await aprovarReservaComMotorDeCobranca({
       entrada: obterEntradaCobrancaReserva(formData),
       escopo,

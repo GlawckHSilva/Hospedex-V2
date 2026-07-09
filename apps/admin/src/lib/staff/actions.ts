@@ -6,6 +6,7 @@ import type { PermissionCode, RoleRow, StaffInviteRow, TenantMemberRow } from "@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { exigirLicencaPermiteAcoesTenant } from "../license-state";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { exigirGestaoFuncionarios } from "./access";
 import { PERMISSOES_MODULO } from "./catalog";
@@ -23,6 +24,7 @@ export async function criarFuncionarioAction(formData: FormData) {
   const entrada = obterEntradaFuncionario(formData);
 
   try {
+    await exigirLicencaPermiteAcoesTenant(tenantId);
     const role = await carregarCargo(supabase, tenantId, entrada.roleId);
     await salvarConvite(supabase, tenantId, null, role.id, contexto.userId, entrada);
     await registrarAuditoria(supabase, contexto.userId, tenantId, null, "staff.invited");

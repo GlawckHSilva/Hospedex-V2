@@ -72,6 +72,7 @@ export function FuncionariosModule({
   erro,
   filtros,
   funcionarios,
+  podeGerenciar,
   sucesso,
 }: FuncionariosModuleProps) {
   return (
@@ -146,6 +147,7 @@ export function FuncionariosModule({
           </div>
           <EntityModal
             description="Informe dados de contato e cargo do funcionário."
+            disabled={!podeGerenciar}
             eyebrow="Cadastro"
             title="Criar funcionário"
             triggerIcon={<Plus className="h-4 w-4" />}

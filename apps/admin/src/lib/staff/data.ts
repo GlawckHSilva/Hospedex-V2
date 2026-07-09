@@ -9,6 +9,7 @@ import type {
 } from "@hospedex/types";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
+import { carregarEstadoLicencaTenant } from "../license-state";
 import { CARGOS_INICIAIS, PERMISSOES_MODULO } from "./catalog";
 import type {
   CargoComPermissoes,
@@ -24,6 +25,7 @@ export async function carregarDadosFuncionarios(
   params: Record<string, string | string[] | undefined>
 ): Promise<DadosModuloFuncionarios> {
   const supabase = await criarClienteSupabaseServer();
+  const estadoLicenca = await carregarEstadoLicencaTenant(tenantId);
   await garantirCargosIniciais(supabase, tenantId);
 
   const filtros = normalizarFiltros(params);
@@ -45,7 +47,8 @@ export async function carregarDadosFuncionarios(
     cargos,
     filtros,
     funcionarios,
-    permissoes
+    permissoes,
+    podeGerenciar: !estadoLicenca.isReadOnlyByExpiredLicense
   };
 }
 

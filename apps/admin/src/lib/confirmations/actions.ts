@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 
 import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
+import { exigirLicencaPermiteAcoesTenant } from "../license-state";
 import {
   aprovarReservaComMotorDeCobranca,
   obterEntradaCobrancaReserva
@@ -79,6 +80,7 @@ export async function confirmarReservaConfirmacaoAction(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
+    await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
     const observacao = textoOpcional(formData, "observacao");
 
@@ -126,6 +128,7 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
 
   try {
     const supabase = await criarClienteSupabaseServer();
+    await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
     const observacao = textoOpcional(formData, "observacao");
     const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");

@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { randomUUID } from "node:crypto";
 
+import { exigirLicencaPermiteAcoesTenant } from "../license-state";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { carregarLimitesPlano } from "./data";
 import {
@@ -131,6 +132,7 @@ export async function criarPropriedadeAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
 
     await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
+    await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     await garantirLimitePropriedades(supabase, escopo.tenantId);
     // Geramos o id antes do insert para nao depender de RETURNING/SELECT do PostgREST.
     // Em RLS, o cadastro pode ser permitido pelo WITH CHECK enquanto o retorno da linha
@@ -205,6 +207,9 @@ export async function atualizarPropriedadeAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
 
     await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
+    if (entrada.publica || entrada.status === "published" || entrada.destaqueMarketplace) {
+      await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
+    }
     const { data: propriedade, error } = await supabase
       .from("properties")
       .update({
@@ -283,6 +288,9 @@ export async function alternarStatusPropriedadeAction(formData: FormData) {
     );
     const statusDestino: PropertyStatus =
       propriedade.status === "paused" ? "published" : "paused";
+    if (statusDestino === "published") {
+      await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
+    }
 
     // Pausar preserva os dados da casa; arquivamento fica fora desta etapa para evitar perda operacional.
     const { error } = await supabase
@@ -1116,8 +1124,8 @@ async function garantirTenantOperacionalParaCasas(
   supabase: ClienteSupabaseServer,
   tenantId: string,
 ) {
-  // A RLS do banco bloqueia cadastro de casas sem tenant/licenca operacional.
-  // Validar antes do insert evita erro generico e mostra ao proprietario a acao correta.
+  // Tenant suspenso/cancelado continua bloqueado. A validade da licenca fica na
+  // regra central de tolerancia para nao bloquear o proprietario no dia do vencimento.
   const { data: tenant, error: erroTenant } = await supabase
     .from("tenants")
     .select("status")
@@ -1128,7 +1136,7 @@ async function garantirTenantOperacionalParaCasas(
     throw new ErroRegraNegocio(
       traduzirErroSupabase(
         erroTenant.message,
-        "Não foi possível validar o tenant.",
+        "Nao foi possivel validar o tenant.",
       ),
     );
   }
@@ -1137,38 +1145,7 @@ async function garantirTenantOperacionalParaCasas(
       "Tenant inativo. Verifique o status da conta no Super Admin.",
     );
   }
-
-  const hoje = new Date().toISOString().slice(0, 10);
-  const { data: licenca, error: erroLicenca } = await supabase
-    .from("licenses")
-    .select("status,starts_at,expires_at")
-    .eq("tenant_id", tenantId)
-    .in("status", ["trial", "active"])
-    .lte("starts_at", hoje)
-    .or(`expires_at.is.null,expires_at.gte.${hoje}`)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle<{
-      expires_at: string | null;
-      starts_at: string;
-      status: string;
-    }>();
-
-  if (erroLicenca) {
-    throw new ErroRegraNegocio(
-      traduzirErroSupabase(
-        erroLicenca.message,
-        "Não foi possível validar a licença.",
-      ),
-    );
-  }
-  if (!licenca) {
-    throw new ErroRegraNegocio(
-      "Licença ativa não encontrada. Verifique status e vencimento no Super Admin.",
-    );
-  }
 }
-
 async function carregarPropriedadeDoTenant(
   supabase: ClienteSupabaseServer,
   escopo: EscopoGerenciamento,
@@ -1827,3 +1804,4 @@ function revalidarModulo() {
   revalidatePath("/relatorios");
   revalidatePath("/avaliacoes");
 }
+
