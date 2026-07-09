@@ -75,3 +75,18 @@ regularização deve continuar acessível.
 O plano define o pacote base. `tenant_features` libera ou bloqueia exceções por
 tenant. `licenses.limits.max_properties` continua sendo o limite real usado pelo
 Gerenciamento.
+
+## Cobranca da assinatura Hospedex
+
+A cobranca da mensalidade/anuidade Hospedex e separada das cobrancas de
+reservas feitas pelos proprietarios. Reservas continuam usando as tabelas
+operacionais do tenant e as credenciais Mercado Pago do proprio proprietario.
+
+A assinatura da plataforma usa tabelas proprias:
+`platform_subscription_invoices`, `platform_subscription_payments` e
+`platform_payment_events`. O Mercado Pago da plataforma sera global do
+Hospedex/Super Admin e tera webhook separado em fase futura.
+
+Esta fase cria apenas a base de dados e auditoria para cobrancas da plataforma.
+Nao ha checkout, link de pagamento, webhook ou renovacao automatica de licenca
+nesta etapa.

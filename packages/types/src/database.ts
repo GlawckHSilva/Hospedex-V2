@@ -129,6 +129,22 @@ export type WeatherCheckinReminderStatus =
   | "failed"
   | "skipped"
   | "not_configured";
+export type PlatformSubscriptionBillingCycle = "monthly" | "annual";
+export type PlatformSubscriptionInvoiceStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "canceled"
+  | "expired"
+  | "refunded";
+export type PlatformSubscriptionPaymentStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "canceled"
+  | "refunded";
+export type PlatformPaymentProvider = "mercado_pago";
+export type PlatformPaymentEventStatus = "received" | "processed" | "ignored" | "failed";
 
 export type ProfileRow = {
   id: UUID;
@@ -360,6 +376,67 @@ export type LicenseRow = {
   limits: JsonValue;
   created_at: Timestamp;
   updated_at: Timestamp;
+};
+
+export type PlatformSubscriptionInvoiceRow = {
+  id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  subscription_id: UUID | null;
+  license_id: UUID | null;
+  plan_id: UUID;
+  billing_cycle: PlatformSubscriptionBillingCycle;
+  amount: number;
+  currency: string;
+  status: PlatformSubscriptionInvoiceStatus;
+  due_date: string;
+  period_start: string;
+  period_end: string;
+  external_reference: string;
+  provider: PlatformPaymentProvider | null;
+  provider_preference_id: string | null;
+  provider_payment_id: string | null;
+  checkout_url: string | null;
+  paid_at: Timestamp | null;
+  canceled_at: Timestamp | null;
+  metadata: JsonValue;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type PlatformSubscriptionPaymentRow = {
+  id: UUID;
+  invoice_id: UUID;
+  tenant_id: UUID;
+  owner_id: UUID;
+  amount: number;
+  currency: string;
+  status: PlatformSubscriptionPaymentStatus;
+  provider: PlatformPaymentProvider;
+  provider_payment_id: string | null;
+  provider_preference_id: string | null;
+  payment_method: string | null;
+  paid_at: Timestamp | null;
+  raw_status: string | null;
+  metadata: JsonValue;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type PlatformPaymentEventRow = {
+  id: UUID;
+  provider: PlatformPaymentProvider;
+  event_id: string;
+  event_type: string | null;
+  action: string | null;
+  resource_id: string | null;
+  status: PlatformPaymentEventStatus;
+  invoice_id: UUID | null;
+  payment_id: UUID | null;
+  processed_at: Timestamp | null;
+  error_message: string | null;
+  metadata: JsonValue;
+  created_at: Timestamp;
 };
 
 export type PropertyRow = {
