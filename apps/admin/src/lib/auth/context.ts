@@ -12,7 +12,7 @@ import { supabaseEstaConfigurado } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import type { ContextoAutenticacao } from "./types";
 
-const STATUS_TENANT_OPERACIONAL: TenantStatus[] = [
+const STATUS_TENANT_COM_ACESSO_GERENCIAMENTO: TenantStatus[] = [
   "trial",
   "active",
   "past_due",
@@ -101,13 +101,13 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
           "Tempo limite ao carregar tenant do proprietario.",
         )
       : { data: null };
-    const tenantProprioOperacional = tenantEstaOperacional(tenantProprio)
+    const tenantProprioAcessivel = tenantPermiteAcessoGerenciamento(tenantProprio)
       ? tenantProprio
       : null;
-    const tenantId = vinculoAtivo?.tenant_id ?? tenantProprioOperacional?.id;
+    const tenantId = vinculoAtivo?.tenant_id ?? tenantProprioAcessivel?.id;
 
     const { data: tenant } =
-      tenantId && !tenantProprioOperacional
+      tenantId && !tenantProprioAcessivel
         ? await comTempoLimite(
             supabase
               .from("tenants")
@@ -116,33 +116,35 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
               .maybeSingle<TenantRow>(),
             "Tempo limite ao carregar tenant ativo.",
           )
-        : { data: tenantProprioOperacional };
+        : { data: tenantProprioAcessivel };
 
-    // Tenant suspenso, cancelado ou sem licenca valida nao gera contexto operacional.
-    // A validade da licenca e aplicada pela RLS nas funcoes centrais de tenant,
-    // mantendo a mesma regra para UI, Data API e acessos diretos ao Supabase.
-    const tenantOperacional = tenantEstaOperacional(tenant) ? tenant : null;
+    // Licenca vencida nao apaga contexto: ela apenas torna o Gerenciamento
+    // somente leitura. Quem bloqueia novas acoes e a camada de license-state.
+    // Aqui negamos acesso apenas para tenant inexistente, deletado ou bloqueado.
+    const tenantAcessivel = tenantPermiteAcessoGerenciamento(tenant)
+      ? tenant
+      : null;
     const roleResolvida = resolverRole(
       profile,
       vinculoAtivo,
-      tenantProprioOperacional,
+      tenantProprioAcessivel,
     );
     const role =
-      roleResolvida === "super_admin" || tenantOperacional
+      roleResolvida === "super_admin" || tenantAcessivel
         ? roleResolvida
         : "guest";
     const permissions = await carregarPermissoes(
       vinculoAtivo?.role_id ?? null,
       role,
     );
-    const featureFlags = tenantOperacional?.id
-      ? await carregarFeatureFlags(tenantOperacional.id)
+    const featureFlags = tenantAcessivel?.id
+      ? await carregarFeatureFlags(tenantAcessivel.id)
       : {};
 
     return {
       userId,
       profile,
-      tenant: tenantOperacional,
+      tenant: tenantAcessivel,
       role,
       memberships,
       permissions,
@@ -183,8 +185,14 @@ function resolverRole(
   return "guest";
 }
 
-function tenantEstaOperacional(tenant: TenantRow | null): tenant is TenantRow {
-  return Boolean(tenant && STATUS_TENANT_OPERACIONAL.includes(tenant.status));
+function tenantPermiteAcessoGerenciamento(
+  tenant: TenantRow | null,
+): tenant is TenantRow {
+  return Boolean(
+    tenant &&
+      !tenant.deleted_at &&
+      STATUS_TENANT_COM_ACESSO_GERENCIAMENTO.includes(tenant.status),
+  );
 }
 
 async function carregarPermissoes(
