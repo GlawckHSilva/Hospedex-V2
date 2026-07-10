@@ -49,6 +49,7 @@ import type { ResumoNotificacoesGerenciamento } from "../../lib/notifications/ty
 import { HospedexBrand } from "../brand/hospedex-brand";
 import { InteractiveCardEffects } from "../management/interactive-card";
 import { NotificationBell } from "../notifications/notification-bell";
+import { LicenseRegularizationButton } from "./license-regularization";
 
 const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   auditoria: ClipboardCheck,
@@ -193,14 +194,7 @@ function AvisoLicenca({ estadoLicenca }: { estadoLicenca: EstadoLicencaTenant | 
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p>{estadoLicenca.licenseMessage}</p>
-        {bloqueado ? (
-          <Link
-            className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg border border-cyan-400/30 px-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/10"
-            href="/configuracoes"
-          >
-            Regularizar pagamento
-          </Link>
-        ) : null}
+        {bloqueado ? <LicenseRegularizationButton /> : null}
       </div>
     </div>
   );
