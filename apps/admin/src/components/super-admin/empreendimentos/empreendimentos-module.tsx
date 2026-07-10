@@ -13,6 +13,7 @@ import {
   Plus,
   Power,
   Search,
+  SlidersHorizontal,
   UserRound
 } from "lucide-react";
 
@@ -109,73 +110,86 @@ export function EmpreendimentosModule({
         </EntityModal>
       </header>
 
-      <form className="admin-glass-card space-y-4 p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[170px_170px_minmax(180px,1fr)_170px_minmax(230px,1.2fr)_auto] 2xl:items-end">
-          <CampoSelect label="Plano" name="plano" value={filtros.plano}>
+      <form className="admin-glass-card grid gap-3 p-3 md:grid-cols-2 xl:grid-cols-[44px_minmax(150px,.9fr)_minmax(150px,.9fr)_minmax(190px,1.25fr)_minmax(160px,.9fr)_minmax(210px,1.2fr)] xl:items-center">
+        <details className="group relative md:col-span-2 xl:col-span-1">
+          <summary
+            className="flex h-10 cursor-pointer list-none items-center justify-center rounded-md border bg-background text-muted-foreground transition hover:border-cyan-400/35 hover:text-cyan-300 [&::-webkit-details-marker]:hidden"
+            title="Filtros avancados"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            <span className="sr-only">Filtros avancados</span>
+          </summary>
+          <div className="mt-3 grid gap-3 rounded-xl border border-cyan-300/15 bg-background/95 p-4 shadow-2xl backdrop-blur-xl md:grid-cols-3 xl:absolute xl:left-0 xl:top-full xl:z-30 xl:w-[620px]">
+            <CampoSelect label="Licenca" name="licenca" value={filtros.licenca}>
+              <option value="todas">Todas as licencas</option>
+              <option value="active">Ativa</option>
+              <option value="trial">Trial</option>
+              <option value="expired">Vencida</option>
+              <option value="suspended">Bloqueada</option>
+              <option value="cancelled">Cancelada</option>
+              <option value="sem_licenca">Sem licenca</option>
+            </CampoSelect>
+            <CampoSelect label="Modulo" name="modulo" value={filtros.modulo}>
+              <option value="todos">Todos os modulos</option>
+              {featureFlags.map((flag) => (
+                <option key={flag.id} value={flag.id}>{labelModulo(flag.key)}</option>
+              ))}
+            </CampoSelect>
+            <CampoSelect label="Ordenar" name="ordenacao" value={filtros.ordenacao}>
+              <option value="recentes">Mais recentes</option>
+              <option value="antigos">Mais antigos</option>
+              <option value="nome">Nome</option>
+              <option value="mais_casas">Mais casas</option>
+              <option value="licenca_vencendo">Licenca vencendo</option>
+            </CampoSelect>
+            <ActionButton className="md:col-span-3" icon={<Filter />} size="md" type="submit" variant="view">
+              Aplicar filtros
+            </ActionButton>
+          </div>
+        </details>
+
+        <CampoSelect compact label="Plano" name="plano" value={filtros.plano}>
             <option value="todos">Todos os planos</option>
             {planos.map((plano) => (
               <option key={plano.id} value={plano.id}>{plano.name}</option>
             ))}
-          </CampoSelect>
-          <CampoSelect label="Status" name="status" value={filtros.status}>
+        </CampoSelect>
+        <CampoSelect compact label="Status" name="status" value={filtros.status}>
             <option value="todos">Todos os status</option>
             <option value="active">Ativo</option>
             <option value="trial">Trial</option>
             <option value="past_due">Pendente</option>
             <option value="suspended">Bloqueado</option>
             <option value="cancelled">Cancelado</option>
-          </CampoSelect>
-          <CampoSelect label="Proprietario" name="proprietario" value={filtros.proprietario}>
+        </CampoSelect>
+        <CampoSelect compact label="Proprietario" name="proprietario" value={filtros.proprietario}>
             <option value="todos">Todos os proprietarios</option>
             {opcoesProprietarios.map((proprietario) => (
               <option key={proprietario.id} value={proprietario.id}>{proprietario.nome}</option>
             ))}
-          </CampoSelect>
-          <CampoSelect label="Cidade" name="cidade" value={filtros.cidade}>
+        </CampoSelect>
+        <CampoSelect compact label="Cidade" name="cidade" value={filtros.cidade}>
             <option value="todas">Todas as cidades</option>
             {opcoesCidades.map((cidade) => (
               <option key={cidade} value={cidade}>{cidade}</option>
             ))}
-          </CampoSelect>
-          <div className="grid gap-2">
-            <Label htmlFor="busca">Busca</Label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                defaultValue={filtros.busca}
-                id="busca"
-                name="busca"
-                placeholder="Buscar empreendimento..."
-              />
-            </div>
-          </div>
-          <ActionButton icon={<Search />} size="md" type="submit" variant="view">Filtrar</ActionButton>
-        </div>
-
-        <div className="grid gap-3 border-t border-cyan-300/10 pt-4 sm:grid-cols-2 lg:grid-cols-3">
-          <CampoSelect label="Licenca" name="licenca" value={filtros.licenca}>
-            <option value="todas">Todas as licencas</option>
-            <option value="active">Ativa</option>
-            <option value="trial">Trial</option>
-            <option value="expired">Vencida</option>
-            <option value="suspended">Bloqueada</option>
-            <option value="cancelled">Cancelada</option>
-            <option value="sem_licenca">Sem licenca</option>
-          </CampoSelect>
-          <CampoSelect label="Modulo" name="modulo" value={filtros.modulo}>
-            <option value="todos">Todos os modulos</option>
-            {featureFlags.map((flag) => (
-              <option key={flag.id} value={flag.id}>{labelModulo(flag.key)}</option>
-            ))}
-          </CampoSelect>
-          <CampoSelect label="Ordenar" name="ordenacao" value={filtros.ordenacao}>
-            <option value="recentes">Mais recentes</option>
-            <option value="antigos">Mais antigos</option>
-            <option value="nome">Nome</option>
-            <option value="mais_casas">Mais casas</option>
-            <option value="licenca_vencendo">Licenca vencendo</option>
-          </CampoSelect>
+        </CampoSelect>
+        <div className="relative">
+          <Label className="sr-only" htmlFor="busca">Busca</Label>
+          <Input
+            className="pr-10"
+            defaultValue={filtros.busca}
+            id="busca"
+            name="busca"
+            placeholder="Buscar empreendimento..."
+          />
+          <button
+            aria-label="Buscar empreendimentos"
+            className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition hover:bg-cyan-500/10 hover:text-cyan-300"
+            type="submit"
+          >
+            <Search className="h-4 w-4" />
+          </button>
         </div>
       </form>
 
@@ -413,18 +427,20 @@ function ListaModulos({
 
 function CampoSelect({
   children,
+  compact = false,
   label,
   name,
   value
 }: {
   children: ReactNode;
+  compact?: boolean;
   label: string;
   name: string;
   value: string;
 }) {
   return (
     <div className="grid gap-2">
-      <Label htmlFor={name}>{label}</Label>
+      <Label className={compact ? "sr-only" : undefined} htmlFor={name}>{label}</Label>
       <select className={campoClasse} defaultValue={value} id={name} name={name}>
         {children}
       </select>
