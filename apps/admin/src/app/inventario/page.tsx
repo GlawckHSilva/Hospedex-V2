@@ -26,8 +26,12 @@ export default async function InventarioPage({ searchParams }: PageProps) {
     redirect(contexto.role === "super_admin" ? "/super-admin" : "/sem-acesso");
   }
 
+  if (!contexto.featureFlags.inventory) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeLerInventario(contexto)) {
-    redirect("/sem-acesso");
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   const params = await searchParams;

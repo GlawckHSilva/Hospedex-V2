@@ -269,11 +269,10 @@ export function obterMenuAdmin(
 
   return itensBase
     .filter((item) => perfil !== "funcionario" || funcionarioPodeVerItem(item, contexto))
+    .filter((item) => !item.featureFlag || contexto.featureFlags[item.featureFlag])
     .map((item) => ({
       ...item,
-      bloqueadoPorFeatureFlag: Boolean(
-        item.featureFlag && !contexto.featureFlags[item.featureFlag]
-      )
+      bloqueadoPorFeatureFlag: false
     }));
 }
 

@@ -31,8 +31,12 @@ export default async function LimpezaPage({ searchParams }: PageProps) {
     redirect(contexto.role === "super_admin" ? "/super-admin" : "/sem-acesso");
   }
 
+  if (!contexto.featureFlags.cleaning) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeLerLimpeza(contexto)) {
-    redirect("/sem-acesso");
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   const params = await searchParams;

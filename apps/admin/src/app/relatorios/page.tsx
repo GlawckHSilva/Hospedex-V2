@@ -29,8 +29,12 @@ export default async function RelatoriosPage({ searchParams }: PageProps) {
     redirect(contexto.role === "super_admin" ? "/super-admin" : "/sem-acesso");
   }
 
+  if (!contexto.featureFlags.reports) {
+    redirect("/sem-acesso?motivo=feature-flag-desabilitada");
+  }
+
   if (!podeLerRelatorios(contexto)) {
-    redirect("/sem-acesso");
+    redirect("/sem-acesso?motivo=permissao-insuficiente");
   }
 
   const params = await searchParams;

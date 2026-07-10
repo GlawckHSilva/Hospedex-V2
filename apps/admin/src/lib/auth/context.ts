@@ -1,6 +1,9 @@
 import type {
+  LicenseRow,
   PermissionCode,
+  PlanFeatureRow,
   ProfileRow,
+  SubscriptionRow,
   TenantMemberRow,
   TenantStatus,
   TenantRow,
@@ -137,8 +140,8 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
       vinculoAtivo?.role_id ?? null,
       role,
     );
-    const featureFlags = tenantAcessivel?.id
-      ? await carregarFeatureFlags(tenantAcessivel.id)
+    const featureFlags = tenantAcessivel
+      ? await carregarFeatureFlags(tenantAcessivel)
       : {};
 
     return {
@@ -217,37 +220,103 @@ async function carregarPermissoes(
 }
 
 async function carregarFeatureFlags(
-  tenantId: string,
+  tenant: TenantRow,
 ): Promise<Record<string, boolean>> {
   const supabase = await criarClienteSupabaseServer();
-  const { data: flagsData } = await comTempoLimite(
-    supabase
-      .from("feature_flags")
-      .select("*")
-      .returns<Array<{ id: string; key: string; default_enabled: boolean }>>(),
-    "Tempo limite ao carregar feature flags.",
-  );
-
-  const { data: tenantFeaturesData } = await comTempoLimite(
-    supabase
-      .from("tenant_features")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .returns<Array<{ feature_flag_id: string; enabled: boolean }>>(),
-    "Tempo limite ao carregar feature flags do tenant.",
-  );
+  const [{ data: flagsData }, { data: tenantFeaturesData }, { data: assinatura }, { data: licenca }] =
+    await Promise.all([
+      comTempoLimite(
+        supabase
+          .from("feature_flags")
+          .select("id,key,default_enabled")
+          .returns<Array<{ id: string; key: string; default_enabled: boolean }>>(),
+        "Tempo limite ao carregar feature flags.",
+      ),
+      comTempoLimite(
+        supabase
+          .from("tenant_features")
+          .select("feature_flag_id,enabled")
+          .eq("tenant_id", tenant.id)
+          .returns<Array<{ feature_flag_id: string; enabled: boolean }>>(),
+        "Tempo limite ao carregar feature flags do tenant.",
+      ),
+      comTempoLimite(
+        supabase
+          .from("subscriptions")
+          .select("plan_id,status")
+          .eq("tenant_id", tenant.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<Pick<SubscriptionRow, "plan_id" | "status">>(),
+        "Tempo limite ao carregar assinatura do tenant.",
+      ),
+      comTempoLimite(
+        supabase
+          .from("licenses")
+          .select("status,expires_at")
+          .eq("tenant_id", tenant.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle<Pick<LicenseRow, "status" | "expires_at">>(),
+        "Tempo limite ao carregar licenca do tenant.",
+      ),
+    ]);
 
   const flags = flagsData ?? [];
   const tenantFeatures = tenantFeaturesData ?? [];
+  const { data: planFeaturesData } = assinatura?.plan_id
+    ? await comTempoLimite(
+        supabase
+          .from("plan_features")
+          .select("feature_flag_id,enabled")
+          .eq("plan_id", assinatura.plan_id)
+          .returns<Array<Pick<PlanFeatureRow, "feature_flag_id" | "enabled">>>(),
+        "Tempo limite ao carregar modulos do plano.",
+      )
+    : { data: null };
+  const planFeatures = planFeaturesData ?? [];
+  const trialAtivo = tenantEstaEmTrialAtivo(tenant, licenca, assinatura);
 
   return Object.fromEntries(
-    flags.map((flag) => [
-      flag.key,
-      tenantFeatures.find(
+    flags.map((flag) => {
+      // O trial entrega a experiencia completa; fora dele, o override do tenant
+      // prevalece sobre o plano e permite ao Super Admin liberar extras ou bloquear modulos.
+      if (trialAtivo) return [flag.key, true];
+
+      const overrideTenant = tenantFeatures.find(
         (tenantFeature) => tenantFeature.feature_flag_id === flag.id,
-      )?.enabled ?? flag.default_enabled,
-    ]),
+      );
+      const recursoPlano = planFeatures.find(
+        (planFeature) => planFeature.feature_flag_id === flag.id,
+      );
+
+      return [
+        flag.key,
+        overrideTenant?.enabled ?? recursoPlano?.enabled ?? flag.default_enabled,
+      ];
+    }),
   );
+}
+
+function tenantEstaEmTrialAtivo(
+  tenant: TenantRow,
+  licenca: Pick<LicenseRow, "status" | "expires_at"> | null,
+  assinatura: Pick<SubscriptionRow, "status"> | null,
+): boolean {
+  const possuiTrial =
+    tenant.status === "trial" ||
+    licenca?.status === "trial" ||
+    assinatura?.status === "trialing";
+
+  // O vencimento encerra o acesso amplo do trial; a tolerancia da licenca
+  // continua sendo calculada separadamente e nunca libera modulos pagos.
+  return Boolean(
+    possuiTrial && licenca?.expires_at && licenca.expires_at >= dataLocalHoje(),
+  );
+}
+
+function dataLocalHoje(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 function comTempoLimite<T>(

@@ -622,28 +622,14 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
         )}
       />
       <span className="min-w-0 flex-1 truncate">{item.titulo}</span>
-      {item.bloqueadoPorFeatureFlag ? (
-        <span className="rounded-md border border-warning/25 bg-warning/10 px-1.5 py-0.5 text-[10px] font-semibold text-warning">
-          flag
-        </span>
-      ) : null}
     </>
   );
   const classes = cn(
     "relative flex h-10 items-center gap-3 rounded-lg px-3 pl-3.5 text-sm font-medium transition-colors duration-200",
     ativo
       ? "bg-cyan-500/14 text-cyan-900 shadow-sm shadow-cyan-950/10 dark:text-cyan-50 dark:shadow-cyan-950/20"
-      : "text-muted-foreground hover:bg-cyan-500/8 hover:text-foreground",
-    item.bloqueadoPorFeatureFlag && "cursor-not-allowed opacity-55 hover:bg-transparent"
+      : "text-muted-foreground hover:bg-cyan-500/8 hover:text-foreground"
   );
-
-  if (item.bloqueadoPorFeatureFlag) {
-    return (
-      <span aria-disabled="true" className={classes} title="Feature flag desabilitada">
-        {conteudo}
-      </span>
-    );
-  }
 
   return (
     <Link className={classes} href={item.href} {...(onNavigate ? { onClick: onNavigate } : {})}>
