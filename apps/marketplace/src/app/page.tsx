@@ -1,17 +1,16 @@
 import {
   ArrowRight,
   BadgeCheck,
-  BedDouble,
   Building2,
   CalendarDays,
   Heart,
   Hotel,
   House,
   MapPin,
+  MessagesSquare,
   Search,
   ShieldCheck,
   Sparkles,
-  Star,
   Users
 } from "lucide-react";
 import Link from "next/link";
@@ -31,9 +30,6 @@ import {
   type DestinoEmDestaque,
   type PropriedadePublica
 } from "../lib/marketplace/data";
-
-const HERO_FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1800&q=80";
 
 // A home precisa refletir hospedagens recem-publicadas sem cache antigo.
 export const dynamic = "force-dynamic";
@@ -81,24 +77,15 @@ export default async function MarketplaceHomePage() {
   const resultado = await carregarPropriedadesPublicas({ limite: 8 });
   const propriedades = resultado.propriedades;
   const destinos = obterDestinosEmDestaque(propriedades);
-  const destaque = propriedades[0] ?? null;
-  const heroImage = destaque?.coverImage?.url ?? HERO_FALLBACK_IMAGE;
   const propriedadesDestaque = propriedades.slice(0, 4);
 
   return (
     <PublicShell>
       <section className="relative isolate overflow-hidden border-b border-white/10 bg-slate-950 text-white">
-        <div className="absolute inset-0 -z-30">
-          <img
-            alt=""
-            className="h-full w-full object-cover"
-            src={heroImage}
-          />
-        </div>
-        <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,rgba(2,6,23,0.96)_0%,rgba(2,6,23,0.78)_42%,rgba(2,6,23,0.32)_100%)]" />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_72%_24%,rgba(34,211,238,0.26),transparent_30%),linear-gradient(180deg,rgba(2,6,23,0.08),rgba(2,6,23,0.92))]" />
+        <div className="absolute inset-0 -z-20 bg-[linear-gradient(135deg,#020617_0%,#06172a_52%,#020817_100%)]" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_22%,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_14%_82%,rgba(14,116,144,0.12),transparent_28%)]" />
 
-        <div className="mx-auto grid min-w-0 max-w-7xl gap-8 px-4 pb-10 pt-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-end lg:pb-16 lg:pt-16">
+        <div className="mx-auto grid min-w-0 max-w-7xl gap-8 px-4 pb-10 pt-10 sm:px-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)] lg:items-center lg:pb-14 lg:pt-14">
           <div className="min-w-0 max-w-4xl">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-50" tone="info">
@@ -109,7 +96,7 @@ export default async function MarketplaceHomePage() {
               </StatusBadge>
             </div>
 
-            <h1 className="mt-5 max-w-4xl break-words text-[2rem] font-semibold leading-[1.08] tracking-normal sm:text-6xl lg:text-7xl">
+            <h1 className="mt-5 max-w-3xl break-words text-[2rem] font-semibold leading-[1.08] tracking-normal sm:text-6xl lg:text-[4rem]">
               Hospedagens para sua proxima viagem.
             </h1>
             <p className="mt-5 max-w-2xl break-words text-base leading-7 text-cyan-50/82 sm:text-lg">
@@ -117,14 +104,12 @@ export default async function MarketplaceHomePage() {
               <br className="sm:hidden" /> Veja fotos, regras e fale direto com
               o anfitriao.
             </p>
-
-            <div className="mt-8 max-w-5xl">
-              <MarketplaceSearchCard />
-            </div>
           </div>
 
-          <div className="hidden lg:block">
-            <HeroPreview propriedade={destaque} />
+          <HeroInstitutionalPanel />
+
+          <div className="min-w-0 lg:col-span-2">
+            <MarketplaceSearchCard />
           </div>
         </div>
       </section>
@@ -154,8 +139,9 @@ export default async function MarketplaceHomePage() {
           <SectionHeader
             actionHref="/propriedades"
             actionLabel="Ver todas"
+            description="Veja algumas opcoes disponiveis no Hospedex."
             eyebrow="Hospedagens"
-            title="Destaques para sua proxima viagem"
+            title="Hospedagens em destaque"
           />
 
           {resultado.erro ? (
@@ -345,72 +331,49 @@ function SearchField({
   );
 }
 
-function HeroPreview({ propriedade }: { propriedade: PropriedadePublica | null }) {
-  if (!propriedade) {
-    return (
-      <GlassCard className="p-5 text-white">
-        <h2 className="text-xl font-semibold">Primeiras hospedagens em breve</h2>
-        <p className="mt-2 text-sm leading-6 text-cyan-50/70">
-          Quando houver casas publicadas, um destaque visual aparece aqui.
-        </p>
-      </GlassCard>
-    );
-  }
-
+function HeroInstitutionalPanel() {
   return (
-    <Link
-      className="group block overflow-hidden rounded-[2rem] border border-white/18 bg-slate-950/68 shadow-2xl shadow-cyan-950/35 backdrop-blur-xl"
-      href={`/propriedades/${propriedade.slug}`}
-    >
-      <div className="relative h-80 overflow-hidden">
-        {propriedade.coverImage ? (
-          <img
-            alt={propriedade.coverImage.alt}
-            className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-            src={propriedade.coverImage.url}
-          />
-        ) : (
-          <div className="h-full bg-cyan-500/10" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/18 to-transparent" />
-        <div className="absolute left-4 top-4 flex gap-2">
-          <StatusBadge className="bg-cyan-500/80 text-white" tone="info">
-            Destaque
-          </StatusBadge>
-          <StatusBadge className="bg-white/16 text-white" tone="neutral">
-            Reserva direta
-          </StatusBadge>
-        </div>
-        <span
-          aria-label="Favoritar hospedagem"
-          className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/16 text-white backdrop-blur transition hover:bg-white/24"
-        >
-          <Heart className="h-5 w-5" />
-        </span>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+      <InstitutionalCard
+        description="Fale com o anfitriao antes de confirmar sua estadia."
+        icon={<MessagesSquare />}
+        title="Reserva direta"
+      />
+      <InstitutionalCard
+        description="Fotos, regras, datas e valores reunidos em uma unica pagina."
+        icon={<CalendarDays />}
+        title="Hospedagens organizadas"
+      />
+      <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
+        <InstitutionalCard
+          description="Casas, pousadas e pequenos hoteis independentes em uma plataforma."
+          icon={<Building2 />}
+          title="Marketplace independente"
+        />
       </div>
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-semibold">{propriedade.name}</h2>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-cyan-50/75">
-              <MapPin className="h-4 w-4" />
-              {propriedade.locationLabel}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs text-cyan-50/60">A partir de</p>
-            <strong className="text-xl text-cyan-200">
-              {formatarPrecoCurto(propriedade.minPrice)}
-            </strong>
-          </div>
-        </div>
-        <div className="mt-5 grid grid-cols-3 gap-2 text-sm text-cyan-50/78">
-          <MiniMetric icon={<Users />} text={`${propriedade.maxGuests} hospedes`} />
-          <MiniMetric icon={<BedDouble />} text={`${propriedade.bedrooms} quartos`} />
-          <MiniMetric icon={<Star />} text="Anfitriao local" />
-        </div>
+    </div>
+  );
+}
+
+function InstitutionalCard({
+  description,
+  icon,
+  title
+}: {
+  description: string;
+  icon: ReactNode;
+  title: string;
+}) {
+  return (
+    <GlassCard className="flex h-full min-h-32 items-start gap-4 border-cyan-300/16 bg-slate-900/58 p-5 text-white shadow-xl shadow-cyan-950/15">
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300 [&_svg]:h-5 [&_svg]:w-5">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-base font-semibold">{title}</h2>
+        <p className="mt-2 text-sm leading-6 text-cyan-50/68">{description}</p>
       </div>
-    </Link>
+    </GlassCard>
   );
 }
 
@@ -501,11 +464,13 @@ function DestinationCard({ destino }: { destino: DestinoEmDestaque }) {
 function SectionHeader({
   actionHref,
   actionLabel,
+  description,
   eyebrow,
   title
 }: {
   actionHref?: string;
   actionLabel?: string;
+  description?: string;
   eyebrow: string;
   title: string;
 }) {
@@ -514,6 +479,9 @@ function SectionHeader({
       <div>
         <p className="text-xs font-bold uppercase tracking-normal text-cyan-300">{eyebrow}</p>
         <h2 className="mt-1 text-2xl font-semibold tracking-normal">{title}</h2>
+        {description ? (
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+        ) : null}
       </div>
       {actionHref && actionLabel ? (
         <Link className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-fit")} href={actionHref}>
@@ -522,15 +490,6 @@ function SectionHeader({
         </Link>
       ) : null}
     </div>
-  );
-}
-
-function MiniMetric({ icon, text }: { icon: ReactNode; text: string }) {
-  return (
-    <span className="flex items-center gap-1.5 rounded-xl border border-white/12 bg-white/8 px-2.5 py-2 text-xs">
-      <span className="text-cyan-200 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
-      {text}
-    </span>
   );
 }
 
