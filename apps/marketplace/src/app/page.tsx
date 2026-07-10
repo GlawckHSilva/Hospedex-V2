@@ -1,16 +1,17 @@
 import {
   ArrowRight,
   BadgeCheck,
+  BedDouble,
   Building2,
   CalendarDays,
   Heart,
   Hotel,
   House,
   MapPin,
-  MessagesSquare,
   Search,
   ShieldCheck,
   Sparkles,
+  Star,
   Users
 } from "lucide-react";
 import Link from "next/link";
@@ -85,61 +86,62 @@ export default async function MarketplaceHomePage() {
         <div className="absolute inset-0 -z-20 bg-[linear-gradient(135deg,#020617_0%,#06172a_52%,#020817_100%)]" />
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_22%,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_14%_82%,rgba(14,116,144,0.12),transparent_28%)]" />
 
-        <div className="mx-auto grid min-w-0 max-w-7xl gap-8 px-4 pb-10 pt-10 sm:px-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(360px,0.88fr)] lg:items-center lg:pb-14 lg:pt-14">
-          <div className="min-w-0 max-w-4xl">
-            <div className="flex flex-wrap items-center gap-2">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-14">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <StatusBadge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-50" tone="info">
                 Hospedagens verificadas
               </StatusBadge>
-              <StatusBadge className="hidden border-white/20 bg-white/12 text-white sm:inline-flex" tone="neutral">
+              <StatusBadge className="border-white/20 bg-white/12 text-white" tone="neutral">
                 Casas, pousadas e pequenos hoteis
               </StatusBadge>
             </div>
 
-            <h1 className="mt-5 max-w-3xl break-words text-[2rem] font-semibold leading-[1.08] tracking-normal sm:text-6xl lg:text-[4rem]">
-              Hospedagens para sua proxima viagem.
+            <h1 className="mt-5 break-words text-[2.35rem] font-semibold leading-[1.08] tracking-normal sm:text-5xl lg:text-[4rem]">
+              Hospedagens para sua <span className="text-cyan-300">proxima viagem.</span>
             </h1>
-            <p className="mt-5 max-w-2xl break-words text-base leading-7 text-cyan-50/82 sm:text-lg">
+            <p className="mx-auto mt-4 max-w-2xl break-words text-base leading-7 text-cyan-50/82 sm:text-lg">
               Busque casas, pousadas e hoteis independentes.
               <br className="sm:hidden" /> Veja fotos, regras e fale direto com
               o anfitriao.
             </p>
           </div>
 
-          <HeroInstitutionalPanel />
-
-          <div className="min-w-0 lg:col-span-2">
+          <div className="mx-auto mt-7 min-w-0 max-w-6xl">
             <MarketplaceSearchCard />
+          </div>
+
+          <div className="mx-auto mt-4 grid max-w-6xl gap-3 md:grid-cols-3">
+            {beneficios.map((beneficio) => {
+              const Icone = beneficio.icon;
+
+              return (
+                <GlassCard
+                  className="flex min-h-24 items-center gap-4 border-cyan-300/15 bg-slate-900/45 p-4 text-left text-white"
+                  key={beneficio.title}
+                >
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300">
+                    <Icone className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-semibold">{beneficio.title}</h2>
+                    <p className="mt-1 break-words text-sm leading-5 text-cyan-50/65">
+                      {beneficio.description}
+                    </p>
+                  </div>
+                </GlassCard>
+              );
+            })}
           </div>
         </div>
       </section>
 
       <main className="overflow-x-hidden bg-background">
-        <section className="mx-auto grid max-w-7xl gap-3 px-4 py-5 sm:px-6 lg:grid-cols-3">
-          {beneficios.map((beneficio) => {
-            const Icone = beneficio.icon;
-
-            return (
-              <GlassCard className="flex items-center gap-4 p-4" key={beneficio.title}>
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
-                  <Icone className="h-5 w-5" />
-                </span>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-semibold">{beneficio.title}</h2>
-                  <p className="mt-1 break-words text-sm leading-5 text-muted-foreground">
-                    {beneficio.description}
-                  </p>
-                </div>
-              </GlassCard>
-            );
-          })}
-        </section>
-
         <section className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
           <SectionHeader
             actionHref="/propriedades"
             actionLabel="Ver todas"
-            description="Veja algumas opcoes disponiveis no Hospedex."
+            description="Veja algumas opcoes disponiveis para sua proxima viagem."
             eyebrow="Hospedagens"
             title="Hospedagens em destaque"
           />
@@ -260,7 +262,7 @@ function MarketplaceSearchCard() {
   return (
     <form
       action="/propriedades"
-      className="grid w-full max-w-full gap-1 overflow-hidden rounded-[2rem] border border-cyan-300/18 bg-slate-950/55 p-2 shadow-2xl shadow-cyan-950/35 backdrop-blur-2xl lg:grid-cols-[minmax(0,1.25fr)_170px_170px_140px_auto] lg:items-center"
+      className="grid w-full max-w-full gap-1 overflow-hidden rounded-2xl border border-cyan-300/18 bg-slate-950/55 p-2 shadow-2xl shadow-cyan-950/35 backdrop-blur-2xl md:grid-cols-2 lg:grid-cols-[minmax(240px,1.35fr)_180px_180px_140px_auto] lg:items-center"
     >
       <SearchField
         icon={<MapPin className="h-5 w-5" />}
@@ -289,7 +291,7 @@ function MarketplaceSearchCard() {
         type="number"
       />
       <button
-        className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-[1.5rem] bg-cyan-400 px-6 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-300 lg:mt-0 lg:w-auto"
+        className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-300 md:col-span-2 lg:col-span-1 lg:mt-0 lg:w-auto"
         type="submit"
       >
         <Search className="h-4 w-4" />
@@ -331,52 +333,6 @@ function SearchField({
   );
 }
 
-function HeroInstitutionalPanel() {
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-      <InstitutionalCard
-        description="Fale com o anfitriao antes de confirmar sua estadia."
-        icon={<MessagesSquare />}
-        title="Reserva direta"
-      />
-      <InstitutionalCard
-        description="Fotos, regras, datas e valores reunidos em uma unica pagina."
-        icon={<CalendarDays />}
-        title="Hospedagens organizadas"
-      />
-      <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2">
-        <InstitutionalCard
-          description="Casas, pousadas e pequenos hoteis independentes em uma plataforma."
-          icon={<Building2 />}
-          title="Marketplace independente"
-        />
-      </div>
-    </div>
-  );
-}
-
-function InstitutionalCard({
-  description,
-  icon,
-  title
-}: {
-  description: string;
-  icon: ReactNode;
-  title: string;
-}) {
-  return (
-    <GlassCard className="flex h-full min-h-32 items-start gap-4 border-cyan-300/16 bg-slate-900/58 p-5 text-white shadow-xl shadow-cyan-950/15">
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300 [&_svg]:h-5 [&_svg]:w-5">
-        {icon}
-      </span>
-      <div className="min-w-0">
-        <h2 className="text-base font-semibold">{title}</h2>
-        <p className="mt-2 text-sm leading-6 text-cyan-50/68">{description}</p>
-      </div>
-    </GlassCard>
-  );
-}
-
 function PropertyShowcaseCard({ propriedade }: { propriedade: PropriedadePublica }) {
   return (
     <Link className="group block" href={`/propriedades/${propriedade.slug}`}>
@@ -415,6 +371,22 @@ function PropertyShowcaseCard({ propriedade }: { propriedade: PropriedadePublica
           <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
             {propriedade.headline}
           </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5" />
+              {propriedade.maxGuests} hospede{propriedade.maxGuests === 1 ? "" : "s"}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <BedDouble className="h-3.5 w-3.5" />
+              {propriedade.bedrooms} quarto{propriedade.bedrooms === 1 ? "" : "s"}
+            </span>
+            {propriedade.reviews.average ? (
+              <span className="inline-flex items-center gap-1 text-amber-300">
+                <Star className="h-3.5 w-3.5 fill-current" />
+                {propriedade.reviews.average.toFixed(1)}
+              </span>
+            ) : null}
+          </div>
           <div className="flex items-end justify-between gap-3 border-t border-border pt-3">
             <div>
               <p className="text-xs text-muted-foreground">A partir de</p>
