@@ -3,19 +3,20 @@ import type { ReactNode } from "react";
 import {
   Building2,
   CalendarDays,
+  CheckCircle2,
+  Clock3,
   Eye,
   Filter,
   Home,
   Layers3,
   Lock,
-  MapPin,
-  Phone,
+  Plus,
   Power,
   Search,
   UserRound
 } from "lucide-react";
 
-import { Badge, Input, Label, StatusBadge } from "@hospedex/ui";
+import { cn, FadeIn, Input, Label, StatusBadge } from "@hospedex/ui";
 
 import {
   alterarStatusProprietarioAction,
@@ -34,6 +35,7 @@ import { ActionButton } from "../../management/action-button";
 import { ConfirmDialog, EntityModal, EntityViewModal } from "../../management/entity-modal";
 import { EmptyState } from "../../management/entity-card";
 import { ProprietarioDetails } from "../proprietarios/proprietario-details";
+import { ProprietarioForm } from "../proprietarios/proprietario-form";
 import {
   formatarData,
   labelLicenca,
@@ -70,88 +72,119 @@ export function EmpreendimentosModule({
   featureFlags,
   filtros,
   metricas,
+  opcoesCidades,
+  opcoesProprietarios,
   planFeatures,
   planos,
   sucesso
 }: EmpreendimentosModuleProps) {
   return (
-    <div className="space-y-5">
+    <FadeIn className="space-y-5">
       <ModuleToast erro={erro} mensagensSucesso={MENSAGENS_SUCESSO} sucesso={sucesso} />
 
-      <section className="admin-glass-panel p-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <Badge variant="info">Super Admin</Badge>
-            <h1 className="mt-3 text-2xl font-semibold tracking-normal">Empreendimentos</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Controle tenants, licencas, modulos liberados e uso operacional por proprietario.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {metricas.map((metrica) => (
-              <Resumo key={metrica.label} {...metrica} />
-            ))}
-          </div>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-normal">Empreendimentos</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Gerencie todos os empreendimentos do sistema.
+          </p>
         </div>
-      </section>
-
-      <form className="admin-glass-card grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-[1fr_160px_180px_180px_190px_170px_auto] xl:items-end">
-        <div className="grid gap-2">
-          <Label htmlFor="busca">Busca</Label>
-          <Input
-            defaultValue={filtros.busca}
-            id="busca"
-            name="busca"
-            placeholder="Empreendimento, proprietario ou e-mail"
+        <EntityModal
+          description="Crie o proprietario e vincule tenant, plano, licenca e modulos iniciais."
+          eyebrow="Super Admin"
+          size="xl"
+          title="Novo empreendimento"
+          triggerAction="edit"
+          triggerClassName="w-full sm:w-auto"
+          triggerIcon={<Plus />}
+          triggerLabel="Novo empreendimento"
+          triggerSize="md"
+        >
+          <ProprietarioForm
+            featureFlags={featureFlags}
+            modo="criar"
+            planFeatures={planFeatures}
+            planos={planos}
           />
+        </EntityModal>
+      </header>
+
+      <form className="admin-glass-card space-y-4 p-4">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-[170px_170px_minmax(180px,1fr)_170px_minmax(230px,1.2fr)_auto] 2xl:items-end">
+          <CampoSelect label="Plano" name="plano" value={filtros.plano}>
+            <option value="todos">Todos os planos</option>
+            {planos.map((plano) => (
+              <option key={plano.id} value={plano.id}>{plano.name}</option>
+            ))}
+          </CampoSelect>
+          <CampoSelect label="Status" name="status" value={filtros.status}>
+            <option value="todos">Todos os status</option>
+            <option value="active">Ativo</option>
+            <option value="trial">Trial</option>
+            <option value="past_due">Pendente</option>
+            <option value="suspended">Bloqueado</option>
+            <option value="cancelled">Cancelado</option>
+          </CampoSelect>
+          <CampoSelect label="Proprietario" name="proprietario" value={filtros.proprietario}>
+            <option value="todos">Todos os proprietarios</option>
+            {opcoesProprietarios.map((proprietario) => (
+              <option key={proprietario.id} value={proprietario.id}>{proprietario.nome}</option>
+            ))}
+          </CampoSelect>
+          <CampoSelect label="Cidade" name="cidade" value={filtros.cidade}>
+            <option value="todas">Todas as cidades</option>
+            {opcoesCidades.map((cidade) => (
+              <option key={cidade} value={cidade}>{cidade}</option>
+            ))}
+          </CampoSelect>
+          <div className="grid gap-2">
+            <Label htmlFor="busca">Busca</Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                defaultValue={filtros.busca}
+                id="busca"
+                name="busca"
+                placeholder="Buscar empreendimento..."
+              />
+            </div>
+          </div>
+          <ActionButton icon={<Search />} size="md" type="submit" variant="view">Filtrar</ActionButton>
         </div>
-        <CampoSelect label="Status" name="status" value={filtros.status}>
-          <option value="todos">Todos</option>
-          <option value="active">Ativo</option>
-          <option value="trial">Trial</option>
-          <option value="past_due">Pendente</option>
-          <option value="suspended">Bloqueado</option>
-          <option value="cancelled">Cancelado</option>
-        </CampoSelect>
-        <CampoSelect label="Plano" name="plano" value={filtros.plano}>
-          <option value="todos">Todos</option>
-          {planos.map((plano) => (
-            <option key={plano.id} value={plano.id}>
-              {plano.name}
-            </option>
-          ))}
-        </CampoSelect>
-        <CampoSelect label="Licenca" name="licenca" value={filtros.licenca}>
-          <option value="todas">Todas</option>
-          <option value="active">Ativa</option>
-          <option value="trial">Trial</option>
-          <option value="expired">Vencida</option>
-          <option value="suspended">Bloqueada</option>
-          <option value="cancelled">Cancelada</option>
-          <option value="sem_licenca">Sem licenca</option>
-        </CampoSelect>
-        <CampoSelect label="Modulo" name="modulo" value={filtros.modulo}>
-          <option value="todos">Todos</option>
-          {featureFlags.map((flag) => (
-            <option key={flag.id} value={flag.id}>
-              {labelModulo(flag.key)}
-            </option>
-          ))}
-        </CampoSelect>
-        <CampoSelect label="Ordenar" name="ordenacao" value={filtros.ordenacao}>
-          <option value="recentes">Mais recentes</option>
-          <option value="antigos">Mais antigos</option>
-          <option value="nome">Nome</option>
-          <option value="mais_casas">Mais casas</option>
-          <option value="licenca_vencendo">Licenca vencendo</option>
-        </CampoSelect>
-        <ActionButton icon={<Search />} type="submit" variant="settings">
-          Filtrar
-        </ActionButton>
+
+        <div className="grid gap-3 border-t border-cyan-300/10 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+          <CampoSelect label="Licenca" name="licenca" value={filtros.licenca}>
+            <option value="todas">Todas as licencas</option>
+            <option value="active">Ativa</option>
+            <option value="trial">Trial</option>
+            <option value="expired">Vencida</option>
+            <option value="suspended">Bloqueada</option>
+            <option value="cancelled">Cancelada</option>
+            <option value="sem_licenca">Sem licenca</option>
+          </CampoSelect>
+          <CampoSelect label="Modulo" name="modulo" value={filtros.modulo}>
+            <option value="todos">Todos os modulos</option>
+            {featureFlags.map((flag) => (
+              <option key={flag.id} value={flag.id}>{labelModulo(flag.key)}</option>
+            ))}
+          </CampoSelect>
+          <CampoSelect label="Ordenar" name="ordenacao" value={filtros.ordenacao}>
+            <option value="recentes">Mais recentes</option>
+            <option value="antigos">Mais antigos</option>
+            <option value="nome">Nome</option>
+            <option value="mais_casas">Mais casas</option>
+            <option value="licenca_vencendo">Licenca vencendo</option>
+          </CampoSelect>
+        </div>
       </form>
 
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {metricas.map((metrica) => <Resumo key={metrica.label} {...metrica} />)}
+      </section>
+
       {empreendimentos.length ? (
-        <section className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <section className="grid gap-4 xl:grid-cols-2">
           {empreendimentos.map((empreendimento) => (
             <CardEmpreendimento
               empreendimento={empreendimento}
@@ -163,19 +196,12 @@ export function EmpreendimentosModule({
         </section>
       ) : (
         <EmptyState
-          action={
-            <Link href="/super-admin/proprietarios">
-              <ActionButton icon={<Building2 />} variant="add">
-                Criar proprietario
-              </ActionButton>
-            </Link>
-          }
-          description="Nenhum empreendimento encontrado para os filtros atuais."
+          description={temFiltroAtivo(filtros) ? "Nenhum empreendimento corresponde aos filtros aplicados." : "Nenhum empreendimento encontrado."}
           icon={<Filter />}
           title="Nenhum empreendimento encontrado"
         />
       )}
-    </div>
+    </FadeIn>
   );
 }
 
@@ -196,82 +222,67 @@ function CardEmpreendimento({
     : 0;
 
   return (
-    <article className="admin-glass-card flex min-h-full flex-col overflow-hidden p-4">
-      <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-500/10 text-cyan-200">
-          <Building2 className="h-6 w-6" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-lg font-semibold">{empreendimento.tenant.name}</h2>
-            <StatusBadge tone={toneTenant(empreendimento.tenant.status)}>
-              {labelTenant(empreendimento.tenant.status)}
-            </StatusBadge>
+    <article
+      className={cn(
+        "admin-glass-card flex min-h-full flex-col overflow-hidden",
+        !ativo && "border-rose-500/45"
+      )}
+    >
+      <div className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1.3fr)_minmax(120px,.7fr)_minmax(150px,1fr)] sm:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className={cn("flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border", classeAvatar(empreendimento.tenant.status))}>
+            <Building2 className="h-7 w-7" />
           </div>
-          <p className="mt-1 truncate text-sm text-muted-foreground">
-            Proprietario: {empreendimento.profile?.full_name ?? "Sem nome"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <InfoCompacta label="Plano" valor={empreendimento.plan?.name ?? "Sem plano"} />
-        <InfoCompacta
-          label="Licenca"
-          valor={empreendimento.license ? labelLicenca(empreendimento.license.status) : "Sem licenca"}
-        />
-        <InfoCompacta label="Modulos" valor={`${modulosAtivos.length} liberados`} />
-        <InfoCompacta label="Localizacao" valor={localidadeEmpreendimento(empreendimento)} />
-        <InfoCompacta label="Criado em" valor={formatarData(empreendimento.tenant.created_at)} />
-        <InfoCompacta label="Atualizado em" valor={formatarData(empreendimento.tenant.updated_at)} />
-      </div>
-
-      <div className="mt-4 rounded-xl border bg-background/40 p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs text-muted-foreground">Casas cadastradas</p>
-            <p className="mt-1 text-lg font-semibold">
-              {empreendimento.operacao.casasUsadas}/{limiteCasas}
-            </p>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-lg font-semibold">{empreendimento.tenant.name}</h2>
+              <StatusBadge tone={toneTenant(empreendimento.tenant.status)}>{labelTenant(empreendimento.tenant.status)}</StatusBadge>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">Proprietario</p>
+            <p className="truncate text-sm font-medium">{empreendimento.profile?.full_name ?? "Sem nome"}</p>
           </div>
-          <Home className="h-5 w-5 text-cyan-300" />
         </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-cyan-950/40">
-          <div className="h-full rounded-full bg-cyan-400" style={{ width: `${percentualCasas}%` }} />
+
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">Plano</p>
+          <p className="mt-1 truncate text-sm font-medium">{empreendimento.plan?.name ?? "Sem plano"}</p>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">{percentualCasas}% do limite utilizado</p>
+
+        <div className="min-w-0">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Home className="h-4 w-4 text-cyan-300" />
+              <p className="text-sm font-semibold">{empreendimento.operacao.casasUsadas}/{limiteCasas} casas</p>
+            </div>
+            <span className="text-xs text-muted-foreground">{percentualCasas}%</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cyan-950/60">
+            <div className="h-full rounded-full bg-cyan-400 transition-[width]" style={{ width: `${percentualCasas}%` }} />
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">do limite utilizado</p>
+        </div>
       </div>
 
-      <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-        <p className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-cyan-300" />
-          {localidadeEmpreendimento(empreendimento)}
-        </p>
-        <p className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-cyan-300" />
-          {contatoEmpreendimento(empreendimento)}
-        </p>
-        <p className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-cyan-300" />
-          Tenant atualizado em {formatarData(empreendimento.tenant.updated_at)}
-        </p>
+      <div className="grid border-y border-cyan-300/10 bg-background/20 sm:grid-cols-3">
+        <DadoSecundario icon={<CalendarDays />} label="Criado em" valor={formatarData(empreendimento.tenant.created_at)} />
+        <DadoSecundario icon={<Layers3 />} label="Modulos" valor={`${modulosAtivos.length} liberados`} />
+        <DadoSecundario icon={<Clock3 />} label="Atualizado em" valor={formatarData(empreendimento.tenant.updated_at)} />
       </div>
 
-      <div className="mt-auto pt-4">
+      <div className="mt-auto grid gap-2 p-3 sm:grid-cols-2 2xl:grid-cols-5">
         <EntityViewModal
           description="Casas cadastradas neste tenant, sem editar dados do proprietario."
           title={`Casas de ${empreendimento.tenant.name}`}
+          triggerClassName="w-full"
           triggerIcon={<Home />}
-          triggerLabel="Ver casas deste empreendimento"
+          triggerLabel="Casas"
         >
           <CasasDoEmpreendimento abrirInicialmente empreendimento={empreendimento} />
         </EntityViewModal>
-      </div>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <EntityViewModal
           description="Identificacao, licenca, modulos e operacao do tenant."
           title={empreendimento.tenant.name}
+          triggerClassName="w-full"
           triggerIcon={<Eye />}
           triggerLabel="Detalhes"
         >
@@ -287,6 +298,7 @@ function CardEmpreendimento({
           eyebrow="Modulos"
           title={`Modulos de ${empreendimento.tenant.name}`}
           triggerAction="settings"
+          triggerClassName="w-full"
           triggerIcon={<Layers3 />}
           triggerLabel="Modulos"
         >
@@ -298,7 +310,7 @@ function CardEmpreendimento({
         </EntityModal>
 
         <Link href={`/super-admin/proprietarios?busca=${encodeURIComponent(empreendimento.profile?.email ?? empreendimento.tenant.name)}`}>
-          <ActionButton icon={<UserRound />} variant="view">
+          <ActionButton className="w-full" icon={<UserRound />} variant="view">
             Proprietario
           </ActionButton>
         </Link>
@@ -307,6 +319,7 @@ function CardEmpreendimento({
           description={ativo ? "O proprietario perdera acesso operacional ao tenant." : "O tenant voltara ao status ativo."}
           title={ativo ? "Bloquear empreendimento" : "Reativar empreendimento"}
           triggerAction="status"
+          triggerClassName="w-full"
           triggerIcon={ativo ? <Lock /> : <Power />}
           triggerLabel={ativo ? "Bloquear" : "Reativar"}
         >
@@ -421,11 +434,16 @@ function CampoSelect({
 
 function Resumo({ detalhe, label, tone, valor }: DadosModuloEmpreendimentos["metricas"][number]) {
   return (
-    <div className="min-w-36 rounded-xl border bg-background/55 p-3 text-sm">
-      <StatusBadge tone={tone}>{label}</StatusBadge>
-      <p className="mt-3 text-2xl font-semibold">{valor}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{detalhe}</p>
-    </div>
+    <article className="admin-glass-card flex min-h-24 items-center gap-3 p-4">
+      <div className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border", classeResumo(tone))}>
+        {iconeResumo(label)}
+      </div>
+      <div className="min-w-0">
+        <p className="truncate text-xs text-muted-foreground">{label}</p>
+        <p className="mt-1 text-2xl font-semibold leading-none">{valor}</p>
+        <p className="mt-2 truncate text-xs text-muted-foreground">{detalhe}</p>
+      </div>
+    </article>
   );
 }
 
@@ -438,11 +456,14 @@ function Info({ label, valor }: { label: string; valor: string }) {
   );
 }
 
-function InfoCompacta({ label, valor }: { label: string; valor: string }) {
+function DadoSecundario({ icon, label, valor }: { icon: ReactNode; label: string; valor: string }) {
   return (
-    <div className="min-w-0 rounded-xl border bg-background/35 p-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 truncate text-sm font-semibold">{valor}</p>
+    <div className="flex min-w-0 items-center gap-3 border-b border-cyan-300/10 p-3 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0">
+      <span className="text-cyan-300 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-medium">{valor}</p>
+      </div>
     </div>
   );
 }
@@ -454,8 +475,37 @@ function localidadeEmpreendimento(empreendimento: EmpreendimentoCompleto) {
   return cidade || estado || "Localizacao nao informada";
 }
 
-function contatoEmpreendimento(empreendimento: EmpreendimentoCompleto) {
-  return empreendimento.profile?.phone?.trim() || empreendimento.profile?.email || "Contato nao informado";
+function iconeResumo(label: string) {
+  if (label === "Empreendimentos ativos") return <CheckCircle2 className="h-6 w-6" />;
+  if (label === "Em periodo trial") return <Clock3 className="h-6 w-6" />;
+  if (label === "Bloqueados") return <Lock className="h-6 w-6" />;
+  if (label === "Modulos liberados") return <Layers3 className="h-6 w-6" />;
+  return <Building2 className="h-6 w-6" />;
+}
+
+function classeResumo(tone: DadosModuloEmpreendimentos["metricas"][number]["tone"]) {
+  if (tone === "success") return "border-emerald-400/20 bg-emerald-500/10 text-emerald-300";
+  if (tone === "warning") return "border-amber-400/20 bg-amber-500/10 text-amber-300";
+  if (tone === "danger") return "border-rose-400/20 bg-rose-500/10 text-rose-300";
+  return "border-cyan-300/20 bg-cyan-500/10 text-cyan-300";
+}
+
+function classeAvatar(status: EmpreendimentoCompleto["tenant"]["status"]) {
+  if (status === "trial" || status === "past_due") return "border-amber-400/20 bg-amber-500/10 text-amber-300";
+  if (status === "suspended" || status === "cancelled") return "border-rose-400/20 bg-rose-500/10 text-rose-300";
+  return "border-cyan-300/20 bg-cyan-500/10 text-cyan-300";
+}
+
+function temFiltroAtivo(filtros: DadosModuloEmpreendimentos["filtros"]) {
+  return Boolean(
+    filtros.busca ||
+    filtros.cidade !== "todas" ||
+    filtros.licenca !== "todas" ||
+    filtros.modulo !== "todos" ||
+    filtros.plano !== "todos" ||
+    filtros.proprietario !== "todos" ||
+    filtros.status !== "todos"
+  );
 }
 
 function toneTenant(status: EmpreendimentoCompleto["tenant"]["status"]) {

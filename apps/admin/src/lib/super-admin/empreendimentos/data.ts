@@ -23,10 +23,12 @@ import type {
 
 export type FiltrosEmpreendimentos = {
   busca: string;
+  cidade: string;
   licenca: string;
   modulo: string;
   ordenacao: "recentes" | "antigos" | "nome" | "mais_casas" | "licenca_vencendo";
   plano: string;
+  proprietario: string;
   status: TenantStatus | "todos";
 };
 
@@ -76,6 +78,8 @@ export type DadosModuloEmpreendimentos = Pick<
   empreendimentos: EmpreendimentoCompleto[];
   filtros: FiltrosEmpreendimentos;
   metricas: MetricaEmpreendimento[];
+  opcoesCidades: string[];
+  opcoesProprietarios: Array<{ id: string; nome: string }>;
 };
 
 const STATUS_TENANT: Array<FiltrosEmpreendimentos["status"]> = [
@@ -112,7 +116,17 @@ export async function carregarDadosEmpreendimentos(
     empreendimentos,
     featureFlags: base.featureFlags,
     filtros,
-    metricas: montarMetricas(todos),
+    metricas: montarMetricas(todos, base.featureFlags, base.planFeatures),
+    opcoesCidades: [...new Set(todos.map((item) => item.profile?.city?.trim()).filter(Boolean) as string[])].sort(
+      (a, b) => a.localeCompare(b, "pt-BR")
+    ),
+    opcoesProprietarios: [...new Map(todos.map((item) => [
+      item.tenant.owner_id,
+      {
+        id: item.tenant.owner_id,
+        nome: item.profile?.full_name?.trim() || item.tenant.name
+      }
+    ])).values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
     planFeatures: base.planFeatures,
     planos: base.planos
   };
@@ -126,12 +140,14 @@ function normalizarFiltros(
 
   return {
     busca: lerParametro(params, "busca"),
+    cidade: lerParametro(params, "cidade") || "todas",
     licenca: lerParametro(params, "licenca") || "todas",
     modulo: lerParametro(params, "modulo") || "todos",
     ordenacao: ["recentes", "antigos", "nome", "mais_casas", "licenca_vencendo"].includes(ordenacao)
       ? (ordenacao as FiltrosEmpreendimentos["ordenacao"])
       : "recentes",
     plano: lerParametro(params, "plano") || "todos",
+    proprietario: lerParametro(params, "proprietario") || "todos",
     status: STATUS_TENANT.includes(status as FiltrosEmpreendimentos["status"])
       ? (status as FiltrosEmpreendimentos["status"])
       : "todos"
@@ -250,6 +266,11 @@ function passaNosFiltros(
 ) {
   if (filtros.status !== "todos" && empreendimento.tenant.status !== filtros.status) return false;
   if (filtros.plano !== "todos" && empreendimento.plan?.id !== filtros.plano) return false;
+  if (filtros.proprietario !== "todos" && empreendimento.tenant.owner_id !== filtros.proprietario) return false;
+  if (
+    filtros.cidade !== "todas" &&
+    empreendimento.profile?.city?.trim().toLocaleLowerCase("pt-BR") !== filtros.cidade.toLocaleLowerCase("pt-BR")
+  ) return false;
   if (filtros.licenca !== "todas" && (empreendimento.license?.status ?? "sem_licenca") !== filtros.licenca) {
     return false;
   }
@@ -265,6 +286,8 @@ function passaNosFiltros(
     empreendimento.tenant.name,
     empreendimento.profile?.full_name,
     empreendimento.profile?.email,
+    empreendimento.profile?.city,
+    empreendimento.profile?.state,
     empreendimento.plan?.name
   ]
     .filter(Boolean)
@@ -289,27 +312,33 @@ function ordenarEmpreendimentos(
   });
 }
 
-function montarMetricas(empreendimentos: EmpreendimentoCompleto[]): MetricaEmpreendimento[] {
+function montarMetricas(
+  empreendimentos: EmpreendimentoCompleto[],
+  featureFlags: FeatureFlagRow[],
+  planFeatures: DadosModuloProprietarios["planFeatures"]
+): MetricaEmpreendimento[] {
   const ativos = empreendimentos.filter((item) => item.tenant.status === "active").length;
+  const trials = empreendimentos.filter((item) => item.tenant.status === "trial").length;
   const bloqueados = empreendimentos.filter((item) =>
     ["suspended", "cancelled"].includes(item.tenant.status)
   ).length;
-  const vencendo = empreendimentos.filter((item) => licencaVencendo(item.license?.expires_at)).length;
-  const casasUsadas = empreendimentos.reduce((total, item) => total + item.operacao.casasUsadas, 0);
-  const casasLimite = empreendimentos.reduce((total, item) => total + item.operacao.casasLimite, 0);
+  const modulosLiberados = empreendimentos.reduce(
+    (total, item) => total + featureFlags.filter((flag) => moduloEstaAtivo(item, flag, planFeatures)).length,
+    0
+  );
 
   return [
-    metrica("Total", empreendimentos.length, "Empreendimentos cadastrados", "info"),
-    metrica("Ativos", ativos, "Tenants operacionais", "success"),
+    metrica("Total de empreendimentos", empreendimentos.length, "Todos os registros", "info"),
+    metrica("Empreendimentos ativos", ativos, detalhePercentual(ativos, empreendimentos.length), "success"),
+    metrica("Em periodo trial", trials, detalhePercentual(trials, empreendimentos.length), "warning"),
     metrica("Bloqueados", bloqueados, "Suspensos ou cancelados", "danger"),
-    metrica("Licencas vencendo", vencendo, "Proximos 30 dias", "warning"),
-    {
-      detalhe: "Casas usadas / limite",
-      label: "Uso de casas",
-      tone: "neutral",
-      valor: `${Intl.NumberFormat("pt-BR").format(casasUsadas)}/${Intl.NumberFormat("pt-BR").format(casasLimite)}`
-    }
+    metrica("Modulos liberados", modulosLiberados, "Total no sistema", "info")
   ];
+}
+
+function detalhePercentual(valor: number, total: number) {
+  const percentual = total > 0 ? Math.round((valor / total) * 1000) / 10 : 0;
+  return `${Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(percentual)}% do total`;
 }
 
 export function moduloEstaAtivo(
@@ -375,15 +404,6 @@ function montarEndereco(endereco: Record<string, JsonValue>) {
   ]
     .filter(Boolean)
     .join(", ");
-}
-
-function licencaVencendo(data: string | null | undefined) {
-  if (!data) return false;
-  const hoje = new Date();
-  const limite = new Date();
-  limite.setDate(hoje.getDate() + 30);
-  const alvo = new Date(`${data}T00:00:00`);
-  return alvo >= hoje && alvo <= limite;
 }
 
 function dataOrdenavel(data: string | null | undefined) {
