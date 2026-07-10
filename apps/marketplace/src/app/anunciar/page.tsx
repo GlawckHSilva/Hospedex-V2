@@ -132,7 +132,12 @@ const passos = [
   "Aprove, acompanhe pagamento, check-in e check-out pelo painel."
 ] as const;
 
-export default async function AnunciarPage() {
+export default async function AnunciarPage({
+  searchParams
+}: {
+  searchParams: Promise<{ aviso?: string }>;
+}) {
+  const { aviso } = await searchParams;
   const planos = await carregarPlanosComerciais();
 
   return (
@@ -154,7 +159,7 @@ export default async function AnunciarPage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Link
                 className={cn(buttonVariants({ size: "lg" }), "justify-center")}
-                href="https://hospedex.vercel.app/cadastro"
+                href="#planos"
               >
                 Começar agora
                 <ArrowRight className="h-4 w-4" />
@@ -166,6 +171,11 @@ export default async function AnunciarPage() {
                 Ver assinaturas
               </Link>
             </div>
+            {aviso ? (
+              <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+                {aviso}
+              </p>
+            ) : null}
           </FadeIn>
           <PainelPreview />
         </div>
@@ -289,7 +299,7 @@ export default async function AnunciarPage() {
                     buttonVariants({ size: "lg", variant: plano.destaque ? "default" : "outline" }),
                     "mt-6 w-full justify-center"
                   )}
-                  href="https://hospedex.vercel.app/cadastro"
+                  href={`/anunciar/cadastro?plan=${encodeURIComponent(plano.codigo)}`}
                 >
                   Assinar {plano.nome}
                 </Link>
