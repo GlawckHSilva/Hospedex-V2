@@ -163,20 +163,23 @@ export default async function MarketplaceHomePage() {
           </div>
         </section>
 
-        <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[0.9fr_1.35fr]">
-          <div>
-            <SectionHeader
-              actionHref="/propriedades"
-              actionLabel="Explorar"
-              eyebrow="Destinos"
-              title="Cidades com hospedagens publicadas"
-            />
-            <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-              Atalhos visuais para encontrar rapidamente hospedagens por cidade.
-            </p>
-          </div>
+        <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <SectionHeader
+            actionHref="/propriedades"
+            actionLabel="Ver todos"
+            description="Encontre hospedagens por cidade."
+            eyebrow="Destinos"
+            title="Cidades com hospedagens publicadas"
+          />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div
+            className={cn(
+              "mt-5 grid gap-3",
+              destinos.length > 1 && "sm:grid-cols-2",
+              destinos.length > 2 && "lg:grid-cols-3",
+              destinos.length > 3 && "xl:grid-cols-4"
+            )}
+          >
             {destinos.length ? (
               destinos.slice(0, 4).map((destino) => (
                 <DestinationCard destino={destino} key={`${destino.cidade}-${destino.estado}`} />
@@ -190,9 +193,10 @@ export default async function MarketplaceHomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-5 sm:px-6" id="categorias">
-          <SectionHeader eyebrow="Categorias" title="Escolha o tipo de hospedagem" />
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
+        <section className="mt-3 border-t border-border/70 bg-card/20" id="categorias">
+          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+            <SectionHeader eyebrow="Categorias" title="Escolha o tipo de hospedagem" />
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
             {categoriasMarketplace.map((categoria) => {
               const Icone = categoria.icon;
 
@@ -216,6 +220,7 @@ export default async function MarketplaceHomePage() {
                 </Link>
               );
             })}
+            </div>
           </div>
         </section>
 
@@ -407,27 +412,27 @@ function PropertyShowcaseCard({ propriedade }: { propriedade: PropriedadePublica
 function DestinationCard({ destino }: { destino: DestinoEmDestaque }) {
   return (
     <Link
-      className="group relative min-h-48 overflow-hidden rounded-[1.75rem] border border-border bg-card"
+      className="group relative overflow-hidden rounded-2xl border border-border bg-card/72 p-5 shadow-sm transition duration-300 hover:border-cyan-300/40 hover:bg-cyan-400/5 hover:shadow-lg hover:shadow-cyan-950/10"
       href={`/propriedades?cidade=${encodeURIComponent(destino.cidade)}`}
     >
-      {destino.imagem ? (
-        <img
-          alt={`Hospedagem em ${destino.cidade}`}
-          className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-          loading="lazy"
-          src={destino.imagem.url}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-cyan-500/10" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/28 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-        <h3 className="text-xl font-semibold">{destino.cidade}</h3>
-        <p className="mt-1 text-sm text-cyan-50/76">{destino.estado}</p>
-        <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/14 px-3 py-1 text-xs font-semibold backdrop-blur">
-          {destino.total} hospedagem{destino.total === 1 ? "" : "s"}
-          <ArrowRight className="h-3.5 w-3.5" />
-        </p>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_10%,rgba(34,211,238,0.12),transparent_42%)]" />
+      <div className="relative flex min-h-32 flex-col">
+        <div className="flex items-start justify-between gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300">
+            <MapPin className="h-5 w-5" />
+          </span>
+          <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-cyan-300" />
+        </div>
+        <div className="mt-5">
+          <h3 className="line-clamp-1 text-lg font-semibold">{destino.cidade}</h3>
+          <p className="mt-1 text-sm font-medium text-cyan-300">{destino.estado}</p>
+        </div>
+        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
+          <span className="text-muted-foreground">
+            {destino.total} hospedagem{destino.total === 1 ? "" : "s"}
+          </span>
+          <span className="font-semibold text-cyan-300">Explorar</span>
+        </div>
       </div>
     </Link>
   );
