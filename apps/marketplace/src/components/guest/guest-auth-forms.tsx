@@ -17,7 +17,7 @@ export function GuestLoginCard({
   mensagem: string | null;
 }) {
   return (
-    <GlassCard className="mx-auto w-full max-w-md p-6 shadow-2xl shadow-cyan-950/20">
+    <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-md">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
         Area do Hospede
       </p>
@@ -66,7 +66,7 @@ export function GuestSignupCard({
   mensagem: string | null;
 }) {
   return (
-    <GlassCard className="mx-auto w-full max-w-lg p-6 shadow-2xl shadow-cyan-950/20">
+    <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-lg">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
         Area do Hospede
       </p>
@@ -122,8 +122,10 @@ function CampoIcone({
 }) {
   return (
     <div className="relative">
-      <Icone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <div className="[&_input]:pl-10">{children}</div>
+      <Icone className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-cyan-200/80" />
+      <div className="[&_input]:border-cyan-200/20 [&_input]:bg-slate-950/70 [&_input]:pl-10 [&_input]:text-slate-100 [&_input]:placeholder:text-slate-300/70">
+        {children}
+      </div>
     </div>
   );
 }

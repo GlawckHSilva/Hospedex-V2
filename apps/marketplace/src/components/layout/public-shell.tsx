@@ -18,8 +18,8 @@ export function PublicShell({ children }: PublicShellProps) {
       <TopNav
         actions={
           <div className="flex shrink-0 items-center gap-2">
-            <MobileMarketplaceMenu />
             <GuestAccountMenu />
+            <MobileMarketplaceMenu />
           </div>
         }
         brand={<MarketplaceBrand />}
