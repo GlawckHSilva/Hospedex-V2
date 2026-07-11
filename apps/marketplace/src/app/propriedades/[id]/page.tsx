@@ -227,18 +227,21 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
         <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
       ) : null}
 
+      <div className="absolute inset-x-0 top-5 z-10 mx-auto max-w-[1480px] px-4 sm:top-8 sm:px-6 lg:top-10">
+        <FadeIn className="flex max-w-full items-center gap-2">
+          <ShareButton compact />
+          <button
+            aria-label="Salvar hospedagem"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/15 bg-black/36 text-white backdrop-blur-xl transition hover:border-cyan-300/45 hover:text-cyan-200 sm:h-10 sm:w-10"
+            type="button"
+          >
+            <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
+          </button>
+        </FadeIn>
+      </div>
+
       <div className="mx-auto flex min-h-[560px] max-w-[1480px] flex-col justify-end px-4 pb-28 pt-24 text-white sm:min-h-[620px] sm:px-6 sm:pb-40 lg:min-h-[720px] lg:pb-60">
         <FadeIn className="max-w-5xl">
-          <div className="mb-20 grid max-w-full grid-cols-[minmax(0,1fr)_44px] gap-2 sm:mb-28 sm:flex sm:flex-wrap sm:gap-3 lg:mb-40">
-            <ShareButton />
-            <button
-              aria-label="Salvar hospedagem"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/15 bg-black/32 text-white backdrop-blur-xl transition hover:border-cyan-300/45 hover:text-cyan-200"
-              type="button"
-            >
-              <Heart className="h-5 w-5" />
-            </button>
-          </div>
           <div className="flex max-w-full flex-wrap gap-2">
             <StatusBadge tone="success">Casa publicada</StatusBadge>
             <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>

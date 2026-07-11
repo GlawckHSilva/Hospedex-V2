@@ -5,7 +5,11 @@ import { useState } from "react";
 
 import { Button } from "@hospedex/ui";
 
-export function ShareButton() {
+export type ShareButtonProps = {
+  compact?: boolean;
+};
+
+export function ShareButton({ compact = false }: ShareButtonProps) {
   const [copiado, setCopiado] = useState(false);
 
   async function compartilhar() {
@@ -27,21 +31,33 @@ export function ShareButton() {
   }
 
   return (
-    <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-none sm:gap-3">
+    <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-none">
       <Button
-        className="min-w-0 px-2 text-xs sm:flex-none sm:px-4 sm:text-sm"
+        className={
+          compact
+            ? "h-9 min-w-0 rounded-xl px-2 text-[11px] sm:h-10 sm:flex-none sm:px-3 sm:text-xs"
+            : "min-w-0 px-2 text-xs sm:flex-none sm:px-4 sm:text-sm"
+        }
         onClick={compartilhar}
         variant="outline"
       >
-        <Share2 className="h-4 w-4" />
+        <Share2 className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
         Compartilhar
       </Button>
       <Button
-        className="min-w-0 px-2 text-xs sm:flex-none sm:px-4 sm:text-sm"
+        className={
+          compact
+            ? "h-9 min-w-0 rounded-xl px-2 text-[11px] sm:h-10 sm:flex-none sm:px-3 sm:text-xs"
+            : "min-w-0 px-2 text-xs sm:flex-none sm:px-4 sm:text-sm"
+        }
         onClick={copiarLink}
         variant="outline"
       >
-        {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        {copiado ? (
+          <Check className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        ) : (
+          <Copy className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
+        )}
         {copiado ? "Copiado" : "Copiar"}
       </Button>
     </div>

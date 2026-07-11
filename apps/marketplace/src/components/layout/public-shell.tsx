@@ -6,6 +6,7 @@ import { GradientBackground, TopNav } from "@hospedex/ui";
 
 import { marketplaceNavigation } from "../../config/navigation";
 import { GuestAccountMenu } from "../guest/guest-account-menu";
+import { MobileMarketplaceMenu } from "./mobile-marketplace-menu";
 
 export type PublicShellProps = {
   children: ReactNode;
@@ -16,7 +17,8 @@ export function PublicShell({ children }: PublicShellProps) {
     <GradientBackground className="min-h-screen overflow-hidden text-foreground">
       <TopNav
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
+            <MobileMarketplaceMenu />
             <GuestAccountMenu />
           </div>
         }
