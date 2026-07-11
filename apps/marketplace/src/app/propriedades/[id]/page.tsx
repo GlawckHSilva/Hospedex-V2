@@ -229,7 +229,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
 
       <div className="mx-auto flex min-h-[560px] max-w-[1480px] flex-col justify-end px-4 pb-28 pt-24 text-white sm:min-h-[620px] sm:px-6 sm:pb-40 lg:min-h-[720px] lg:pb-60">
         <FadeIn className="max-w-5xl">
-          <div className="mb-20 flex max-w-full flex-wrap gap-2 sm:mb-28 sm:gap-3 lg:mb-40">
+          <div className="mb-20 grid max-w-full grid-cols-[minmax(0,1fr)_44px] gap-2 sm:mb-28 sm:flex sm:flex-wrap sm:gap-3 lg:mb-40">
             <ShareButton />
             <button
               aria-label="Salvar hospedagem"

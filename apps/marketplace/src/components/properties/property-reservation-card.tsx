@@ -194,7 +194,7 @@ export function PropertyReservationCard({
 
   return (
     <GlassCard className="w-full max-w-full border-slate-600/45 bg-slate-950/82 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-6">
-      <div className="flex min-w-0 items-start justify-between gap-4">
+      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Diária inicial</p>
           <p className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
@@ -209,7 +209,7 @@ export function PropertyReservationCard({
             valorBrl={property.minPrice}
           />
         </div>
-        <StatusBadge tone="info">Solicitação</StatusBadge>
+        <StatusBadge className="w-fit" tone="info">Solicitação</StatusBadge>
       </div>
 
       {feedback.status === "erro" ? (
