@@ -90,10 +90,10 @@ export default async function PropriedadePage({
       <section className="relative isolate overflow-hidden bg-slate-950">
         <PropertyHero propriedade={propriedade} />
 
-        <div className="relative z-10 mx-auto grid max-w-[1480px] gap-5 px-3 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-start lg:gap-6 lg:pb-14">
-          <div className="grid min-w-0 gap-5 lg:-mt-52">
-            <FadeIn>
-              <GlassPanel className="border-slate-600/45 bg-slate-950/76 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-4 lg:p-5">
+        <div className="relative z-10 mx-auto grid w-full max-w-[1480px] gap-5 px-3 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-start lg:gap-6 lg:pb-14">
+          <div className="grid min-w-0 max-w-full gap-5 lg:-mt-52">
+            <FadeIn className="min-w-0">
+              <GlassPanel className="w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/76 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-4 lg:p-5">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   <ResumoItem
                     icon={Users}
@@ -194,7 +194,7 @@ export default async function PropriedadePage({
 
           </div>
 
-          <aside className="order-first -mt-20 grid min-w-0 gap-4 sm:-mt-24 lg:order-none lg:sticky lg:top-24 lg:-mt-52 lg:self-start">
+          <aside className="order-first -mt-20 grid min-w-0 max-w-full gap-4 sm:-mt-24 lg:order-none lg:sticky lg:top-24 lg:-mt-52 lg:self-start">
             <PropertyReservationCard
               cotacoesCambio={cotacoesCambio}
               feedback={feedback}
@@ -279,10 +279,10 @@ function PropertyAnchorNav() {
   ];
 
   return (
-    <FadeIn>
+    <FadeIn className="min-w-0">
       <nav
         aria-label="Navegação da hospedagem"
-        className="flex max-w-full gap-2 overflow-x-auto rounded-2xl border border-slate-600/45 bg-slate-950/70 p-2 text-sm backdrop-blur-xl"
+        className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto rounded-2xl border border-slate-600/45 bg-slate-950/70 p-2 text-sm backdrop-blur-xl"
       >
         {links.map(([href, label]) => (
           <a
@@ -481,9 +481,9 @@ function Secao({
   title: string;
 }) {
   return (
-    <FadeIn>
+    <FadeIn className="min-w-0">
       <GlassCard
-        className="scroll-mt-32 border-slate-600/45 bg-slate-950/72 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6"
+        className="scroll-mt-32 w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/72 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6"
         id={id}
       >
         <h2 className="mb-4 text-2xl font-semibold text-white">{title}</h2>
