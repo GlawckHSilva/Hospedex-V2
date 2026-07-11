@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Menu, Moon, Sun, TicketCheck, UserRound, X } from "lucide-react";
+import { Heart, LogOut, Menu, Moon, Sun, TicketCheck, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
@@ -79,6 +79,14 @@ export function MobileMarketplaceMenu() {
               {item.label}
             </Link>
           ))}
+          <Link
+            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-rose-400/10 hover:text-rose-100"
+            href="/favoritos"
+            onClick={() => setAberto(false)}
+          >
+            <Heart className="h-4 w-4 text-rose-300" />
+            Favoritos
+          </Link>
           <div className="my-2 h-px bg-cyan-300/10" />
           <button
             className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100 disabled:opacity-60"

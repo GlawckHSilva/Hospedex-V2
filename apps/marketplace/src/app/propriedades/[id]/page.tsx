@@ -4,7 +4,6 @@ import {
   Car,
   Clock,
   ExternalLink,
-  Heart,
   Home,
   Info,
   MapPin,
@@ -20,6 +19,7 @@ import type { ReactNode } from "react";
 import { FadeIn, GlassCard, GlassPanel, StatusBadge } from "@hospedex/ui";
 
 import { PublicShell } from "../../../components/layout/public-shell";
+import { FavoriteButton } from "../../../components/properties/favorite-button";
 import { PropertyAmenitiesSection } from "../../../components/properties/property-amenities-section";
 import { PropertyAvailabilityCalendar } from "../../../components/properties/property-availability-calendar";
 import {
@@ -234,13 +234,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
       <div className="absolute inset-x-0 top-5 z-10 mx-auto max-w-[1480px] px-4 sm:top-8 sm:px-6 lg:top-10">
         <FadeIn className="flex max-w-full items-center gap-2">
           <ShareButton compact />
-          <button
-            aria-label="Salvar hospedagem"
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/15 bg-black/36 text-white backdrop-blur-xl transition hover:border-cyan-300/45 hover:text-cyan-200 sm:h-10 sm:w-10"
-            type="button"
-          >
-            <Heart className="h-4 w-4 sm:h-5 sm:w-5" />
-          </button>
+          <FavoriteButton property={propriedade} />
         </FadeIn>
       </div>
 
