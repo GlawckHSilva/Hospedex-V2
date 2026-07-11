@@ -1,16 +1,11 @@
-import type { ReactNode } from "react";
 import {
   ArrowRight,
   BadgeCheck,
-  BarChart3,
-  CalendarDays,
   CheckCircle2,
-  CreditCard,
   Home,
   Hotel,
   ShieldCheck,
   Sparkles,
-  Users
 } from "lucide-react";
 import Link from "next/link";
 
@@ -18,6 +13,7 @@ import type { FeatureFlagRow, PlanFeatureRow, PlanRow } from "@hospedex/types";
 import { FadeIn, GlassCard, GlassPanel, StatusBadge, buttonVariants, cn } from "@hospedex/ui";
 
 import { PublicShell } from "../../components/layout/public-shell";
+import { ManagementPreviewCarousel } from "../../components/owner-trial/management-preview-carousel";
 import { criarClienteSupabaseServer } from "../../lib/supabase/server";
 
 type PlanoComercial = {
@@ -216,12 +212,7 @@ export default async function AnunciarPage({
               limpeza e relatórios com dados da própria operação.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <MiniPrint titulo="Reservas" icon={<CalendarDays />} linhas={["Solicitações", "Pagamentos", "Check-in"]} />
-            <MiniPrint titulo="Financeiro" icon={<CreditCard />} linhas={["Receitas", "Despesas", "Pendentes"]} />
-            <MiniPrint titulo="Hóspedes" icon={<Users />} linhas={["Contatos", "Histórico", "CRM"]} />
-            <MiniPrint titulo="Relatórios" icon={<BarChart3 />} linhas={["Receita", "Ocupação", "Ticket médio"]} />
-          </div>
+          <ManagementPreviewCarousel />
         </div>
       </section>
 
@@ -431,24 +422,6 @@ function PainelPreview() {
         </div>
       </div>
     </div>
-  );
-}
-
-function MiniPrint({ titulo, icon, linhas }: { titulo: string; icon: ReactNode; linhas: string[] }) {
-  return (
-    <GlassCard className="p-5">
-      <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
-          {icon}
-        </span>
-        <h3 className="font-semibold">{titulo}</h3>
-      </div>
-      <div className="mt-5 space-y-2">
-        {linhas.map((linha) => (
-          <PreviewLinha key={linha} texto={linha} />
-        ))}
-      </div>
-    </GlassCard>
   );
 }
 
