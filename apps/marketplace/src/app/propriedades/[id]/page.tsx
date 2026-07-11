@@ -140,24 +140,28 @@ export default async function PropriedadePage({
               <PropertyGallery property={propriedade} />
             </Secao>
 
-            <Secao title="Estrutura da hospedagem">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Secao compact title="Estrutura da hospedagem">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <ResumoItem
+                  compact
                   icon={Users}
                   label="Capacidade"
                   value={`${propriedade.maxGuests} hóspedes`}
                 />
                 <ResumoItem
+                  compact
                   icon={Home}
                   label="Tipo"
                   value={propriedade.propertyTypeLabel}
                 />
                 <ResumoItem
+                  compact
                   icon={Clock}
                   label="Check-in"
                   value={propriedade.checkIn}
                 />
                 <ResumoItem
+                  compact
                   icon={Clock}
                   label="Check-out"
                   value={propriedade.checkOut}
@@ -176,7 +180,7 @@ export default async function PropriedadePage({
               </p>
             </Secao>
 
-            <Secao id="comodidades" title="Comodidades">
+            <Secao compact id="comodidades" title="Comodidades">
               <PropertyAmenitiesSection amenities={propriedade.amenities} />
             </Secao>
 
@@ -476,20 +480,26 @@ function obterParametro(valor: string | string[] | undefined) {
 
 function Secao({
   children,
+  compact = false,
   id,
   title
 }: {
   children: ReactNode;
+  compact?: boolean;
   id?: string;
   title: string;
 }) {
   return (
     <FadeIn className="min-w-0">
       <GlassCard
-        className="scroll-mt-32 w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/72 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6"
+        className={`scroll-mt-32 w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/72 shadow-2xl shadow-black/20 backdrop-blur-xl ${
+          compact ? "p-4 sm:p-5" : "p-5 sm:p-6"
+        }`}
         id={id}
       >
-        <h2 className="mb-4 text-2xl font-semibold text-white">{title}</h2>
+        <h2 className={compact ? "mb-3 text-xl font-semibold text-white" : "mb-4 text-2xl font-semibold text-white"}>
+          {title}
+        </h2>
         {children}
       </GlassCard>
     </FadeIn>
@@ -497,14 +507,30 @@ function Secao({
 }
 
 function ResumoItem({
+  compact = false,
   icon: Icone,
   label,
   value
 }: {
+  compact?: boolean;
   icon: typeof Users;
   label: string;
   value: string;
 }) {
+  if (compact) {
+    return (
+      <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-slate-700/55 bg-slate-950/54 px-3 py-2.5">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-400/10 text-cyan-200">
+          <Icone className="h-4 w-4" />
+        </span>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-white">{value}</p>
+          <p className="truncate text-[11px] text-slate-400">{label}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-w-0 rounded-2xl border border-slate-700/55 bg-slate-950/54 p-3 lg:border-0 lg:bg-transparent lg:px-3 lg:py-2">
       <Icone className="h-6 w-6 shrink-0 text-cyan-300 lg:h-7 lg:w-7" />

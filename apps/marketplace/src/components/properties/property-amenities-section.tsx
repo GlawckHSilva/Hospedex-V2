@@ -37,20 +37,20 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-3">
       {grupos.map((grupo) => (
-        <div className="grid gap-3" key={grupo.categoria}>
-          <h3 className="text-sm font-semibold text-muted-foreground">
+        <div className="grid gap-2" key={grupo.categoria}>
+          <h3 className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
             {formatarCategoria(grupo.categoria)}
           </h3>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {grupo.itens.map((comodidade) => (
               <span
-                className="inline-flex items-center gap-2 rounded-md border bg-background/70 px-3 py-2 text-sm"
+                className="inline-flex min-w-0 items-center gap-2 rounded-xl border border-slate-700/55 bg-slate-950/54 px-2.5 py-2 text-xs font-medium text-slate-100 sm:px-3 sm:text-sm"
                 key={comodidade.id}
               >
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-100" />
-                {comodidade.name}
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-cyan-100" />
+                <span className="truncate">{comodidade.name}</span>
               </span>
             ))}
           </div>
@@ -59,7 +59,7 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
 
       {amenities.length > LIMITE_INICIAL ? (
         <Button
-          className="w-fit"
+          className="h-9 w-fit"
           onClick={() => setExpandido((valor) => !valor)}
           type="button"
           variant="outline"

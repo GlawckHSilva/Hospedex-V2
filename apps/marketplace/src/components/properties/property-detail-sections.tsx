@@ -183,13 +183,13 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
           <StatusBadge className="w-fit" tone="success">
             Regras da casa
           </StatusBadge>
-          <h2 className="text-xl font-semibold">PolÃ­ticas da hospedagem</h2>
+          <h2 className="text-xl font-semibold">Políticas da hospedagem</h2>
           <p className="text-sm leading-6 text-muted-foreground">
             InformaÃ§Ãµes pÃºblicas cadastradas pelo proprietÃ¡rio para orientar a reserva.
           </p>
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3">
           <RuleMetric icon={Clock} label="Check-in" value={rules.checkIn} />
           <RuleMetric icon={Clock} label="Check-out" value={rules.checkOut} />
           <RuleMetric
@@ -218,14 +218,14 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
           />
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {permissionItems.map((item) => (
             <RulePermission key={item.label} {...item} />
           ))}
         </div>
 
         {rules.additionalRules ? (
-          <div className="mt-6 rounded-lg border bg-background/70 p-4">
+          <div className="mt-4 rounded-lg border bg-background/70 p-3 sm:p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="h-4 w-4 text-primary" />
               Regras adicionais
@@ -237,7 +237,7 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
         ) : null}
 
         {rules.specialInstructions ? (
-          <div className="mt-6 rounded-lg border bg-background/70 p-4">
+          <div className="mt-4 rounded-lg border bg-background/70 p-3 sm:p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <Sparkles className="h-4 w-4 text-primary" />
               InstruÃ§Ãµes especiais
@@ -249,7 +249,7 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
         ) : null}
 
         {rules.cancellationPolicy.itens.length || rules.cancellationPolicy.observacoes ? (
-          <div className="mt-6 rounded-lg border bg-background/70 p-4">
+          <div className="mt-4 rounded-lg border bg-background/70 p-3 sm:p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="h-4 w-4 text-primary" />
               PolÃ­tica de cancelamento
@@ -417,10 +417,12 @@ function RuleMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border bg-background/70 p-4">
-      <Icone className="h-4 w-4 text-primary" />
-      <p className="mt-3 text-xs uppercase tracking-normal text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold">{value}</p>
+    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border bg-background/70 px-3 py-2.5">
+      <Icone className="h-4 w-4 shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="truncate text-[11px] uppercase tracking-normal text-muted-foreground">{label}</p>
+        <p className="truncate text-sm font-semibold">{value}</p>
+      </div>
     </div>
   );
 }
@@ -439,17 +441,17 @@ function RulePermission({
   label: string;
 }) {
   return (
-    <div className="rounded-lg border bg-background/70 p-4">
+    <div className="min-w-0 rounded-xl border bg-background/70 px-3 py-2.5">
       <div
         className={cn(
-          "grid h-9 w-9 place-items-center rounded-md",
+          "grid h-7 w-7 place-items-center rounded-md",
           allowed ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
         )}
       >
-        {allowed ? <Icone className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+        {allowed ? <Icone className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
       </div>
-      <p className="mt-3 text-xs uppercase tracking-normal text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-semibold">
+      <p className="mt-2 truncate text-[11px] uppercase tracking-normal text-muted-foreground">{label}</p>
+      <p className="mt-0.5 line-clamp-2 text-xs font-semibold sm:text-sm">
         {allowed ? enabledLabel : disabledLabel}
       </p>
     </div>
