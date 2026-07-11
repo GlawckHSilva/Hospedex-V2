@@ -1,12 +1,14 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { LogOut, Menu, Moon, Sun, TicketCheck, UserRound, X } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@hospedex/ui";
 
 import { marketplaceNavigation } from "../../config/navigation";
+import { sairHospede, useGuestProfile } from "../guest/use-guest-profile";
 
 /**
  * Menu principal do Marketplace em telas pequenas.
@@ -17,9 +19,15 @@ import { marketplaceNavigation } from "../../config/navigation";
  */
 export function MobileMarketplaceMenu() {
   const [aberto, setAberto] = useState(false);
+  const [temaMontado, setTemaMontado] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { resolvedTheme, setTheme } = useTheme();
+  const { carregando, iniciais, perfil } = useGuestProfile();
+  const modoEscuro = resolvedTheme === "dark";
 
   useEffect(() => {
+    setTemaMontado(true);
+
     function fecharAoClicarFora(evento: MouseEvent) {
       if (!menuRef.current?.contains(evento.target as Node)) {
         setAberto(false);
@@ -72,20 +80,75 @@ export function MobileMarketplaceMenu() {
             </Link>
           ))}
           <div className="my-2 h-px bg-cyan-300/10" />
-          <Link
-            className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
-            href="/login"
-            onClick={() => setAberto(false)}
+          <button
+            className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100 disabled:opacity-60"
+            disabled={!temaMontado}
+            onClick={() => setTheme(modoEscuro ? "light" : "dark")}
+            type="button"
           >
-            Entrar
-          </Link>
-          <Link
-            className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100"
-            href="/minhas-reservas"
-            onClick={() => setAberto(false)}
-          >
-            Minhas reservas
-          </Link>
+            <span>{modoEscuro ? "Modo claro" : "Modo escuro"}</span>
+            {modoEscuro ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+
+          <div className="my-2 h-px bg-cyan-300/10" />
+          {carregando ? (
+            <div className="h-16 animate-pulse rounded-xl bg-cyan-400/10" />
+          ) : perfil ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-3 rounded-xl bg-cyan-400/10 px-3 py-3">
+                {perfil.avatar_url ? (
+                  <img
+                    alt="Avatar do hospede"
+                    className="h-9 w-9 rounded-full object-cover"
+                    src={perfil.avatar_url}
+                  />
+                ) : (
+                  <span className="grid h-9 w-9 place-items-center rounded-full bg-cyan-300/15 text-xs font-semibold text-cyan-100">
+                    {iniciais}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-cyan-50">
+                    {perfil.full_name ?? "Hospede"}
+                  </p>
+                  <p className="truncate text-xs text-slate-400">{perfil.email}</p>
+                </div>
+              </div>
+              <Link
+                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100"
+                href="/minhas-reservas"
+                onClick={() => setAberto(false)}
+              >
+                <TicketCheck className="h-4 w-4" />
+                Minhas reservas
+              </Link>
+              <Link
+                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100"
+                href="/perfil"
+                onClick={() => setAberto(false)}
+              >
+                <UserRound className="h-4 w-4" />
+                Perfil
+              </Link>
+              <button
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-200 transition hover:bg-cyan-400/10 hover:text-cyan-100"
+                onClick={sairHospede}
+                type="button"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </button>
+            </div>
+          ) : (
+            <Link
+              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-400/10"
+              href="/login"
+              onClick={() => setAberto(false)}
+            >
+              <UserRound className="h-4 w-4" />
+              Entrar
+            </Link>
+          )}
         </nav>
       ) : null}
     </div>

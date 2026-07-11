@@ -1,18 +1,12 @@
 "use client";
 
-import { ChevronDown, LogIn, LogOut, TicketCheck, UserRound } from "lucide-react";
+import { ChevronDown, LogOut, TicketCheck, UserRound } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { buttonVariants, cn } from "@hospedex/ui";
 
-import { criarClienteSupabaseBrowser } from "../../lib/supabase/client";
-
-type PerfilMenu = {
-  avatar_url: string | null;
-  email: string;
-  full_name: string | null;
-};
+import { sairHospede, useGuestProfile } from "./use-guest-profile";
 
 /**
  * Entrada visivel da Area do Hospede.
@@ -22,63 +16,8 @@ type PerfilMenu = {
  */
 export function GuestAccountMenu() {
   const [aberto, setAberto] = useState(false);
-  const [carregando, setCarregando] = useState(true);
-  const [perfil, setPerfil] = useState<PerfilMenu | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const supabase = criarClienteSupabaseBrowser();
-    if (!supabase) {
-      setCarregando(false);
-      return;
-    }
-
-    const clienteSupabase = supabase;
-    let ativo = true;
-
-    async function carregarPerfil() {
-      const { data: usuarioResultado } = await clienteSupabase.auth.getUser();
-      const usuario = usuarioResultado.user;
-
-      if (!usuario) {
-        if (ativo) {
-          setPerfil(null);
-          setCarregando(false);
-        }
-        return;
-      }
-
-      const { data } = await clienteSupabase
-        .from("profiles")
-        .select("full_name,email,avatar_url")
-        .eq("id", usuario.id)
-        .maybeSingle<PerfilMenu>();
-
-      if (ativo) {
-        setPerfil(
-          data ?? {
-            avatar_url: null,
-            email: usuario.email ?? "",
-            full_name: usuario.email ?? "Hospede"
-          }
-        );
-        setCarregando(false);
-      }
-    }
-
-    void carregarPerfil();
-
-    const {
-      data: { subscription }
-    } = clienteSupabase.auth.onAuthStateChange(() => {
-      void carregarPerfil();
-    });
-
-    return () => {
-      ativo = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  const { carregando, iniciais, perfil } = useGuestProfile();
 
   useEffect(() => {
     function fecharAoClicarFora(evento: MouseEvent) {
@@ -91,11 +30,9 @@ export function GuestAccountMenu() {
     return () => document.removeEventListener("mousedown", fecharAoClicarFora);
   }, []);
 
-  const iniciais = useMemo(() => obterIniciais(perfil), [perfil]);
-
   if (carregando) {
     return (
-      <div className="h-9 w-24 animate-pulse rounded-full border bg-secondary/60" />
+      <div className="hidden h-9 w-24 animate-pulse rounded-full border bg-secondary/60 md:block" />
     );
   }
 
@@ -104,18 +41,18 @@ export function GuestAccountMenu() {
       <Link
         className={cn(
           buttonVariants({ size: "sm", variant: "secondary" }),
-          "shrink-0"
+          "h-10 w-10 shrink-0 px-0 md:h-8 md:w-auto md:px-3"
         )}
         href="/login"
       >
-        <LogIn className="h-4 w-4" />
-        <span className="hidden sm:inline">Entrar</span>
+        <UserRound className="h-4 w-4" />
+        <span className="hidden md:inline">Entrar</span>
       </Link>
     );
   }
 
   return (
-    <div className="relative flex shrink-0 items-center gap-2" ref={menuRef}>
+    <div className="relative hidden shrink-0 items-center gap-2 md:flex" ref={menuRef}>
       <Link
         className={cn(
           buttonVariants({ size: "sm", variant: "secondary" }),
@@ -169,11 +106,7 @@ export function GuestAccountMenu() {
           </Link>
           <button
             className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            onClick={async () => {
-              const supabase = criarClienteSupabaseBrowser();
-              await supabase?.auth.signOut();
-              window.location.href = "/login";
-            }}
+            onClick={sairHospede}
             type="button"
           >
             <LogOut className="h-4 w-4" />
@@ -183,14 +116,4 @@ export function GuestAccountMenu() {
       ) : null}
     </div>
   );
-}
-
-function obterIniciais(perfil: PerfilMenu | null) {
-  const base = perfil?.full_name || perfil?.email || "Hospede";
-  return base
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((parte) => parte[0]?.toUpperCase())
-    .join("");
 }

@@ -26,6 +26,7 @@ export function PublicShell({ children }: PublicShellProps) {
         className="glass-navbar bg-background/72 shadow-sm shadow-cyan-950/5"
         items={marketplaceNavigation}
         label="Hospedex"
+        themeToggleClassName="hidden md:block"
       />
       <main>{children}</main>
       <footer className="glass-panel rounded-none border-x-0 border-b-0 bg-card/70">

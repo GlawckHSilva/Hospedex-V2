@@ -12,9 +12,17 @@ export type TopNavProps = {
   actions?: ReactNode;
   brand?: ReactNode;
   className?: string;
+  themeToggleClassName?: string;
 };
 
-export function TopNav({ label, items, actions, brand, className }: TopNavProps) {
+export function TopNav({
+  label,
+  items,
+  actions,
+  brand,
+  className,
+  themeToggleClassName
+}: TopNavProps) {
   return (
     <header
       className={cn(
@@ -37,7 +45,9 @@ export function TopNav({ label, items, actions, brand, className }: TopNavProps)
         </nav>
         <div className="flex shrink-0 items-center gap-2">
           {actions}
-          <ThemeToggle />
+          <div className={cn(themeToggleClassName)}>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
