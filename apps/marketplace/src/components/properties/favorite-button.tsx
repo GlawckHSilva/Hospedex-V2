@@ -13,10 +13,12 @@ import {
 import type { PropriedadePublica } from "../../lib/marketplace/data";
 
 type FavoriteButtonProps = {
+  className?: string;
   property: Pick<
     PropriedadePublica,
     "coverImage" | "id" | "locationLabel" | "maxGuests" | "minPrice" | "name" | "slug"
   >;
+  variant?: "hero" | "card";
 };
 
 /**
@@ -25,7 +27,7 @@ type FavoriteButtonProps = {
  * Mantem o feedback imediato no cliente e grava o favorito localmente para o
  * visitante nao perder a selecao ao navegar pelo Marketplace.
  */
-export function FavoriteButton({ property }: FavoriteButtonProps) {
+export function FavoriteButton({ className, property, variant = "hero" }: FavoriteButtonProps) {
   const [favorito, setFavorito] = useState(false);
   const [animando, setAnimando] = useState(false);
 
@@ -63,8 +65,11 @@ export function FavoriteButton({ property }: FavoriteButtonProps) {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70 sm:h-10 sm:w-10",
         favorito
           ? "border-rose-300/70 bg-rose-500/20 text-rose-100 shadow-lg shadow-rose-500/20 hover:bg-rose-500/25"
-          : "border-white/15 bg-black/36 text-white hover:border-rose-300/55 hover:text-rose-200",
-        animando ? "hospedex-favorite-pop" : ""
+          : variant === "card"
+            ? "border-slate-600/70 bg-slate-950/76 text-slate-100 shadow-sm shadow-black/20 hover:border-rose-300/55 hover:text-rose-200"
+            : "border-white/15 bg-black/36 text-white hover:border-rose-300/55 hover:text-rose-200",
+        animando ? "hospedex-favorite-pop" : "",
+        className
       )}
       onClick={alternarFavorito}
       title={favorito ? "Remover dos favoritos" : "Salvar hospedagem"}

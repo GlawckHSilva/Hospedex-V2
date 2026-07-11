@@ -52,6 +52,14 @@ input.marketplace-reservation-control[type="time"]::-webkit-calendar-picker-indi
   display: none;
 }
 
+.hospedex-horizontal-scroll {
+  scrollbar-width: none;
+}
+
+.hospedex-horizontal-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Feedback visual do favorito no Marketplace.
    A animacao fica restrita ao botao para nao deslocar o layout da pagina. */
 .hospedex-favorite-pop {

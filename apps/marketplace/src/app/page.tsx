@@ -4,7 +4,6 @@ import {
   BedDouble,
   Building2,
   CalendarDays,
-  Heart,
   Hotel,
   House,
   MapPin,
@@ -25,6 +24,7 @@ import {
 } from "@hospedex/ui";
 
 import { PublicShell } from "../components/layout/public-shell";
+import { FavoriteButton } from "../components/properties/favorite-button";
 import {
   carregarPropriedadesPublicas,
   obterDestinosEmDestaque,
@@ -152,15 +152,22 @@ export default async function MarketplaceHomePage() {
             </div>
           ) : null}
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {propriedadesDestaque.length ? (
-              propriedadesDestaque.map((propriedade) => (
-                <PropertyShowcaseCard key={propriedade.id} propriedade={propriedade} />
-              ))
-            ) : (
+          {propriedadesDestaque.length ? (
+            <div className="hospedex-horizontal-scroll -mx-4 mt-5 flex snap-x gap-4 overflow-x-auto px-4 pb-3 sm:-mx-6 sm:px-6">
+              {propriedadesDestaque.map((propriedade) => (
+                <div
+                  className="w-[78vw] max-w-[19rem] shrink-0 snap-start sm:w-[18rem] lg:w-[19rem]"
+                  key={propriedade.id}
+                >
+                  <PropertyShowcaseCard propriedade={propriedade} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5">
               <EmptyFeatureCard />
-            )}
-          </div>
+            </div>
+          )}
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -340,40 +347,41 @@ function SearchField({
 
 function PropertyShowcaseCard({ propriedade }: { propriedade: PropriedadePublica }) {
   return (
-    <Link className="group block" href={`/propriedades/${propriedade.slug}`}>
-      <article className="overflow-hidden rounded-[1.75rem] border border-border bg-card shadow-sm transition hover:border-cyan-300/40">
+    <article className="group h-full overflow-hidden rounded-[1.35rem] border border-border bg-card shadow-sm transition hover:border-cyan-300/40">
         <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-          {propriedade.coverImage ? (
-            <img
-              alt={propriedade.coverImage.alt}
-              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              loading="lazy"
-              src={propriedade.coverImage.url}
-            />
-          ) : (
-            <div className="grid h-full place-items-center bg-cyan-500/10 text-sm font-semibold">
-              Fotos em preparacao
-            </div>
-          )}
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-slate-950/78 to-transparent" />
-          <StatusBadge className="absolute left-3 top-3 bg-cyan-500/85 text-white" tone="info">
+          <Link aria-label={`Ver ${propriedade.name}`} href={`/propriedades/${propriedade.slug}`}>
+            {propriedade.coverImage ? (
+              <img
+                alt={propriedade.coverImage.alt}
+                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                loading="lazy"
+                src={propriedade.coverImage.url}
+              />
+            ) : (
+              <div className="grid h-full place-items-center bg-cyan-500/10 text-sm font-semibold">
+                Fotos em preparacao
+              </div>
+            )}
+            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/78 to-transparent" />
+          </Link>
+          <StatusBadge className="absolute left-2.5 top-2.5 bg-cyan-500/85 text-[11px] text-white" tone="info">
             {propriedade.propertyTypeLabel}
           </StatusBadge>
+          <FavoriteButton className="absolute right-2.5 top-2.5" property={propriedade} variant="card" />
         </div>
-        <div className="grid gap-3 p-4">
+        <div className="grid gap-2.5 p-3.5">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 className="line-clamp-1 text-base font-semibold">{propriedade.name}</h3>
+            <Link className="min-w-0" href={`/propriedades/${propriedade.slug}`}>
+              <h3 className="line-clamp-1 text-base font-semibold transition group-hover:text-cyan-100">
+                {propriedade.name}
+              </h3>
               <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 {propriedade.locationLabel}
               </p>
-            </div>
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border text-muted-foreground">
-              <Heart className="h-4 w-4" />
-            </span>
+            </Link>
           </div>
-          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+          <p className="line-clamp-1 text-sm text-muted-foreground">
             {propriedade.headline}
           </p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -398,14 +406,16 @@ function PropertyShowcaseCard({ propriedade }: { propriedade: PropriedadePublica
               <strong className="text-lg">{formatarPrecoCurto(propriedade.minPrice)}</strong>
               {propriedade.minPrice ? <span className="text-xs text-muted-foreground">/noite</span> : null}
             </div>
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-cyan-200">
+            <Link
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-cyan-200 transition hover:text-cyan-100"
+              href={`/propriedades/${propriedade.slug}`}
+            >
               Ver
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-            </span>
+            </Link>
           </div>
         </div>
       </article>
-    </Link>
   );
 }
 
