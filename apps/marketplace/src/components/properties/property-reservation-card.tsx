@@ -193,11 +193,11 @@ export function PropertyReservationCard({
   }, []);
 
   return (
-    <GlassCard className="border-slate-600/45 bg-slate-950/82 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl">
-      <div className="flex items-start justify-between gap-4">
+    <GlassCard className="w-full max-w-full border-slate-600/45 bg-slate-950/82 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-6">
+      <div className="flex min-w-0 items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Diária inicial</p>
-          <p className="mt-2 text-4xl font-semibold text-white">
+          <p className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
             {formatarPreco(property.minPrice)}
             <span className="ml-1 text-base font-medium text-slate-300">/noite</span>
           </p>

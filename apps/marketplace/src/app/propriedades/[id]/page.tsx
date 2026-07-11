@@ -90,11 +90,11 @@ export default async function PropriedadePage({
       <section className="relative isolate overflow-hidden bg-slate-950">
         <PropertyHero propriedade={propriedade} />
 
-        <div className="relative z-10 mx-auto grid max-w-[1480px] gap-6 px-4 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-start lg:pb-14">
-          <div className="-mt-36 grid min-w-0 gap-5 lg:-mt-52">
+        <div className="relative z-10 mx-auto grid max-w-[1480px] gap-5 px-3 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-start lg:gap-6 lg:pb-14">
+          <div className="grid min-w-0 gap-5 lg:-mt-52">
             <FadeIn>
-              <GlassPanel className="border-slate-600/45 bg-slate-950/70 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl">
-                <div className="grid divide-y divide-slate-700/55 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-6">
+              <GlassPanel className="border-slate-600/45 bg-slate-950/76 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-4 lg:p-5">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
                   <ResumoItem
                     icon={Users}
                     label="Hóspedes"
@@ -194,7 +194,7 @@ export default async function PropriedadePage({
 
           </div>
 
-          <aside className="-mt-28 grid gap-4 lg:sticky lg:top-24 lg:-mt-52 lg:self-start">
+          <aside className="order-first -mt-20 grid min-w-0 gap-4 sm:-mt-24 lg:order-none lg:sticky lg:top-24 lg:-mt-52 lg:self-start">
             <PropertyReservationCard
               cotacoesCambio={cotacoesCambio}
               feedback={feedback}
@@ -213,7 +213,7 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
   const imagem = propriedade.coverImage;
 
   return (
-    <section className="relative isolate min-h-[520px] overflow-hidden sm:min-h-[620px] lg:min-h-[720px]">
+    <section className="relative isolate min-h-[560px] overflow-hidden sm:min-h-[620px] lg:min-h-[720px]">
       {imagem ? (
         <img
           alt={imagem.alt}
@@ -227,25 +227,25 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
         <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
       ) : null}
 
-      <div className="mx-auto flex min-h-[520px] max-w-[1480px] flex-col justify-end px-4 pb-36 pt-28 text-white sm:min-h-[620px] sm:px-6 sm:pb-44 lg:min-h-[720px] lg:pb-60">
+      <div className="mx-auto flex min-h-[560px] max-w-[1480px] flex-col justify-end px-4 pb-28 pt-24 text-white sm:min-h-[620px] sm:px-6 sm:pb-40 lg:min-h-[720px] lg:pb-60">
         <FadeIn className="max-w-5xl">
-          <div className="mb-36 flex flex-wrap gap-3 lg:mb-40">
+          <div className="mb-20 flex max-w-full flex-wrap gap-2 sm:mb-28 sm:gap-3 lg:mb-40">
             <ShareButton />
             <button
               aria-label="Salvar hospedagem"
-              className="grid h-11 w-11 place-items-center rounded-xl border border-white/15 bg-black/32 text-white backdrop-blur-xl transition hover:border-cyan-300/45 hover:text-cyan-200"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/15 bg-black/32 text-white backdrop-blur-xl transition hover:border-cyan-300/45 hover:text-cyan-200"
               type="button"
             >
               <Heart className="h-5 w-5" />
             </button>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             <StatusBadge tone="success">Casa publicada</StatusBadge>
             <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
             <StatusBadge tone="neutral">Até {propriedade.maxGuests} hóspedes</StatusBadge>
             <StatusBadge tone="warning">{formatarPreco(propriedade.minPrice)}</StatusBadge>
           </div>
-          <h1 className="mt-5 max-w-4xl text-5xl font-semibold tracking-normal drop-shadow-xl sm:text-7xl">
+          <h1 className="mt-5 max-w-4xl break-words text-[clamp(2.5rem,13vw,4rem)] font-semibold leading-[0.95] tracking-normal drop-shadow-xl sm:text-7xl">
             {propriedade.name}
           </h1>
           <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/78">
@@ -282,7 +282,7 @@ function PropertyAnchorNav() {
     <FadeIn>
       <nav
         aria-label="Navegação da hospedagem"
-        className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-600/45 bg-slate-950/70 p-2 text-sm backdrop-blur-xl"
+        className="flex max-w-full gap-2 overflow-x-auto rounded-2xl border border-slate-600/45 bg-slate-950/70 p-2 text-sm backdrop-blur-xl"
       >
         {links.map(([href, label]) => (
           <a
@@ -503,11 +503,11 @@ function ResumoItem({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-4 px-4 py-3 first:pl-0 last:pr-0">
-      <Icone className="h-7 w-7 shrink-0 text-cyan-300" />
-      <div>
-        <p className="text-lg font-semibold text-white">{value}</p>
-        <p className="mt-0.5 text-sm text-slate-400">{label}</p>
+    <div className="min-w-0 rounded-2xl border border-slate-700/55 bg-slate-950/54 p-3 lg:border-0 lg:bg-transparent lg:px-3 lg:py-2">
+      <Icone className="h-6 w-6 shrink-0 text-cyan-300 lg:h-7 lg:w-7" />
+      <div className="mt-3 min-w-0 lg:mt-4">
+        <p className="truncate text-base font-semibold text-white lg:text-lg">{value}</p>
+        <p className="mt-0.5 truncate text-xs text-slate-400 lg:text-sm">{label}</p>
       </div>
     </div>
   );

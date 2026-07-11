@@ -27,12 +27,12 @@ export function ShareButton() {
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
-      <Button onClick={compartilhar} variant="outline">
+    <div className="flex min-w-0 flex-1 flex-wrap gap-2 sm:flex-none sm:gap-3">
+      <Button className="min-w-0 flex-1 px-3 sm:flex-none" onClick={compartilhar} variant="outline">
         <Share2 className="h-4 w-4" />
         Compartilhar
       </Button>
-      <Button onClick={copiarLink} variant="outline">
+      <Button className="min-w-0 flex-1 px-3 sm:flex-none" onClick={copiarLink} variant="outline">
         {copiado ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
         {copiado ? "Link copiado" : "Copiar link"}
       </Button>
