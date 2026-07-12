@@ -118,7 +118,13 @@ export function PropertyGallery({
               src={imagemAtiva.url}
             />
             <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-transparent to-slate-950/66" />
-            <OverlayGaleria atual={indiceAtivo + 1} total={imagens.length} compacto />
+            {/* Mantém os controles visíveis acima da ficha mobile que sobrepõe a foto. */}
+            <div className="absolute inset-x-0 bottom-14 z-10 flex items-center justify-between gap-3 px-4 text-white">
+              <span className="rounded-full bg-black/58 px-3 py-1.5 text-xs font-semibold shadow-lg shadow-black/30 backdrop-blur-md">
+                Ver todas as fotos
+              </span>
+              <Contador atual={indiceAtivo + 1} total={imagens.length} />
+            </div>
           </button>
         </div>
       ) : compact ? (
