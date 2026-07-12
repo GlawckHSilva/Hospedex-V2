@@ -115,7 +115,10 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
           >
             <button
               aria-label="Abrir foto da hospedagem"
-              className="group relative h-[320px] overflow-hidden rounded-l-3xl bg-secondary text-left shadow-2xl shadow-black/20 lg:h-[360px]"
+              className={cn(
+                "group relative h-[320px] overflow-hidden bg-secondary text-left shadow-2xl shadow-black/20 lg:h-[360px]",
+                imagens.length > 1 ? "rounded-l-3xl" : "rounded-3xl"
+              )}
               onClick={() => setModalAberta(true)}
               type="button"
             >
