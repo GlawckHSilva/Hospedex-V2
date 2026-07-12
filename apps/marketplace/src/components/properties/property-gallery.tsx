@@ -100,10 +100,10 @@ export function PropertyGallery({
   return (
     <>
       {mobileHero ? (
-        <div className="grid gap-2 md:hidden">
+        <div className="md:hidden">
           <button
             aria-label="Abrir galeria de fotos"
-            className="group relative h-[430px] overflow-hidden bg-secondary text-left shadow-2xl shadow-black/30"
+            className="group relative h-[420px] w-full overflow-hidden bg-secondary text-left shadow-2xl shadow-black/30"
             onClick={() => setModalAberta(true)}
             onTouchEnd={(evento) => concluirSwipe(evento.changedTouches[0]?.clientX ?? 0)}
             onTouchStart={(evento) => {
@@ -120,32 +120,6 @@ export function PropertyGallery({
             <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-transparent to-slate-950/66" />
             <OverlayGaleria atual={indiceAtivo + 1} total={imagens.length} compacto />
           </button>
-
-          {imagens.length > 1 ? (
-            <div className="flex gap-2 overflow-x-auto px-4 pb-1">
-              {imagens.map((imagem, indice) => (
-                <button
-                  aria-label={`Selecionar foto ${indice + 1} da hospedagem`}
-                  className={cn(
-                    "h-16 w-20 shrink-0 overflow-hidden rounded-2xl border bg-secondary transition",
-                    indice === indiceAtivo
-                      ? "border-cyan-300 opacity-100"
-                      : "border-white/12 opacity-70 hover:opacity-100"
-                  )}
-                  key={imagem.id}
-                  onClick={() => setIndiceAtivo(indice)}
-                  type="button"
-                >
-                  <img
-                    alt={obterAlt(imagem, property.name, indice)}
-                    className="h-full w-full object-cover object-center"
-                    loading="lazy"
-                    src={imagem.url}
-                  />
-                </button>
-              ))}
-            </div>
-          ) : null}
         </div>
       ) : compact ? (
         <GaleriaCompacta

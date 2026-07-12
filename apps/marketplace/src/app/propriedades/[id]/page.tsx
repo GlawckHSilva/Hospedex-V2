@@ -260,46 +260,54 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
           </div>
         </FadeIn>
 
-        <FadeIn className="relative z-10 mx-4 -mt-8 max-w-5xl rounded-t-[2rem] border border-white/10 bg-slate-950/94 p-5 text-center shadow-2xl shadow-black/30 sm:mx-0 lg:hidden">
-          <div className="flex max-w-full flex-wrap justify-center gap-2 lg:justify-start">
-            <StatusBadge tone="success">Casa publicada</StatusBadge>
-            <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
-            <StatusBadge tone="neutral">Até {propriedade.maxGuests} hóspedes</StatusBadge>
-            <StatusBadge tone="warning">{formatarPreco(propriedade.minPrice)}</StatusBadge>
-          </div>
-          <h1 className="mt-4 max-w-4xl break-words text-3xl font-semibold leading-tight tracking-normal drop-shadow-xl sm:text-4xl lg:text-4xl">
+        <FadeIn className="relative z-10 -mt-8 rounded-t-[2rem] bg-white px-6 pb-5 pt-6 text-center text-slate-950 shadow-2xl shadow-black/30 sm:mx-0 lg:hidden">
+          <h1 className="mx-auto max-w-sm break-words text-3xl font-semibold leading-tight tracking-normal text-slate-950">
             {propriedade.name}
           </h1>
-          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-white/78 lg:justify-start">
-            <span className="inline-flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-cyan-300" />
-              {propriedade.locationLabel}
-            </span>
+          <p className="mt-2 text-sm leading-5 text-slate-600">
+            {propriedade.propertyTypeLabel} em {propriedade.locationLabel}
+          </p>
+          <p className="mt-1 text-sm leading-5 text-slate-600">
+            {propriedade.maxGuests} hóspedes · {formatarQuantidade(propriedade.structure.bedrooms)} quartos · {formatarQuantidade(propriedade.structure.beds)} camas · {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
+          </p>
+          <div className="mt-5 grid grid-cols-3 items-center divide-x divide-slate-200 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-3 text-center">
             {propriedade.reviews.total ? (
-              <span className="inline-flex items-center gap-2">
-                <Star className="h-4 w-4 fill-cyan-300 text-cyan-300" />
-                {propriedade.reviews.average?.toFixed(1)} em{" "}
-                {propriedade.reviews.total} avaliações
-              </span>
-            ) : null}
+              <div className="px-2">
+                <p className="text-base font-semibold text-slate-950">
+                  {propriedade.reviews.average?.toFixed(1)}
+                </p>
+                <p className="text-[11px] text-slate-500">avaliação</p>
+              </div>
+            ) : (
+              <div className="px-2">
+                <p className="text-base font-semibold text-slate-950">Novo</p>
+                <p className="text-[11px] text-slate-500">anúncio</p>
+              </div>
+            )}
+            <div className="px-2">
+              <p className="text-sm font-semibold text-slate-950">Casa</p>
+              <p className="text-[11px] text-slate-500">publicada</p>
+            </div>
+            <div className="px-2">
+              <p className="text-base font-semibold text-slate-950">{totalFotos}</p>
+              <p className="text-[11px] text-slate-500">fotos</p>
+            </div>
           </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left">
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-lg shadow-slate-950/5">
             <div className="flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs text-slate-400">Diária inicial</p>
-                <p className="mt-1 text-xl font-semibold text-white">
+                <p className="text-xs text-slate-500">Diária inicial</p>
+                <p className="mt-1 text-xl font-semibold text-slate-950">
                   {formatarPreco(propriedade.minPrice)}
-                  <span className="text-sm font-medium text-slate-300">/noite</span>
+                  <span className="text-sm font-medium text-slate-500">/noite</span>
                 </p>
               </div>
-              {totalFotos ? (
-                <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-white">
-                  1/{totalFotos}
-                </span>
-              ) : null}
+              <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">
+                Solicitação
+              </span>
             </div>
             <a
-              className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-full bg-cyan-300 px-4 text-sm font-semibold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-200"
+              className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-full bg-cyan-500 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-950/20 transition hover:bg-cyan-400"
               href="#reserva"
             >
               Solicitar reserva
