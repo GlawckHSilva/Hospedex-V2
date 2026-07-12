@@ -93,8 +93,8 @@ export default async function PropriedadePage({
         <div className="relative z-10 mx-auto grid w-full max-w-[1180px] gap-5 px-4 pb-28 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-8 lg:pb-14 lg:pt-8">
           <div className="grid min-w-0 max-w-full gap-5">
             <FadeIn className="min-w-0">
-              <GlassPanel className="w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/76 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-4 lg:p-5">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <GlassPanel className="w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/76 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-3">
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
                   <ResumoItem
                     icon={Users}
                     label="Hóspedes"
@@ -629,11 +629,11 @@ function ResumoItem({
   }
 
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-700/55 bg-slate-950/54 p-3 lg:border-0 lg:bg-transparent lg:px-3 lg:py-2">
-      <Icone className="h-6 w-6 shrink-0 text-cyan-300 lg:h-7 lg:w-7" />
-      <div className="mt-3 min-w-0 lg:mt-4">
-        <p className="truncate text-base font-semibold text-white lg:text-lg">{value}</p>
-        <p className="mt-0.5 truncate text-xs text-slate-400 lg:text-sm">{label}</p>
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-700/45 bg-slate-950/46 px-2.5 py-2 lg:border-0 lg:bg-transparent lg:px-2 lg:py-1.5">
+      <Icone className="h-5 w-5 shrink-0 text-cyan-300 lg:h-5 lg:w-5" />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold leading-tight text-white lg:text-[15px]">{value}</p>
+        <p className="mt-0.5 truncate text-[11px] leading-tight text-slate-400 lg:text-xs">{label}</p>
       </div>
     </div>
   );
