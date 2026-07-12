@@ -213,27 +213,13 @@ export default async function PropriedadePage({
 }
 
 function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublica }) {
-  const imagem = propriedade.coverImage;
-  const totalFotos = propriedade.images.length;
+  const totalFotos = Math.max(propriedade.images.length, propriedade.coverImage ? 1 : 0);
 
   return (
     <section
-      className="relative isolate scroll-mt-24 overflow-hidden border-b border-white/10 bg-slate-950 px-4 pb-5 pt-4 text-white sm:px-6 lg:pb-8 lg:pt-8"
+      className="relative isolate scroll-mt-24 overflow-hidden border-b border-white/10 bg-slate-950 px-0 pb-5 pt-0 text-white sm:px-6 lg:px-4 lg:pb-8 lg:pt-8"
       id="fotos"
     >
-      {imagem ? (
-        <img
-          alt={imagem.alt}
-          className="absolute inset-0 -z-20 h-full w-full object-cover opacity-80 lg:hidden"
-          fetchPriority="high"
-          src={imagem.url}
-        />
-      ) : null}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,6,23,0.06)_0%,rgba(2,6,23,0.46)_50%,rgba(2,6,23,1)_100%)] lg:hidden" />
-      {!imagem ? (
-        <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
-      ) : null}
-
       <div className="absolute right-4 top-4 z-10 lg:hidden">
         <FadeIn className="flex max-w-full items-center gap-1.5">
           <ShareButton iconOnly />
@@ -241,7 +227,11 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
         </FadeIn>
       </div>
 
-      <div className="mx-auto flex min-h-[520px] max-w-[1180px] flex-col justify-end pb-0 pt-24 text-white sm:min-h-[560px] lg:min-h-0 lg:justify-start lg:pt-0">
+      <div className="mx-auto flex max-w-[1180px] flex-col text-white lg:justify-start">
+        <FadeIn className="lg:hidden">
+          <PropertyGallery mobileHero property={propriedade} />
+        </FadeIn>
+
         <FadeIn className="hidden items-start justify-between gap-6 lg:flex">
           <div className="min-w-0">
             <h1 className="max-w-4xl break-words text-4xl font-semibold leading-tight tracking-normal">
@@ -270,7 +260,7 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
           </div>
         </FadeIn>
 
-        <FadeIn className="max-w-5xl rounded-t-[2rem] border border-white/10 bg-slate-950/94 p-5 text-center shadow-2xl shadow-black/30 lg:hidden">
+        <FadeIn className="relative z-10 mx-4 -mt-8 max-w-5xl rounded-t-[2rem] border border-white/10 bg-slate-950/94 p-5 text-center shadow-2xl shadow-black/30 sm:mx-0 lg:hidden">
           <div className="flex max-w-full flex-wrap justify-center gap-2 lg:justify-start">
             <StatusBadge tone="success">Casa publicada</StatusBadge>
             <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>

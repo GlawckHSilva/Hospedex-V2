@@ -11,6 +11,7 @@ import type { PropriedadePublica } from "../../lib/marketplace/data";
 
 export type PropertyGalleryProps = {
   compact?: boolean;
+  mobileHero?: boolean;
   property: PropriedadePublica;
 };
 
@@ -20,7 +21,11 @@ export type PropertyGalleryProps = {
  * Mantem a foto grande principal no hero da pagina e transforma esta secao em
  * uma previa compacta, com lightbox para quem quiser explorar todas as fotos.
  */
-export function PropertyGallery({ compact = false, property }: PropertyGalleryProps) {
+export function PropertyGallery({
+  compact = false,
+  mobileHero = false,
+  property
+}: PropertyGalleryProps) {
   const imagens = obterImagensGaleria(property);
   const [indiceAtivo, setIndiceAtivo] = useState(0);
   const [modalAberta, setModalAberta] = useState(false);
@@ -94,7 +99,55 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
 
   return (
     <>
-      {compact ? (
+      {mobileHero ? (
+        <div className="grid gap-2 md:hidden">
+          <button
+            aria-label="Abrir galeria de fotos"
+            className="group relative h-[430px] overflow-hidden bg-secondary text-left shadow-2xl shadow-black/30"
+            onClick={() => setModalAberta(true)}
+            onTouchEnd={(evento) => concluirSwipe(evento.changedTouches[0]?.clientX ?? 0)}
+            onTouchStart={(evento) => {
+              toqueInicial.current = evento.touches[0]?.clientX ?? null;
+            }}
+            type="button"
+          >
+            <img
+              alt={obterAlt(imagemAtiva, property.name, indiceAtivo)}
+              className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.015]"
+              fetchPriority="high"
+              src={imagemAtiva.url}
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/18 via-transparent to-slate-950/66" />
+            <OverlayGaleria atual={indiceAtivo + 1} total={imagens.length} compacto />
+          </button>
+
+          {imagens.length > 1 ? (
+            <div className="flex gap-2 overflow-x-auto px-4 pb-1">
+              {imagens.map((imagem, indice) => (
+                <button
+                  aria-label={`Selecionar foto ${indice + 1} da hospedagem`}
+                  className={cn(
+                    "h-16 w-20 shrink-0 overflow-hidden rounded-2xl border bg-secondary transition",
+                    indice === indiceAtivo
+                      ? "border-cyan-300 opacity-100"
+                      : "border-white/12 opacity-70 hover:opacity-100"
+                  )}
+                  key={imagem.id}
+                  onClick={() => setIndiceAtivo(indice)}
+                  type="button"
+                >
+                  <img
+                    alt={obterAlt(imagem, property.name, indice)}
+                    className="h-full w-full object-cover object-center"
+                    loading="lazy"
+                    src={imagem.url}
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : compact ? (
         <GaleriaCompacta
           imagens={imagens}
           imagensVisiveis={miniaturasCompactas}
