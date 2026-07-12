@@ -7,9 +7,10 @@ import { Button } from "@hospedex/ui";
 
 export type ShareButtonProps = {
   compact?: boolean;
+  iconOnly?: boolean;
 };
 
-export function ShareButton({ compact = false }: ShareButtonProps) {
+export function ShareButton({ compact = false, iconOnly = false }: ShareButtonProps) {
   const [copiado, setCopiado] = useState(false);
 
   async function compartilhar() {
@@ -28,6 +29,19 @@ export function ShareButton({ compact = false }: ShareButtonProps) {
     await navigator.clipboard.writeText(window.location.href);
     setCopiado(true);
     window.setTimeout(() => setCopiado(false), 1800);
+  }
+
+  if (iconOnly) {
+    return (
+      <Button
+        aria-label="Compartilhar hospedagem"
+        className="h-10 w-10 rounded-full border-transparent bg-transparent p-0 text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)] hover:bg-transparent hover:text-cyan-100"
+        onClick={compartilhar}
+        variant="ghost"
+      >
+        <Share2 className="h-5 w-5" />
+      </Button>
+    );
   }
 
   return (

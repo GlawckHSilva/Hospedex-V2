@@ -107,7 +107,7 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
         <div className="grid gap-3">
           <div
             className={cn(
-              "hidden gap-3 md:grid",
+              "hidden gap-2 md:grid",
               imagens.length > 1
                 ? "md:grid-cols-[minmax(0,1.65fr)_minmax(220px,0.9fr)]"
                 : "md:grid-cols-1"
@@ -115,7 +115,7 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
           >
             <button
               aria-label="Abrir foto da hospedagem"
-              className="group relative h-[320px] overflow-hidden rounded-3xl border border-slate-700/70 bg-secondary text-left shadow-2xl shadow-black/20 lg:h-[360px]"
+              className="group relative h-[320px] overflow-hidden rounded-l-3xl bg-secondary text-left shadow-2xl shadow-black/20 lg:h-[360px]"
               onClick={() => setModalAberta(true)}
               type="button"
             >
@@ -129,7 +129,7 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
             </button>
 
             {imagens.length > 1 ? (
-              <div className="grid h-[320px] grid-cols-2 grid-rows-2 gap-3 lg:h-[360px]">
+              <div className="grid h-[320px] grid-cols-2 grid-rows-2 gap-2 lg:h-[360px]">
                 {miniaturas.map((imagem, indice) => {
                   const indiceReal = indice + 1;
                   const mostrarRestantes = indice === miniaturas.length - 1 && fotosRestantes > 0;
@@ -138,7 +138,9 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
                     <button
                       aria-label={`Abrir foto ${indiceReal + 1} da hospedagem`}
                       className={cn(
-                        "group relative overflow-hidden rounded-2xl border border-slate-700/70 bg-secondary transition hover:border-cyan-300/60",
+                        "group relative overflow-hidden bg-secondary transition",
+                        indice === 1 ? "rounded-tr-3xl" : null,
+                        indice === miniaturas.length - 1 ? "rounded-br-3xl" : null,
                         miniaturas.length === 1 ? "col-span-2 row-span-2" : null,
                         miniaturas.length === 2 ? "row-span-2" : null,
                         miniaturas.length === 3 && indice === 0 ? "row-span-2" : null
@@ -171,7 +173,7 @@ export function PropertyGallery({ compact = false, property }: PropertyGalleryPr
           <div className="grid gap-3 md:hidden">
             <button
               aria-label="Abrir galeria de fotos"
-              className="group relative h-[260px] overflow-hidden rounded-3xl border border-slate-700/70 bg-secondary text-left shadow-2xl shadow-black/20"
+              className="group relative h-[420px] overflow-hidden rounded-b-none rounded-t-3xl border border-slate-700/70 bg-secondary text-left shadow-2xl shadow-black/20"
               onClick={() => setModalAberta(true)}
               type="button"
             >

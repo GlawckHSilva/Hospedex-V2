@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Sparkles } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@hospedex/ui";
 
@@ -14,15 +14,14 @@ type PropertyAmenitiesSectionProps = {
 const LIMITE_INICIAL = 8;
 
 /**
- * Comodidades públicas agrupadas.
+ * Comodidades públicas em lista compacta.
  *
- * Mantém a página legível em casas com muitas comodidades e permite expansão
- * sem criar uma lista gigante no primeiro carregamento.
+ * Mantém a leitura parecida com marketplaces consolidados, sem criar cards
+ * desnecessários para cada item e sem alongar demais a página no mobile.
  */
 export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSectionProps) {
   const [expandido, setExpandido] = useState(false);
   const comodidadesVisiveis = expandido ? amenities : amenities.slice(0, LIMITE_INICIAL);
-  const grupos = useMemo(() => agruparComodidades(comodidadesVisiveis), [comodidadesVisiveis]);
 
   if (!amenities.length) {
     return (
@@ -38,24 +37,17 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
 
   return (
     <div className="grid gap-3">
-      {grupos.map((grupo) => (
-        <div className="grid gap-2" key={grupo.categoria}>
-          <h3 className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-            {formatarCategoria(grupo.categoria)}
-          </h3>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {grupo.itens.map((comodidade) => (
-              <span
-                className="inline-flex min-w-0 items-center gap-2 rounded-xl border border-slate-700/55 bg-slate-950/54 px-2.5 py-2 text-xs font-medium text-slate-100 sm:px-3 sm:text-sm"
-                key={comodidade.id}
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-cyan-100" />
-                <span className="truncate">{comodidade.name}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
+      <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
+        {comodidadesVisiveis.map((comodidade) => (
+          <span
+            className="inline-flex min-w-0 items-center gap-3 text-sm font-medium text-slate-100 sm:text-base"
+            key={comodidade.id}
+          >
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-cyan-200" />
+            <span className="truncate">{comodidade.name}</span>
+          </span>
+        ))}
+      </div>
 
       {amenities.length > LIMITE_INICIAL ? (
         <Button
@@ -68,25 +60,5 @@ export function PropertyAmenitiesSection({ amenities }: PropertyAmenitiesSection
         </Button>
       ) : null}
     </div>
-  );
-}
-
-function agruparComodidades(comodidades: PropertyAmenitiesSectionProps["amenities"]) {
-  const grupos = new Map<string, PropertyAmenitiesSectionProps["amenities"]>();
-
-  for (const comodidade of comodidades) {
-    const categoria = comodidade.category ?? "geral";
-    grupos.set(categoria, [...(grupos.get(categoria) ?? []), comodidade]);
-  }
-
-  return [...grupos.entries()].map(([categoria, itens]) => ({
-    categoria,
-    itens
-  }));
-}
-
-function formatarCategoria(categoria: string) {
-  return categoria.replace(/[_-]/g, " ").replace(/\b\w/g, (letra) =>
-    letra.toUpperCase()
   );
 }

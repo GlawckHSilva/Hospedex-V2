@@ -88,10 +88,10 @@ export default async function PropriedadePage({
   return (
     <PublicShell>
       <section className="relative isolate overflow-hidden bg-slate-950">
-        <PropertyHero propriedade={propriedade} />
+        <PropertyTopExperience propriedade={propriedade} />
 
-        <div className="relative z-10 mx-auto grid w-full max-w-[1480px] gap-5 px-3 pb-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_430px] lg:items-start lg:gap-6 lg:pb-14">
-          <div className="grid min-w-0 max-w-full gap-5 lg:-mt-52">
+        <div className="relative z-10 mx-auto grid w-full max-w-[1180px] gap-5 px-4 pb-10 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-8 lg:pb-14 lg:pt-8">
+          <div className="grid min-w-0 max-w-full gap-5">
             <FadeIn className="min-w-0">
               <GlassPanel className="w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/76 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-4 lg:p-5">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -136,10 +136,6 @@ export default async function PropriedadePage({
               </p>
             </Secao>
 
-            <Secao id="fotos" title="Fotos da hospedagem">
-              <PropertyGallery property={propriedade} />
-            </Secao>
-
             <Secao compact title="Estrutura da hospedagem">
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <ResumoItem
@@ -180,7 +176,7 @@ export default async function PropriedadePage({
               </p>
             </Secao>
 
-            <Secao compact id="comodidades" title="Comodidades">
+            <Secao compact id="comodidades" title="O que esse lugar oferece">
               <PropertyAmenitiesSection amenities={propriedade.amenities} />
             </Secao>
 
@@ -198,7 +194,7 @@ export default async function PropriedadePage({
 
           </div>
 
-          <aside className="order-first -mt-20 grid min-w-0 max-w-full gap-4 sm:-mt-24 lg:order-none lg:sticky lg:top-24 lg:-mt-52 lg:self-start">
+          <aside className="grid min-w-0 max-w-full gap-4 lg:sticky lg:top-24 lg:self-start">
             <PropertyReservationCard
               cotacoesCambio={cotacoesCambio}
               feedback={feedback}
@@ -213,43 +209,46 @@ export default async function PropriedadePage({
   );
 }
 
-function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
+function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublica }) {
   const imagem = propriedade.coverImage;
 
   return (
-    <section className="relative isolate min-h-[560px] overflow-hidden sm:min-h-[620px] lg:min-h-[720px]">
+    <section
+      className="relative isolate scroll-mt-24 overflow-hidden border-b border-white/10 bg-slate-950 px-4 pb-5 pt-4 text-white sm:px-6 lg:pb-8 lg:pt-8"
+      id="fotos"
+    >
       {imagem ? (
         <img
           alt={imagem.alt}
-          className="absolute inset-0 -z-20 h-full w-full object-cover"
+          className="absolute inset-0 -z-20 h-full w-full object-cover opacity-80 lg:hidden"
           fetchPriority="high"
           src={imagem.url}
         />
       ) : null}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(2,6,23,0.78)_0%,rgba(2,6,23,0.34)_45%,rgba(2,6,23,0.84)_100%),linear-gradient(180deg,rgba(2,6,23,0.08)_0%,rgba(2,6,23,0.46)_52%,rgba(2,6,23,1)_100%)]" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,rgba(2,6,23,0.06)_0%,rgba(2,6,23,0.46)_50%,rgba(2,6,23,1)_100%)] lg:hidden" />
       {!imagem ? (
         <div className="absolute inset-0 -z-30 premium-grid-bg bg-secondary" />
       ) : null}
 
-      <div className="absolute inset-x-0 top-5 z-10 mx-auto max-w-[1480px] px-4 sm:top-8 sm:px-6 lg:top-10">
-        <FadeIn className="flex max-w-full items-center gap-2">
-          <ShareButton compact />
+      <div className="absolute right-4 top-4 z-10 lg:hidden">
+        <FadeIn className="flex max-w-full items-center gap-1.5">
+          <ShareButton iconOnly />
           <FavoriteButton property={propriedade} />
         </FadeIn>
       </div>
 
-      <div className="mx-auto flex min-h-[560px] max-w-[1480px] flex-col justify-end px-4 pb-28 pt-24 text-white sm:min-h-[620px] sm:px-6 sm:pb-40 lg:min-h-[720px] lg:pb-60">
-        <FadeIn className="max-w-5xl">
-          <div className="flex max-w-full flex-wrap gap-2">
+      <div className="mx-auto flex min-h-[520px] max-w-[1180px] flex-col justify-end pb-0 pt-24 text-white sm:min-h-[560px] lg:min-h-0 lg:justify-start lg:pt-0">
+        <FadeIn className="max-w-5xl rounded-t-[2rem] border border-white/10 bg-slate-950/94 p-5 text-center shadow-2xl shadow-black/30 lg:max-w-none lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:text-left lg:shadow-none">
+          <div className="flex max-w-full flex-wrap justify-center gap-2 lg:justify-start">
             <StatusBadge tone="success">Casa publicada</StatusBadge>
             <StatusBadge tone="info">{propriedade.propertyTypeLabel}</StatusBadge>
             <StatusBadge tone="neutral">Até {propriedade.maxGuests} hóspedes</StatusBadge>
             <StatusBadge tone="warning">{formatarPreco(propriedade.minPrice)}</StatusBadge>
           </div>
-          <h1 className="mt-5 max-w-4xl break-words text-[clamp(2.5rem,13vw,4rem)] font-semibold leading-[0.95] tracking-normal drop-shadow-xl sm:text-7xl">
+          <h1 className="mt-4 max-w-4xl break-words text-3xl font-semibold leading-tight tracking-normal drop-shadow-xl sm:text-4xl lg:text-4xl">
             {propriedade.name}
           </h1>
-          <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-white/78">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-white/78 lg:justify-start">
             <span className="inline-flex items-center gap-2">
               <MapPin className="h-4 w-4 text-cyan-300" />
               {propriedade.locationLabel}
@@ -262,6 +261,9 @@ function PropertyHero({ propriedade }: { propriedade: PropriedadePublica }) {
               </span>
             ) : null}
           </div>
+        </FadeIn>
+        <FadeIn className="mt-5 hidden lg:block">
+          <PropertyGallery property={propriedade} />
         </FadeIn>
       </div>
     </section>
