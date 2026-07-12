@@ -90,7 +90,7 @@ export default async function PropriedadePage({
       <section className="relative isolate overflow-hidden bg-slate-950">
         <PropertyTopExperience propriedade={propriedade} />
 
-        <div className="relative z-10 mx-auto grid w-full max-w-[1180px] gap-5 px-4 pb-10 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-8 lg:pb-14 lg:pt-8">
+        <div className="relative z-10 mx-auto grid w-full max-w-[1180px] gap-5 px-4 pb-28 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-8 lg:pb-14 lg:pt-8">
           <div className="grid min-w-0 max-w-full gap-5">
             <FadeIn className="min-w-0">
               <GlassPanel className="w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/76 p-3 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-4 lg:p-5">
@@ -208,12 +208,16 @@ export default async function PropriedadePage({
           </aside>
         </div>
       </section>
+      <MobileReservationBar propriedade={propriedade} />
     </PublicShell>
   );
 }
 
 function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublica }) {
   const totalFotos = Math.max(propriedade.images.length, propriedade.coverImage ? 1 : 0);
+  const perfil = propriedade.requestProfile;
+  const nomeAnfitriao = perfil.businessName || perfil.ownerName || "Anfitrião Hospedex";
+  const iniciaisAnfitriao = obterIniciais(nomeAnfitriao);
 
   return (
     <section
@@ -260,49 +264,70 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
           </div>
         </FadeIn>
 
-        <FadeIn className="relative z-10 -mt-8 rounded-t-[2rem] bg-white px-6 pb-5 pt-6 text-center text-slate-950 shadow-2xl shadow-black/30 sm:mx-0 lg:hidden">
-          <h1 className="mx-auto max-w-sm break-words text-3xl font-semibold leading-tight tracking-normal text-slate-950">
+        <FadeIn className="relative z-10 -mt-8 rounded-t-[2rem] border border-white/10 bg-slate-950 px-6 pb-5 pt-6 text-center text-white shadow-2xl shadow-black/30 sm:mx-0 lg:hidden">
+          <h1 className="mx-auto max-w-sm break-words text-3xl font-semibold leading-tight tracking-normal text-white">
             {propriedade.name}
           </h1>
-          <p className="mt-2 text-sm leading-5 text-slate-600">
+          <p className="mt-2 text-sm leading-5 text-slate-300">
             {propriedade.propertyTypeLabel} em {propriedade.locationLabel}
           </p>
-          <p className="mt-1 text-sm leading-5 text-slate-600">
+          <p className="mt-1 text-sm leading-5 text-slate-400">
             {propriedade.maxGuests} hóspedes · {formatarQuantidade(propriedade.structure.bedrooms)} quartos · {formatarQuantidade(propriedade.structure.beds)} camas · {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
           </p>
-          <div className="mt-5 grid grid-cols-3 items-center divide-x divide-slate-200 rounded-2xl border border-slate-200 bg-slate-50 px-2 py-3 text-center">
+          <div className="mt-5 grid grid-cols-3 items-center divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-3 text-center">
             {propriedade.reviews.total ? (
               <div className="px-2">
-                <p className="text-base font-semibold text-slate-950">
+                <p className="text-base font-semibold text-white">
                   {propriedade.reviews.average?.toFixed(1)}
                 </p>
-                <p className="text-[11px] text-slate-500">avaliação</p>
+                <p className="text-[11px] text-slate-400">avaliação</p>
               </div>
             ) : (
               <div className="px-2">
-                <p className="text-base font-semibold text-slate-950">Novo</p>
-                <p className="text-[11px] text-slate-500">anúncio</p>
+                <p className="text-base font-semibold text-white">Novo</p>
+                <p className="text-[11px] text-slate-400">anúncio</p>
               </div>
             )}
             <div className="px-2">
-              <p className="text-sm font-semibold text-slate-950">Casa</p>
-              <p className="text-[11px] text-slate-500">publicada</p>
+              <p className="text-sm font-semibold text-white">Casa</p>
+              <p className="text-[11px] text-slate-400">publicada</p>
             </div>
             <div className="px-2">
-              <p className="text-base font-semibold text-slate-950">{totalFotos}</p>
-              <p className="text-[11px] text-slate-500">fotos</p>
+              <p className="text-base font-semibold text-white">{totalFotos}</p>
+              <p className="text-[11px] text-slate-400">fotos</p>
             </div>
           </div>
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-lg shadow-slate-950/5">
+          <div className="mt-5 flex items-center gap-3 border-t border-white/10 pt-5 text-left">
+            {perfil.avatarUrl ? (
+              <img
+                alt={`Foto de ${nomeAnfitriao}`}
+                className="h-12 w-12 rounded-full object-cover"
+                src={perfil.avatarUrl}
+              />
+            ) : (
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-cyan-300/15 text-sm font-semibold text-cyan-100">
+                {iniciaisAnfitriao}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">
+                Anfitrião: {nomeAnfitriao}
+              </p>
+              <p className="text-xs text-slate-400">
+                Check-in {propriedade.checkIn} · Check-out {propriedade.checkOut}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left shadow-lg shadow-black/20">
             <div className="flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs text-slate-500">Diária inicial</p>
-                <p className="mt-1 text-xl font-semibold text-slate-950">
+                <p className="text-xs text-slate-400">Diária inicial</p>
+                <p className="mt-1 text-xl font-semibold text-white">
                   {formatarPreco(propriedade.minPrice)}
-                  <span className="text-sm font-medium text-slate-500">/noite</span>
+                  <span className="text-sm font-medium text-slate-400">/noite</span>
                 </p>
               </div>
-              <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-semibold text-cyan-700">
+              <span className="rounded-full bg-cyan-300/12 px-2.5 py-1 text-xs font-semibold text-cyan-100">
                 Solicitação
               </span>
             </div>
@@ -319,6 +344,30 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
         </FadeIn>
       </div>
     </section>
+  );
+}
+
+function MobileReservationBar({ propriedade }: { propriedade: PropriedadePublica }) {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/94 px-4 py-3 text-white shadow-2xl shadow-black/50 backdrop-blur-xl lg:hidden">
+      <div className="mx-auto flex max-w-[420px] items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">
+            {formatarPreco(propriedade.minPrice)}
+            <span className="font-medium text-slate-400"> / noite</span>
+          </p>
+          <p className="truncate text-xs text-slate-400">
+            Adicione datas para ver os valores finais
+          </p>
+        </div>
+        <a
+          className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-cyan-500 px-5 text-sm font-semibold text-white shadow-lg shadow-cyan-950/25 transition hover:bg-cyan-400"
+          href="#reserva"
+        >
+          Conferir
+        </a>
+      </div>
+    </div>
   );
 }
 
