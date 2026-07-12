@@ -61,13 +61,14 @@ export function FavoriteButton({ className, property, variant = "hero" }: Favori
       aria-label={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
       aria-pressed={favorito}
       className={cn(
-        "relative grid h-9 w-9 shrink-0 place-items-center overflow-visible rounded-xl border backdrop-blur-xl transition",
+        "relative grid h-9 w-9 shrink-0 place-items-center overflow-visible rounded-full border border-transparent bg-transparent transition",
+        "drop-shadow-[0_2px_10px_rgba(0,0,0,0.75)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/70 sm:h-10 sm:w-10",
         favorito
-          ? "border-rose-300/70 bg-rose-500/20 text-rose-100 shadow-lg shadow-rose-500/20 hover:bg-rose-500/25"
+          ? "text-rose-300 hover:text-rose-200"
           : variant === "card"
-            ? "border-slate-600/70 bg-slate-950/76 text-slate-100 shadow-sm shadow-black/20 hover:border-rose-300/55 hover:text-rose-200"
-            : "border-white/15 bg-black/36 text-white hover:border-rose-300/55 hover:text-rose-200",
+            ? "text-white hover:text-rose-200"
+            : "text-white hover:text-rose-200",
         animando ? "hospedex-favorite-pop" : "",
         className
       )}

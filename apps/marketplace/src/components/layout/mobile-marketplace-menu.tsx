@@ -54,9 +54,8 @@ export function MobileMarketplaceMenu() {
         aria-expanded={aberto}
         aria-label={aberto ? "Fechar menu" : "Abrir menu"}
         className={cn(
-          "grid h-10 w-10 place-items-center rounded-xl border border-cyan-300/20",
-          "bg-slate-950/72 text-cyan-100 shadow-sm shadow-cyan-950/20 backdrop-blur-xl",
-          "transition hover:border-cyan-300/45 hover:bg-cyan-400/10"
+          "grid h-10 w-10 place-items-center rounded-full border border-transparent bg-transparent",
+          "text-cyan-100 transition hover:text-cyan-200"
         )}
         onClick={() => setAberto((valor) => !valor)}
         type="button"

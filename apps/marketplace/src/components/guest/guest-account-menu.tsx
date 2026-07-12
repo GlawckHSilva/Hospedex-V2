@@ -40,8 +40,7 @@ export function GuestAccountMenu() {
     return (
       <Link
         className={cn(
-          buttonVariants({ size: "sm", variant: "secondary" }),
-          "h-10 w-10 shrink-0 px-0 md:h-8 md:w-auto md:px-3"
+          "inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent text-slate-100 transition hover:text-cyan-200 md:h-8 md:w-auto md:px-2 md:text-sm md:font-semibold"
         )}
         href="/login"
       >
