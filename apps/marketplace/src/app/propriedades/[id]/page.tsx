@@ -128,8 +128,6 @@ export default async function PropriedadePage({
                 </div>
               </GlassPanel>
             </FadeIn>
-            <PropertyAnchorNav />
-
             <Secao id="sobre" title="Sobre a hospedagem">
               <p className="text-sm leading-7 text-muted-foreground sm:text-base">
                 {propriedade.description}
@@ -368,37 +366,6 @@ function MobileReservationBar({ propriedade }: { propriedade: PropriedadePublica
         </a>
       </div>
     </div>
-  );
-}
-
-function PropertyAnchorNav() {
-  const links = [
-    ["#fotos", "Fotos"],
-    ["#sobre", "Sobre"],
-    ["#disponibilidade", "Disponibilidade"],
-    ["#comodidades", "Comodidades"],
-    ["#regras", "Regras"],
-    ["#localizacao", "Localização"],
-    ["#avaliacoes", "Avaliações"]
-  ];
-
-  return (
-    <FadeIn className="min-w-0">
-      <nav
-        aria-label="Navegação da hospedagem"
-        className="flex w-full min-w-0 max-w-full gap-2 overflow-x-auto rounded-2xl border border-slate-600/45 bg-slate-950/70 p-2 text-sm backdrop-blur-xl"
-      >
-        {links.map(([href, label]) => (
-          <a
-            className="shrink-0 rounded-xl px-3 py-2 text-slate-300 transition hover:bg-cyan-300/10 hover:text-cyan-100"
-            href={href}
-            key={href}
-          >
-            {label}
-          </a>
-        ))}
-      </nav>
-    </FadeIn>
   );
 }
 
