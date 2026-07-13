@@ -19,6 +19,7 @@ import {
   Home,
   ImagePlus,
   Landmark,
+  Loader2,
   MapPin,
   Minus,
   Plus,
@@ -31,7 +32,7 @@ import {
   Save,
   X,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -39,17 +40,20 @@ import { Input, Label, cn } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
 import { AppModal } from "../management/entity-modal";
-import { FormActionButton } from "../management/form-submit-button";
 import { WizardStepper } from "../management/wizard-stepper";
 import { PropertyAmenitiesStep } from "./property-amenities-step";
+import { usarAutenticacao } from "../auth/auth-provider";
 import {
   atualizarPropriedadeAction,
   criarPropriedadeAction,
+  type ResultadoSalvarPropriedade,
 } from "../../lib/properties/actions";
 import type { PropriedadeComRelacionamentos } from "../../lib/properties/types";
 import {
   TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES,
   TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB,
+  TAMANHO_MAXIMO_ENVIO_PROPRIEDADE_BYTES,
+  TAMANHO_MAXIMO_ENVIO_PROPRIEDADE_MB,
   tipoImagemPropriedadePermitido,
 } from "../../lib/properties/media-limits";
 
@@ -445,7 +449,7 @@ function criarPreviewGaleria(
   return {
     arquivo,
     existenteId: null,
-    id: `${arquivo.name}-${arquivo.lastModified}-${arquivo.size}-${crypto.randomUUID()}`,
+    id: crypto.randomUUID(),
     nome: arquivo.name,
     ordem,
     origem: "nova",
@@ -595,6 +599,7 @@ type RascunhoCasaLocal = {
   campos: Record<string, CampoRascunhoCasa[]>;
   etapaAtual: number;
   incluiArquivos: boolean;
+  operacaoId?: string;
   salvoEm: string;
   versao: 1;
 };
@@ -606,9 +611,10 @@ type ControleFormularioCasa =
 
 function obterChaveRascunhoCasa(
   modo: PropertyFormProps["modo"],
+  userId: string,
   propriedadeId?: string,
 ) {
-  return `hospedex:v2:rascunho-casa:${modo}:${propriedadeId ?? "nova"}`;
+  return `hospedex:v2:rascunho-casa:${userId}:${modo}:${propriedadeId ?? "nova"}`;
 }
 
 function deveIgnorarCampoRascunho(campo: ControleFormularioCasa) {
@@ -621,6 +627,7 @@ function deveIgnorarCampoRascunho(campo: ControleFormularioCasa) {
 function serializarRascunhoCasa(
   formulario: HTMLFormElement,
   etapaAtual: number,
+  operacaoId: string,
 ): RascunhoCasaLocal {
   const campos: RascunhoCasaLocal["campos"] = {};
   const controles = Array.from(
@@ -658,6 +665,7 @@ function serializarRascunhoCasa(
     campos,
     etapaAtual,
     incluiArquivos,
+    operacaoId,
     salvoEm: new Date().toISOString(),
     versao: 1,
   };
@@ -726,16 +734,30 @@ export function PropertyForm({
   podeGerenciar,
   propriedade,
 }: PropertyFormProps) {
+  const { contexto } = usarAutenticacao();
+  const router = useRouter();
   const action =
     modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const searchParams = useSearchParams();
   const erroServidor = searchParams.get("erro");
-  const chaveRascunho = obterChaveRascunhoCasa(modo, propriedade?.id);
+  const chaveRascunho = obterChaveRascunhoCasa(
+    modo,
+    contexto?.userId ?? "usuario",
+    propriedade?.id,
+  );
   const [etapaAtual, setEtapaAtual] = useState(0);
   const [errosCampos, setErrosCampos] = useState<ErrosFormularioCasa>({});
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [avisoRascunho, setAvisoRascunho] = useState<string | null>(null);
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
+  const [imagemCapaId, setImagemCapaId] = useState<string | null>(null);
+  const [operacaoId, setOperacaoId] = useState(
+    modo === "editar" ? (propriedade?.id ?? "") : "",
+  );
+  const [resultadoSalvamento, setResultadoSalvamento] =
+    useState<ResultadoSalvarPropriedade | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const salvandoRef = useRef(false);
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>(() =>
     criarPreviewsGaleriaExistente(propriedade?.imagens ?? []),
   );
@@ -764,6 +786,7 @@ export function PropertyForm({
   );
   const bloqueado =
     !podeGerenciar ||
+    !operacaoId ||
     Boolean(erroImagem) ||
     Object.keys(errosCampos).length > 0;
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
@@ -800,6 +823,10 @@ export function PropertyForm({
       const rascunho = JSON.parse(rascunhoSalvo) as RascunhoCasaLocal;
       if (rascunho.versao !== 1) return;
 
+      if (modo === "criar") {
+        setOperacaoId(rascunho.operacaoId ?? crypto.randomUUID());
+      }
+
       aplicarRascunhoCasa(formulario, rascunho);
       setEtapaAtual(
         Math.min(Math.max(rascunho.etapaAtual, 0), ETAPAS.length - 1),
@@ -817,7 +844,11 @@ export function PropertyForm({
         // Sem acao: armazenamento local pode estar indisponivel no navegador.
       }
     }
-  }, [chaveRascunho]);
+  }, [chaveRascunho, modo]);
+
+  useEffect(() => {
+    if (modo === "criar" && !operacaoId) setOperacaoId(crypto.randomUUID());
+  }, [modo, operacaoId]);
 
   useEffect(() => {
     return () => {
@@ -843,10 +874,7 @@ export function PropertyForm({
     const status = formulario.querySelector<HTMLInputElement>(
       'input[name="status"]:checked',
     );
-    if (
-      status &&
-      ["draft", "published", "paused"].includes(status.value)
-    ) {
+    if (status && ["draft", "published", "paused"].includes(status.value)) {
       setStatusSelecionado(status.value as PropertyStatus);
     }
   }
@@ -857,7 +885,11 @@ export function PropertyForm({
 
     // O rascunho local evita perda de dados quando a validacao do servidor
     // rejeita o envio. Arquivos nao sao restauraveis por seguranca do browser.
-    const rascunho = serializarRascunhoCasa(formulario, etapaAtual);
+    const rascunho = serializarRascunhoCasa(
+      formulario,
+      etapaAtual,
+      operacaoId || propriedade?.id || crypto.randomUUID(),
+    );
     try {
       window.localStorage.setItem(chaveRascunho, JSON.stringify(rascunho));
     } catch {
@@ -909,6 +941,7 @@ export function PropertyForm({
     setErroImagem(erro);
     if (previewCapa) URL.revokeObjectURL(previewCapa);
     setPreviewCapa(arquivo && !erro ? URL.createObjectURL(arquivo) : null);
+    setImagemCapaId(arquivo && !erro ? crypto.randomUUID() : null);
     if (arquivo && !erro) removerErrosDosCampos(["imagemCapaArquivo"]);
   }
 
@@ -959,6 +992,8 @@ export function PropertyForm({
   }
 
   function removerGaleria(indiceRemovido: number) {
+    // A validacao total sera refeita no proximo envio com a colecao reduzida.
+    setErroImagem(null);
     setPreviewsGaleria((previewsAtuais) => {
       const previewRemovido = previewsAtuais[indiceRemovido];
       if (previewRemovido) {
@@ -1149,9 +1184,11 @@ export function PropertyForm({
     );
   }
 
-  function validarEnvio(evento: FormEvent<HTMLFormElement>) {
+  async function validarEnvio(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    if (salvandoRef.current) return;
+
     if (!podeGerenciar || erroImagem) {
-      evento.preventDefault();
       salvarRascunhoLocal(
         "Corrija os campos destacados. O rascunho foi salvo neste dispositivo.",
       );
@@ -1164,7 +1201,6 @@ export function PropertyForm({
       obterContextoValidacaoCasa(),
     );
     if (Object.keys(erros).length > 0) {
-      evento.preventDefault();
       salvarRascunhoLocal(
         "Corrija os campos destacados. O rascunho foi salvo neste dispositivo.",
       );
@@ -1172,7 +1208,62 @@ export function PropertyForm({
       return;
     }
 
+    const formulario = evento.currentTarget;
+    const dados = new FormData(formulario);
+    const tamanhoArquivos = Array.from(dados.values()).reduce(
+      (total, valor) => total + (valor instanceof File ? valor.size : 0),
+      0,
+    );
+    if (tamanhoArquivos > TAMANHO_MAXIMO_ENVIO_PROPRIEDADE_BYTES) {
+      setErroImagem(
+        `As imagens deste salvamento somam mais de ${TAMANHO_MAXIMO_ENVIO_PROPRIEDADE_MB} MB. Remova algumas fotos, salve a casa e adicione as demais depois. Seus dados foram mantidos.`,
+      );
+      salvarRascunhoLocal(
+        "O envio excedeu o limite seguro, mas os dados do formulario foram mantidos neste dispositivo.",
+      );
+      return;
+    }
+
     setErrosCampos({});
+    setResultadoSalvamento(null);
+    salvarRascunhoLocal(null);
+    salvandoRef.current = true;
+    setSalvando(true);
+
+    try {
+      const resultado = await action(dados);
+      setResultadoSalvamento(resultado);
+
+      if (!resultado.sucesso) {
+        setAvisoRascunho(
+          `${resultado.mensagem} Seus dados continuam disponiveis para nova tentativa.`,
+        );
+        return;
+      }
+
+      descartarRascunhoLocal();
+      formulario.dataset.bloquearFechamento = "false";
+      fecharWizard();
+      router.replace(
+        `/propriedades?sucesso=${
+          modo === "editar" ? "propriedade-atualizada" : "propriedade-criada"
+        }`,
+      );
+      router.refresh();
+    } catch (erro) {
+      console.error("Falha de conexao ao salvar a casa.", erro);
+      setResultadoSalvamento({
+        mensagem:
+          "Nao foi possivel confirmar o salvamento da casa. Seus dados foram mantidos. Verifique sua conexao e tente novamente.",
+        sucesso: false,
+      });
+      setAvisoRascunho(
+        "A confirmacao do servidor nao chegou. Tente salvar novamente; a mesma casa sera reutilizada.",
+      );
+    } finally {
+      salvandoRef.current = false;
+      setSalvando(false);
+    }
   }
 
   function obterContextoValidacaoCasa() {
@@ -1180,21 +1271,22 @@ export function PropertyForm({
       possuiComodidade: quantidadeComodidadesValidas > 0,
       possuiImagemPrincipal: Boolean(
         previewCapa ||
-          previewsGaleria.some((preview) => preview.principal) ||
-          propriedade?.imagemCapa?.url,
+        previewsGaleria.some((preview) => preview.principal) ||
+        propriedade?.imagemCapa?.url,
       ),
     };
   }
 
   return (
     <form
-      action={action}
       className="flex min-h-full flex-col"
+      data-bloquear-fechamento={salvando ? "true" : "false"}
       onChange={aoAlterarFormulario}
       onInput={aoAlterarFormulario}
       onSubmit={validarEnvio}
       ref={formRef}
     >
+      <input name="operacaoId" type="hidden" value={operacaoId} />
       {propriedade ? (
         <input name="propriedadeId" type="hidden" value={propriedade.id} />
       ) : null}
@@ -1214,6 +1306,16 @@ export function PropertyForm({
           <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
             {erroServidor}
           </p>
+        ) : null}
+        {resultadoSalvamento && !resultadoSalvamento.sucesso ? (
+          <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-destructive">
+            <p>{resultadoSalvamento.mensagem}</p>
+            {resultadoSalvamento.codigoSuporte ? (
+              <p className="mt-1 text-xs font-semibold">
+                Codigo para suporte: {resultadoSalvamento.codigoSuporte}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {avisoRascunho ? (
           <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-3 text-sm text-cyan-50 sm:flex-row sm:items-center sm:justify-between">
@@ -1313,6 +1415,7 @@ export function PropertyForm({
               erroImagem={erroImagem}
               galeriaRef={galeriaRef}
               idsImagensRemovidas={idsImagensRemovidas}
+              imagemCapaId={imagemCapaId}
               imagemCapaAtual={propriedade?.imagemCapa?.url ?? null}
               publicaSelecionada={publicaSelecionada}
               previewCapa={previewCapa}
@@ -1356,6 +1459,7 @@ export function PropertyForm({
       <div className="sticky bottom-0 z-30 flex flex-col gap-3 border-t border-cyan-300/10 bg-card/95 px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-8">
         <div className="flex flex-wrap items-center gap-3">
           <ActionButton
+            disabled={salvando}
             icon={<X className="h-4 w-4" />}
             onClick={fecharWizard}
             size="md"
@@ -1365,7 +1469,7 @@ export function PropertyForm({
             Cancelar
           </ActionButton>
           <ActionButton
-            disabled={!podeGerenciar}
+            disabled={!podeGerenciar || salvando}
             icon={<Save className="h-4 w-4" />}
             onClick={() => salvarRascunhoLocal()}
             size="md"
@@ -1378,7 +1482,7 @@ export function PropertyForm({
 
         <div className="flex flex-wrap items-center justify-end gap-3">
           <ActionButton
-            disabled={etapaAtual === 0}
+            disabled={etapaAtual === 0 || salvando}
             icon={<ArrowLeft className="h-4 w-4" />}
             onClick={voltarEtapa}
             size="md"
@@ -1390,7 +1494,7 @@ export function PropertyForm({
 
           {!estaNaUltimaEtapa ? (
             <ActionButton
-              disabled={!podeGerenciar}
+              disabled={!podeGerenciar || salvando}
               icon={<ArrowRight className="h-4 w-4" />}
               onClick={avancarEtapa}
               size="lg"
@@ -1400,7 +1504,11 @@ export function PropertyForm({
               Próximo
             </ActionButton>
           ) : (
-            <BotaoSalvarCasa bloqueado={bloqueado} modo={modo} />
+            <BotaoSalvarCasa
+              bloqueado={bloqueado}
+              modo={modo}
+              salvando={salvando}
+            />
           )}
         </div>
       </div>
@@ -1411,20 +1519,34 @@ export function PropertyForm({
 function BotaoSalvarCasa({
   bloqueado,
   modo,
+  salvando,
 }: {
   bloqueado: boolean;
   modo: "criar" | "editar";
+  salvando: boolean;
 }) {
   return (
-    <FormActionButton
-      disabled={bloqueado}
-      icon={<CheckCircle2 className="h-4 w-4" />}
-      pendingLabel={modo === "editar" ? "Salvando..." : "Criando..."}
+    <ActionButton
+      disabled={bloqueado || salvando}
+      icon={
+        salvando ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <CheckCircle2 className="h-4 w-4" />
+        )
+      }
       size="lg"
+      type="submit"
       variant="add"
     >
-      {modo === "editar" ? "Salvar casa" : "Criar casa"}
-    </FormActionButton>
+      {salvando
+        ? modo === "editar"
+          ? "Salvando..."
+          : "Criando..."
+        : modo === "editar"
+          ? "Salvar casa"
+          : "Criar casa"}
+    </ActionButton>
   );
 }
 
@@ -2365,6 +2487,7 @@ function EtapaImagens({
   erros,
   galeriaRef,
   idsImagensRemovidas,
+  imagemCapaId,
   imagemCapaAtual,
   previewCapa,
   previewsGaleria,
@@ -2383,6 +2506,7 @@ function EtapaImagens({
   erros: ErrosFormularioCasa;
   galeriaRef: RefObject<HTMLInputElement | null>;
   idsImagensRemovidas: string[];
+  imagemCapaId: string | null;
   imagemCapaAtual: string | null;
   previewCapa: string | null;
   previewsGaleria: PreviewGaleria[];
@@ -2431,6 +2555,9 @@ function EtapaImagens({
         </p>
       ) : null}
       <div className="grid gap-3">
+        {imagemCapaId ? (
+          <input name="imagemCapaId" type="hidden" value={imagemCapaId} />
+        ) : null}
         {possuiPrincipalExistente ? (
           <input name="possuiImagemPrincipalAtual" type="hidden" value="true" />
         ) : null}
@@ -2518,6 +2645,12 @@ function EtapaImagens({
                       </>
                     ) : (
                       <>
+                        <input
+                          name="galeriaArquivoIds"
+                          readOnly
+                          type="hidden"
+                          value={preview.id}
+                        />
                         <input
                           name="titulosGaleria"
                           readOnly

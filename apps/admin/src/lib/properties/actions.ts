@@ -85,12 +85,14 @@ type EntradaPropriedade = {
   descricaoCurta: string | null;
   destaqueMarketplace: boolean;
   galeriaArquivos: File[];
+  galeriaArquivoIds: string[];
   galeriaIndicePrincipal: number | null;
   galeriaExistente: ImagemExistenteEntrada[];
   galeriaOrdens: number[];
   galeriaTitulos: string[];
   imagensExistentesRemovidasIds: string[];
   imagemCapaArquivo: File | null;
+  imagemCapaId: string | null;
   nome: string;
   publica: boolean;
   regras: {
@@ -124,41 +126,67 @@ type EntradaPropriedade = {
   };
 };
 
-export async function criarPropriedadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
+export type ResultadoSalvarPropriedade = {
+  codigoSuporte?: string;
+  mensagem: string;
+  propriedadeId?: string;
+  sucesso: boolean;
+};
 
+export async function criarPropriedadeAction(
+  formData: FormData,
+): Promise<ResultadoSalvarPropriedade> {
+  let escopo: EscopoGerenciamento | null = null;
   try {
+    escopo = await carregarEscopoGerenciamento();
     const entrada = obterEntradaPropriedade(formData);
     const supabase = await criarClienteSupabaseServer();
+    const propriedadeId = uuidObrigatorio(formData, "operacaoId", "operacao");
 
     await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
     await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
-    await garantirLimitePropriedades(supabase, escopo.tenantId);
-    // Geramos o id antes do insert para nao depender de RETURNING/SELECT do PostgREST.
-    // Em RLS, o cadastro pode ser permitido pelo WITH CHECK enquanto o retorno da linha
-    // ainda e bloqueado por policy de leitura; usar o id local evita falso erro de permissao.
-    const propriedadeId = randomUUID();
-    const { error } = await supabase.from("properties").insert({
-      id: propriedadeId,
-      tenant_id: escopo.tenantId,
-      // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
-      owner_id: escopo.ownerId,
-      name: entrada.nome,
-      slug: gerarIdentificadorUrl(entrada.nome),
-      property_type: entrada.tipo,
-      status: entrada.status,
-      headline: entrada.descricaoCurta ?? entrada.nome,
-      description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
-      short_description: entrada.descricaoCurta,
-      full_description: entrada.descricaoCompleta,
-      is_public: entrada.publica,
-      marketplace_featured: entrada.destaqueMarketplace,
-      public_details: montarDetalhesPublicosBanco(entrada),
-      address: entrada.endereco,
-      structure_details: entrada.estrutura,
-      pricing_details: entrada.valores,
-      timezone: "America/Sao_Paulo",
-    });
+    const { data: existente, error: erroBusca } = await supabase
+      .from("properties")
+      .select("id")
+      .eq("id", propriedadeId)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId)
+      .is("deleted_at", null)
+      .maybeSingle<{ id: string }>();
+
+    if (erroBusca) {
+      throw erroOperacaoCasa(
+        erroBusca.message,
+        "Nao foi possivel verificar o rascunho da casa.",
+      );
+    }
+    if (!existente) await garantirLimitePropriedades(supabase, escopo.tenantId);
+
+    // O ID vem do rascunho local e permanece igual em novas tentativas.
+    const { error } = await supabase.from("properties").upsert(
+      {
+        id: propriedadeId,
+        tenant_id: escopo.tenantId,
+        // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
+        owner_id: escopo.ownerId,
+        name: entrada.nome,
+        slug: gerarIdentificadorUrl(entrada.nome, propriedadeId),
+        property_type: entrada.tipo,
+        status: entrada.status,
+        headline: entrada.descricaoCurta ?? entrada.nome,
+        description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
+        short_description: entrada.descricaoCurta,
+        full_description: entrada.descricaoCompleta,
+        is_public: entrada.publica,
+        marketplace_featured: entrada.destaqueMarketplace,
+        public_details: montarDetalhesPublicosBanco(entrada),
+        address: entrada.endereco,
+        structure_details: entrada.estrutura,
+        pricing_details: entrada.valores,
+        timezone: "America/Sao_Paulo",
+      },
+      { onConflict: "id" },
+    );
 
     if (error) {
       if (process.env.NODE_ENV !== "production") {
@@ -182,22 +210,27 @@ export async function criarPropriedadeAction(formData: FormData) {
       entrada,
     );
     revalidarModulo();
+    return {
+      mensagem: "Casa criada com sucesso.",
+      propriedadeId,
+      sucesso: true,
+    };
   } catch (erro) {
-    redirecionarComErro(
-      CAMINHO_PROPRIEDADES,
+    return criarResultadoErroCasa(
       erro,
       "Erro ao criar propriedade.",
-      montarContextoErroCasa("criar", escopo),
+      escopo ? montarContextoErroCasa("criar", escopo) : { acao: "criar" },
+      textoOpcional(formData, "operacaoId") ?? undefined,
     );
   }
-
-  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=propriedade-criada`);
 }
 
-export async function atualizarPropriedadeAction(formData: FormData) {
-  const escopo = await carregarEscopoGerenciamento();
-
+export async function atualizarPropriedadeAction(
+  formData: FormData,
+): Promise<ResultadoSalvarPropriedade> {
+  let escopo: EscopoGerenciamento | null = null;
   try {
+    escopo = await carregarEscopoGerenciamento();
     const propriedadeId = textoObrigatorio(
       formData,
       "propriedadeId",
@@ -207,7 +240,11 @@ export async function atualizarPropriedadeAction(formData: FormData) {
     const supabase = await criarClienteSupabaseServer();
 
     await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
-    if (entrada.publica || entrada.status === "published" || entrada.destaqueMarketplace) {
+    if (
+      entrada.publica ||
+      entrada.status === "published" ||
+      entrada.destaqueMarketplace
+    ) {
       await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     }
     const { data: propriedade, error } = await supabase
@@ -259,16 +296,21 @@ export async function atualizarPropriedadeAction(formData: FormData) {
       entrada,
     );
     revalidarModulo();
+    return {
+      mensagem: "Casa atualizada com sucesso.",
+      propriedadeId: propriedade.id,
+      sucesso: true,
+    };
   } catch (erro) {
-    redirecionarComErro(
-      CAMINHO_PROPRIEDADES,
+    return criarResultadoErroCasa(
       erro,
       "Erro ao atualizar propriedade.",
-      montarContextoErroCasa("atualizar", escopo),
+      escopo
+        ? montarContextoErroCasa("atualizar", escopo)
+        : { acao: "atualizar" },
+      textoOpcional(formData, "propriedadeId") ?? undefined,
     );
   }
-
-  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=propriedade-atualizada`);
 }
 
 export async function alternarStatusPropriedadeAction(formData: FormData) {
@@ -586,6 +628,21 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     formData,
     "imagensGaleriaArquivos",
   );
+  const imagemCapaId = imagemCapaArquivo
+    ? uuidObrigatorio(formData, "imagemCapaId", "imagem de capa")
+    : null;
+  const galeriaArquivoIds = obterValoresMultiplos(
+    formData,
+    "galeriaArquivoIds",
+  );
+  if (
+    galeriaArquivoIds.length !== galeriaArquivos.length ||
+    galeriaArquivoIds.some((id) => !UUID_VALIDO.test(id))
+  ) {
+    throw new ErroRegraNegocio(
+      "Nao foi possivel identificar as imagens da galeria.",
+    );
+  }
   const imagemPrincipalExistenteId = textoOpcional(
     formData,
     "imagemPrincipalExistenteId",
@@ -648,6 +705,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     descricaoCurta,
     destaqueMarketplace: checkboxAtivo(formData, "destaqueMarketplace"),
     galeriaArquivos,
+    galeriaArquivoIds,
     galeriaExistente: obterGaleriaExistente(
       formData,
       imagemPrincipalExistenteId,
@@ -664,6 +722,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
       "imagensExistentesRemovidasIds",
     ),
     imagemCapaArquivo,
+    imagemCapaId,
     nome,
     publica,
     regras: {
@@ -1307,6 +1366,7 @@ async function salvarImagemCapa(
   entrada: EntradaPropriedade,
 ) {
   if (!entrada.imagemCapaArquivo) return;
+  const imagemId = entrada.imagemCapaId!;
 
   const arquivo = await executarEtapaCasa(
     "Erro ao salvar imagem de capa.",
@@ -1319,6 +1379,7 @@ async function salvarImagemCapa(
           tenantId,
         },
         entrada.imagemCapaArquivo as File,
+        imagemId,
       ),
   );
 
@@ -1337,18 +1398,22 @@ async function salvarImagemCapa(
     );
   }
 
-  const { error } = await supabase.from("media_assets").insert({
-    tenant_id: tenantId,
-    property_id: propriedadeId,
-    media_type: "image",
-    storage_bucket: arquivo.bucket,
-    storage_path: arquivo.path,
-    url: arquivo.url,
-    alt: `Imagem de capa de ${entrada.nome}`,
-    sort_order: 0,
-    is_cover: true,
-    status: "active",
-  });
+  const { error } = await supabase.from("media_assets").upsert(
+    {
+      id: imagemId,
+      tenant_id: tenantId,
+      property_id: propriedadeId,
+      media_type: "image",
+      storage_bucket: arquivo.bucket,
+      storage_path: arquivo.path,
+      url: arquivo.url,
+      alt: `Imagem de capa de ${entrada.nome}`,
+      sort_order: 0,
+      is_cover: true,
+      status: "active",
+    },
+    { onConflict: "id" },
+  );
   if (error) {
     throw erroOperacaoCasa(error.message, "Erro ao salvar imagem de capa.");
   }
@@ -1390,6 +1455,7 @@ async function salvarGaleriaPropriedade(
 
   await Promise.all(
     entrada.galeriaArquivos.map(async (arquivo, indice) => {
+      const imagemId = entrada.galeriaArquivoIds[indice]!;
       const midia = await executarEtapaCasa(
         "Erro ao salvar imagens da galeria.",
         () =>
@@ -1401,25 +1467,30 @@ async function salvarGaleriaPropriedade(
               tenantId,
             },
             arquivo,
+            imagemId,
           ),
       );
 
       const titulo = entrada.galeriaTitulos[indice]?.trim() || arquivo.name;
       const ordemInformada = entrada.galeriaOrdens[indice];
 
-      const { error } = await supabase.from("media_assets").insert({
-        alt: titulo,
-        is_cover:
-          galeriaDefineCapa && entrada.galeriaIndicePrincipal === indice,
-        media_type: "image",
-        property_id: propriedadeId,
-        sort_order: ordemInformada ?? proximaOrdem + indice,
-        status: "active",
-        storage_bucket: midia.bucket,
-        storage_path: midia.path,
-        tenant_id: tenantId,
-        url: midia.url,
-      });
+      const { error } = await supabase.from("media_assets").upsert(
+        {
+          id: imagemId,
+          alt: titulo,
+          is_cover:
+            galeriaDefineCapa && entrada.galeriaIndicePrincipal === indice,
+          media_type: "image",
+          property_id: propriedadeId,
+          sort_order: ordemInformada ?? proximaOrdem + indice,
+          status: "active",
+          storage_bucket: midia.bucket,
+          storage_path: midia.path,
+          tenant_id: tenantId,
+          url: midia.url,
+        },
+        { onConflict: "id" },
+      );
 
       if (error) {
         throw erroOperacaoCasa(
@@ -1660,7 +1731,7 @@ function exigirConfirmacaoExclusao(formData: FormData) {
   }
 }
 
-function gerarIdentificadorUrl(valor: string): string {
+function gerarIdentificadorUrl(valor: string, identificador?: string): string {
   const base = valor
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -1669,7 +1740,18 @@ function gerarIdentificadorUrl(valor: string): string {
     .replace(/^-|-$/g, "")
     .slice(0, 48);
 
-  return `${base || "item"}-${Date.now().toString(36)}`;
+  return `${base || "item"}-${identificador?.slice(0, 8) ?? Date.now().toString(36)}`;
+}
+
+const UUID_VALIDO =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function uuidObrigatorio(formData: FormData, chave: string, label: string) {
+  const valor = textoObrigatorio(formData, chave, label);
+  if (!UUID_VALIDO.test(valor)) {
+    throw new ErroRegraNegocio(`Identificador de ${label} invalido.`);
+  }
+  return valor;
 }
 
 function normalizarCodigoUnico(valor: string): string {
@@ -1707,6 +1789,38 @@ function redirecionarComErro(
   });
 
   redirect(`${caminho}?erro=${encodeURIComponent(mensagem)}`);
+}
+
+function criarResultadoErroCasa(
+  erro: unknown,
+  mensagemLog: string,
+  contexto: Record<string, unknown>,
+  propriedadeId?: string,
+): ResultadoSalvarPropriedade {
+  const mensagemTecnica = erro instanceof Error ? erro.message : null;
+  const mensagem =
+    erro instanceof ErroRegraNegocio
+      ? traduzirErroSupabase(erro.message, erro.message)
+      : traduzirErroSupabase(
+          mensagemTecnica,
+          "Nao foi possivel confirmar o salvamento da casa. Seus dados foram mantidos. Verifique sua conexao e tente novamente.",
+        );
+  const codigoSuporte = `CASA-${randomUUID().slice(0, 8).toUpperCase()}`;
+
+  console.error(mensagemLog, {
+    codigoSuporte,
+    contexto,
+    mensagemTecnica,
+    mensagemUsuario: mensagem,
+    propriedadeId,
+  });
+
+  return {
+    codigoSuporte,
+    mensagem,
+    ...(propriedadeId ? { propriedadeId } : {}),
+    sucesso: false,
+  };
 }
 
 function traduzirErroSupabase(
@@ -1804,4 +1918,3 @@ function revalidarModulo() {
   revalidatePath("/relatorios");
   revalidatePath("/avaliacoes");
 }
-

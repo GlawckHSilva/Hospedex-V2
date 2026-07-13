@@ -6,8 +6,10 @@ import { useSearchParams } from "next/navigation";
 import {
   type ComponentProps,
   type ReactNode,
+  useCallback,
   useEffect,
   useId,
+  useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
@@ -130,7 +132,15 @@ export function AppModal({
   title,
 }: AppModalProps) {
   const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  const solicitarFechamento = useCallback(() => {
+    if (dialogRef.current?.querySelector('[data-bloquear-fechamento="true"]')) {
+      return;
+    }
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   useEffect(() => {
     setPortalRoot(document.body);
@@ -140,7 +150,7 @@ export function AppModal({
     if (!open) return;
 
     function fecharComEscape(evento: KeyboardEvent) {
-      if (evento.key === "Escape") onOpenChange(false);
+      if (evento.key === "Escape") solicitarFechamento();
     }
 
     const overflowAnterior = document.body.style.overflow;
@@ -151,7 +161,7 @@ export function AppModal({
       document.removeEventListener("keydown", fecharComEscape);
       document.body.style.overflow = overflowAnterior;
     };
-  }, [onOpenChange, open]);
+  }, [open, solicitarFechamento]);
 
   const modal = (
     <AnimatePresence>
@@ -164,7 +174,7 @@ export function AppModal({
           )}
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
-          onMouseDown={() => onOpenChange(false)}
+          onMouseDown={solicitarFechamento}
         >
           <motion.div
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -177,6 +187,7 @@ export function AppModal({
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
             initial={{ opacity: 0, scale: 0.98, y: 14 }}
             onMouseDown={(evento) => evento.stopPropagation()}
+            ref={dialogRef}
             role="dialog"
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
@@ -203,7 +214,7 @@ export function AppModal({
 
                 <Button
                   aria-label="Fechar modal"
-                  onClick={() => onOpenChange(false)}
+                  onClick={solicitarFechamento}
                   size="icon"
                   type="button"
                   variant="ghost"

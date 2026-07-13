@@ -50,23 +50,23 @@ export function obterArquivoImagem(formData: FormData, chave: string): File | nu
 export async function enviarImagemParaStorage(
   supabase: ClienteSupabaseServer,
   destino: DestinoMidia,
-  arquivo: File
+  arquivo: File,
+  chaveIdempotencia?: string
 ) {
   validarImagem(arquivo);
 
-  const caminho = montarCaminhoStorage(destino, arquivo);
+  const caminho = montarCaminhoStorage(destino, arquivo, chaveIdempotencia);
   const { error } = await supabase.storage
     .from(BUCKET_MIDIA_PROPRIEDADES)
     .upload(caminho, arquivo, {
       contentType: arquivo.type,
-      upsert: false
+      // Uma nova tentativa da mesma operacao substitui o mesmo objeto, sem duplicar arquivos.
+      upsert: Boolean(chaveIdempotencia)
     });
 
   if (error) throw new ErroRegraNegocio(`Erro ao enviar imagem para o Storage: ${error.message}`);
 
-  const { data } = supabase.storage
-    .from(BUCKET_MIDIA_PROPRIEDADES)
-    .getPublicUrl(caminho);
+  const { data } = supabase.storage.from(BUCKET_MIDIA_PROPRIEDADES).getPublicUrl(caminho);
 
   return {
     bucket: BUCKET_MIDIA_PROPRIEDADES,
@@ -105,9 +105,7 @@ export async function enviarLogoTenantParaStorage(
 
   if (error) throw new ErroRegraNegocio(`Erro ao enviar logo para o Storage: ${error.message}`);
 
-  const { data } = supabase.storage
-    .from(BUCKET_MIDIA_PROPRIEDADES)
-    .getPublicUrl(caminho);
+  const { data } = supabase.storage.from(BUCKET_MIDIA_PROPRIEDADES).getPublicUrl(caminho);
 
   return {
     bucket: BUCKET_MIDIA_PROPRIEDADES,
@@ -135,9 +133,7 @@ export async function enviarImagemGuiaRegiaoParaStorage(
     throw new ErroRegraNegocio(`Erro ao enviar imagem do guia da região: ${error.message}`);
   }
 
-  const { data } = supabase.storage
-    .from(BUCKET_MIDIA_PROPRIEDADES)
-    .getPublicUrl(caminho);
+  const { data } = supabase.storage.from(BUCKET_MIDIA_PROPRIEDADES).getPublicUrl(caminho);
 
   return {
     bucket: BUCKET_MIDIA_PROPRIEDADES,
@@ -155,9 +151,7 @@ export async function removerLogoTenantDoStorage(
 
   if (!caminho) return;
 
-  const { error } = await supabase.storage
-    .from(BUCKET_MIDIA_PROPRIEDADES)
-    .remove([caminho]);
+  const { error } = await supabase.storage.from(BUCKET_MIDIA_PROPRIEDADES).remove([caminho]);
 
   if (error) throw new ErroRegraNegocio(`Erro ao remover logo do Storage: ${error.message}`);
 }
@@ -168,7 +162,9 @@ function validarImagem(arquivo: File) {
   }
 
   if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
-    throw new ErroRegraNegocio(`Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+    throw new ErroRegraNegocio(
+      `Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`
+    );
   }
 }
 
@@ -178,7 +174,9 @@ function validarLogoTenant(arquivo: File) {
   }
 
   if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
-    throw new ErroRegraNegocio(`Logo acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+    throw new ErroRegraNegocio(
+      `Logo acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`
+    );
   }
 }
 
@@ -188,13 +186,20 @@ function validarImagemGuiaRegiao(arquivo: File) {
   }
 
   if (arquivo.size > TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES) {
-    throw new ErroRegraNegocio(`Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`);
+    throw new ErroRegraNegocio(
+      `Imagem acima do limite de ${TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB}MB.`
+    );
   }
 }
 
-function montarCaminhoStorage(destino: DestinoMidia, arquivo: File): string {
+function montarCaminhoStorage(
+  destino: DestinoMidia,
+  arquivo: File,
+  chaveIdempotencia?: string
+): string {
   const nomeSeguro = normalizarNomeArquivo(arquivo.name);
-  return `${destino.tenantId}/properties/${destino.propertyId}/${destino.escopo}/${Date.now()}-${nomeSeguro}`;
+  const identificador = chaveIdempotencia ?? Date.now().toString();
+  return `${destino.tenantId}/properties/${destino.propertyId}/${destino.escopo}/${identificador}-${nomeSeguro}`;
 }
 
 function montarCaminhoLogoTenant(destino: DestinoLogoTenant, arquivo: File): string {
