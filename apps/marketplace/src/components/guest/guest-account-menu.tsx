@@ -67,7 +67,7 @@ export function GuestAccountMenu() {
       </Link>
       <button
         aria-expanded={aberto}
-        className="inline-flex h-10 items-center gap-2 rounded-full border border-cyan-300/20 bg-background/70 px-2 pr-3 text-sm font-medium shadow-sm shadow-cyan-950/10 transition hover:border-cyan-300/45 hover:bg-secondary/70"
+        className="inline-flex h-10 items-center gap-2 rounded-full border border-primary/20 bg-background/70 px-2 pr-3 text-sm font-medium shadow-sm shadow-cyan-950/10 transition hover:border-primary/45 hover:bg-secondary/70"
         onClick={() => setAberto((valor) => !valor)}
         type="button"
       >

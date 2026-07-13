@@ -11,17 +11,12 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
-  Users
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import {
-  GlassCard,
-  StatusBadge,
-  buttonVariants,
-  cn
-} from "@hospedex/ui";
+import { GlassCard, StatusBadge, buttonVariants, cn } from "@hospedex/ui";
 
 import { PublicShell } from "../components/layout/public-shell";
 import { FavoriteButton } from "../components/properties/favorite-button";
@@ -29,7 +24,7 @@ import {
   carregarPropriedadesPublicas,
   obterDestinosEmDestaque,
   type DestinoEmDestaque,
-  type PropriedadePublica
+  type PropriedadePublica,
 } from "../lib/marketplace/data";
 
 // A home precisa refletir hospedagens recem-publicadas sem cache antigo.
@@ -40,38 +35,38 @@ const categoriasMarketplace = [
     description: "Casas completas para familia, grupos e estadias longas.",
     href: "/propriedades?tipo=seasonal_home",
     icon: House,
-    title: "Casas"
+    title: "Casas",
   },
   {
     description: "Hospedagem acolhedora com atendimento local.",
     href: "/propriedades?tipo=inn",
     icon: Building2,
-    title: "Pousadas"
+    title: "Pousadas",
   },
   {
     description: "Operacao compacta, quartos e estrutura profissional.",
     href: "/propriedades?tipo=small_hotel",
     icon: Hotel,
-    title: "Hoteis compactos"
-  }
+    title: "Hoteis compactos",
+  },
 ] as const;
 
 const beneficios = [
   {
     description: "Sem pagamento antecipado pelo Marketplace.",
     icon: ShieldCheck,
-    title: "Reserva segura"
+    title: "Reserva segura",
   },
   {
     description: "Fale com o anfitriao antes de confirmar.",
     icon: BadgeCheck,
-    title: "Contato direto"
+    title: "Contato direto",
   },
   {
     description: "Fotos, regras, datas e valores em uma pagina.",
     icon: Sparkles,
-    title: "Tudo organizado"
-  }
+    title: "Tudo organizado",
+  },
 ] as const;
 
 export default async function MarketplaceHomePage() {
@@ -89,16 +84,23 @@ export default async function MarketplaceHomePage() {
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-14">
           <div className="mx-auto max-w-4xl text-center">
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <StatusBadge className="border-cyan-300/30 bg-cyan-300/15 text-cyan-50" tone="info">
+              <StatusBadge
+                className="border-cyan-300/30 bg-cyan-300/15 text-cyan-50"
+                tone="info"
+              >
                 Hospedagens verificadas
               </StatusBadge>
-              <StatusBadge className="border-white/20 bg-white/12 text-white" tone="neutral">
+              <StatusBadge
+                className="border-white/20 bg-white/12 text-white"
+                tone="neutral"
+              >
                 Casas, pousadas e pequenos hoteis
               </StatusBadge>
             </div>
 
             <h1 className="mt-5 break-words text-[2.35rem] font-semibold leading-[1.08] tracking-normal sm:text-5xl lg:text-[4rem]">
-              Hospedagens para sua <span className="text-cyan-300">proxima viagem.</span>
+              Hospedagens para sua{" "}
+              <span className="text-cyan-300">proxima viagem.</span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl break-words text-base leading-7 text-cyan-50/82 sm:text-lg">
               Busque casas, pousadas e hoteis independentes.
@@ -184,13 +186,18 @@ export default async function MarketplaceHomePage() {
               "mt-5 grid gap-3",
               destinos.length > 1 && "sm:grid-cols-2",
               destinos.length > 2 && "lg:grid-cols-3",
-              destinos.length > 3 && "xl:grid-cols-4"
+              destinos.length > 3 && "xl:grid-cols-4",
             )}
           >
             {destinos.length ? (
-              destinos.slice(0, 4).map((destino) => (
-                <DestinationCard destino={destino} key={`${destino.cidade}-${destino.estado}`} />
-              ))
+              destinos
+                .slice(0, 4)
+                .map((destino) => (
+                  <DestinationCard
+                    destino={destino}
+                    key={`${destino.cidade}-${destino.estado}`}
+                  />
+                ))
             ) : (
               <CompactEmptyState
                 description="Quando houver casas publicadas, os destinos aparecem aqui automaticamente."
@@ -200,38 +207,49 @@ export default async function MarketplaceHomePage() {
           </div>
         </section>
 
-        <section className="mt-3 border-t border-border/70 bg-card/20" id="categorias">
+        <section
+          className="mt-3 border-t border-border/70 bg-card/20"
+          id="categorias"
+        >
           <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-            <SectionHeader eyebrow="Categorias" title="Escolha o tipo de hospedagem" />
+            <SectionHeader
+              eyebrow="Categorias"
+              title="Escolha o tipo de hospedagem"
+            />
             <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {categoriasMarketplace.map((categoria) => {
-              const Icone = categoria.icon;
+              {categoriasMarketplace.map((categoria) => {
+                const Icone = categoria.icon;
 
-              return (
-                <Link
-                  className="group rounded-3xl border border-border bg-card/72 p-5 shadow-sm transition hover:border-cyan-300/40 hover:bg-cyan-400/5"
-                  href={categoria.href}
-                  key={categoria.title}
-                >
-                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-cyan-400/10 text-cyan-200">
-                    <Icone className="h-5 w-5" />
-                  </span>
-                  <h3 className="mt-5 text-lg font-semibold">{categoria.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    {categoria.description}
-                  </p>
-                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200">
-                    Ver opcoes
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                  </span>
-                </Link>
-              );
-            })}
+                return (
+                  <Link
+                    className="group rounded-3xl border border-border bg-card/72 p-5 shadow-sm transition hover:border-primary/45 hover:bg-accent-soft/55"
+                    href={categoria.href}
+                    key={categoria.title}
+                  >
+                    <span className="grid h-12 w-12 place-items-center rounded-2xl bg-accent-soft text-primary">
+                      <Icone className="h-5 w-5" />
+                    </span>
+                    <h3 className="mt-5 text-lg font-semibold">
+                      {categoria.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                      {categoria.description}
+                    </p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary transition group-hover:text-primary-hover">
+                      Ver opcoes
+                      <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6" id="proprietarios">
+        <section
+          className="mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6"
+          id="proprietarios"
+        >
           <GlassCard className="relative overflow-hidden p-5 sm:p-6">
             <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(34,211,238,0.18),transparent_58%)] lg:block" />
             <div className="relative grid gap-6 lg:grid-cols-[1.1fr_1fr_auto] lg:items-center">
@@ -251,12 +269,21 @@ export default async function MarketplaceHomePage() {
                 <OwnerStep number="3" text="Receba pedidos" />
               </div>
               <div className="grid gap-3">
-                <Link className={cn(buttonVariants({ size: "lg" }), "justify-center")} href="/anunciar">
+                <Link
+                  className={cn(
+                    buttonVariants({ size: "lg" }),
+                    "justify-center",
+                  )}
+                  href="/anunciar"
+                >
                   Anunciar
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
-                  className={cn(buttonVariants({ size: "lg", variant: "outline" }), "justify-center")}
+                  className={cn(
+                    buttonVariants({ size: "lg", variant: "outline" }),
+                    "justify-center",
+                  )}
                   href="https://hospedex.vercel.app/cadastro"
                 >
                   Ir para gestao
@@ -319,7 +346,7 @@ function SearchField({
   min,
   name,
   placeholder,
-  type = "text"
+  type = "text",
 }: {
   icon: ReactNode;
   label: string;
@@ -330,7 +357,9 @@ function SearchField({
 }) {
   return (
     <label className="grid min-w-0 gap-1 rounded-[1.5rem] px-4 py-3 text-cyan-50 transition hover:bg-white/8 lg:border-r lg:border-cyan-100/12 lg:last:border-r-0">
-      <span className="text-xs font-bold uppercase tracking-normal text-cyan-200/78">{label}</span>
+      <span className="text-xs font-bold uppercase tracking-normal text-cyan-200/78">
+        {label}
+      </span>
       <span className="flex items-center gap-2">
         <span className="text-cyan-300">{icon}</span>
         <input
@@ -345,103 +374,126 @@ function SearchField({
   );
 }
 
-function PropertyShowcaseCard({ propriedade }: { propriedade: PropriedadePublica }) {
+function PropertyShowcaseCard({
+  propriedade,
+}: {
+  propriedade: PropriedadePublica;
+}) {
   return (
     <article className="group h-full overflow-hidden rounded-[1.35rem] border border-border bg-card shadow-sm transition hover:border-cyan-300/40">
-        <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-          <Link aria-label={`Ver ${propriedade.name}`} href={`/propriedades/${propriedade.slug}`}>
-            {propriedade.coverImage ? (
-              <img
-                alt={propriedade.coverImage.alt}
-                className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                loading="lazy"
-                src={propriedade.coverImage.url}
-              />
-            ) : (
-              <div className="grid h-full place-items-center bg-cyan-500/10 text-sm font-semibold">
-                Fotos em preparacao
-              </div>
-            )}
-            <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/78 to-transparent" />
+      <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
+        <Link
+          aria-label={`Ver ${propriedade.name}`}
+          href={`/propriedades/${propriedade.slug}`}
+        >
+          {propriedade.coverImage ? (
+            <img
+              alt={propriedade.coverImage.alt}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+              loading="lazy"
+              src={propriedade.coverImage.url}
+            />
+          ) : (
+            <div className="grid h-full place-items-center bg-cyan-500/10 text-sm font-semibold">
+              Fotos em preparacao
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/78 to-transparent" />
+        </Link>
+        <StatusBadge
+          className="absolute left-2.5 top-2.5 bg-cyan-500/85 text-[11px] text-white"
+          tone="info"
+        >
+          {propriedade.propertyTypeLabel}
+        </StatusBadge>
+        <FavoriteButton
+          className="absolute right-2.5 top-2.5"
+          property={propriedade}
+          variant="card"
+        />
+      </div>
+      <div className="grid gap-2.5 p-3.5">
+        <div className="flex items-start justify-between gap-3">
+          <Link className="min-w-0" href={`/propriedades/${propriedade.slug}`}>
+            <h3 className="line-clamp-1 text-base font-semibold transition group-hover:text-primary">
+              {propriedade.name}
+            </h3>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              {propriedade.locationLabel}
+            </p>
           </Link>
-          <StatusBadge className="absolute left-2.5 top-2.5 bg-cyan-500/85 text-[11px] text-white" tone="info">
-            {propriedade.propertyTypeLabel}
-          </StatusBadge>
-          <FavoriteButton className="absolute right-2.5 top-2.5" property={propriedade} variant="card" />
         </div>
-        <div className="grid gap-2.5 p-3.5">
-          <div className="flex items-start justify-between gap-3">
-            <Link className="min-w-0" href={`/propriedades/${propriedade.slug}`}>
-              <h3 className="line-clamp-1 text-base font-semibold transition group-hover:text-cyan-100">
-                {propriedade.name}
-              </h3>
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                {propriedade.locationLabel}
-              </p>
-            </Link>
-          </div>
-          <p className="line-clamp-1 text-sm text-muted-foreground">
-            {propriedade.headline}
-          </p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="h-3.5 w-3.5" />
-              {propriedade.maxGuests} hospede{propriedade.maxGuests === 1 ? "" : "s"}
+        <p className="line-clamp-1 text-sm text-muted-foreground">
+          {propriedade.headline}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5" />
+            {propriedade.maxGuests} hospede
+            {propriedade.maxGuests === 1 ? "" : "s"}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <BedDouble className="h-3.5 w-3.5" />
+            {propriedade.bedrooms} quarto{propriedade.bedrooms === 1 ? "" : "s"}
+          </span>
+          {propriedade.reviews.average ? (
+            <span className="inline-flex items-center gap-1 text-amber-300">
+              <Star className="h-3.5 w-3.5 fill-current" />
+              {propriedade.reviews.average.toFixed(1)}
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <BedDouble className="h-3.5 w-3.5" />
-              {propriedade.bedrooms} quarto{propriedade.bedrooms === 1 ? "" : "s"}
-            </span>
-            {propriedade.reviews.average ? (
-              <span className="inline-flex items-center gap-1 text-amber-300">
-                <Star className="h-3.5 w-3.5 fill-current" />
-                {propriedade.reviews.average.toFixed(1)}
-              </span>
+          ) : null}
+        </div>
+        <div className="flex items-end justify-between gap-3 border-t border-border pt-3">
+          <div>
+            <p className="text-xs text-muted-foreground">A partir de</p>
+            <strong className="text-lg">
+              {formatarPrecoCurto(propriedade.minPrice)}
+            </strong>
+            {propriedade.minPrice ? (
+              <span className="text-xs text-muted-foreground">/noite</span>
             ) : null}
           </div>
-          <div className="flex items-end justify-between gap-3 border-t border-border pt-3">
-            <div>
-              <p className="text-xs text-muted-foreground">A partir de</p>
-              <strong className="text-lg">{formatarPrecoCurto(propriedade.minPrice)}</strong>
-              {propriedade.minPrice ? <span className="text-xs text-muted-foreground">/noite</span> : null}
-            </div>
-            <Link
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-cyan-200 transition hover:text-cyan-100"
-              href={`/propriedades/${propriedade.slug}`}
-            >
-              Ver
-              <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-            </Link>
-          </div>
+          <Link
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary transition hover:text-primary-hover"
+            href={`/propriedades/${propriedade.slug}`}
+          >
+            Ver
+            <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+          </Link>
         </div>
-      </article>
+      </div>
+    </article>
   );
 }
 
 function DestinationCard({ destino }: { destino: DestinoEmDestaque }) {
   return (
     <Link
-      className="group relative overflow-hidden rounded-2xl border border-border bg-card/72 p-5 shadow-sm transition duration-300 hover:border-cyan-300/40 hover:bg-cyan-400/5 hover:shadow-lg hover:shadow-cyan-950/10"
+      className="group relative overflow-hidden rounded-2xl border border-border bg-card/72 p-5 shadow-sm transition duration-300 hover:border-primary/45 hover:bg-accent-soft/55 hover:shadow-lg hover:shadow-cyan-950/10"
       href={`/propriedades?cidade=${encodeURIComponent(destino.cidade)}`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_90%_10%,rgba(34,211,238,0.12),transparent_42%)]" />
       <div className="relative flex min-h-32 flex-col">
         <div className="flex items-start justify-between gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300">
+          <span className="grid h-10 w-10 place-items-center rounded-xl border border-primary/20 bg-accent-soft text-primary">
             <MapPin className="h-5 w-5" />
           </span>
-          <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-cyan-300" />
+          <ArrowRight className="h-4 w-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-primary" />
         </div>
         <div className="mt-5">
-          <h3 className="line-clamp-1 text-lg font-semibold">{destino.cidade}</h3>
-          <p className="mt-1 text-sm font-medium text-cyan-300">{destino.estado}</p>
+          <h3 className="line-clamp-1 text-lg font-semibold">
+            {destino.cidade}
+          </h3>
+          <p className="mt-1 text-sm font-medium text-primary">
+            {destino.estado}
+          </p>
         </div>
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
           <span className="text-muted-foreground">
             {destino.total} hospedagem{destino.total === 1 ? "" : "s"}
           </span>
-          <span className="font-semibold text-cyan-300">Explorar</span>
+          <span className="font-semibold text-primary">Explorar</span>
         </div>
       </div>
     </Link>
@@ -453,7 +505,7 @@ function SectionHeader({
   actionLabel,
   description,
   eyebrow,
-  title
+  title,
 }: {
   actionHref?: string;
   actionLabel?: string;
@@ -464,14 +516,24 @@ function SectionHeader({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <p className="text-xs font-bold uppercase tracking-normal text-cyan-300">{eyebrow}</p>
+        <p className="text-xs font-bold uppercase tracking-normal text-primary">
+          {eyebrow}
+        </p>
         <h2 className="mt-1 text-2xl font-semibold tracking-normal">{title}</h2>
         {description ? (
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
       {actionHref && actionLabel ? (
-        <Link className={cn(buttonVariants({ size: "sm", variant: "outline" }), "w-fit")} href={actionHref}>
+        <Link
+          className={cn(
+            buttonVariants({ size: "sm", variant: "outline" }),
+            "w-fit",
+          )}
+          href={actionHref}
+        >
           {actionLabel}
           <ArrowRight className="h-4 w-4" />
         </Link>
@@ -483,7 +545,7 @@ function SectionHeader({
 function OwnerStep({ number, text }: { number: string; text: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-background/55 p-3">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cyan-400/10 text-sm font-semibold text-cyan-200">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-semibold text-primary">
         {number}
       </span>
       <span className="text-sm font-medium">{text}</span>
@@ -502,11 +564,19 @@ function EmptyFeatureCard() {
   );
 }
 
-function CompactEmptyState({ description, title }: { description: string; title: string }) {
+function CompactEmptyState({
+  description,
+  title,
+}: {
+  description: string;
+  title: string;
+}) {
   return (
     <GlassCard className="p-5">
       <h3 className="font-semibold">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        {description}
+      </p>
     </GlassCard>
   );
 }
@@ -517,6 +587,6 @@ function formatarPrecoCurto(valor: number | null) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
     maximumFractionDigits: 0,
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }

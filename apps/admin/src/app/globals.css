@@ -38,26 +38,31 @@
 .admin-management-shell {
   color-scheme: light;
   --background: #f7fbff;
-  --foreground: #0f172a;
+  --foreground: #142033;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #142033;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #22d3ee;
-  --primary-foreground: #083344;
+  --popover-foreground: #142033;
+  --primary: #007a9e;
+  --primary-foreground: #ffffff;
+  --primary-hover: #00627f;
   --secondary: #eef5fa;
   --secondary-foreground: #164e63;
   --muted: #eef4f8;
-  --muted-foreground: #526273;
-  --accent: #dff8ff;
-  --accent-foreground: #164e63;
+  --muted-foreground: #52657d;
+  --accent: #e1f7fb;
+  --accent-foreground: #00566f;
+  --accent-soft: #e1f7fb;
+  --link: #007a9e;
+  --icon-active: #007a9e;
+  --border-active: #007a9e;
   --destructive: #ef4444;
   --border: #bacddd;
   --input: #b5cada;
-  --ring: #06b6d4;
+  --ring: #007a9e;
   --success: #16a34a;
   --warning: #ca8a04;
-  --info: #0284c7;
+  --info: #007a9e;
   min-height: 100vh;
   background:
     radial-gradient(circle at 14% 0%, rgba(6, 182, 212, 0.09), transparent 30%),
@@ -130,21 +135,26 @@
   --card-foreground: #f8fafc;
   --popover: #07111f;
   --popover-foreground: #f8fafc;
-  --primary: #22d3ee;
+  --primary: #35d9f2;
   --primary-foreground: #020617;
+  --primary-hover: #68e5f7;
   --secondary: #0b1220;
   --secondary-foreground: #f8fafc;
   --muted: #0b1220;
   --muted-foreground: #94a3b8;
   --accent: #083344;
   --accent-foreground: #ecfeff;
+  --accent-soft: rgba(34, 211, 238, 0.12);
+  --link: #68e5f7;
+  --icon-active: #35d9f2;
+  --border-active: #35d9f2;
   --destructive: #ef4444;
   --border: #1e293b;
   --input: #1e293b;
-  --ring: #22d3ee;
+  --ring: #35d9f2;
   --success: #22c55e;
   --warning: #eab308;
-  --info: #22d3ee;
+  --info: #35d9f2;
   background:
     radial-gradient(
       circle at 14% 0%,

@@ -162,7 +162,7 @@ function MarketplaceBrand() {
         src="/brand/hospedex-logo-white.png"
       />
       <span className="min-w-0 truncate text-lg font-bold leading-none tracking-normal">
-        <span className="text-cyan-300">Hospe</span>
+        <span className="text-primary dark:text-cyan-300">Hospe</span>
         <span className="text-foreground dark:text-white">dex</span>
       </span>
     </Link>

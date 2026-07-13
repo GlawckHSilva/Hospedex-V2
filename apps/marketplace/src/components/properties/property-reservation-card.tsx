@@ -76,11 +76,11 @@ const reservationInputWithIconClass =
 const reservationInputPlainClass =
   "marketplace-reservation-control h-12 min-w-0 px-3 text-left text-sm text-foreground placeholder:text-muted-foreground";
 const reservationSelectWithIconClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-11 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-11 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const reservationSelectPlainClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const reservationTextareaClass =
-  "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const LIMITE_PADRAO_HOSPEDES_EXTRAS = 10;
 
 /**
@@ -381,7 +381,7 @@ function ReservationFormFields({
             type="time"
             value={horarioPrevistoCheckIn}
           />
-          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
+          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
             Padrão da casa: {property.checkIn}.
           </span>
         </Field>
@@ -397,7 +397,7 @@ function ReservationFormFields({
             type="time"
             value={horarioPrevistoCheckOut}
           />
-          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
+          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
             Padrão da casa: {property.checkOut}.
           </span>
         </Field>
@@ -427,7 +427,7 @@ function ReservationFormFields({
           type="number"
           value={quantidadeHospedes}
         />
-        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
+        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
           {obterTextoLimiteHospedes(property)}
         </span>
       </Field>
@@ -473,7 +473,7 @@ function ReservationFormFields({
             value={emailHospede}
           />
           {emailHospedeBloqueado ? (
-            <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
+            <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
               Este e-mail está vinculado à sua conta.
             </span>
           ) : null}
@@ -510,7 +510,7 @@ function ReservationFormFields({
           ))}
         </select>
         <ChevronDown className={selectIconClass} />
-        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
+        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
           Nenhum pagamento é realizado nesta etapa.
         </span>
       </Field>
