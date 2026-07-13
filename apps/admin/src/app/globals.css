@@ -209,6 +209,72 @@
   color: #f8fafc;
 }
 
+/* Contraste do Dashboard no modo claro, sem alterar os demais módulos. */
+.admin-management-shell .admin-dashboard .glass-card {
+  border-color: #b8c7d9;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+.admin-management-shell .admin-dashboard {
+  --dashboard-chart-primary: #0891b2;
+  --dashboard-chart-secondary: #22afc5;
+  --dashboard-chart-fill: #d8f3f8;
+  --dashboard-chart-grid: #b8c7d9;
+  --dashboard-chart-text: #475569;
+  --dashboard-tooltip-bg: #ffffff;
+  --dashboard-tooltip-text: #0f172a;
+}
+
+.admin-management-shell .admin-dashboard .dashboard-card-value { color: #0f172a; }
+.admin-management-shell .admin-dashboard .dashboard-card-title { color: #334155; }
+.admin-management-shell .admin-dashboard .dashboard-card-description { color: #475569; }
+.admin-management-shell .admin-dashboard .dashboard-card-helper { color: #64748b; }
+
+.admin-management-shell .admin-dashboard .dashboard-card-icon {
+  border-color: #b8c7d9;
+  background: #d8f3f8;
+  color: #036b8c;
+}
+
+.admin-management-shell .admin-dashboard .dashboard-inner-surface {
+  border-color: #b8c7d9;
+  background: #f8fbfd;
+}
+
+.admin-management-shell .admin-dashboard .dashboard-mini-bar {
+  background: #22afc5;
+  transition: background-color 160ms ease;
+}
+
+.admin-management-shell .admin-dashboard .dashboard-mini-bar--max { background: #0891b2; }
+.admin-management-shell .admin-dashboard .dashboard-mini-bar:hover { background: #036b8c; }
+
+.dark .admin-management-shell .admin-dashboard .glass-card,
+.dark .admin-management-shell .admin-dashboard .dashboard-inner-surface {
+  border-color: rgba(30, 41, 59, 0.96);
+  background: rgba(7, 17, 31, 0.94);
+}
+
+.dark .admin-management-shell .admin-dashboard {
+  --dashboard-chart-primary: #22d3ee;
+  --dashboard-chart-secondary: #0e7490;
+  --dashboard-chart-fill: #083344;
+  --dashboard-chart-grid: #334155;
+  --dashboard-chart-text: #94a3b8;
+  --dashboard-tooltip-bg: #07111f;
+  --dashboard-tooltip-text: #f8fafc;
+}
+
+.dark .admin-management-shell .admin-dashboard :is(.dashboard-card-value, .dashboard-card-title) { color: #f8fafc; }
+.dark .admin-management-shell .admin-dashboard :is(.dashboard-card-description, .dashboard-card-helper) { color: #94a3b8; }
+
+.dark .admin-management-shell .admin-dashboard .dashboard-card-icon {
+  border-color: rgba(103, 232, 249, 0.35);
+  background: rgba(34, 211, 238, 0.15);
+  color: #a5f3fc;
+}
+
 /*
  * Login e loading oficiais da V2.
  *

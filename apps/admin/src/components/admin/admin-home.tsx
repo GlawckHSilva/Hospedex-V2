@@ -58,7 +58,7 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
   }
 
   return (
-    <FadeIn className="space-y-5">
+    <FadeIn className="admin-dashboard space-y-5">
       <GlassPanel className="overflow-hidden p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
@@ -120,14 +120,14 @@ function CartaoMetrica({ card }: { card: CardDashboard }) {
       <GlassCard className="group h-full overflow-hidden p-5 transition duration-200">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm text-muted-foreground">{card.titulo}</p>
-            <p className="mt-2 text-2xl font-semibold">{card.valor}</p>
+            <p className="dashboard-card-title text-sm">{card.titulo}</p>
+            <p className="dashboard-card-value mt-2 text-2xl font-bold">{card.valor}</p>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/15 text-cyan-700 transition group-hover:bg-cyan-400/25 dark:text-cyan-200">
+          <div className="dashboard-card-icon flex h-10 w-10 items-center justify-center rounded-lg border transition">
             {obterIconeCard(card.icone)}
           </div>
         </div>
-        <p className="mt-4 text-sm text-muted-foreground">{card.descricao}</p>
+        <p className="dashboard-card-description mt-4 text-sm">{card.descricao}</p>
         <MiniGrafico estadoVazio={card.estadoVazioGrafico} serie={card.serie} />
       </GlassCard>
     </div>
@@ -190,11 +190,11 @@ function AlertaOperacional({ alerta }: { alerta: AlertaDashboard }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <StatusBadge tone={alerta.tipo}>{alerta.valor}</StatusBadge>
-            <h2 className="mt-3 font-semibold">{alerta.titulo}</h2>
+            <h2 className="dashboard-card-title mt-3 font-semibold">{alerta.titulo}</h2>
           </div>
           <Icone className="h-5 w-5 text-primary" />
         </div>
-        <p className="mt-3 text-sm text-muted-foreground">{alerta.descricao}</p>
+        <p className="dashboard-card-description mt-3 text-sm">{alerta.descricao}</p>
       </GlassCard>
     </div>
   );
@@ -211,18 +211,18 @@ function MiniGrafico({
 
   if (maiorValor <= 0) {
     return (
-      <div className="mt-5 rounded-lg border bg-background/45 px-3 py-4 text-xs text-muted-foreground">
+      <div className="dashboard-inner-surface dashboard-card-helper mt-5 rounded-lg border px-3 py-4 text-xs">
         {estadoVazio}
       </div>
     );
   }
 
   return (
-    <div className="mt-5 flex h-16 items-end gap-1.5 rounded-lg border bg-background/45 px-3 py-2">
+    <div className="dashboard-inner-surface mt-5 flex h-16 items-end gap-1.5 rounded-lg border px-3 py-2">
       {serie.map((ponto) => (
         <span
           aria-label={`${ponto.rotulo}: ${ponto.valor}`}
-          className="flex-1 rounded-t-sm bg-gradient-to-t from-cyan-500/35 to-cyan-300/80"
+          className={`dashboard-mini-bar flex-1 rounded-t-sm${ponto.valor === maiorValor ? " dashboard-mini-bar--max" : ""}`}
           key={ponto.rotulo}
           style={{ height: `${Math.max(12, (ponto.valor / maiorValor) * 100)}%` }}
           title={`${ponto.rotulo}: ${formatarNumero(ponto.valor)}`}
@@ -239,8 +239,8 @@ function GraficoReceitaPeriodo({ dados }: { dados: ReceitaPeriodoDashboard[] }) 
     <GlassCard className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold">Receita por período</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Transações pagas dos últimos 6 meses.</p>
+          <h2 className="dashboard-card-title text-base font-semibold">Receita por período</h2>
+          <p className="dashboard-card-description mt-1 text-sm">Transações pagas dos últimos 6 meses.</p>
         </div>
         <CircleDollarSign className="h-5 w-5 text-primary" />
       </div>
@@ -250,20 +250,20 @@ function GraficoReceitaPeriodo({ dados }: { dados: ReceitaPeriodoDashboard[] }) 
             <AreaChart data={dados}>
               <defs>
                 <linearGradient id="dashboardReceita" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.38} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0.02} />
+                  <stop offset="5%" stopColor="var(--dashboard-chart-secondary)" />
+                  <stop offset="95%" stopColor="var(--dashboard-chart-fill)" />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.22)" />
-              <XAxis dataKey="rotulo" tickLine={false} />
-              <YAxis tickFormatter={(valor) => formatarNumeroCurto(Number(valor))} width={72} />
-              <Tooltip formatter={(valor) => formatarMoeda(Number(valor))} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--dashboard-chart-grid)" />
+              <XAxis dataKey="rotulo" tick={{ fill: "var(--dashboard-chart-text)", fontSize: 12 }} tickLine={false} />
+              <YAxis tick={{ fill: "var(--dashboard-chart-text)", fontSize: 12 }} tickFormatter={(valor) => formatarNumeroCurto(Number(valor))} width={72} />
+              <Tooltip contentStyle={{ background: "var(--dashboard-tooltip-bg)", border: "1px solid var(--dashboard-chart-grid)", color: "var(--dashboard-tooltip-text)" }} formatter={(valor) => formatarMoeda(Number(valor))} />
               <Area
                 dataKey="receita"
                 fill="url(#dashboardReceita)"
                 name="Receita"
-                stroke="#06b6d4"
-                strokeWidth={2}
+                stroke="var(--dashboard-chart-primary)"
+                strokeWidth={3}
                 type="monotone"
               />
             </AreaChart>
@@ -283,8 +283,8 @@ function GraficoStatusReservas({ dados }: { dados: ReservaStatusDashboard[] }) {
     <GlassCard className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold">Reservas por status</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Distribuição das reservas do mês.</p>
+          <h2 className="dashboard-card-title text-base font-semibold">Reservas por status</h2>
+          <p className="dashboard-card-description mt-1 text-sm">Distribuição das reservas do mês.</p>
         </div>
         <CalendarCheck2 className="h-5 w-5 text-primary" />
       </div>
@@ -294,8 +294,8 @@ function GraficoStatusReservas({ dados }: { dados: ReservaStatusDashboard[] }) {
           {dados.map((item) => (
             <div key={item.status}>
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-muted-foreground">{item.label}</span>
-                <span className="font-medium">{item.total}</span>
+                <span className="dashboard-card-description">{item.label}</span>
+                <span className="dashboard-card-value font-semibold">{item.total}</span>
               </div>
               <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/70">
                 <div
@@ -331,20 +331,20 @@ function ListaEventos({
     <GlassCard className="p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold">{titulo}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{descricao}</p>
+          <h2 className="dashboard-card-title text-base font-semibold">{titulo}</h2>
+          <p className="dashboard-card-description mt-1 text-sm">{descricao}</p>
         </div>
         <div className="text-primary [&_svg]:h-5 [&_svg]:w-5">{icone}</div>
       </div>
 
       {eventos.length > 0 ? (
-        <div className="mt-4 divide-y rounded-lg border bg-background/40">
+        <div className="dashboard-inner-surface mt-4 divide-y rounded-lg border">
           {eventos.map((evento) => (
             <div className="grid gap-2 p-3 text-sm sm:grid-cols-[auto_1fr_auto]" key={evento.id}>
-              <div className="font-medium">{formatarData(evento.data)}</div>
+              <div className="dashboard-card-value font-semibold">{formatarData(evento.data)}</div>
               <div className="min-w-0">
-                <p className="truncate font-medium">{evento.hospede}</p>
-                <p className="truncate text-xs text-muted-foreground">
+                <p className="dashboard-card-value truncate font-semibold">{evento.hospede}</p>
+                <p className="dashboard-card-helper truncate text-xs">
                   {evento.propriedade}
                 </p>
               </div>
@@ -363,7 +363,7 @@ function ListaEventos({
 
 function EstadoVazioInterno({ mensagem }: { mensagem: string }) {
   return (
-    <div className="mt-4 rounded-lg border bg-background/55 p-5 text-sm text-muted-foreground">
+    <div className="dashboard-inner-surface dashboard-card-helper mt-4 rounded-lg border p-5 text-sm">
       {mensagem}
     </div>
   );
