@@ -77,9 +77,11 @@ export default async function MarketplaceHomePage() {
 
   return (
     <PublicShell>
-      <section className="relative isolate overflow-hidden border-b border-white/10 bg-slate-950 text-white">
-        <div className="absolute inset-0 -z-20 bg-[linear-gradient(135deg,#020617_0%,#06172a_52%,#020817_100%)]" />
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_76%_22%,rgba(6,182,212,0.18),transparent_30%),radial-gradient(circle_at_14%_82%,rgba(14,116,144,0.12),transparent_28%)]" />
+      <section className="marketplace-home-hero relative isolate overflow-hidden border-b border-white/10 text-white">
+        <div
+          aria-hidden="true"
+          className="marketplace-home-hero-overlay absolute inset-0 -z-10"
+        />
 
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:py-14">
           <div className="mx-auto max-w-4xl text-center">
@@ -119,15 +121,15 @@ export default async function MarketplaceHomePage() {
 
               return (
                 <GlassCard
-                  className="flex min-h-24 items-center gap-4 border-cyan-300/15 bg-slate-900/45 p-4 text-left text-white"
+                  className="marketplace-home-benefit flex min-h-24 items-center gap-4 p-4 text-left text-white"
                   key={beneficio.title}
                 >
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300">
                     <Icone className="h-5 w-5" />
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 text-white">
                     <h2 className="text-sm font-semibold">{beneficio.title}</h2>
-                    <p className="mt-1 break-words text-sm leading-5 text-cyan-50/65">
+                    <p className="mt-1 break-words text-sm leading-5 text-cyan-50/80">
                       {beneficio.description}
                     </p>
                   </div>
@@ -301,7 +303,7 @@ function MarketplaceSearchCard() {
   return (
     <form
       action="/propriedades"
-      className="grid w-full max-w-full gap-1 overflow-hidden rounded-2xl border border-cyan-300/18 bg-slate-950/55 p-2 shadow-2xl shadow-cyan-950/35 backdrop-blur-2xl md:grid-cols-2 lg:grid-cols-[minmax(240px,1.35fr)_180px_180px_140px_auto] lg:items-center"
+      className="marketplace-home-search grid w-full max-w-full gap-1 overflow-hidden rounded-2xl p-2 md:grid-cols-2 lg:grid-cols-[minmax(240px,1.35fr)_180px_180px_140px_auto] lg:items-center"
     >
       <SearchField
         icon={<MapPin className="h-5 w-5" />}

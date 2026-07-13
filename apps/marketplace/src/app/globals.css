@@ -3,6 +3,51 @@
 @source "../**/*.{ts,tsx}";
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
+/* O hero mantem contraste proprio nos dois temas porque sempre usa fotografia noturna. */
+.marketplace-home-hero {
+  background-image: url("/images/marketplace/hero-hospedagem.webp");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.marketplace-home-hero-overlay {
+  background: linear-gradient(
+    90deg,
+    rgb(2 10 28 / 0.84) 0%,
+    rgb(2 25 45 / 0.72) 50%,
+    rgb(3 39 56 / 0.62) 100%
+  );
+}
+
+.dark .marketplace-home-hero-overlay {
+  background: linear-gradient(
+    90deg,
+    rgb(2 10 28 / 0.92) 0%,
+    rgb(2 25 45 / 0.82) 50%,
+    rgb(3 39 56 / 0.72) 100%
+  );
+}
+
+.marketplace-home-search {
+  background: rgb(2 10 28 / 0.72);
+  border: 1px solid rgb(103 232 249 / 0.32);
+  box-shadow: 0 22px 55px rgb(2 8 23 / 0.42);
+  backdrop-filter: blur(18px);
+}
+
+.marketplace-home-benefit {
+  background: rgb(2 10 28 / 0.68);
+  border-color: rgb(103 232 249 / 0.24);
+  box-shadow: 0 16px 36px rgb(2 8 23 / 0.3);
+  backdrop-filter: blur(16px);
+}
+
+.marketplace-home-benefit:hover {
+  background: rgb(2 25 45 / 0.76);
+  border-color: rgb(103 232 249 / 0.44);
+}
+
 /* Padroniza controles nativos do formulario publico de reserva.
    O objetivo e evitar icones escuros do navegador em date/time/select sem alterar a logica da reserva. */
 .marketplace-reservation-control {
