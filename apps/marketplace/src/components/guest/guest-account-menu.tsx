@@ -40,7 +40,7 @@ export function GuestAccountMenu() {
     return (
       <Link
         className={cn(
-          "inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent text-slate-100 transition hover:text-cyan-200 md:h-8 md:w-auto md:px-2 md:text-sm md:font-semibold"
+          "inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-full border border-transparent bg-transparent text-foreground transition hover:text-primary dark:text-slate-100 dark:hover:text-cyan-200 md:h-8 md:w-auto md:px-2 md:text-sm md:font-semibold",
         )}
         href="/login"
       >
@@ -51,15 +51,18 @@ export function GuestAccountMenu() {
   }
 
   return (
-    <div className="relative hidden shrink-0 items-center gap-2 md:flex" ref={menuRef}>
+    <div
+      className="relative hidden shrink-0 items-center gap-2 md:flex"
+      ref={menuRef}
+    >
       <Link
         className={cn(
           buttonVariants({ size: "sm", variant: "secondary" }),
-          "hidden border border-cyan-300/20 bg-cyan-400/10 text-cyan-50 hover:bg-cyan-400/15 md:inline-flex"
+          "hidden border border-cyan-300/20 bg-cyan-400/10 text-primary hover:bg-cyan-400/15 dark:text-cyan-50 md:inline-flex",
         )}
         href="/minhas-reservas"
       >
-        <TicketCheck className="h-4 w-4 text-cyan-200" />
+        <TicketCheck className="h-4 w-4 text-primary" />
         Minhas reservas
       </Link>
       <button
@@ -82,7 +85,7 @@ export function GuestAccountMenu() {
         <span className="hidden max-w-28 truncate sm:inline">
           {perfil.full_name ?? perfil.email}
         </span>
-        <ChevronDown className="h-3.5 w-3.5 text-cyan-100/75" />
+        <ChevronDown className="h-3.5 w-3.5 text-primary/75" />
       </button>
 
       {aberto ? (

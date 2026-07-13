@@ -7,7 +7,7 @@ import { Button, cn } from "@hospedex/ui";
 
 import type {
   PeriodoDisponibilidadePublica,
-  StatusDisponibilidadePublica
+  StatusDisponibilidadePublica,
 } from "../../lib/marketplace/data";
 
 type PropertyAvailabilityCalendarProps = {
@@ -31,20 +31,23 @@ const STATUS_VISUAL: Record<
   { label: string; className: string; dot: string }
 > = {
   available: {
-    className: "border-emerald-400/20 bg-emerald-400/8 text-emerald-100",
+    className:
+      "border-emerald-400/25 bg-emerald-400/10 text-emerald-700 dark:text-emerald-100",
     dot: "bg-emerald-400",
-    label: "Disponível"
+    label: "Disponível",
   },
   reserved: {
-    className: "border-blue-300/30 bg-blue-500/12 text-blue-100",
+    className:
+      "border-blue-300/30 bg-blue-500/12 text-blue-700 dark:text-blue-100",
     dot: "bg-blue-300",
-    label: "Reservado"
+    label: "Reservado",
   },
   unavailable: {
-    className: "border-slate-400/30 bg-slate-500/12 text-slate-100",
+    className:
+      "border-slate-400/30 bg-slate-500/12 text-slate-700 dark:text-slate-100",
     dot: "bg-slate-400",
-    label: "Indisponível"
-  }
+    label: "Indisponível",
+  },
 };
 
 /**
@@ -55,12 +58,14 @@ const STATUS_VISUAL: Record<
  */
 export function PropertyAvailabilityCalendar({
   availability,
-  error
+  error,
 }: PropertyAvailabilityCalendarProps) {
-  const [mesReferencia, setMesReferencia] = useState(() => inicioDoMes(new Date()));
+  const [mesReferencia, setMesReferencia] = useState(() =>
+    inicioDoMes(new Date()),
+  );
   const dias = useMemo(
     () => montarDiasCalendario(mesReferencia, availability),
-    [availability, mesReferencia]
+    [availability, mesReferencia],
   );
 
   return (
@@ -68,7 +73,7 @@ export function PropertyAvailabilityCalendar({
       <div className="flex flex-col gap-3 border-b bg-background/80 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <div>
           <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-primary">
-            <CalendarDays className="h-4 w-4 text-cyan-100" />
+            <CalendarDays className="h-4 w-4 text-primary" />
             Disponibilidade
           </p>
           <h3 className="mt-1 text-lg font-semibold">
@@ -83,7 +88,7 @@ export function PropertyAvailabilityCalendar({
             type="button"
             variant="outline"
           >
-            <ChevronLeft className="h-4 w-4 text-cyan-100" />
+            <ChevronLeft className="h-4 w-4 text-primary" />
           </Button>
           <Button
             onClick={() => setMesReferencia(inicioDoMes(new Date()))}
@@ -99,7 +104,7 @@ export function PropertyAvailabilityCalendar({
             type="button"
             variant="outline"
           >
-            <ChevronRight className="h-4 w-4 text-cyan-100" />
+            <ChevronRight className="h-4 w-4 text-primary" />
           </Button>
         </div>
       </div>
@@ -122,14 +127,15 @@ export function PropertyAvailabilityCalendar({
                 "min-h-20 border-b border-r p-2 transition last:border-r-0 hover:bg-primary/5 sm:min-h-24",
                 dia.foraDoMes && "bg-secondary/25 text-muted-foreground/55",
                 dia.iso === formatarIsoLocal(new Date()) &&
-                  "relative bg-cyan-400/10 ring-1 ring-inset ring-cyan-300/45"
+                  "relative bg-cyan-400/10 ring-1 ring-inset ring-cyan-300/45",
               )}
               key={dia.iso}
             >
               <span
                 className={cn(
                   "grid h-7 w-7 place-items-center rounded-full text-xs font-semibold",
-                  dia.iso === formatarIsoLocal(new Date()) && "bg-primary text-primary-foreground"
+                  dia.iso === formatarIsoLocal(new Date()) &&
+                    "bg-primary text-primary-foreground",
                 )}
               >
                 {dia.diaMes}
@@ -138,11 +144,16 @@ export function PropertyAvailabilityCalendar({
               <span
                 className={cn(
                   "mt-2 flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium",
-                  visual.className
+                  visual.className,
                 )}
                 title={visual.label}
               >
-                <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", visual.dot)} />
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 shrink-0 rounded-full",
+                    visual.dot,
+                  )}
+                />
                 <span className="truncate">{visual.label}</span>
               </span>
             </div>
@@ -174,7 +185,7 @@ export function PropertyAvailabilityCalendar({
 
 function montarDiasCalendario(
   mesReferencia: Date,
-  periodos: PeriodoDisponibilidadePublica[]
+  periodos: PeriodoDisponibilidadePublica[],
 ): DiaCalendario[] {
   const primeiroDia = inicioDoMes(mesReferencia);
   const inicioGrade = new Date(primeiroDia);
@@ -190,17 +201,17 @@ function montarDiasCalendario(
       diaMes: data.getDate(),
       foraDoMes: data.getMonth() !== mesReferencia.getMonth(),
       iso,
-      status: obterStatusDia(iso, periodos)
+      status: obterStatusDia(iso, periodos),
     };
   });
 }
 
 function obterStatusDia(
   iso: string,
-  periodos: PeriodoDisponibilidadePublica[]
+  periodos: PeriodoDisponibilidadePublica[],
 ): StatusCalendarioPublico {
   const periodo = periodos.find(
-    (item) => item.startsOn <= iso && iso < item.endsOn
+    (item) => item.startsOn <= iso && iso < item.endsOn,
   );
 
   return periodo?.status ?? "available";
@@ -217,7 +228,7 @@ function adicionarMeses(data: Date, meses: number) {
 function formatarMesAno(data: Date) {
   return new Intl.DateTimeFormat("pt-BR", {
     month: "long",
-    year: "numeric"
+    year: "numeric",
   }).format(data);
 }
 
@@ -225,6 +236,6 @@ function formatarIsoLocal(data: Date) {
   return [
     data.getFullYear(),
     String(data.getMonth() + 1).padStart(2, "0"),
-    String(data.getDate()).padStart(2, "0")
+    String(data.getDate()).padStart(2, "0"),
   ].join("-");
 }

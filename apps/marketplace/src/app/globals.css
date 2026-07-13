@@ -7,12 +7,18 @@
    O objetivo e evitar icones escuros do navegador em date/time/select sem alterar a logica da reserva. */
 .marketplace-reservation-control {
   border-color: color-mix(in oklch, var(--border) 68%, var(--primary) 18%);
+  background: color-mix(in oklch, var(--card) 92%, var(--background) 8%);
+  color: var(--foreground);
+  color-scheme: light;
+}
+
+.dark .marketplace-reservation-control {
   background: color-mix(in oklch, var(--background) 84%, transparent);
   color-scheme: dark;
 }
 
 .marketplace-reservation-control::placeholder {
-  color: color-mix(in oklch, var(--muted-foreground) 82%, white 18%);
+  color: color-mix(in oklch, var(--muted-foreground) 88%, transparent);
 }
 
 .marketplace-reservation-control:disabled {
@@ -25,6 +31,11 @@ select.marketplace-reservation-control {
 }
 
 select.marketplace-reservation-control option {
+  background: var(--popover);
+  color: var(--popover-foreground);
+}
+
+.dark select.marketplace-reservation-control option {
   background: #020817;
   color: #f8fafc;
 }

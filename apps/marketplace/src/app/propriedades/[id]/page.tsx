@@ -25,19 +25,19 @@ import { PropertyAvailabilityCalendar } from "../../../components/properties/pro
 import {
   PropertyRegionalGuideSection,
   PropertyReviewsSection,
-  PropertyRulesSection
+  PropertyRulesSection,
 } from "../../../components/properties/property-detail-sections";
 import { PropertyGallery } from "../../../components/properties/property-gallery";
 import {
   PropertyReservationCard,
-  type ReservaFeedback
+  type ReservaFeedback,
 } from "../../../components/properties/property-reservation-card";
 import { PropertyExpandableBlock } from "../../../components/properties/property-expandable-block";
 import { ShareButton } from "../../../components/properties/share-button";
 import {
   carregarPropriedadePublica,
   type EnderecoPublico,
-  type PropriedadePublica
+  type PropriedadePublica,
 } from "../../../lib/marketplace/data";
 import { carregarCotacoesCambio } from "../../../lib/currency/service";
 
@@ -50,7 +50,7 @@ export const dynamic = "force-dynamic";
 
 export default async function PropriedadePage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Params;
   searchParams: SearchParams;
@@ -87,13 +87,13 @@ export default async function PropriedadePage({
 
   return (
     <PublicShell>
-      <section className="relative isolate overflow-hidden bg-slate-950">
+      <section className="relative isolate overflow-hidden bg-background text-foreground">
         <PropertyTopExperience propriedade={propriedade} />
 
         <div className="relative z-10 mx-auto grid w-full max-w-[1180px] gap-5 px-4 pb-28 pt-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-start lg:gap-8 lg:pb-14 lg:pt-8">
           <div className="grid min-w-0 max-w-full gap-5">
             <FadeIn className="min-w-0">
-              <GlassPanel className="w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/76 p-2 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-3">
+              <GlassPanel className="w-full max-w-full overflow-hidden border-border bg-card/88 p-2 shadow-2xl shadow-cyan-950/10 backdrop-blur-xl dark:border-slate-600/45 dark:bg-slate-950/76 dark:shadow-black/30 sm:p-3">
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
                   <ResumoItem
                     icon={Users}
@@ -169,8 +169,9 @@ export default async function PropriedadePage({
                 error={propriedade.availabilityError}
               />
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                O calendário mostra apenas o status público de cada data. Motivos
-                internos, observações e dados administrativos não são exibidos ao hóspede.
+                O calendário mostra apenas o status público de cada data.
+                Motivos internos, observações e dados administrativos não são
+                exibidos ao hóspede.
               </p>
             </Secao>
 
@@ -184,12 +185,13 @@ export default async function PropriedadePage({
 
             <PropertyLocationSection propriedade={propriedade} />
 
-            <PropertyRegionalGuideSection locations={propriedade.regionalGuide} />
+            <PropertyRegionalGuideSection
+              locations={propriedade.regionalGuide}
+            />
 
             <div className="scroll-mt-32" id="avaliacoes">
               <PropertyReviewsSection reviews={propriedade.reviews} />
             </div>
-
           </div>
 
           <aside
@@ -211,10 +213,18 @@ export default async function PropriedadePage({
   );
 }
 
-function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublica }) {
-  const totalFotos = Math.max(propriedade.images.length, propriedade.coverImage ? 1 : 0);
+function PropertyTopExperience({
+  propriedade,
+}: {
+  propriedade: PropriedadePublica;
+}) {
+  const totalFotos = Math.max(
+    propriedade.images.length,
+    propriedade.coverImage ? 1 : 0,
+  );
   const perfil = propriedade.requestProfile;
-  const nomeAnfitriao = perfil.businessName || perfil.ownerName || "Anfitrião Hospedex";
+  const nomeAnfitriao =
+    perfil.businessName || perfil.ownerName || "Anfitrião Hospedex";
   const iniciaisAnfitriao = obterIniciais(nomeAnfitriao);
 
   return (
@@ -245,7 +255,10 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
                 {propriedade.locationLabel}
               </span>
               <span>
-                {propriedade.maxGuests} hóspedes · {formatarQuantidade(propriedade.structure.bedrooms)} quartos · {formatarQuantidade(propriedade.structure.beds)} camas · {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
+                {propriedade.maxGuests} hóspedes ·{" "}
+                {formatarQuantidade(propriedade.structure.bedrooms)} quartos ·{" "}
+                {formatarQuantidade(propriedade.structure.beds)} camas ·{" "}
+                {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
               </span>
               {propriedade.reviews.total ? (
                 <span className="inline-flex items-center gap-2">
@@ -270,7 +283,10 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
             {propriedade.propertyTypeLabel} em {propriedade.locationLabel}
           </p>
           <p className="mt-1 text-sm leading-5 text-slate-400">
-            {propriedade.maxGuests} hóspedes · {formatarQuantidade(propriedade.structure.bedrooms)} quartos · {formatarQuantidade(propriedade.structure.beds)} camas · {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
+            {propriedade.maxGuests} hóspedes ·{" "}
+            {formatarQuantidade(propriedade.structure.bedrooms)} quartos ·{" "}
+            {formatarQuantidade(propriedade.structure.beds)} camas ·{" "}
+            {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
           </p>
           <div className="mt-5 grid grid-cols-3 items-center divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-3 text-center">
             {propriedade.reviews.total ? (
@@ -312,7 +328,8 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
                 Anfitrião: {nomeAnfitriao}
               </p>
               <p className="text-xs text-slate-400">
-                Check-in {propriedade.checkIn} · Check-out {propriedade.checkOut}
+                Check-in {propriedade.checkIn} · Check-out{" "}
+                {propriedade.checkOut}
               </p>
             </div>
           </div>
@@ -322,7 +339,9 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
                 <p className="text-xs text-slate-400">Diária inicial</p>
                 <p className="mt-1 text-xl font-semibold text-white">
                   {formatarPreco(propriedade.minPrice)}
-                  <span className="text-sm font-medium text-slate-400">/noite</span>
+                  <span className="text-sm font-medium text-slate-400">
+                    /noite
+                  </span>
                 </p>
               </div>
               <span className="rounded-full bg-cyan-300/12 px-2.5 py-1 text-xs font-semibold text-cyan-100">
@@ -345,16 +364,20 @@ function PropertyTopExperience({ propriedade }: { propriedade: PropriedadePublic
   );
 }
 
-function MobileReservationBar({ propriedade }: { propriedade: PropriedadePublica }) {
+function MobileReservationBar({
+  propriedade,
+}: {
+  propriedade: PropriedadePublica;
+}) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/94 px-4 py-3 text-white shadow-2xl shadow-black/50 backdrop-blur-xl lg:hidden">
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/94 px-4 py-3 text-foreground shadow-2xl shadow-cyan-950/15 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/94 dark:text-white dark:shadow-black/50 lg:hidden">
       <div className="mx-auto flex max-w-[420px] items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">
             {formatarPreco(propriedade.minPrice)}
-            <span className="font-medium text-slate-400"> / noite</span>
+            <span className="font-medium text-muted-foreground"> / noite</span>
           </p>
-          <p className="truncate text-xs text-slate-400">
+          <p className="truncate text-xs text-muted-foreground">
             Adicione datas para ver os valores finais
           </p>
         </div>
@@ -370,7 +393,7 @@ function MobileReservationBar({ propriedade }: { propriedade: PropriedadePublica
 }
 
 function PropertyLocationSection({
-  propriedade
+  propriedade,
 }: {
   propriedade: PropriedadePublica;
 }) {
@@ -382,28 +405,29 @@ function PropertyLocationSection({
       <PropertyExpandableBlock
         preview={
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-semibold">
-              <MapPin className="h-4 w-4 text-cyan-100" />
-              {propriedade.locationLabel}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-muted-foreground">{endereco}</p>
-          </div>
-          {propriedade.address.googleMapsLink ? (
-            <a
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
-              href={propriedade.address.googleMapsLink}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Abrir no Google Maps
-              <ExternalLink className="h-4 w-4 text-cyan-100" />
-            </a>
-          ) : null}
+            <div>
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <MapPin className="h-4 w-4 text-primary" />
+                {propriedade.locationLabel}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                {endereco}
+              </p>
+            </div>
+            {propriedade.address.googleMapsLink ? (
+              <a
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+                href={propriedade.address.googleMapsLink}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Abrir no Google Maps
+                <ExternalLink className="h-4 w-4 text-primary" />
+              </a>
+            ) : null}
           </div>
         }
       >
-
         {urlMapa ? (
           <div className="overflow-hidden rounded-lg border bg-secondary">
             <iframe
@@ -424,14 +448,18 @@ function PropertyLocationSection({
   );
 }
 
-function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) {
+function PropertyOwnerTrustCard({
+  property,
+}: {
+  property: PropriedadePublica;
+}) {
   const perfil = property.requestProfile;
   const iniciais = obterIniciais(perfil.ownerName || perfil.businessName);
   const local = [perfil.city, perfil.state].filter(Boolean).join(", ");
   const contatoHref = obterContatoAnfitriaoHref(perfil.whatsapp, perfil.phone);
 
   return (
-    <GlassCard className="border-slate-600/45 bg-slate-950/78 p-6 shadow-2xl shadow-black/25 backdrop-blur-xl">
+    <GlassCard className="border-border bg-card/88 p-6 shadow-2xl shadow-cyan-950/10 backdrop-blur-xl dark:border-slate-600/45 dark:bg-slate-950/78 dark:shadow-black/25">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold">Anfitrião</h2>
@@ -439,7 +467,9 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
             Dados públicos cadastrados pelo proprietário.
           </p>
         </div>
-        {perfil.isVerified ? <StatusBadge tone="success">Verificado</StatusBadge> : null}
+        {perfil.isVerified ? (
+          <StatusBadge tone="success">Verificado</StatusBadge>
+        ) : null}
       </div>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center lg:grid-cols-1 xl:grid-cols-[auto_1fr]">
@@ -456,8 +486,12 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
         )}
         <div>
           <h3 className="text-lg font-semibold">{perfil.ownerName}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{perfil.businessName}</p>
-          {local ? <p className="mt-1 text-sm text-muted-foreground">{local}</p> : null}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {perfil.businessName}
+          </p>
+          {local ? (
+            <p className="mt-1 text-sm text-muted-foreground">{local}</p>
+          ) : null}
           {perfil.shortDescription ? (
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
               {perfil.shortDescription}
@@ -473,7 +507,7 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
           rel="noreferrer"
           target={contatoHref.startsWith("http") ? "_blank" : undefined}
         >
-          <MessageCircle className="h-4 w-4 text-cyan-100" />
+          <MessageCircle className="h-4 w-4 text-primary" />
           Falar com o anfitrião
         </a>
       ) : null}
@@ -482,10 +516,13 @@ function PropertyOwnerTrustCard({ property }: { property: PropriedadePublica }) 
         {[
           "Não cobramos nada agora pelo Hospedex.",
           "Confira os dados da reserva antes de realizar qualquer pagamento.",
-          "Nunca envie dados sensíveis de cartão fora de ambiente seguro."
+          "Nunca envie dados sensíveis de cartão fora de ambiente seguro.",
         ].map((texto) => (
-          <div className="rounded-lg border bg-background/70 p-4 text-sm text-muted-foreground" key={texto}>
-            <ShieldCheck className="mb-3 h-4 w-4 text-cyan-100" />
+          <div
+            className="rounded-lg border bg-background/70 p-4 text-sm text-muted-foreground"
+            key={texto}
+          >
+            <ShieldCheck className="mb-3 h-4 w-4 text-primary" />
             {texto}
           </div>
         ))}
@@ -499,34 +536,41 @@ function PropertyTrustHighlights() {
     {
       icon: ShieldCheck,
       label: "Nenhum pagamento antecipado",
-      texto: "A solicitação é analisada pelo proprietário"
+      texto: "A solicitação é analisada pelo proprietário",
     },
     {
       icon: Star,
       label: "Suporte dedicado",
-      texto: "Antes, durante e depois da viagem"
+      texto: "Antes, durante e depois da viagem",
     },
     {
       icon: ShieldCheck,
       label: "Anfitrião verificado",
-      texto: "Mais segurança para você"
-    }
+      texto: "Mais segurança para você",
+    },
   ];
 
   return (
-    <GlassCard className="grid gap-4 border-slate-600/45 bg-slate-950/78 p-5 shadow-2xl shadow-black/25 backdrop-blur-xl sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+    <GlassCard className="grid gap-4 border-border bg-card/88 p-5 shadow-2xl shadow-cyan-950/10 backdrop-blur-xl dark:border-slate-600/45 dark:bg-slate-950/78 dark:shadow-black/25 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
       {itens.map(({ icon: Icone, label, texto }) => (
-        <div className="border-slate-700/55 sm:border-r sm:pr-4 last:border-r-0" key={label}>
+        <div
+          className="border-slate-700/55 sm:border-r sm:pr-4 last:border-r-0"
+          key={label}
+        >
           <Icone className="h-6 w-6 text-emerald-400" />
-          <p className="mt-3 text-sm font-semibold text-white">{label}</p>
-          <p className="mt-1 text-xs leading-5 text-slate-400">{texto}</p>
+          <p className="mt-3 text-sm font-semibold text-foreground">{label}</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {texto}
+          </p>
         </div>
       ))}
     </GlassCard>
   );
 }
 
-function normalizarFeedback(params: Record<string, string | string[] | undefined>): ReservaFeedback {
+function normalizarFeedback(
+  params: Record<string, string | string[] | undefined>,
+): ReservaFeedback {
   const status = obterParametro(params.reserva);
   const statusNormalizado: ReservaFeedback["status"] =
     status === "sucesso" || status === "erro" ? status : null;
@@ -534,7 +578,7 @@ function normalizarFeedback(params: Record<string, string | string[] | undefined
   return {
     codigo: obterParametro(params.codigo),
     mensagem: obterParametro(params.mensagem),
-    status: statusNormalizado
+    status: statusNormalizado,
   };
 }
 
@@ -546,7 +590,7 @@ function Secao({
   children,
   compact = false,
   id,
-  title
+  title,
 }: {
   children: ReactNode;
   compact?: boolean;
@@ -556,12 +600,18 @@ function Secao({
   return (
     <FadeIn className="min-w-0">
       <GlassCard
-        className={`scroll-mt-32 w-full max-w-full overflow-hidden border-slate-600/45 bg-slate-950/72 shadow-2xl shadow-black/20 backdrop-blur-xl ${
+        className={`scroll-mt-32 w-full max-w-full overflow-hidden border-border bg-card/88 shadow-2xl shadow-cyan-950/10 backdrop-blur-xl dark:border-slate-600/45 dark:bg-slate-950/72 dark:shadow-black/20 ${
           compact ? "p-4 sm:p-5" : "p-5 sm:p-6"
         }`}
         id={id}
       >
-        <h2 className={compact ? "mb-3 text-xl font-semibold text-white" : "mb-4 text-2xl font-semibold text-white"}>
+        <h2
+          className={
+            compact
+              ? "mb-3 text-xl font-semibold text-foreground"
+              : "mb-4 text-2xl font-semibold text-foreground"
+          }
+        >
           {title}
         </h2>
         {children}
@@ -574,7 +624,7 @@ function ResumoItem({
   compact = false,
   icon: Icone,
   label,
-  value
+  value,
 }: {
   compact?: boolean;
   icon: typeof Users;
@@ -583,24 +633,30 @@ function ResumoItem({
 }) {
   if (compact) {
     return (
-      <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-slate-700/55 bg-slate-950/54 px-3 py-2.5">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-400/10 text-cyan-200">
+      <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border bg-background/70 px-3 py-2.5 dark:border-slate-700/55 dark:bg-slate-950/54">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-400/10 text-primary">
           <Icone className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">{value}</p>
-          <p className="truncate text-[11px] text-slate-400">{label}</p>
+          <p className="truncate text-sm font-semibold text-foreground">
+            {value}
+          </p>
+          <p className="truncate text-[11px] text-muted-foreground">{label}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-slate-700/45 bg-slate-950/46 px-2.5 py-2 lg:border-0 lg:bg-transparent lg:px-2 lg:py-1.5">
-      <Icone className="h-5 w-5 shrink-0 text-cyan-300 lg:h-5 lg:w-5" />
+    <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/70 px-2.5 py-2 dark:border-slate-700/45 dark:bg-slate-950/46 lg:border-0 lg:bg-transparent lg:px-2 lg:py-1.5">
+      <Icone className="h-5 w-5 shrink-0 text-primary lg:h-5 lg:w-5" />
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold leading-tight text-white lg:text-[15px]">{value}</p>
-        <p className="mt-0.5 truncate text-[11px] leading-tight text-slate-400 lg:text-xs">{label}</p>
+        <p className="truncate text-sm font-semibold leading-tight text-foreground lg:text-[15px]">
+          {value}
+        </p>
+        <p className="mt-0.5 truncate text-[11px] leading-tight text-muted-foreground lg:text-xs">
+          {label}
+        </p>
       </div>
     </div>
   );
@@ -612,7 +668,7 @@ function formatarPreco(valor: number | null) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
     maximumFractionDigits: 0,
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }
 
@@ -631,7 +687,7 @@ function formatarEnderecoResumido(endereco: EnderecoPublico) {
     endereco.numero,
     endereco.bairro,
     endereco.cidade,
-    endereco.estado
+    endereco.estado,
   ]
     .filter(Boolean)
     .join(", ");
@@ -639,7 +695,10 @@ function formatarEnderecoResumido(endereco: EnderecoPublico) {
   return linha || "Endereço completo compartilhado após a solicitação.";
 }
 
-function obterUrlMapaEmbed(endereco: EnderecoPublico, enderecoFormatado: string) {
+function obterUrlMapaEmbed(
+  endereco: EnderecoPublico,
+  enderecoFormatado: string,
+) {
   if (!endereco.googleMapsLink) return null;
   if (endereco.googleMapsLink.includes("/maps/embed")) {
     return endereco.googleMapsLink;
@@ -653,7 +712,10 @@ function obterIniciais(nome: string) {
   return partes.map((parte) => parte[0]?.toUpperCase()).join("") || "HX";
 }
 
-function obterContatoAnfitriaoHref(whatsapp: string | null, telefone: string | null) {
+function obterContatoAnfitriaoHref(
+  whatsapp: string | null,
+  telefone: string | null,
+) {
   const numeroWhatsApp = whatsapp?.replace(/\D/g, "");
   if (numeroWhatsApp) return `https://wa.me/${numeroWhatsApp}`;
 

@@ -34,8 +34,8 @@ export function PublicShell({ children }: PublicShellProps) {
           <div className="max-w-sm">
             <MarketplaceBrand />
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              Conectamos viajantes a hospedagens independentes com mais confiança,
-              transparência e experiência.
+              Conectamos viajantes a hospedagens independentes com mais
+              confiança, transparência e experiência.
             </p>
             <div className="mt-4 flex gap-2">
               {[Camera, MessageCircle, Mail].map((Icone) => (
@@ -54,33 +54,58 @@ export function PublicShell({ children }: PublicShellProps) {
             <Link className="transition-colors hover:text-foreground" href="/">
               Início
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/propriedades">
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/propriedades"
+            >
               Hospedagens
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/#destinos">
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/#destinos"
+            >
               Destinos
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/minhas-reservas">
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/minhas-reservas"
+            >
               Minhas reservas
             </Link>
           </nav>
 
           <nav className="grid gap-2 text-sm text-muted-foreground">
-            <strong className="mb-1 text-sm text-foreground">Para proprietários</strong>
-            <Link className="transition-colors hover:text-foreground" href="/anunciar">
+            <strong className="mb-1 text-sm text-foreground">
+              Para proprietários
+            </strong>
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/anunciar"
+            >
               Anunciar
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/#por-que">
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/#por-que"
+            >
               Como funciona
             </Link>
-            <Link className="transition-colors hover:text-foreground" href="/propriedades">
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/propriedades"
+            >
               Central de ajuda
             </Link>
           </nav>
 
           <nav className="grid gap-2 text-sm text-muted-foreground">
-            <strong className="mb-1 text-sm text-foreground">Informações</strong>
-            <Link className="transition-colors hover:text-foreground" href="/propriedades">
+            <strong className="mb-1 text-sm text-foreground">
+              Informações
+            </strong>
+            <Link
+              className="transition-colors hover:text-foreground"
+              href="/propriedades"
+            >
               <Search className="mr-1 inline h-3.5 w-3.5" />
               Buscar
             </Link>
@@ -89,7 +114,9 @@ export function PublicShell({ children }: PublicShellProps) {
           </nav>
 
           <div>
-            <strong className="text-sm text-foreground">Fique por dentro das novidades</strong>
+            <strong className="text-sm text-foreground">
+              Fique por dentro das novidades
+            </strong>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Receba dicas de viagens e novidades do Hospedex.
             </p>
@@ -105,7 +132,10 @@ export function PublicShell({ children }: PublicShellProps) {
         </div>
         <div className="border-t">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <span>© {new Date().getFullYear()} Hospedex. Todos os direitos reservados.</span>
+            <span>
+              © {new Date().getFullYear()} Hospedex. Todos os direitos
+              reservados.
+            </span>
             <span>Hospedex é um marketplace independente.</span>
           </div>
         </div>
@@ -123,17 +153,17 @@ function MarketplaceBrand() {
   return (
     <Link
       aria-label="Ir para o início do Marketplace Hospedex"
-      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-cyan-300/20 bg-slate-950/72 px-2.5 py-1.5 shadow-sm shadow-cyan-950/20 backdrop-blur-xl"
+      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-cyan-300/25 bg-card/82 px-2.5 py-1.5 shadow-sm shadow-cyan-950/10 backdrop-blur-xl dark:bg-slate-950/72 dark:shadow-cyan-950/20"
       href="/"
     >
       <img
         alt=""
-        className="h-9 w-9 shrink-0 object-contain"
+        className="h-9 w-9 shrink-0 rounded-xl bg-slate-950 p-1 object-contain dark:bg-transparent dark:p-0"
         src="/brand/hospedex-logo-white.png"
       />
       <span className="min-w-0 truncate text-lg font-bold leading-none tracking-normal">
         <span className="text-cyan-300">Hospe</span>
-        <span className="text-white">dex</span>
+        <span className="text-foreground dark:text-white">dex</span>
       </span>
     </Link>
   );

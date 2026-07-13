@@ -10,7 +10,7 @@ import {
   listarFavoritosHospedex,
   obterEventoFavoritos,
   removerFavoritoHospedex,
-  type FavoritoHospedex
+  type FavoritoHospedex,
 } from "../../lib/favorites/local-favorites";
 
 /**
@@ -29,7 +29,8 @@ export function FavoritesList() {
 
     atualizarFavoritos();
     window.addEventListener(obterEventoFavoritos(), atualizarFavoritos);
-    return () => window.removeEventListener(obterEventoFavoritos(), atualizarFavoritos);
+    return () =>
+      window.removeEventListener(obterEventoFavoritos(), atualizarFavoritos);
   }, []);
 
   function removerFavorito(id: string) {
@@ -38,12 +39,14 @@ export function FavoritesList() {
 
   if (!favoritos.length) {
     return (
-      <GlassCard className="mx-auto max-w-2xl border-slate-700/55 bg-slate-950/72 p-6 text-center shadow-2xl shadow-black/20">
+      <GlassCard className="mx-auto max-w-2xl border-border bg-card/88 p-6 text-center shadow-2xl shadow-cyan-950/10 dark:border-slate-700/55 dark:bg-slate-950/72 dark:shadow-black/20">
         <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/12 text-rose-200">
           <HeartOff className="h-5 w-5" />
         </span>
-        <h1 className="mt-4 text-2xl font-semibold text-white">Nenhum favorito salvo</h1>
-        <p className="mt-2 text-sm leading-6 text-slate-400">
+        <h1 className="mt-4 text-2xl font-semibold text-foreground">
+          Nenhum favorito salvo
+        </h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Toque no coracao de uma hospedagem para salvar aqui e comparar depois.
         </p>
         <Link
@@ -62,16 +65,19 @@ export function FavoritesList() {
         <span className="rounded-full border border-rose-300/25 bg-rose-500/12 px-3 py-1 text-xs font-semibold uppercase tracking-normal text-rose-200">
           Favoritos
         </span>
-        <h1 className="mt-3 text-3xl font-semibold text-white">Hospedagens salvas</h1>
-        <p className="mt-2 text-sm text-slate-400">
-          Favoritos deste navegador. Entre na hospedagem para solicitar datas e falar com o anfitriao.
+        <h1 className="mt-3 text-3xl font-semibold text-foreground">
+          Hospedagens salvas
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Favoritos deste navegador. Entre na hospedagem para solicitar datas e
+          falar com o anfitriao.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {favoritos.map((favorito) => (
           <GlassCard
-            className="overflow-hidden border-slate-700/55 bg-slate-950/72 shadow-2xl shadow-black/20"
+            className="overflow-hidden border-border bg-card/88 shadow-2xl shadow-cyan-950/10 dark:border-slate-700/55 dark:bg-slate-950/72 dark:shadow-black/20"
             key={favorito.id}
           >
             <div className="aspect-[16/10] overflow-hidden bg-slate-900">
@@ -90,9 +96,11 @@ export function FavoritesList() {
             <div className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold text-white">{favorito.name}</h2>
-                  <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-400">
-                    <MapPin className="h-3.5 w-3.5 text-cyan-200" />
+                  <h2 className="truncate text-lg font-semibold text-foreground">
+                    {favorito.name}
+                  </h2>
+                  <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
                     <span className="truncate">{favorito.locationLabel}</span>
                   </p>
                 </div>
@@ -106,10 +114,11 @@ export function FavoritesList() {
                 </button>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-slate-300">
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2.5 py-1">
-                  <Users className="h-3.5 w-3.5 text-cyan-200" />
-                  {favorito.maxGuests} hospede{favorito.maxGuests === 1 ? "" : "s"}
+                  <Users className="h-3.5 w-3.5 text-primary" />
+                  {favorito.maxGuests} hospede
+                  {favorito.maxGuests === 1 ? "" : "s"}
                 </span>
                 <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-amber-100">
                   {formatarPreco(favorito.minPrice)}
@@ -137,6 +146,6 @@ function formatarPreco(valor: number | null) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
     maximumFractionDigits: 0,
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }

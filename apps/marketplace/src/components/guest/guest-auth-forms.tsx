@@ -7,15 +7,11 @@ import { GlassCard, GlassInput } from "@hospedex/ui";
 import {
   cadastroHospedeAction,
   loginHospedeAction,
-  recuperarSenhaHospedeAction
+  recuperarSenhaHospedeAction,
 } from "../../lib/guest/actions";
 import { FormSubmitButton } from "./form-submit-button";
 
-export function GuestLoginCard({
-  mensagem
-}: {
-  mensagem: string | null;
-}) {
+export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
   return (
     <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-md">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
@@ -37,7 +33,12 @@ export function GuestLoginCard({
           <GlassInput name="email" placeholder="E-mail" required type="email" />
         </CampoIcone>
         <CampoIcone icon={KeyRound}>
-          <GlassInput name="senha" placeholder="Senha" required type="password" />
+          <GlassInput
+            name="senha"
+            placeholder="Senha"
+            required
+            type="password"
+          />
         </CampoIcone>
         <FormSubmitButton pendingText="Entrando...">Entrar</FormSubmitButton>
       </form>
@@ -46,13 +47,22 @@ export function GuestLoginCard({
         <p className="text-xs text-muted-foreground">
           Esqueceu a senha? Informe seu e-mail acima e solicite a recuperacao.
         </p>
-        <GlassInput name="email" placeholder="E-mail para recuperacao" type="email" />
-        <FormSubmitButton pendingText="Enviando...">Recuperar senha</FormSubmitButton>
+        <GlassInput
+          name="email"
+          placeholder="E-mail para recuperacao"
+          type="email"
+        />
+        <FormSubmitButton pendingText="Enviando...">
+          Recuperar senha
+        </FormSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Ainda nao tem conta?{" "}
-        <Link className="font-medium text-primary hover:text-primary/80" href="/cadastro">
+        <Link
+          className="font-medium text-primary hover:text-primary/80"
+          href="/cadastro"
+        >
           Criar conta
         </Link>
       </p>
@@ -60,11 +70,7 @@ export function GuestLoginCard({
   );
 }
 
-export function GuestSignupCard({
-  mensagem
-}: {
-  mensagem: string | null;
-}) {
+export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
   return (
     <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-lg">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
@@ -72,7 +78,8 @@ export function GuestSignupCard({
       </p>
       <h1 className="mt-3 text-3xl font-semibold">Criar conta</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Use o mesmo e-mail informado na solicitacao de hospedagem para vincular suas reservas.
+        Use o mesmo e-mail informado na solicitacao de hospedagem para vincular
+        suas reservas.
       </p>
 
       {mensagem ? (
@@ -100,12 +107,17 @@ export function GuestSignupCard({
             type="password"
           />
         </CampoIcone>
-        <FormSubmitButton pendingText="Criando...">Criar conta</FormSubmitButton>
+        <FormSubmitButton pendingText="Criando...">
+          Criar conta
+        </FormSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Ja tem conta?{" "}
-        <Link className="font-medium text-primary hover:text-primary/80" href="/login">
+        <Link
+          className="font-medium text-primary hover:text-primary/80"
+          href="/login"
+        >
           Entrar
         </Link>
       </p>
@@ -115,15 +127,15 @@ export function GuestSignupCard({
 
 function CampoIcone({
   children,
-  icon: Icone
+  icon: Icone,
 }: {
   children: ReactNode;
   icon: ComponentType<{ className?: string }>;
 }) {
   return (
     <div className="relative">
-      <Icone className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-cyan-200/80" />
-      <div className="[&_input]:border-cyan-200/20 [&_input]:bg-slate-950/70 [&_input]:pl-10 [&_input]:text-slate-100 [&_input]:placeholder:text-slate-300/70">
+      <Icone className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary/80" />
+      <div className="[&_input]:border-cyan-300/25 [&_input]:bg-card/80 [&_input]:pl-10 [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground dark:[&_input]:border-cyan-200/20 dark:[&_input]:bg-slate-950/70 dark:[&_input]:text-slate-100 dark:[&_input]:placeholder:text-slate-300/70">
         {children}
       </div>
     </div>

@@ -7,26 +7,24 @@
 .admin-shell-bg {
   background:
     radial-gradient(circle at 16% 0%, rgba(6, 182, 212, 0.12), transparent 32%),
-    radial-gradient(circle at 84% 8%, rgba(14, 165, 233, 0.09), transparent 28%),
-    linear-gradient(
-      135deg,
-      #f8fbff 0%,
-      #eef7ff 44%,
-      #ffffff 100%
-    );
+    radial-gradient(
+      circle at 84% 8%,
+      rgba(14, 165, 233, 0.09),
+      transparent 28%
+    ),
+    linear-gradient(135deg, #f8fbff 0%, #f4f8fc 44%, #ffffff 100%);
   background-attachment: fixed;
 }
 
 .dark .admin-shell-bg {
   background:
-    radial-gradient(circle at 16% 0%, rgba(34, 211, 238, 0.11), transparent 32%),
+    radial-gradient(
+      circle at 16% 0%,
+      rgba(34, 211, 238, 0.11),
+      transparent 32%
+    ),
     radial-gradient(circle at 84% 8%, rgba(6, 182, 212, 0.07), transparent 28%),
-    linear-gradient(
-      135deg,
-      #020617 0%,
-      #030712 44%,
-      #020617 100%
-    );
+    linear-gradient(135deg, #020617 0%, #030712 44%, #020617 100%);
   background-attachment: fixed;
 }
 
@@ -39,7 +37,7 @@
  */
 .admin-management-shell {
   color-scheme: light;
-  --background: #f8fbff;
+  --background: #f7fbff;
   --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #0f172a;
@@ -47,44 +45,64 @@
   --popover-foreground: #0f172a;
   --primary: #22d3ee;
   --primary-foreground: #083344;
-  --secondary: #eaf6fb;
+  --secondary: #eef5fa;
   --secondary-foreground: #164e63;
-  --muted: #eaf2f8;
-  --muted-foreground: #64748b;
+  --muted: #eef4f8;
+  --muted-foreground: #526273;
   --accent: #dff8ff;
   --accent-foreground: #164e63;
   --destructive: #ef4444;
-  --border: #c8d8e5;
-  --input: #bed4e3;
+  --border: #bacddd;
+  --input: #b5cada;
   --ring: #06b6d4;
   --success: #16a34a;
   --warning: #ca8a04;
   --info: #0284c7;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 14% 0%, rgba(6, 182, 212, 0.13), transparent 30%),
-    radial-gradient(circle at 88% 6%, rgba(14, 165, 233, 0.1), transparent 28%),
-    linear-gradient(135deg, #f8fbff 0%, #eef7ff 48%, #ffffff 100%);
+    radial-gradient(circle at 14% 0%, rgba(6, 182, 212, 0.09), transparent 30%),
+    radial-gradient(
+      circle at 88% 6%,
+      rgba(14, 165, 233, 0.07),
+      transparent 28%
+    ),
+    linear-gradient(135deg, #f7fbff 0%, #f3f7fb 48%, #ffffff 100%);
   color: var(--foreground);
 }
 
 .admin-management-shell :is(.glass-navbar, .glass-sidebar) {
-  border-color: rgba(200, 216, 229, 0.9);
-  background: rgba(255, 255, 255, 0.86);
+  border-color: rgba(186, 205, 221, 0.95);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow:
-    0 18px 60px rgba(15, 23, 42, 0.1),
+    0 18px 48px rgba(15, 23, 42, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-.admin-management-shell :is(.admin-glass-panel, .admin-glass-card, .glass-card, .glass-panel, .glass-modal, .glass-table) {
-  border-color: rgba(200, 216, 229, 0.92);
-  background: rgba(255, 255, 255, 0.82);
+.admin-management-shell
+  :is(
+    .admin-glass-panel,
+    .admin-glass-card,
+    .glass-card,
+    .glass-panel,
+    .glass-modal,
+    .glass-table
+  ) {
+  border-color: rgba(186, 205, 221, 0.96);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow:
-    0 18px 55px rgba(15, 23, 42, 0.1),
+    0 18px 48px rgba(15, 23, 42, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-.admin-management-shell :is(.admin-glass-panel, .admin-glass-card, .glass-card, .glass-panel, .glass-modal, .glass-table):hover {
+.admin-management-shell
+  :is(
+    .admin-glass-panel,
+    .admin-glass-card,
+    .glass-card,
+    .glass-panel,
+    .glass-modal,
+    .glass-table
+  ):hover {
   background: rgba(255, 255, 255, 0.9);
 }
 
@@ -128,7 +146,11 @@
   --warning: #eab308;
   --info: #22d3ee;
   background:
-    radial-gradient(circle at 14% 0%, rgba(34, 211, 238, 0.12), transparent 30%),
+    radial-gradient(
+      circle at 14% 0%,
+      rgba(34, 211, 238, 0.12),
+      transparent 30%
+    ),
     radial-gradient(circle at 88% 6%, rgba(6, 182, 212, 0.07), transparent 28%),
     linear-gradient(135deg, #020617 0%, #030712 48%, #020617 100%);
 }
@@ -141,7 +163,16 @@
     inset 0 1px 0 rgba(248, 250, 252, 0.05);
 }
 
-.dark .admin-management-shell :is(.admin-glass-panel, .admin-glass-card, .glass-card, .glass-panel, .glass-modal, .glass-table) {
+.dark
+  .admin-management-shell
+  :is(
+    .admin-glass-panel,
+    .admin-glass-card,
+    .glass-card,
+    .glass-panel,
+    .glass-modal,
+    .glass-table
+  ) {
   border-color: rgba(30, 41, 59, 0.96);
   background: rgba(7, 17, 31, 0.94);
   box-shadow:
@@ -149,7 +180,16 @@
     inset 0 1px 0 rgba(248, 250, 252, 0.06);
 }
 
-.dark .admin-management-shell :is(.admin-glass-panel, .admin-glass-card, .glass-card, .glass-panel, .glass-modal, .glass-table):hover {
+.dark
+  .admin-management-shell
+  :is(
+    .admin-glass-panel,
+    .admin-glass-card,
+    .glass-card,
+    .glass-panel,
+    .glass-modal,
+    .glass-table
+  ):hover {
   background: rgba(11, 18, 32, 0.96);
 }
 
@@ -168,8 +208,7 @@
 .auth-premium-bg {
   position: relative;
   isolation: isolate;
-  background:
-    linear-gradient(135deg, #020611 0%, #06101f 48%, #030712 100%);
+  background: linear-gradient(135deg, #020611 0%, #06101f 48%, #030712 100%);
 }
 
 .animated-login-background {
@@ -189,7 +228,12 @@
     linear-gradient(90deg, rgba(148, 163, 184, 0.075) 1px, transparent 1px);
   background-position: center;
   background-size: 68px 68px;
-  mask-image: radial-gradient(circle at center, black 0%, black 52%, transparent 88%);
+  mask-image: radial-gradient(
+    circle at center,
+    black 0%,
+    black 52%,
+    transparent 88%
+  );
   opacity: 0.58;
   transform: rotate(-0.35deg);
   animation: auth-grid-drift 28s linear infinite;
@@ -200,8 +244,17 @@
   inset: 0;
   content: "";
   background:
-    radial-gradient(circle at 52% 48%, rgba(34, 211, 238, 0.12), transparent 32%),
-    linear-gradient(115deg, transparent 0%, rgba(0, 213, 255, 0.07) 42%, transparent 64%);
+    radial-gradient(
+      circle at 52% 48%,
+      rgba(34, 211, 238, 0.12),
+      transparent 32%
+    ),
+    linear-gradient(
+      115deg,
+      transparent 0%,
+      rgba(0, 213, 255, 0.07) 42%,
+      transparent 64%
+    );
   opacity: 0.72;
   animation: auth-background-breathe 12s ease-in-out infinite alternate;
 }
@@ -228,13 +281,23 @@
 .auth-ambient-glow--primary {
   top: -13rem;
   left: -10rem;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.24), rgba(14, 165, 233, 0.08) 42%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(34, 211, 238, 0.24),
+    rgba(14, 165, 233, 0.08) 42%,
+    transparent 70%
+  );
 }
 
 .auth-ambient-glow--secondary {
   right: -12rem;
   bottom: -14rem;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.22), rgba(8, 145, 178, 0.08) 45%, transparent 72%);
+  background: radial-gradient(
+    circle,
+    rgba(37, 99, 235, 0.22),
+    rgba(8, 145, 178, 0.08) 45%,
+    transparent 72%
+  );
   animation-delay: -7s;
 }
 
@@ -260,7 +323,13 @@
   background-size:
     132px 132px,
     212px 212px;
-  mask-image: linear-gradient(to bottom, transparent 0%, black 18%, black 78%, transparent 100%);
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 18%,
+    black 78%,
+    transparent 100%
+  );
   opacity: 0.34;
   animation: auth-particles-drift 34s linear infinite;
 }
@@ -269,7 +338,13 @@
   left: -18%;
   width: 136%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.44), rgba(96, 165, 250, 0.18), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 211, 238, 0.44),
+    rgba(96, 165, 250, 0.18),
+    transparent
+  );
   box-shadow: 0 0 18px rgba(34, 211, 238, 0.2);
   opacity: 0.48;
   transform: rotate(-8deg);
@@ -293,7 +368,12 @@
   width: min(34rem, 64vw);
   height: min(34rem, 64vw);
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(34, 211, 238, 0.14), rgba(14, 165, 233, 0.04) 48%, transparent 72%);
+  background: radial-gradient(
+    circle,
+    rgba(34, 211, 238, 0.14),
+    rgba(14, 165, 233, 0.04) 48%,
+    transparent 72%
+  );
   filter: blur(10px);
   transform: translate(-50%, -50%);
   animation: auth-cyan-pulse 6s ease-in-out infinite;
@@ -322,7 +402,12 @@
   left: 0;
   width: 110%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 213, 255, 0.7), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(0, 213, 255, 0.7),
+    transparent
+  );
   animation: auth-line-flow 5.5s linear infinite;
 }
 
@@ -370,7 +455,12 @@
   width: 44%;
   content: "";
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), #22d3ee, rgba(59, 130, 246, 0.9));
+  background: linear-gradient(
+    90deg,
+    rgba(34, 211, 238, 0.1),
+    #22d3ee,
+    rgba(59, 130, 246, 0.9)
+  );
   box-shadow: 0 0 28px rgba(34, 211, 238, 0.38);
   animation: auth-progress-flow 1.15s ease-in-out infinite;
 }
@@ -389,12 +479,25 @@
   width: 38%;
   content: "";
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(34, 211, 238, 0.1), rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.85));
+  background: linear-gradient(
+    90deg,
+    rgba(34, 211, 238, 0.1),
+    rgba(34, 211, 238, 0.95),
+    rgba(59, 130, 246, 0.85)
+  );
   box-shadow: 0 0 20px rgba(34, 211, 238, 0.32);
   animation: auth-progress-flow 1.05s ease-in-out infinite;
 }
 
-.auth-premium-bg :is(a[href], button, label[for], input[type="checkbox"], input[type="submit"], [role="button"]) {
+.auth-premium-bg
+  :is(
+    a[href],
+    button,
+    label[for],
+    input[type="checkbox"],
+    input[type="submit"],
+    [role="button"]
+  ) {
   cursor: pointer;
 }
 
@@ -547,8 +650,7 @@
 }
 
 .admin-glass-card {
-  transition:
-    box-shadow 180ms ease;
+  transition: box-shadow 180ms ease;
 }
 
 body:not(:has(.admin-management-shell)) .admin-glass-card:hover {
@@ -572,7 +674,8 @@ body:not(:has(.admin-management-shell)) .admin-glass-card:hover {
  * evita duplicar logica por tela e mantem Marketplace/Super Admin fora do
  * efeito, pois o body recebe a classe apenas dentro do Gerenciamento.
  */
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card) {
+body.admin-interactive-cards-enabled
+  :is(.admin-glass-card, .glass-card, .admin-interactive-card) {
   --interactive-card-x: 50%;
   --interactive-card-y: 50%;
   position: relative;
@@ -582,38 +685,43 @@ body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-
   transition: none;
 }
 
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card)::after {
+body.admin-interactive-cards-enabled
+  :is(.admin-glass-card, .glass-card, .admin-interactive-card)::after {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   content: "";
   opacity: 0;
-  background:
-    radial-gradient(
-      280px circle at var(--interactive-card-x) var(--interactive-card-y),
-      color-mix(in oklch, var(--premium-cyan) 20%, transparent),
-      color-mix(in oklch, var(--premium-cyan) 8%, transparent) 36%,
-      transparent 70%
-    );
+  background: radial-gradient(
+    280px circle at var(--interactive-card-x) var(--interactive-card-y),
+    color-mix(in oklch, var(--premium-cyan) 20%, transparent),
+    color-mix(in oklch, var(--premium-cyan) 8%, transparent) 36%,
+    transparent 70%
+  );
   transition: opacity 180ms ease;
 }
 
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card) > * {
+body.admin-interactive-cards-enabled
+  :is(.admin-glass-card, .glass-card, .admin-interactive-card)
+  > * {
   position: relative;
   z-index: 1;
 }
 
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover {
+body.admin-interactive-cards-enabled
+  :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover {
   transform: none;
 }
 
-body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover::after {
+body.admin-interactive-cards-enabled
+  :is(.admin-glass-card, .glass-card, .admin-interactive-card):hover::after {
   opacity: 1;
 }
 
 @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
-  body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-interactive-card)::after {
+  body.admin-interactive-cards-enabled
+    :is(.admin-glass-card, .glass-card, .admin-interactive-card)::after {
     display: none;
   }
 }
@@ -627,7 +735,8 @@ body.admin-interactive-cards-enabled :is(.admin-glass-card, .glass-card, .admin-
  */
 html:has(.admin-management-shell),
 body:has(.admin-management-shell) {
-  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 42%, transparent) transparent;
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 42%, transparent)
+    transparent;
   scrollbar-width: thin;
 }
 
@@ -657,7 +766,8 @@ body:has(.admin-management-shell)::-webkit-scrollbar-thumb:hover {
 }
 
 body:has(.admin-management-shell) :is(*, .fc-scroller) {
-  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 34%, transparent) transparent;
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 34%, transparent)
+    transparent;
   scrollbar-width: thin;
 }
 
@@ -666,20 +776,24 @@ body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar {
   height: 0.45rem;
 }
 
-body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-track {
+body:has(.admin-management-shell)
+  :is(*, .fc-scroller)::-webkit-scrollbar-track {
   background: transparent;
 }
 
-body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-thumb {
+body:has(.admin-management-shell)
+  :is(*, .fc-scroller)::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: color-mix(in oklch, var(--premium-cyan) 34%, transparent);
 }
 
-body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-thumb:hover {
+body:has(.admin-management-shell)
+  :is(*, .fc-scroller)::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--primary) 58%, transparent);
 }
 
-body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-corner {
+body:has(.admin-management-shell)
+  :is(*, .fc-scroller)::-webkit-scrollbar-corner {
   background: transparent;
 }
 
@@ -688,7 +802,8 @@ body:has(.admin-management-shell) :is(*, .fc-scroller)::-webkit-scrollbar-corner
  * Em hover/foco, exibimos um trilho minimo para orientar listas longas.
  */
 body:has(.admin-management-shell) .admin-sidebar-scrollbar {
-  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 8%, transparent) transparent;
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 8%, transparent)
+    transparent;
   scrollbar-width: thin;
 }
 
@@ -697,27 +812,34 @@ body:has(.admin-management-shell) .admin-sidebar-scrollbar::-webkit-scrollbar {
   height: 0.25rem;
 }
 
-body:has(.admin-management-shell) .admin-sidebar-scrollbar::-webkit-scrollbar-track {
+body:has(.admin-management-shell)
+  .admin-sidebar-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-body:has(.admin-management-shell) .admin-sidebar-scrollbar::-webkit-scrollbar-thumb {
+body:has(.admin-management-shell)
+  .admin-sidebar-scrollbar::-webkit-scrollbar-thumb {
   border-radius: 999px;
   background: color-mix(in oklch, var(--premium-cyan) 8%, transparent);
 }
 
 body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover,
 body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within {
-  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 46%, transparent) transparent;
+  scrollbar-color: color-mix(in oklch, var(--premium-cyan) 46%, transparent)
+    transparent;
 }
 
-body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover::-webkit-scrollbar-thumb,
-body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb {
+body:has(.admin-management-shell)
+  .admin-sidebar-scrollbar:hover::-webkit-scrollbar-thumb,
+body:has(.admin-management-shell)
+  .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb {
   background: color-mix(in oklch, var(--premium-cyan) 46%, transparent);
 }
 
-body:has(.admin-management-shell) .admin-sidebar-scrollbar:hover::-webkit-scrollbar-thumb:hover,
-body:has(.admin-management-shell) .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb:hover {
+body:has(.admin-management-shell)
+  .admin-sidebar-scrollbar:hover::-webkit-scrollbar-thumb:hover,
+body:has(.admin-management-shell)
+  .admin-sidebar-scrollbar:focus-within::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--primary) 68%, transparent);
 }
 

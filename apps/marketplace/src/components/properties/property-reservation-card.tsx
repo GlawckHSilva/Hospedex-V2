@@ -11,19 +11,26 @@ import {
   Send,
   ShieldCheck,
   User,
-  Users
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 
-import { GlassButton, GlassCard, GlassInput, StatusBadge, buttonVariants, cn } from "@hospedex/ui";
+import {
+  GlassButton,
+  GlassCard,
+  GlassInput,
+  StatusBadge,
+  buttonVariants,
+  cn,
+} from "@hospedex/ui";
 import type { ReservationPaymentMethod } from "@hospedex/types";
 
 import {
   converterValorBrl,
   formatarDataCotacao,
-  formatarMoeda
+  formatarMoeda,
 } from "../../lib/currency/format";
 import type { CotacoesCambio } from "../../lib/currency/types";
 import { solicitarReservaPublicaAction } from "../../lib/marketplace/actions";
@@ -61,19 +68,19 @@ type DadosHospedeLogado = {
 };
 
 const inputIconClass =
-  "pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white/90";
+  "pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground";
 const selectIconClass =
-  "pointer-events-none absolute right-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-white/80";
+  "pointer-events-none absolute right-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground";
 const reservationInputWithIconClass =
-  "marketplace-reservation-control h-12 min-w-0 pl-11 pr-3 text-left text-sm text-slate-50 placeholder:text-slate-400/80";
+  "marketplace-reservation-control h-12 min-w-0 pl-11 pr-3 text-left text-sm text-foreground placeholder:text-muted-foreground";
 const reservationInputPlainClass =
-  "marketplace-reservation-control h-12 min-w-0 px-3 text-left text-sm text-slate-50 placeholder:text-slate-400/80";
+  "marketplace-reservation-control h-12 min-w-0 px-3 text-left text-sm text-foreground placeholder:text-muted-foreground";
 const reservationSelectWithIconClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-11 pr-11 text-left text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-11 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const reservationSelectPlainClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-11 text-left text-sm text-slate-50 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const reservationTextareaClass =
-  "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-slate-50 placeholder:text-slate-400/80 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
+  "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40";
 const LIMITE_PADRAO_HOSPEDES_EXTRAS = 10;
 
 /**
@@ -85,7 +92,7 @@ const LIMITE_PADRAO_HOSPEDES_EXTRAS = 10;
 export function PropertyReservationCard({
   cotacoesCambio,
   feedback,
-  property
+  property,
 }: PropertyReservationCardProps) {
   if (feedback.status === "sucesso") {
     return <ReservationSuccess codigo={feedback.codigo} property={property} />;
@@ -96,20 +103,20 @@ export function PropertyReservationCard({
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [horarioPrevistoCheckIn, setHorarioPrevistoCheckIn] = useState(
-    extrairHorarioPadrao(property.checkIn)
+    extrairHorarioPadrao(property.checkIn),
   );
   const [horarioPrevistoCheckOut, setHorarioPrevistoCheckOut] = useState(
-    extrairHorarioPadrao(property.checkOut)
+    extrairHorarioPadrao(property.checkOut),
   );
   const [quantidadeHospedes, setQuantidadeHospedes] = useState(
-    String(Math.max(1, Math.min(obterMaximoHospedesSelecionavel(property), 2)))
+    String(Math.max(1, Math.min(obterMaximoHospedesSelecionavel(property), 2))),
   );
-  const [formaPagamento, setFormaPagamento] = useState<ReservationPaymentMethod | "">(
-    primeiroMetodo
-  );
+  const [formaPagamento, setFormaPagamento] = useState<
+    ReservationPaymentMethod | ""
+  >(primeiroMetodo);
   const parcelasDisponiveis = useMemo(
     () => obterParcelasDisponiveis(property),
-    [property]
+    [property],
   );
   const parcelaPadrao = parcelasDisponiveis[0]?.parcela ?? 1;
   const [parcelas, setParcelas] = useState(parcelaPadrao);
@@ -117,12 +124,12 @@ export function PropertyReservationCard({
   const [telefoneHospede, setTelefoneHospede] = useState("");
   const [emailHospede, setEmailHospede] = useState("");
   const [hospedeLogado, setHospedeLogado] = useState<DadosHospedeLogado | null>(
-    null
+    null,
   );
-  const parcelaSelecionada =
-    parcelasDisponiveis.find((parcela) => parcela.parcela === parcelas) ??
-    parcelasDisponiveis[0] ??
-    { jurosPercentual: 0, parcela: 1 };
+  const parcelaSelecionada = parcelasDisponiveis.find(
+    (parcela) => parcela.parcela === parcelas,
+  ) ??
+    parcelasDisponiveis[0] ?? { jurosPercentual: 0, parcela: 1 };
   const resumo = useMemo(
     () =>
       calcularResumoReserva({
@@ -131,11 +138,11 @@ export function PropertyReservationCard({
         formaPagamento,
         hospedes: obterQuantidadeHospedesParaResumo(
           quantidadeHospedes,
-          obterMaximoHospedesSelecionavel(property)
+          obterMaximoHospedesSelecionavel(property),
         ),
         jurosPercentual: parcelaSelecionada.jurosPercentual,
         parcelas: parcelaSelecionada.parcela,
-        property
+        property,
       }),
     [
       checkIn,
@@ -144,10 +151,11 @@ export function PropertyReservationCard({
       parcelaSelecionada.jurosPercentual,
       parcelaSelecionada.parcela,
       property,
-      quantidadeHospedes
-    ]
+      quantidadeHospedes,
+    ],
   );
-  const podeSolicitarReserva = property.maxGuests > 0 && metodosPagamento.length > 0;
+  const podeSolicitarReserva =
+    property.maxGuests > 0 && metodosPagamento.length > 0;
 
   useEffect(() => {
     const supabase = criarClienteSupabaseBrowser();
@@ -174,7 +182,7 @@ export function PropertyReservationCard({
       const dados = {
         email: usuario.email.trim().toLowerCase(),
         nome: perfil?.full_name ?? "",
-        telefone: perfil?.phone ?? ""
+        telefone: perfil?.phone ?? "",
       };
 
       if (ativo) {
@@ -193,13 +201,15 @@ export function PropertyReservationCard({
   }, []);
 
   return (
-    <GlassCard className="w-full max-w-full border-slate-600/45 bg-slate-950/82 p-4 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-6">
+    <GlassCard className="w-full max-w-full border-border bg-card/90 p-4 shadow-2xl shadow-cyan-950/10 backdrop-blur-xl dark:border-slate-600/45 dark:bg-slate-950/82 dark:shadow-black/30 sm:p-6">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Diária inicial</p>
-          <p className="mt-2 text-3xl font-semibold text-white sm:text-4xl">
+          <p className="mt-2 text-3xl font-semibold text-foreground sm:text-4xl">
             {formatarPreco(property.minPrice)}
-            <span className="ml-1 text-base font-medium text-slate-300">/noite</span>
+            <span className="ml-1 text-base font-medium text-muted-foreground">
+              /noite
+            </span>
           </p>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             Taxas e adicionais são calculados após selecionar as datas.
@@ -209,7 +219,9 @@ export function PropertyReservationCard({
             valorBrl={property.minPrice}
           />
         </div>
-        <StatusBadge className="w-fit" tone="info">Solicitação</StatusBadge>
+        <StatusBadge className="w-fit" tone="info">
+          Solicitação
+        </StatusBadge>
       </div>
 
       {feedback.status === "erro" ? (
@@ -288,7 +300,7 @@ function ReservationFormFields({
   setParcelas,
   setQuantidadeHospedes,
   setTelefoneHospede,
-  telefoneHospede
+  telefoneHospede,
 }: {
   checkIn: string;
   checkOut: string;
@@ -324,7 +336,7 @@ function ReservationFormFields({
   return (
     <fieldset className="grid gap-4" disabled={pending}>
       {!podeSolicitarReserva ? (
-        <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+        <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-200">
           O proprietário ainda não configurou as formas de pagamento desta casa.
         </div>
       ) : null}
@@ -363,11 +375,13 @@ function ReservationFormFields({
             className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="horarioPrevistoCheckIn"
-            onChange={(evento) => setHorarioPrevistoCheckIn(evento.target.value)}
+            onChange={(evento) =>
+              setHorarioPrevistoCheckIn(evento.target.value)
+            }
             type="time"
             value={horarioPrevistoCheckIn}
           />
-          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
             Padrão da casa: {property.checkIn}.
           </span>
         </Field>
@@ -377,11 +391,13 @@ function ReservationFormFields({
             className={reservationInputWithIconClass}
             disabled={bloqueado}
             name="horarioPrevistoCheckOut"
-            onChange={(evento) => setHorarioPrevistoCheckOut(evento.target.value)}
+            onChange={(evento) =>
+              setHorarioPrevistoCheckOut(evento.target.value)
+            }
             type="time"
             value={horarioPrevistoCheckOut}
           />
-          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
             Padrão da casa: {property.checkOut}.
           </span>
         </Field>
@@ -400,16 +416,18 @@ function ReservationFormFields({
             setQuantidadeHospedes(
               normalizarQuantidadeHospedesInput(
                 quantidadeHospedes,
-                obterMaximoHospedesSelecionavel(property)
-              )
+                obterMaximoHospedesSelecionavel(property),
+              ),
             )
           }
-          onChange={(evento) => setQuantidadeHospedes(evento.target.value.replace(/\D/g, ""))}
+          onChange={(evento) =>
+            setQuantidadeHospedes(evento.target.value.replace(/\D/g, ""))
+          }
           required
           type="number"
           value={quantidadeHospedes}
         />
-        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
           {obterTextoLimiteHospedes(property)}
         </span>
       </Field>
@@ -443,7 +461,8 @@ function ReservationFormFields({
           <GlassInput
             className={cn(
               reservationInputWithIconClass,
-              emailHospedeBloqueado && "cursor-not-allowed border-cyan-300/35 bg-cyan-400/10"
+              emailHospedeBloqueado &&
+                "cursor-not-allowed border-cyan-300/35 bg-cyan-400/10",
             )}
             disabled={bloqueado}
             name="hospedeEmail"
@@ -454,7 +473,7 @@ function ReservationFormFields({
             value={emailHospede}
           />
           {emailHospedeBloqueado ? (
-            <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+            <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
               Este e-mail está vinculado à sua conta.
             </span>
           ) : null}
@@ -491,7 +510,7 @@ function ReservationFormFields({
           ))}
         </select>
         <ChevronDown className={selectIconClass} />
-        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-100/75">
+        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-cyan-700 dark:text-cyan-100/75">
           Nenhum pagamento é realizado nesta etapa.
         </span>
       </Field>
@@ -501,7 +520,9 @@ function ReservationFormFields({
           <select
             className={reservationSelectPlainClass}
             disabled={bloqueado}
-            onChange={(evento) => setParcelas(Number.parseInt(evento.target.value, 10))}
+            onChange={(evento) =>
+              setParcelas(Number.parseInt(evento.target.value, 10))
+            }
             value={parcelas}
           >
             {parcelasDisponiveis.map((parcela) => (
@@ -556,7 +577,7 @@ function ResumoValores({
   cotacoesCambio,
   formaPagamento,
   property,
-  resumo
+  resumo,
 }: {
   cotacoesCambio: CotacoesCambio;
   formaPagamento: ReservationPaymentMethod | "";
@@ -566,7 +587,9 @@ function ResumoValores({
   if (resumo.noites <= 0) {
     return (
       <div className="grid gap-2 rounded-lg border border-dashed bg-background/70 p-4 text-sm text-muted-foreground">
-        <p className="font-semibold text-foreground">Selecione as datas para calcular o total.</p>
+        <p className="font-semibold text-foreground">
+          Selecione as datas para calcular o total.
+        </p>
         <p className="leading-6">
           O valor oficial continua em BRL. Taxa de limpeza, hóspedes extras e
           parcelas aparecem aqui antes de enviar a solicitação.
@@ -577,36 +600,51 @@ function ResumoValores({
 
   return (
     <div className="grid gap-3 rounded-lg border bg-background/70 p-4 text-sm">
-      <ResumoLinha label={`${resumo.noites} diária(s)`} valor={resumo.diarias} />
+      <ResumoLinha
+        label={`${resumo.noites} diária(s)`}
+        valor={resumo.diarias}
+      />
       {resumo.taxaLimpeza ? (
         <ResumoLinha label="Taxa de limpeza" valor={resumo.taxaLimpeza} />
       ) : null}
       {resumo.hospedesExtras > 0 ? (
         <ResumoLinha
           label={`${resumo.quantidadeHospedesExtras} ${
-            resumo.quantidadeHospedesExtras === 1 ? "hóspede extra" : "hóspedes extras"
+            resumo.quantidadeHospedesExtras === 1
+              ? "hóspede extra"
+              : "hóspedes extras"
           }`}
           valor={resumo.hospedesExtras}
         />
       ) : null}
-      {resumo.juros ? <ResumoLinha label="Juros do cartão" valor={resumo.juros} /> : null}
+      {resumo.juros ? (
+        <ResumoLinha label="Juros do cartão" valor={resumo.juros} />
+      ) : null}
       {property.pricing.caucao ? (
-        <ResumoLinha label="Caução informativa" valor={property.pricing.caucao} />
+        <ResumoLinha
+          label="Caução informativa"
+          valor={property.pricing.caucao}
+        />
       ) : null}
       <span className="flex items-center justify-between gap-3 border-t pt-3 text-muted-foreground">
         <strong className="text-foreground">Total estimado</strong>
-        <strong className="text-lg text-foreground">{formatarPreco(resumo.total || null)}</strong>
+        <strong className="text-lg text-foreground">
+          {formatarPreco(resumo.total || null)}
+        </strong>
       </span>
-      {formaPagamento === "credit_card" && resumo.parcelaValor > 0 && resumo.noites > 0 ? (
+      {formaPagamento === "credit_card" &&
+      resumo.parcelaValor > 0 &&
+      resumo.noites > 0 ? (
         <span className="text-xs text-muted-foreground">
-          Cartão em {Math.max(1, Math.round(resumo.total / resumo.parcelaValor))}x de{" "}
+          Cartão em{" "}
+          {Math.max(1, Math.round(resumo.total / resumo.parcelaValor))}x de{" "}
           {formatarPreco(resumo.parcelaValor)}.
         </span>
       ) : null}
       <ConversaoTotal cotacoesCambio={cotacoesCambio} totalBrl={resumo.total} />
       <span className="flex items-center justify-between gap-3 text-muted-foreground">
         <span className="inline-flex items-center gap-2">
-          <Clock className="h-4 w-4 text-white" />
+          <Clock className="h-4 w-4 text-primary" />
           Horários
         </span>
         <strong className="text-right text-foreground">
@@ -619,7 +657,7 @@ function ResumoValores({
 
 function ConversaoInternacional({
   cotacoesCambio,
-  valorBrl
+  valorBrl,
 }: {
   cotacoesCambio: CotacoesCambio;
   valorBrl: number | null;
@@ -654,7 +692,7 @@ function ConversaoInternacional({
 
 function ConversaoTotal({
   cotacoesCambio,
-  totalBrl
+  totalBrl,
 }: {
   cotacoesCambio: CotacoesCambio;
   totalBrl: number;
@@ -667,11 +705,14 @@ function ConversaoTotal({
 
   return (
     <div className="rounded-md border border-dashed bg-background/60 px-3 py-2 text-xs text-muted-foreground">
-      <p className="font-semibold text-foreground">Total aproximado internacional</p>
+      <p className="font-semibold text-foreground">
+        Total aproximado internacional
+      </p>
       <p className="mt-1">Aprox. {formatarMoeda(usd, "USD")}</p>
       <p>Aprox. {formatarMoeda(eur, "EUR")}</p>
       <p className="mt-2 leading-5">
-        Conversão apenas informativa. O valor oficial da reserva permanece em BRL.
+        Conversão apenas informativa. O valor oficial da reserva permanece em
+        BRL.
       </p>
     </div>
   );
@@ -697,11 +738,13 @@ function PerfilConfianca({ property }: { property: PropriedadePublica }) {
         )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{perfil.ownerName}</p>
-          <p className="truncate text-xs text-muted-foreground">{perfil.businessName}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {perfil.businessName}
+          </p>
         </div>
       </div>
       <p className="mt-3 flex items-center gap-2 text-xs font-semibold text-primary">
-        <ShieldCheck className="h-4 w-4 text-cyan-100" />
+        <ShieldCheck className="h-4 w-4 text-primary" />
         Proprietário verificado
       </p>
       <p className="mt-3 text-xs leading-5 text-muted-foreground">
@@ -723,7 +766,7 @@ function ResumoLinha({ label, valor }: { label: string; valor: number }) {
 
 function ReservationSuccess({
   codigo,
-  property
+  property,
 }: {
   codigo?: string | undefined;
   property: PropriedadePublica;
@@ -735,9 +778,11 @@ function ReservationSuccess({
       role="status"
     >
       <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
-        <CheckCircle2 className="h-6 w-6 text-white" />
+        <CheckCircle2 className="h-6 w-6 text-primary" />
       </span>
-      <h2 className="mt-5 text-xl font-semibold">Solicitação enviada com sucesso.</h2>
+      <h2 className="mt-5 text-xl font-semibold">
+        Solicitação enviada com sucesso.
+      </h2>
       <p className="mt-3 text-sm leading-6 text-muted-foreground">
         O proprietário irá analisar sua reserva.
       </p>
@@ -746,7 +791,10 @@ function ReservationSuccess({
           Código {codigo}
         </p>
       ) : null}
-      <Link className={cn(buttonVariants({ size: "lg" }), "mt-6 w-full")} href={`/propriedades/${property.slug}`}>
+      <Link
+        className={cn(buttonVariants({ size: "lg" }), "mt-6 w-full")}
+        href={`/propriedades/${property.slug}`}
+      >
         Voltar à propriedade
       </Link>
     </GlassCard>
@@ -769,7 +817,7 @@ function calcularResumoReserva({
   hospedes,
   jurosPercentual,
   parcelas,
-  property
+  property,
 }: {
   checkIn: string;
   checkOut: string;
@@ -789,7 +837,8 @@ function calcularResumoReserva({
       : 0;
   // Regra oficial: a capacidade cadastrada da casa e a quantidade inclusa.
   // Hóspedes acima dessa capacidade pagam o adicional uma vez por reserva.
-  const hospedesExtras = quantidadeHospedesExtras * property.pricing.valorHospedeExtra;
+  const hospedesExtras =
+    quantidadeHospedesExtras * property.pricing.valorHospedeExtra;
   const subtotal = diarias + taxaLimpeza + hospedesExtras;
   const juros =
     formaPagamento === "credit_card" && jurosPercentual > 0
@@ -808,7 +857,7 @@ function calcularResumoReserva({
     parcelaValor: quantidadeParcelas > 0 ? total / quantidadeParcelas : total,
     subtotal,
     taxaLimpeza,
-    total
+    total,
   };
 }
 
@@ -828,7 +877,9 @@ function obterMaximoHospedesSelecionavel(property: PropriedadePublica) {
 }
 
 function permiteHospedesExtras(property: PropriedadePublica) {
-  return property.pricing.cobraHospedeExtra && property.pricing.valorHospedeExtra > 0;
+  return (
+    property.pricing.cobraHospedeExtra && property.pricing.valorHospedeExtra > 0
+  );
 }
 
 function obterTextoLimiteHospedes(property: PropriedadePublica) {
@@ -842,14 +893,20 @@ function obterTextoLimiteHospedes(property: PropriedadePublica) {
   return `Esta casa permite até ${capacidade} hóspede${capacidade === 1 ? "" : "s"}.`;
 }
 
-function obterQuantidadeHospedesParaResumo(valor: string, capacidadeMaxima: number) {
+function obterQuantidadeHospedesParaResumo(
+  valor: string,
+  capacidadeMaxima: number,
+) {
   const numero = Number.parseInt(valor, 10);
   if (!Number.isFinite(numero)) return 1;
 
   return Math.max(1, Math.min(numero, Math.max(capacidadeMaxima || 1, 1)));
 }
 
-function normalizarQuantidadeHospedesInput(valor: string, capacidadeMaxima: number) {
+function normalizarQuantidadeHospedesInput(
+  valor: string,
+  capacidadeMaxima: number,
+) {
   return String(obterQuantidadeHospedesParaResumo(valor, capacidadeMaxima));
 }
 
@@ -858,7 +915,10 @@ function obterParcelasDisponiveis(property: PropriedadePublica) {
   const configuradas = property.pricing.jurosParcelasCartao
     .filter((item) => item.parcela >= 1 && item.parcela <= limite)
     .sort((a, b) => a.parcela - b.parcela);
-  const porParcela = new Map<number, { jurosPercentual: number; parcela: number }>();
+  const porParcela = new Map<
+    number,
+    { jurosPercentual: number; parcela: number }
+  >();
 
   porParcela.set(1, { jurosPercentual: 0, parcela: 1 });
   for (const parcela of configuradas) {
@@ -901,6 +961,6 @@ function formatarPreco(valor: number | null) {
   return new Intl.NumberFormat("pt-BR", {
     currency: "BRL",
     maximumFractionDigits: 0,
-    style: "currency"
+    style: "currency",
   }).format(valor);
 }
