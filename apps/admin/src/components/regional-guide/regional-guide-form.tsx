@@ -3,7 +3,7 @@
 import type {
   RegionalGuideCategory,
   RegionalGuideLocationRow,
-  RegionalGuideStatus
+  RegionalGuideStatus,
 } from "@hospedex/types";
 import {
   Check,
@@ -18,7 +18,7 @@ import {
   Save,
   Trash2,
   UploadCloud,
-  Waves
+  Waves,
 } from "lucide-react";
 import {
   useEffect,
@@ -27,14 +27,14 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type ReactNode
+  type ReactNode,
 } from "react";
 
 import { Button, Input, Label } from "@hospedex/ui";
 
 import {
   CATEGORIAS_GUIA_REGIAO,
-  STATUS_GUIA_REGIAO
+  STATUS_GUIA_REGIAO,
 } from "../../lib/regional-guide/types";
 
 /**
@@ -63,23 +63,23 @@ const ETAPAS: EtapaWizard[] = [
   {
     descricao: "Nome, categoria e ordem de exibição.",
     id: "principal",
-    titulo: "Principal"
+    titulo: "Principal",
   },
   {
     descricao: "Descrição, referência e mapa.",
     id: "localizacao",
-    titulo: "Localização"
+    titulo: "Localização",
   },
   {
     descricao: "Horário e canais públicos de contato.",
     id: "contato",
-    titulo: "Contato"
+    titulo: "Contato",
   },
   {
     descricao: "Imagem principal e prévia pública.",
     id: "foto",
-    titulo: "Foto e prévia"
-  }
+    titulo: "Foto e prévia",
+  },
 ];
 
 const TIPOS_IMAGEM_ACEITOS = ["image/jpeg", "image/png", "image/webp"];
@@ -95,19 +95,20 @@ export function RegionalGuideForm({
   deleteAction,
   local,
   modo,
-  podeGerenciar
+  podeGerenciar,
 }: RegionalGuideFormProps) {
   const formId = useId();
   const arquivoInputRef = useRef<HTMLInputElement | null>(null);
+  const corpoRolavelRef = useRef<HTMLDivElement | null>(null);
   const [etapaAtual, setEtapaAtual] = useState(0);
   const [erroEtapa, setErroEtapa] = useState<string | null>(null);
   const [submetendo, setSubmetendo] = useState(false);
   const [nome, setNome] = useState(local?.name ?? "");
   const [categoria, setCategoria] = useState<RegionalGuideCategory>(
-    local?.category ?? "restaurants"
+    local?.category ?? "restaurants",
   );
   const [status, setStatus] = useState<RegionalGuideStatus>(
-    local?.status ?? "active"
+    local?.status ?? "active",
   );
   const [descricao, setDescricao] = useState(local?.description ?? "");
   const [endereco, setEndereco] = useState(local?.address ?? "");
@@ -118,7 +119,7 @@ export function RegionalGuideForm({
   const [foto, setFoto] = useState(local?.cover_image_url ?? "");
   const [previewArquivo, setPreviewArquivo] = useState<string | null>(null);
   const [prioridade, setPrioridade] = useState(
-    String(Math.max(local?.display_order ?? 1, 1))
+    String(Math.max(local?.display_order ?? 1, 1)),
   );
   const [usarTelefoneNoWhatsapp, setUsarTelefoneNoWhatsapp] = useState(false);
   const etapa = ETAPAS[etapaAtual] ?? ETAPAS[0]!;
@@ -128,12 +129,12 @@ export function RegionalGuideForm({
     () =>
       CATEGORIAS_GUIA_REGIAO.find((item) => item.value === categoria)?.label ??
       "Outros",
-    [categoria]
+    [categoria],
   );
   const imagemPreview = previewArquivo ?? foto;
 
   useEffect(() => {
-    rolarModalParaTopo();
+    corpoRolavelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [etapaAtual]);
 
   useEffect(() => {
@@ -194,8 +195,10 @@ export function RegionalGuideForm({
     }
 
     if (indice === 2) {
-      if (telefone && !telefoneValido(telefone)) return "Informe um telefone válido.";
-      if (whatsapp && !telefoneValido(whatsapp)) return "Informe um WhatsApp válido.";
+      if (telefone && !telefoneValido(telefone))
+        return "Informe um telefone válido.";
+      if (whatsapp && !telefoneValido(whatsapp))
+        return "Informe um WhatsApp válido.";
     }
 
     if (indice === 3 && foto && !urlValida(foto)) {
@@ -230,28 +233,30 @@ export function RegionalGuideForm({
 
   function confirmarExclusao() {
     return window.confirm(
-      "Apagar recomendação local?\n\nEsse local deixará de aparecer no guia da região para os hóspedes. Essa ação não poderá ser desfeita."
+      "Apagar recomendação local?\n\nEsse local deixará de aparecer no guia da região para os hóspedes. Essa ação não poderá ser desfeita.",
     );
   }
 
   return (
-    <div className="grid min-h-0">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <form
         action={action}
-        className="grid min-h-0"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
         encType="multipart/form-data"
         id={formId}
         onSubmit={validarAntesDeEnviar}
       >
         {local ? <input name="localId" type="hidden" value={local.id} /> : null}
 
-        <div className="sticky top-0 z-20 border-b border-border bg-card/95 pb-4 backdrop-blur-xl">
+        <div className="shrink-0 border-b border-border bg-card/95 px-4 py-3 backdrop-blur-xl sm:px-6">
           <div className="flex items-center justify-between gap-4 text-sm">
             <div>
               <p className="font-semibold text-foreground">
                 Etapa {etapaAtual + 1} de {ETAPAS.length}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">{etapa.descricao}</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {etapa.descricao}
+              </p>
             </div>
             <span className="text-xs font-semibold text-cyan-200">
               {progresso}% concluído
@@ -263,10 +268,10 @@ export function RegionalGuideForm({
               style={{ width: `${progresso}%` }}
             />
           </div>
-          <div className="mt-4 grid grid-cols-4 gap-2">
+          <div className="mt-4 grid grid-cols-4 gap-3 px-1 sm:gap-4">
             {ETAPAS.map((item, indice) => (
               <button
-                className="group grid gap-2 text-left"
+                className="group grid min-w-0 gap-2 text-left"
                 disabled={!podeGerenciar}
                 key={item.id}
                 onClick={() => {
@@ -277,7 +282,7 @@ export function RegionalGuideForm({
                 }}
                 type="button"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex min-w-0 items-center gap-2">
                   <span
                     className={[
                       "grid h-8 w-8 place-items-center rounded-full border text-xs font-semibold transition",
@@ -285,17 +290,23 @@ export function RegionalGuideForm({
                         ? "border-cyan-300 bg-cyan-400 text-slate-950"
                         : indice < etapaAtual
                           ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-200"
-                          : "border-border bg-background/70 text-muted-foreground"
+                          : "border-border bg-background/70 text-muted-foreground",
                     ].join(" ")}
                   >
-                    {indice < etapaAtual ? <Check className="h-4 w-4" /> : indice + 1}
+                    {indice < etapaAtual ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      indice + 1
+                    )}
                   </span>
                   <span className="hidden h-px flex-1 bg-border sm:block" />
                 </span>
                 <span
                   className={[
-                    "truncate text-xs font-semibold",
-                    indice === etapaAtual ? "text-cyan-200" : "text-muted-foreground"
+                    "min-w-0 truncate text-[11px] font-semibold sm:text-xs",
+                    indice === etapaAtual
+                      ? "text-cyan-200"
+                      : "text-muted-foreground",
                   ].join(" ")}
                 >
                   {item.titulo}
@@ -305,252 +316,261 @@ export function RegionalGuideForm({
           </div>
         </div>
 
-        {erroEtapa ? (
-          <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {erroEtapa}
-          </div>
-        ) : null}
-
-        <div className="py-5 pb-28">
-          {etapa.id === "principal" ? (
-            <EtapaCard
-              descricao="Defina como a recomendação será organizada no guia público."
-              icon={<MapPin className="h-5 w-5" />}
-              titulo="Principal"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <CampoTexto
-                  disabled={!podeGerenciar || submetendo}
-                  label="Nome do local"
-                  name="name"
-                  onChange={setNome}
-                  placeholder="Ex: Praia Central, Restaurante Tropeiros, Mercado Avenida"
-                  required
-                  value={nome}
-                />
-                <CampoCategoria
-                  disabled={!podeGerenciar || submetendo}
-                  onChange={setCategoria}
-                  value={categoria}
-                />
-                <CampoStatus
-                  disabled={!podeGerenciar || submetendo}
-                  onChange={setStatus}
-                  value={status}
-                />
-                <CampoTexto
-                  disabled={!podeGerenciar || submetendo}
-                  helper="Locais com número menor aparecem primeiro."
-                  label="Prioridade no guia"
-                  min="1"
-                  name="displayOrder"
-                  onChange={setPrioridade}
-                  placeholder="1"
-                  required
-                  type="number"
-                  value={prioridade}
-                />
-              </div>
-            </EtapaCard>
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 pb-6 sm:px-6"
+          ref={corpoRolavelRef}
+        >
+          {erroEtapa ? (
+            <div className="mb-4 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {erroEtapa}
+            </div>
           ) : null}
 
-          {etapa.id === "localizacao" ? (
-            <EtapaCard
-              descricao="Use uma linguagem simples para orientar o hóspede sem exigir endereço completo."
-              icon={<MapPin className="h-5 w-5" />}
-              titulo="Localização"
-            >
-              <div className="grid gap-4">
-                <CampoTextoArea
-                  disabled={!podeGerenciar || submetendo}
-                  helper="Escreva como se estivesse recomendando o local para um hóspede."
-                  label="Descrição para o hóspede"
-                  name="description"
-                  onChange={setDescricao}
-                  placeholder="Ex: Praia tranquila para banho, caminhada e pôr do sol. Boa opção para famílias."
-                  value={descricao}
-                />
-                <div className="grid gap-4 md:grid-cols-2">
-                  <CampoTexto
-                    disabled={!podeGerenciar || submetendo}
-                    helper="Para praias, uma referência clara é suficiente."
-                    label="Endereço ou referência"
-                    name="address"
-                    onChange={setEndereco}
-                    placeholder="Ex: Praia Central, próximo ao calçadão"
-                    value={endereco}
-                  />
-                  <CampoTexto
-                    disabled={!podeGerenciar || submetendo}
-                    helper="A estrutura atual salva este link no campo público existente do Guia."
-                    label="Link do Google Maps"
-                    name="websiteUrl"
-                    onChange={setLinkMapa}
-                    placeholder="https://maps.google.com/..."
-                    type="url"
-                    value={linkMapa}
-                  />
-                </div>
-              </div>
-            </EtapaCard>
-          ) : null}
-
-          {etapa.id === "contato" ? (
-            <EtapaCard
-              descricao="Mostre apenas contatos úteis para o hóspede decidir ou se orientar."
-              icon={<Phone className="h-5 w-5" />}
-              titulo="Contato"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <CampoTexto
-                  disabled={!podeGerenciar || submetendo}
-                  helper="Aceita texto livre, como Livre acesso ou Aberto ao público."
-                  label="Horário de funcionamento"
-                  name="openingHours"
-                  onChange={setHorario}
-                  placeholder="Ex: Livre acesso"
-                  value={horario}
-                />
-                <CampoTexto
-                  disabled={!podeGerenciar || submetendo}
-                  label="Telefone"
-                  name="phone"
-                  onChange={(valor) => {
-                    const mascarado = mascararTelefone(valor);
-                    setTelefone(mascarado);
-                    if (usarTelefoneNoWhatsapp) setWhatsapp(mascarado);
-                  }}
-                  placeholder="(43) 99810-8328"
-                  value={telefone}
-                />
-                <div className="grid gap-2">
-                  <CampoTexto
-                    disabled={!podeGerenciar || usarTelefoneNoWhatsapp || submetendo}
-                    label="WhatsApp"
-                    name="whatsapp"
-                    onChange={(valor) => setWhatsapp(mascararTelefone(valor))}
-                    placeholder="(43) 99810-8328"
-                    value={whatsapp}
-                  />
-                  <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-                    <input
-                      checked={usarTelefoneNoWhatsapp}
-                      className="h-4 w-4 accent-cyan-400"
-                      disabled={!podeGerenciar || submetendo}
-                      onChange={(evento) =>
-                        aplicarTelefoneComoWhatsapp(evento.target.checked)
-                      }
-                      type="checkbox"
-                    />
-                    Usar o mesmo número do telefone
-                  </label>
-                </div>
-                <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 p-4 text-sm text-cyan-100/90">
-                  <Info className="mb-2 h-4 w-4" />
-                  O site oficial separado ainda não existe na tabela do Guia. Nesta etapa,
-                  o link público existente foi usado para o Google Maps.
-                </div>
-              </div>
-            </EtapaCard>
-          ) : null}
-
-          {etapa.id === "foto" ? (
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid gap-4">
+            {etapa.id === "principal" ? (
               <EtapaCard
-                descricao="Envie uma imagem leve para valorizar a recomendação pública."
-                icon={<ImageIcon className="h-5 w-5" />}
-                titulo="Foto principal"
+                descricao="Defina como a recomendação será organizada no guia público."
+                icon={<MapPin className="h-5 w-5" />}
+                titulo="Principal"
               >
-                <div className="grid gap-4">
-                  <div className="rounded-2xl border border-dashed border-cyan-400/35 bg-cyan-500/10 p-4">
-                    <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-center">
-                      <div className="overflow-hidden rounded-xl border border-border/80 bg-background/60">
-                        {imagemPreview ? (
-                          <img
-                            alt="Prévia da imagem do local"
-                            className="h-40 w-full object-cover"
-                            src={imagemPreview}
-                          />
-                        ) : (
-                          <div className="grid h-40 place-items-center text-cyan-200">
-                            <ImageIcon className="h-8 w-8" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold">Foto principal</h4>
-                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                            Envie JPG, PNG ou WebP até 5MB. A imagem é enviada ao
-                            Supabase Storage ao salvar.
-                          </p>
-                        </div>
-                        <input
-                          accept="image/jpeg,image/png,image/webp"
-                          className="hidden"
-                          disabled={!podeGerenciar || submetendo}
-                          name="coverImageFile"
-                          onChange={selecionarImagem}
-                          ref={arquivoInputRef}
-                          type="file"
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <Button
-                            disabled={!podeGerenciar || submetendo}
-                            onClick={() => arquivoInputRef.current?.click()}
-                            type="button"
-                            variant="outline"
-                          >
-                            <UploadCloud className="h-4 w-4" />
-                            {imagemPreview || foto ? "Trocar imagem" : "Escolher imagem"}
-                          </Button>
-                          {imagemPreview || foto ? (
-                            <Button
-                              disabled={!podeGerenciar || submetendo}
-                              onClick={removerFoto}
-                              type="button"
-                              variant="outline"
-                            >
-                              Remover foto
-                            </Button>
-                          ) : null}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
+                <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                   <CampoTexto
                     disabled={!podeGerenciar || submetendo}
-                    helper="Alternativa secundária caso você já tenha a imagem hospedada."
-                    label="Ou cole uma URL da imagem"
-                    name="coverImageUrl"
-                    onChange={setFoto}
-                    placeholder="https://..."
-                    type="url"
-                    value={foto}
+                    label="Nome do local"
+                    name="name"
+                    onChange={setNome}
+                    placeholder="Ex: Praia Central, Restaurante Tropeiros, Mercado Avenida"
+                    required
+                    value={nome}
+                  />
+                  <CampoCategoria
+                    disabled={!podeGerenciar || submetendo}
+                    onChange={setCategoria}
+                    value={categoria}
+                  />
+                  <CampoStatus
+                    disabled={!podeGerenciar || submetendo}
+                    onChange={setStatus}
+                    value={status}
+                  />
+                  <CampoTexto
+                    disabled={!podeGerenciar || submetendo}
+                    helper="Locais com número menor aparecem primeiro."
+                    label="Prioridade no guia"
+                    min="1"
+                    name="displayOrder"
+                    onChange={setPrioridade}
+                    placeholder="1"
+                    required
+                    type="number"
+                    value={prioridade}
                   />
                 </div>
               </EtapaCard>
+            ) : null}
 
-              <PreviewCard
-                categoria={rotuloCategoria}
-                categoriaValor={categoria}
-                descricao={descricao}
-                endereco={endereco}
-                foto={imagemPreview}
-                horario={horario}
-                linkMapa={linkMapa}
-                nome={nome}
-                telefone={telefone}
-                whatsapp={whatsapp}
-              />
-            </div>
-          ) : null}
+            {etapa.id === "localizacao" ? (
+              <EtapaCard
+                descricao="Use uma linguagem simples para orientar o hóspede sem exigir endereço completo."
+                icon={<MapPin className="h-5 w-5" />}
+                titulo="Localização"
+              >
+                <div className="grid gap-4">
+                  <CampoTextoArea
+                    disabled={!podeGerenciar || submetendo}
+                    helper="Escreva como se estivesse recomendando o local para um hóspede."
+                    label="Descrição para o hóspede"
+                    name="description"
+                    onChange={setDescricao}
+                    placeholder="Ex: Praia tranquila para banho, caminhada e pôr do sol. Boa opção para famílias."
+                    value={descricao}
+                  />
+                  <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                    <CampoTexto
+                      disabled={!podeGerenciar || submetendo}
+                      helper="Para praias, uma referência clara é suficiente."
+                      label="Endereço ou referência"
+                      name="address"
+                      onChange={setEndereco}
+                      placeholder="Ex: Praia Central, próximo ao calçadão"
+                      value={endereco}
+                    />
+                    <CampoTexto
+                      disabled={!podeGerenciar || submetendo}
+                      helper="A estrutura atual salva este link no campo público existente do Guia."
+                      label="Link do Google Maps"
+                      name="websiteUrl"
+                      onChange={setLinkMapa}
+                      placeholder="https://maps.google.com/..."
+                      type="url"
+                      value={linkMapa}
+                    />
+                  </div>
+                </div>
+              </EtapaCard>
+            ) : null}
+
+            {etapa.id === "contato" ? (
+              <EtapaCard
+                descricao="Mostre apenas contatos úteis para o hóspede decidir ou se orientar."
+                icon={<Phone className="h-5 w-5" />}
+                titulo="Contato"
+              >
+                <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                  <CampoTexto
+                    disabled={!podeGerenciar || submetendo}
+                    helper="Aceita texto livre, como Livre acesso ou Aberto ao público."
+                    label="Horário de funcionamento"
+                    name="openingHours"
+                    onChange={setHorario}
+                    placeholder="Ex: Livre acesso"
+                    value={horario}
+                  />
+                  <CampoTexto
+                    disabled={!podeGerenciar || submetendo}
+                    label="Telefone"
+                    name="phone"
+                    onChange={(valor) => {
+                      const mascarado = mascararTelefone(valor);
+                      setTelefone(mascarado);
+                      if (usarTelefoneNoWhatsapp) setWhatsapp(mascarado);
+                    }}
+                    placeholder="(43) 99810-8328"
+                    value={telefone}
+                  />
+                  <div className="grid gap-2">
+                    <CampoTexto
+                      disabled={
+                        !podeGerenciar || usarTelefoneNoWhatsapp || submetendo
+                      }
+                      label="WhatsApp"
+                      name="whatsapp"
+                      onChange={(valor) => setWhatsapp(mascararTelefone(valor))}
+                      placeholder="(43) 99810-8328"
+                      value={whatsapp}
+                    />
+                    <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+                      <input
+                        checked={usarTelefoneNoWhatsapp}
+                        className="h-4 w-4 accent-cyan-400"
+                        disabled={!podeGerenciar || submetendo}
+                        onChange={(evento) =>
+                          aplicarTelefoneComoWhatsapp(evento.target.checked)
+                        }
+                        type="checkbox"
+                      />
+                      Usar o mesmo número do telefone
+                    </label>
+                  </div>
+                  <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 p-4 text-sm text-cyan-100/90">
+                    <Info className="mb-2 h-4 w-4" />O site oficial separado
+                    ainda não existe na tabela do Guia. Nesta etapa, o link
+                    público existente foi usado para o Google Maps.
+                  </div>
+                </div>
+              </EtapaCard>
+            ) : null}
+
+            {etapa.id === "foto" ? (
+              <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)]">
+                <EtapaCard
+                  descricao="Envie uma imagem leve para valorizar a recomendação pública."
+                  icon={<ImageIcon className="h-5 w-5" />}
+                  titulo="Foto principal"
+                >
+                  <div className="grid gap-4">
+                    <div className="rounded-2xl border border-dashed border-cyan-400/35 bg-cyan-500/10 p-4">
+                      <div className="grid min-w-0 gap-4 lg:grid-cols-[160px_minmax(0,1fr)] lg:items-center">
+                        <div className="overflow-hidden rounded-xl border border-border/80 bg-background/60">
+                          {imagemPreview ? (
+                            <img
+                              alt="Prévia da imagem do local"
+                              className="h-40 w-full object-cover"
+                              src={imagemPreview}
+                            />
+                          ) : (
+                            <div className="grid h-40 place-items-center text-cyan-200">
+                              <ImageIcon className="h-8 w-8" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-3">
+                          <div>
+                            <h4 className="font-semibold">Foto principal</h4>
+                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                              Envie JPG, PNG ou WebP até 5MB. A imagem é enviada
+                              ao Supabase Storage ao salvar.
+                            </p>
+                          </div>
+                          <input
+                            accept="image/jpeg,image/png,image/webp"
+                            className="hidden"
+                            disabled={!podeGerenciar || submetendo}
+                            name="coverImageFile"
+                            onChange={selecionarImagem}
+                            ref={arquivoInputRef}
+                            type="file"
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              disabled={!podeGerenciar || submetendo}
+                              onClick={() => arquivoInputRef.current?.click()}
+                              type="button"
+                              variant="outline"
+                            >
+                              <UploadCloud className="h-4 w-4" />
+                              {imagemPreview || foto
+                                ? "Trocar imagem"
+                                : "Escolher imagem"}
+                            </Button>
+                            {imagemPreview || foto ? (
+                              <Button
+                                disabled={!podeGerenciar || submetendo}
+                                onClick={removerFoto}
+                                type="button"
+                                variant="outline"
+                              >
+                                Remover foto
+                              </Button>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <CampoTexto
+                      disabled={!podeGerenciar || submetendo}
+                      helper="Alternativa secundária caso você já tenha a imagem hospedada."
+                      label="Ou cole uma URL da imagem"
+                      name="coverImageUrl"
+                      onChange={setFoto}
+                      placeholder="https://..."
+                      type="url"
+                      value={foto}
+                    />
+                  </div>
+                </EtapaCard>
+
+                <PreviewCard
+                  categoria={rotuloCategoria}
+                  categoriaValor={categoria}
+                  descricao={descricao}
+                  endereco={endereco}
+                  foto={imagemPreview}
+                  horario={horario}
+                  linkMapa={linkMapa}
+                  nome={nome}
+                  telefone={telefone}
+                  whatsapp={whatsapp}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       </form>
 
-      <div className="sticky bottom-0 z-30 -mx-5 flex flex-col gap-3 border-t border-border bg-card/95 px-5 py-4 backdrop-blur-xl sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="shrink-0 border-t border-border bg-card/95 px-4 py-3 backdrop-blur-xl sm:flex sm:items-center sm:justify-between sm:px-6">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row">
           <Button disabled={submetendo} type="button" variant="outline">
             Cancelar
           </Button>
@@ -574,7 +594,7 @@ export function RegionalGuideForm({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-0 sm:flex sm:flex-row">
           <Button
             disabled={etapaAtual === 0 || submetendo}
             onClick={voltar}
@@ -585,7 +605,11 @@ export function RegionalGuideForm({
             Voltar
           </Button>
           {etapaFinal ? (
-            <Button disabled={!podeGerenciar || submetendo} form={formId} type="submit">
+            <Button
+              disabled={!podeGerenciar || submetendo}
+              form={formId}
+              type="submit"
+            >
               <Save className="h-4 w-4" />
               {submetendo
                 ? modo === "criar"
@@ -615,7 +639,7 @@ function EtapaCard({
   children,
   descricao,
   icon,
-  titulo
+  titulo,
 }: {
   children: ReactNode;
   descricao: string;
@@ -623,14 +647,16 @@ function EtapaCard({
   titulo: string;
 }) {
   return (
-    <section className="rounded-2xl border border-border/80 bg-background/45 p-4 sm:p-5">
-      <div className="flex items-start gap-4">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-500/10 text-cyan-200">
+    <section className="min-w-0 rounded-2xl border border-border/80 bg-background/45 p-4 sm:p-5">
+      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-cyan-300/25 bg-cyan-500/10 text-cyan-200 sm:h-12 sm:w-12">
           {icon}
         </span>
-        <div>
+        <div className="min-w-0">
           <h3 className="text-lg font-semibold text-foreground">{titulo}</h3>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{descricao}</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            {descricao}
+          </p>
         </div>
       </div>
       <div className="mt-5 grid gap-4">{children}</div>
@@ -648,7 +674,7 @@ function CampoTexto({
   placeholder,
   required,
   type = "text",
-  value
+  value,
 }: {
   disabled?: boolean;
   helper?: string;
@@ -662,7 +688,7 @@ function CampoTexto({
   value: string;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <Label htmlFor={name}>{label}</Label>
       <Input
         className={campoClasse}
@@ -676,7 +702,9 @@ function CampoTexto({
         type={type}
         value={value}
       />
-      {helper ? <p className="text-xs leading-5 text-muted-foreground">{helper}</p> : null}
+      {helper ? (
+        <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
+      ) : null}
     </div>
   );
 }
@@ -688,7 +716,7 @@ function CampoTextoArea({
   name,
   onChange,
   placeholder,
-  value
+  value,
 }: {
   disabled?: boolean;
   helper?: string;
@@ -699,7 +727,7 @@ function CampoTextoArea({
   value: string;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <Label htmlFor={name}>{label}</Label>
       <textarea
         className={areaClasse}
@@ -710,7 +738,9 @@ function CampoTextoArea({
         placeholder={placeholder}
         value={value}
       />
-      {helper ? <p className="text-xs leading-5 text-muted-foreground">{helper}</p> : null}
+      {helper ? (
+        <p className="text-xs leading-5 text-muted-foreground">{helper}</p>
+      ) : null}
     </div>
   );
 }
@@ -718,31 +748,33 @@ function CampoTextoArea({
 function CampoCategoria({
   disabled,
   onChange,
-  value
+  value,
 }: {
   disabled?: boolean;
   onChange: (valor: RegionalGuideCategory) => void;
   value: RegionalGuideCategory;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <Label htmlFor="category">Categoria</Label>
       <select
         className={campoClasse}
         disabled={disabled}
         id="category"
         name="category"
-        onChange={(evento) => onChange(evento.target.value as RegionalGuideCategory)}
+        onChange={(evento) =>
+          onChange(evento.target.value as RegionalGuideCategory)
+        }
         required
         value={value}
       >
-        {CATEGORIAS_GUIA_REGIAO.filter((categoria) => categoria.value !== "todas").map(
-          (categoria) => (
-            <option key={categoria.value} value={categoria.value}>
-              {categoria.label}
-            </option>
-          )
-        )}
+        {CATEGORIAS_GUIA_REGIAO.filter(
+          (categoria) => categoria.value !== "todas",
+        ).map((categoria) => (
+          <option key={categoria.value} value={categoria.value}>
+            {categoria.label}
+          </option>
+        ))}
       </select>
       <p className="text-xs leading-5 text-muted-foreground">
         Use “Praias” para recomendações litorâneas ou pontos de banho.
@@ -754,29 +786,33 @@ function CampoCategoria({
 function CampoStatus({
   disabled,
   onChange,
-  value
+  value,
 }: {
   disabled?: boolean;
   onChange: (valor: RegionalGuideStatus) => void;
   value: RegionalGuideStatus;
 }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       <Label htmlFor="status">Status</Label>
       <select
         className={campoClasse}
         disabled={disabled}
         id="status"
         name="status"
-        onChange={(evento) => onChange(evento.target.value as RegionalGuideStatus)}
+        onChange={(evento) =>
+          onChange(evento.target.value as RegionalGuideStatus)
+        }
         required
         value={value}
       >
-        {STATUS_GUIA_REGIAO.filter((status) => status.value !== "todos").map((status) => (
-          <option key={status.value} value={status.value}>
-            {status.label}
-          </option>
-        ))}
+        {STATUS_GUIA_REGIAO.filter((status) => status.value !== "todos").map(
+          (status) => (
+            <option key={status.value} value={status.value}>
+              {status.label}
+            </option>
+          ),
+        )}
       </select>
       <p className="text-xs leading-5 text-muted-foreground">
         Locais ativos aparecem para o hóspede na página pública.
@@ -795,7 +831,7 @@ function PreviewCard({
   linkMapa,
   nome,
   telefone,
-  whatsapp
+  whatsapp,
 }: {
   categoria: string;
   categoriaValor: RegionalGuideCategory;
@@ -811,11 +847,11 @@ function PreviewCard({
   const IconeCategoria = categoriaValor === "beaches" ? Waves : MapPin;
 
   return (
-    <aside className="rounded-2xl border border-cyan-400/20 bg-slate-950/70 p-4 shadow-xl shadow-cyan-950/15 xl:sticky xl:top-24 xl:self-start">
+    <aside className="min-w-0 rounded-2xl border border-cyan-400/20 bg-slate-950/70 p-3 shadow-xl shadow-cyan-950/15 sm:p-4 lg:sticky lg:top-4 lg:self-start">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
         Prévia no guia da região
       </p>
-      <div className="mt-4 overflow-hidden rounded-xl border border-border/80 bg-background/70">
+      <div className="mt-4 min-w-0 overflow-hidden rounded-xl border border-border/80 bg-background/70">
         {foto ? (
           <img alt="" className="h-40 w-full object-cover" src={foto} />
         ) : (
@@ -835,8 +871,12 @@ function PreviewCard({
             {descricao || "Descrição curta da recomendação para o hóspede."}
           </p>
           <div className="mt-4 grid gap-2 text-sm text-muted-foreground">
-            {endereco ? <LinhaPreview icon={<MapPin />} texto={endereco} /> : null}
-            {horario ? <LinhaPreview icon={<Clock3 />} texto={horario} /> : null}
+            {endereco ? (
+              <LinhaPreview icon={<MapPin />} texto={endereco} />
+            ) : null}
+            {horario ? (
+              <LinhaPreview icon={<Clock3 />} texto={horario} />
+            ) : null}
             {telefone || whatsapp ? (
               <LinhaPreview icon={<Phone />} texto={whatsapp || telefone} />
             ) : null}
@@ -855,9 +895,11 @@ function PreviewCard({
 
 function LinhaPreview({ icon, texto }: { icon: ReactNode; texto: string }) {
   return (
-    <p className="flex items-start gap-2">
-      <span className="mt-0.5 text-cyan-300 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
-      <span>{texto}</span>
+    <p className="flex min-w-0 items-start gap-2">
+      <span className="mt-0.5 text-cyan-300 [&_svg]:h-4 [&_svg]:w-4">
+        {icon}
+      </span>
+      <span className="min-w-0 break-words">{texto}</span>
     </p>
   );
 }
@@ -865,7 +907,8 @@ function LinhaPreview({ icon, texto }: { icon: ReactNode; texto: string }) {
 function mascararTelefone(valor: string) {
   const numeros = valor.replace(/\D/g, "").slice(0, 11);
   if (numeros.length <= 2) return numeros;
-  if (numeros.length <= 6) return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+  if (numeros.length <= 6)
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
   if (numeros.length <= 10) {
     return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
   }
@@ -897,11 +940,4 @@ function validarArquivoImagem(arquivo: File) {
   }
 
   return null;
-}
-
-function rolarModalParaTopo() {
-  const dialog = document.querySelector('[role="dialog"]');
-  const corpo = dialog?.children.item(1) as HTMLElement | null;
-
-  corpo?.scrollTo({ top: 0, behavior: "smooth" });
 }

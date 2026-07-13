@@ -82,7 +82,8 @@ export function RegionalGuideModule({
               Guia da região
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Cadastre recomendações úteis para aparecer no guia da região da hospedagem.
+              Cadastre recomendações úteis para aparecer no guia da região da
+              hospedagem.
             </p>
           </div>
 
@@ -152,7 +153,8 @@ export function RegionalGuideModule({
         <div>
           <h2 className="text-lg font-semibold">Locais recomendados</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Catálogo visual de recomendações que o proprietário prepara para os hóspedes.
+            Catálogo visual de recomendações que o proprietário prepara para os
+            hóspedes.
           </p>
         </div>
 
@@ -209,7 +211,7 @@ function BotaoNovoLocal({ podeGerenciar }: { podeGerenciar: boolean }) {
       description="Cadastre um local útil para aparecer no guia da região da hospedagem."
       disabled={!podeGerenciar}
       eyebrow="CADASTRO"
-      size="full"
+      size="wide"
       title="Nova recomendação local"
       triggerAction="add"
       triggerClassName="w-full sm:w-auto"
@@ -250,7 +252,7 @@ function Resumo({
     <div
       className={cn(
         "rounded-xl border border-border/80 bg-gradient-to-br p-4 shadow-sm",
-        classes
+        classes,
       )}
     >
       <div className="flex items-start gap-4">

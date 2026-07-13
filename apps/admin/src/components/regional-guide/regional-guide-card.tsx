@@ -1,12 +1,8 @@
-import type { RegionalGuideCategory, RegionalGuideLocationRow } from "@hospedex/types";
-import {
-  Clock3,
-  Eye,
-  ImageIcon,
-  MapPin,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import type {
+  RegionalGuideCategory,
+  RegionalGuideLocationRow,
+} from "@hospedex/types";
+import { Clock3, Eye, ImageIcon, MapPin, Pencil, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Badge, Card, CardContent } from "@hospedex/ui";
@@ -21,9 +17,7 @@ import {
   atualizarLocalGuiaRegiaoAction,
   excluirLocalGuiaRegiaoAction,
 } from "../../lib/regional-guide/actions";
-import {
-  LABEL_CATEGORIA_GUIA_REGIAO,
-} from "../../lib/regional-guide/types";
+import { LABEL_CATEGORIA_GUIA_REGIAO } from "../../lib/regional-guide/types";
 import { RegionalGuideForm } from "./regional-guide-form";
 
 /**
@@ -51,16 +45,23 @@ export function RegionalGuideCard({
         <div className="flex min-w-0 flex-col gap-3">
           <header className="min-w-0">
             <div className="mb-2 flex flex-wrap gap-2">
-              <Badge variant={local.status === "active" ? "success" : "secondary"}>
+              <Badge
+                variant={local.status === "active" ? "success" : "secondary"}
+              >
                 {local.status === "active" ? "Ativo" : "Inativo"}
               </Badge>
-              <Badge className={obterClasseCategoria(local.category)} variant="outline">
+              <Badge
+                className={obterClasseCategoria(local.category)}
+                variant="outline"
+              >
                 {LABEL_CATEGORIA_GUIA_REGIAO[local.category]}
               </Badge>
             </div>
             <h3 className="truncate text-lg font-semibold">{local.name}</h3>
             <div className="mt-2 grid gap-1 text-sm text-muted-foreground">
-              {local.address ? <LinhaIcone icon={<MapPin />} texto={local.address} /> : null}
+              {local.address ? (
+                <LinhaIcone icon={<MapPin />} texto={local.address} />
+              ) : null}
               {local.opening_hours ? (
                 <LinhaIcone icon={<Clock3 />} texto={local.opening_hours} />
               ) : null}
@@ -87,7 +88,7 @@ export function RegionalGuideCard({
               description="Atualize as informações que aparecerão para o hóspede no guia da região."
               disabled={!podeGerenciar}
               eyebrow="EDIÇÃO"
-              size="full"
+              size="wide"
               title="Editar recomendação local"
               triggerAction="edit"
               triggerClassName="w-full"
@@ -112,7 +113,10 @@ export function RegionalGuideCard({
               triggerIcon={<Trash2 className="h-4 w-4" />}
               triggerLabel="Apagar"
             >
-              <form action={excluirLocalGuiaRegiaoAction} className="grid gap-4">
+              <form
+                action={excluirLocalGuiaRegiaoAction}
+                className="grid gap-4"
+              >
                 <input name="localId" type="hidden" value={local.id} />
                 <p className="text-sm text-muted-foreground">
                   Esta ação usa exclusão lógica para preservar auditoria do
@@ -160,16 +164,37 @@ function MediaLocal({ local }: { local: RegionalGuideLocationRow }) {
 function DetalhesLocal({ local }: { local: RegionalGuideLocationRow }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <Info label="Categoria" valor={LABEL_CATEGORIA_GUIA_REGIAO[local.category]} />
-      <Info label="Status" valor={local.status === "active" ? "Ativo" : "Inativo"} />
-      <Info label="Endereço" valor={local.address || "Endereço não cadastrado"} />
-      <Info label="Horário" valor={local.opening_hours || "Horário não cadastrado"} />
+      <Info
+        label="Categoria"
+        valor={LABEL_CATEGORIA_GUIA_REGIAO[local.category]}
+      />
+      <Info
+        label="Status"
+        valor={local.status === "active" ? "Ativo" : "Inativo"}
+      />
+      <Info
+        label="Endereço"
+        valor={local.address || "Endereço não cadastrado"}
+      />
+      <Info
+        label="Horário"
+        valor={local.opening_hours || "Horário não cadastrado"}
+      />
       <Info label="Telefone" valor={local.phone || "Telefone não cadastrado"} />
-      <Info label="WhatsApp" valor={local.whatsapp || "WhatsApp não cadastrado"} />
-      <Info label="Link do mapa" valor={local.website_url || "Link não cadastrado"} />
+      <Info
+        label="WhatsApp"
+        valor={local.whatsapp || "WhatsApp não cadastrado"}
+      />
+      <Info
+        label="Link do mapa"
+        valor={local.website_url || "Link não cadastrado"}
+      />
       <Info label="Prioridade" valor={String(local.display_order)} />
       <div className="md:col-span-2">
-        <Info label="Descrição" valor={local.description || "Sem descrição cadastrada."} />
+        <Info
+          label="Descrição"
+          valor={local.description || "Sem descrição cadastrada."}
+        />
       </div>
     </div>
   );
@@ -204,5 +229,7 @@ function obterClasseCategoria(categoria: RegionalGuideCategory) {
     tours: "border-violet-400/35 bg-violet-500/10 text-violet-200",
   };
 
-  return classes[categoria] ?? "border-slate-400/35 bg-slate-500/10 text-slate-200";
+  return (
+    classes[categoria] ?? "border-slate-400/35 bg-slate-500/10 text-slate-200"
+  );
 }
