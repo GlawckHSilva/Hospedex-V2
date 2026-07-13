@@ -9,11 +9,11 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "border border-cyan-300/35 bg-primary text-primary-foreground shadow-sm shadow-cyan-950/20 hover:bg-cyan-300 dark:hover:bg-cyan-200",
+          "border border-primary bg-primary text-primary-foreground shadow-sm shadow-cyan-950/20 hover:bg-primary-hover",
         secondary:
           "border border-border bg-secondary text-secondary-foreground shadow-sm hover:border-cyan-400/35 hover:bg-cyan-500/10",
         outline:
-          "border border-border bg-card/65 text-foreground shadow-sm hover:border-cyan-400/45 hover:bg-cyan-500/10 hover:text-cyan-100",
+          "border border-border bg-card text-foreground shadow-sm hover:border-primary/55 hover:bg-accent hover:text-primary",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         destructive:
           "border border-red-400/30 bg-destructive text-white shadow-sm hover:bg-red-500"

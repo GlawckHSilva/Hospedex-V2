@@ -37,28 +37,28 @@
  */
 .admin-management-shell {
   color-scheme: light;
-  --background: #f7fbff;
-  --foreground: #142033;
+  --background: #f4f7fa;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #142033;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #142033;
+  --popover-foreground: #0f172a;
   --primary: #007a9e;
   --primary-foreground: #ffffff;
   --primary-hover: #00627f;
-  --secondary: #eef5fa;
-  --secondary-foreground: #164e63;
-  --muted: #eef4f8;
+  --secondary: #e8eff5;
+  --secondary-foreground: #334155;
+  --muted: #eef2f6;
   --muted-foreground: #52657d;
-  --accent: #e1f7fb;
+  --accent: #ddf5f8;
   --accent-foreground: #00566f;
-  --accent-soft: #e1f7fb;
+  --accent-soft: #ddf5f8;
   --link: #007a9e;
-  --icon-active: #007a9e;
+  --icon-active: #036b8c;
   --border-active: #007a9e;
   --destructive: #ef4444;
-  --border: #bacddd;
-  --input: #b5cada;
+  --border: #b8c7d9;
+  --input: #b8c7d9;
   --ring: #007a9e;
   --success: #16a34a;
   --warning: #ca8a04;
@@ -71,15 +71,15 @@
       rgba(14, 165, 233, 0.07),
       transparent 28%
     ),
-    linear-gradient(135deg, #f7fbff 0%, #f3f7fb 48%, #ffffff 100%);
+    linear-gradient(135deg, #f4f7fa 0%, #eef3f7 48%, #ffffff 100%);
   color: var(--foreground);
 }
 
 .admin-management-shell :is(.glass-navbar, .glass-sidebar) {
-  border-color: rgba(186, 205, 221, 0.95);
-  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(184, 199, 217, 0.98);
+  background: rgba(255, 255, 255, 0.97);
   box-shadow:
-    0 18px 48px rgba(15, 23, 42, 0.12),
+    0 14px 38px rgba(15, 23, 42, 0.09),
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
@@ -92,10 +92,10 @@
     .glass-modal,
     .glass-table
   ) {
-  border-color: rgba(186, 205, 221, 0.96);
-  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(184, 199, 217, 0.98);
+  background: rgba(255, 255, 255, 0.97);
   box-shadow:
-    0 18px 48px rgba(15, 23, 42, 0.12),
+    0 12px 32px rgba(15, 23, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
@@ -108,12 +108,12 @@
     .glass-modal,
     .glass-table
   ):hover {
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
 }
 
 .admin-management-shell :is(.glass-input, input, select, textarea) {
-  border-color: rgba(190, 212, 227, 0.95);
-  background-color: rgba(255, 255, 255, 0.84);
+  border-color: rgba(184, 199, 217, 0.98);
+  background-color: #ffffff;
   color: #0f172a;
 }
 
@@ -122,9 +122,66 @@
 }
 
 .admin-management-shell :is(input, select, textarea):focus-visible {
-  border-color: rgba(34, 211, 238, 0.7);
-  outline: 2px solid rgba(34, 211, 238, 0.28);
+  border-color: #007a9e;
+  outline: 2px solid rgba(0, 122, 158, 0.22);
   outline-offset: 2px;
+}
+
+/* Compatibilidade de contraste para modulos antigos ainda baseados em cores do tema escuro. */
+:root:not(.dark) .admin-management-shell :is(
+  [class~="text-cyan-50"],
+  [class~="text-cyan-100"],
+  [class~="text-cyan-100/75"],
+  [class~="text-cyan-100/90"],
+  [class~="text-cyan-200"],
+  [class~="text-cyan-300"],
+  [class~="text-cyan-300/80"]
+) {
+  color: #007a9e;
+}
+
+:root:not(.dark) .admin-management-shell :is(
+  [class~="text-slate-100"],
+  [class~="text-slate-200"]
+) {
+  color: #0f172a;
+}
+
+:root:not(.dark) .admin-management-shell [class~="text-slate-300"] {
+  color: #3f5068;
+}
+
+:root:not(.dark) .admin-management-shell [class~="text-slate-400"] {
+  color: #52657d;
+}
+
+:root:not(.dark) .admin-management-shell :is(
+  [class~="bg-slate-950/45"],
+  [class~="bg-slate-950/35"],
+  [class~="bg-slate-950/50"],
+  [class~="bg-slate-950/60"],
+  [class~="bg-slate-950/70"],
+  [class~="bg-slate-950/80"],
+  [class~="bg-slate-950/90"],
+  [class~="bg-slate-950/95"]
+) {
+  background-color: #ffffff;
+}
+
+:root:not(.dark) .admin-management-shell :is(
+  [class~="bg-slate-800"],
+  [class~="bg-slate-900/60"],
+  [class~="bg-white/[0.05]"]
+) {
+  background-color: #f4f7fa;
+}
+
+:root:not(.dark) .admin-management-shell :is(
+  [class~="border-slate-700/80"],
+  [class~="border-slate-800"],
+  [class~="border-white/10"]
+) {
+  border-color: #b8c7d9;
 }
 
 .dark .admin-management-shell {

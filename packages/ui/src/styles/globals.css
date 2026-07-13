@@ -43,34 +43,34 @@
 
 :root {
   color-scheme: light;
-  --background: oklch(0.986 0.004 238);
-  --foreground: #142033;
+  --background: #f4f7fa;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #142033;
+  --card-foreground: #0f172a;
   --popover: #ffffff;
-  --popover-foreground: #142033;
+  --popover-foreground: #0f172a;
   --primary: #007a9e;
   --primary-foreground: #ffffff;
   --primary-hover: #00627f;
-  --secondary: oklch(0.94 0.018 238);
-  --secondary-foreground: oklch(0.25 0.042 248);
-  --muted: oklch(0.94 0.012 238);
+  --secondary: #e8eff5;
+  --secondary-foreground: #334155;
+  --muted: #eef2f6;
   --muted-foreground: #52657d;
-  --accent: #e1f7fb;
+  --accent: #ddf5f8;
   --accent-foreground: #00566f;
-  --accent-soft: #e1f7fb;
+  --accent-soft: #ddf5f8;
   --link: #007a9e;
-  --icon-active: #007a9e;
+  --icon-active: #036b8c;
   --border-active: #007a9e;
-  --destructive: oklch(0.58 0.2 28);
-  --border: #c8d5e3;
-  --input: #c1cfdd;
+  --destructive: #dc2626;
+  --border: #b8c7d9;
+  --input: #b8c7d9;
   --ring: #007a9e;
-  --success: #16a34a;
-  --warning: #ca8a04;
+  --success: #15803d;
+  --warning: #a16207;
   --info: #007a9e;
   --premium-violet: oklch(0.62 0.16 292);
-  --premium-cyan: #22c7e6;
+  --premium-cyan: #22b8cf;
   --premium-deep: oklch(0.2 0.05 246);
 }
 
@@ -168,11 +168,11 @@ body {
 .glass-navbar,
 .glass-modal,
 .glass-table {
-  border: 1px solid color-mix(in oklch, var(--border) 92%, var(--primary) 8%);
-  background: color-mix(in oklch, var(--card) 92%, transparent);
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, var(--card) 97%, transparent);
   box-shadow:
-    0 18px 48px color-mix(in oklch, black 12%, transparent),
-    inset 0 1px 0 color-mix(in oklch, white 65%, transparent);
+    0 12px 32px color-mix(in oklch, black 8%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 78%, transparent);
   backdrop-filter: blur(20px);
 }
 
@@ -190,10 +190,10 @@ body {
 }
 
 .glass-card:hover {
-  background: color-mix(in oklch, var(--card) 91%, var(--primary) 4%);
+  background: var(--card);
   box-shadow:
-    0 20px 52px color-mix(in oklch, black 15%, transparent),
-    inset 0 1px 0 color-mix(in oklch, white 70%, transparent);
+    0 16px 38px color-mix(in oklch, black 11%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 82%, transparent);
 }
 
 .glass-navbar {
@@ -208,11 +208,11 @@ body {
 
 .glass-button,
 .glass-input {
-  border-color: color-mix(in oklch, var(--border) 88%, var(--primary) 8%);
-  background: color-mix(in oklch, var(--background) 86%, transparent);
+  border-color: var(--input);
+  background: color-mix(in oklch, var(--card) 96%, transparent);
   box-shadow:
-    0 12px 30px color-mix(in oklch, black 24%, transparent),
-    inset 0 1px 0 color-mix(in oklch, white 8%, transparent);
+    0 6px 18px color-mix(in oklch, black 7%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 72%, transparent);
   backdrop-filter: blur(16px);
   transition:
     transform 160ms ease,
@@ -258,7 +258,7 @@ body {
   gap: 0.75rem;
   border: 1px dashed color-mix(in oklch, var(--border) 74%, var(--primary) 26%);
   border-radius: var(--radius-lg);
-  background: color-mix(in oklch, var(--card) 72%, transparent);
+  background: color-mix(in oklch, var(--card) 96%, transparent);
   padding: 2rem;
   text-align: center;
   backdrop-filter: blur(18px);
@@ -285,6 +285,15 @@ body {
   box-shadow:
     0 22px 70px color-mix(in oklch, black 42%, transparent),
     inset 0 1px 0 color-mix(in oklch, white 7%, transparent);
+}
+
+.dark .glass-button,
+.dark .glass-input {
+  border-color: color-mix(in oklch, var(--border) 88%, var(--primary) 8%);
+  background: color-mix(in oklch, var(--background) 86%, transparent);
+  box-shadow:
+    0 12px 30px color-mix(in oklch, black 24%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 8%, transparent);
 }
 
 @keyframes premium-skeleton-shimmer {

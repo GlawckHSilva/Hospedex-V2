@@ -75,7 +75,7 @@ export function MobileMarketplaceMenu() {
       {aberto ? (
         <nav
           aria-label="Navegacao mobile do Marketplace"
-          className="absolute right-0 top-12 z-50 w-60 rounded-2xl border border-cyan-300/20 bg-card/96 p-2 shadow-2xl shadow-cyan-950/15 backdrop-blur-xl dark:bg-slate-950/96 dark:shadow-cyan-950/30"
+          className="absolute right-0 top-12 z-50 w-60 rounded-2xl border border-border bg-card p-2 text-foreground shadow-2xl shadow-slate-950/15 dark:border-cyan-300/20 dark:bg-slate-950 dark:shadow-cyan-950/30"
         >
           {marketplaceNavigation.map((item) => (
             <Link
