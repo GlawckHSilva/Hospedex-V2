@@ -244,7 +244,7 @@ function PropertyTopExperience({
           <PropertyGallery mobileHero property={propriedade} />
         </FadeIn>
 
-        <FadeIn className="hidden items-start justify-between gap-6 lg:flex">
+        <FadeIn className="hidden items-start gap-6 lg:flex">
           <div className="min-w-0">
             <h1 className="max-w-4xl break-words text-4xl font-semibold leading-tight tracking-normal">
               {propriedade.name}
@@ -268,10 +268,6 @@ function PropertyTopExperience({
                 </span>
               ) : null}
             </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 pt-1">
-            <ShareButton compact />
-            <FavoriteButton property={propriedade} />
           </div>
         </FadeIn>
 
