@@ -334,7 +334,7 @@ function MarketplaceSearchCard() {
         type="number"
       />
       <button
-        className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-6 text-sm font-bold text-slate-950 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-300 md:col-span-2 lg:col-span-1 lg:mt-0 lg:w-auto"
+        className="mt-2 inline-flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-bold text-primary-foreground shadow-lg shadow-cyan-950/20 transition hover:bg-primary-hover dark:bg-cyan-400 dark:text-slate-950 dark:shadow-cyan-500/30 dark:hover:bg-cyan-300 md:col-span-2 lg:col-span-1 lg:mt-0 lg:w-auto"
         type="submit"
       >
         <Search className="h-4 w-4" />
@@ -384,7 +384,7 @@ function PropertyShowcaseCard({
   propriedade: PropriedadePublica;
 }) {
   return (
-    <article className="group h-full overflow-hidden rounded-[1.35rem] border border-border bg-card shadow-sm transition hover:border-cyan-300/40">
+    <article className="group h-full overflow-hidden rounded-[1.35rem] border border-border bg-card shadow-sm transition hover:border-primary/45 dark:hover:border-cyan-300/40">
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
         <Link
           aria-label={`Ver ${propriedade.name}`}
@@ -442,7 +442,7 @@ function PropertyShowcaseCard({
             {propriedade.bedrooms} quarto{propriedade.bedrooms === 1 ? "" : "s"}
           </span>
           {propriedade.reviews.average ? (
-            <span className="inline-flex items-center gap-1 text-amber-300">
+            <span className="inline-flex items-center gap-1 text-warning dark:text-amber-300">
               <Star className="h-3.5 w-3.5 fill-current" />
               {propriedade.reviews.average.toFixed(1)}
             </span>
@@ -548,7 +548,7 @@ function SectionHeader({
 
 function OwnerStep({ number, text }: { number: string; text: string }) {
   return (
-    <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-border bg-white px-3 py-2 text-foreground shadow-sm shadow-cyan-950/5 dark:border-white/14 dark:bg-white/[0.055] dark:text-white dark:shadow-none">
+    <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-border bg-surface-raised px-3 py-2 text-foreground shadow-sm shadow-cyan-950/5 dark:border-white/14 dark:bg-white/[0.055] dark:text-white dark:shadow-none">
       <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground dark:bg-cyan-300 dark:text-slate-950">
         {number}
       </span>

@@ -462,7 +462,7 @@ function ReservationFormFields({
             className={cn(
               reservationInputWithIconClass,
               emailHospedeBloqueado &&
-                "cursor-not-allowed border-cyan-300/35 bg-cyan-400/10",
+                "cursor-not-allowed border-border bg-muted text-muted-foreground dark:border-cyan-300/35 dark:bg-cyan-400/10",
             )}
             disabled={bloqueado}
             name="hospedeEmail"
@@ -557,12 +557,12 @@ function ReservationFormFields({
       <PerfilConfianca property={property} />
 
       <GlassButton
-        className="h-14 w-full border-sky-400/50 bg-sky-500 text-base text-white shadow-lg shadow-sky-500/25 hover:bg-sky-400 disabled:border-cyan-900/50 disabled:bg-cyan-950/50 disabled:text-cyan-100/60"
+        className="h-14 w-full border-primary bg-primary text-base text-primary-foreground shadow-lg shadow-cyan-950/18 hover:bg-primary-hover disabled:border-border disabled:bg-muted disabled:text-disabled dark:border-sky-400/50 dark:bg-sky-500 dark:text-white dark:shadow-sky-500/25 dark:hover:bg-sky-400 dark:disabled:border-cyan-900/50 dark:disabled:bg-cyan-950/50 dark:disabled:text-cyan-100/60"
         disabled={bloqueado}
         size="lg"
         type="submit"
       >
-        <Send className="h-4 w-4 text-slate-950" />
+        <Send className="h-4 w-4 text-current" />
         {pending ? "Enviando..." : "Solicitar reserva"}
       </GlassButton>
       <p className="text-center text-xs leading-5 text-muted-foreground">

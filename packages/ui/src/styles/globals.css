@@ -10,6 +10,9 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-muted: var(--surface-muted);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
@@ -23,9 +26,16 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent-soft: var(--accent-soft);
   --color-link: var(--link);
+  --color-link-hover: var(--link-hover);
+  --color-icon: var(--icon);
+  --color-icon-muted: var(--icon-muted);
   --color-icon-active: var(--icon-active);
+  --color-border-strong: var(--border-strong);
   --color-border-active: var(--border-active);
   --color-destructive: var(--destructive);
+  --color-danger: var(--danger);
+  --color-disabled: var(--disabled);
+  --color-overlay: var(--overlay);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -43,16 +53,19 @@
 
 :root {
   color-scheme: light;
-  --background: #f4f7fa;
+  --background: #f5f8fb;
   --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #eef3f7;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
   --primary: #007a9e;
   --primary-foreground: #ffffff;
-  --primary-hover: #00627f;
-  --secondary: #e8eff5;
+  --primary-hover: #00566f;
+  --secondary: #eef3f7;
   --secondary-foreground: #334155;
   --muted: #eef2f6;
   --muted-foreground: #52657d;
@@ -60,14 +73,21 @@
   --accent-foreground: #00566f;
   --accent-soft: #ddf5f8;
   --link: #007a9e;
+  --link-hover: #00566f;
+  --icon: #3f5068;
+  --icon-muted: #64748b;
   --icon-active: #036b8c;
+  --border-strong: #aabbcd;
   --border-active: #007a9e;
-  --destructive: #dc2626;
-  --border: #b8c7d9;
-  --input: #b8c7d9;
+  --destructive: #c62828;
+  --danger: #c62828;
+  --disabled: #8795a8;
+  --overlay: rgba(15, 23, 42, 0.58);
+  --border: #c8d5e3;
+  --input: #aabbcd;
   --ring: #007a9e;
-  --success: #15803d;
-  --warning: #a16207;
+  --success: #16794b;
+  --warning: #a15c00;
   --info: #007a9e;
   --premium-violet: oklch(0.62 0.16 292);
   --premium-cyan: #22b8cf;
@@ -80,6 +100,9 @@
   --foreground: #f8fafc;
   --card: #07111f;
   --card-foreground: #f8fafc;
+  --surface: #07111f;
+  --surface-raised: #0b1628;
+  --surface-muted: #0b1220;
   --popover: #07111f;
   --popover-foreground: #f8fafc;
   --primary: #35d9f2;
@@ -93,9 +116,16 @@
   --accent-foreground: #ecfeff;
   --accent-soft: rgba(34, 211, 238, 0.12);
   --link: #68e5f7;
+  --link-hover: #a5f3fc;
+  --icon: #cbd5e1;
+  --icon-muted: #94a3b8;
   --icon-active: #35d9f2;
+  --border-strong: #334155;
   --border-active: #35d9f2;
   --destructive: #ef4444;
+  --danger: #ef4444;
+  --disabled: #64748b;
+  --overlay: rgba(2, 6, 23, 0.72);
   --border: #1e293b;
   --input: #1e293b;
   --ring: #35d9f2;
@@ -169,7 +199,7 @@ body {
 .glass-modal,
 .glass-table {
   border: 1px solid var(--border);
-  background: color-mix(in oklch, var(--card) 97%, transparent);
+  background: color-mix(in oklch, var(--surface-raised) 97%, transparent);
   box-shadow:
     0 12px 32px color-mix(in oklch, black 8%, transparent),
     inset 0 1px 0 color-mix(in oklch, white 78%, transparent);
@@ -190,7 +220,7 @@ body {
 }
 
 .glass-card:hover {
-  background: var(--card);
+  background: var(--surface-raised);
   box-shadow:
     0 16px 38px color-mix(in oklch, black 11%, transparent),
     inset 0 1px 0 color-mix(in oklch, white 82%, transparent);
@@ -209,7 +239,8 @@ body {
 .glass-button,
 .glass-input {
   border-color: var(--input);
-  background: color-mix(in oklch, var(--card) 96%, transparent);
+  background: color-mix(in oklch, var(--surface-raised) 96%, transparent);
+  color: var(--foreground);
   box-shadow:
     0 6px 18px color-mix(in oklch, black 7%, transparent),
     inset 0 1px 0 color-mix(in oklch, white 72%, transparent);
@@ -225,6 +256,11 @@ body {
   border-color: color-mix(in oklch, var(--primary) 58%, var(--border));
   outline: 2px solid color-mix(in oklch, var(--primary) 32%, transparent);
   outline-offset: 2px;
+}
+
+.glass-input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.82;
 }
 
 .glass-input::-webkit-calendar-picker-indicator {

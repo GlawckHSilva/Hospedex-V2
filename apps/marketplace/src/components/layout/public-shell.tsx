@@ -81,7 +81,7 @@ export function PublicShell({ children }: PublicShellProps) {
         themeToggleClassName="hidden md:block"
       />
       <main>{children}</main>
-      <footer className="border-t border-border bg-[#f5f8fb] text-foreground shadow-[0_-18px_64px_rgba(15,23,42,0.08)] dark:border-cyan-300/10 dark:bg-[#061323] dark:text-white dark:shadow-[0_-24px_80px_rgba(0,0,0,0.24)]">
+      <footer className="border-t border-border bg-surface-muted text-foreground shadow-[0_-18px_64px_rgba(15,23,42,0.08)] dark:border-cyan-300/10 dark:bg-[#061323] dark:text-white dark:shadow-[0_-24px_80px_rgba(0,0,0,0.24)]">
         <div className="h-px bg-gradient-to-r from-transparent via-primary/45 to-transparent dark:via-cyan-300/75" />
         <div className="mx-auto grid max-w-7xl gap-7 px-4 py-7 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.12fr_0.72fr_0.95fr_0.78fr] lg:gap-10 lg:py-8">
           <section className="max-w-sm">
@@ -96,7 +96,7 @@ export function PublicShell({ children }: PublicShellProps) {
                 {canais.map(({ href, label, Icone }) => (
                   <a
                     aria-label={label}
-                    className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-white px-3 text-sm text-muted-foreground shadow-sm shadow-cyan-950/5 transition hover:border-primary/45 hover:bg-accent-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:shadow-none dark:hover:border-cyan-300/45 dark:hover:bg-cyan-300/10 dark:hover:text-cyan-100 dark:focus-visible:ring-cyan-300/45"
+                    className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-surface-raised px-3 text-sm text-muted-foreground shadow-sm shadow-cyan-950/5 transition hover:border-primary/45 hover:bg-accent-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300 dark:shadow-none dark:hover:border-cyan-300/45 dark:hover:bg-cyan-300/10 dark:hover:text-cyan-100 dark:focus-visible:ring-cyan-300/45"
                     href={href}
                     key={label}
                     rel={
@@ -135,7 +135,7 @@ export function PublicShell({ children }: PublicShellProps) {
             </nav>
           ))}
         </div>
-        <div className="border-t border-border bg-white/75 dark:border-white/10 dark:bg-white/[0.025]">
+        <div className="border-t border-border bg-surface-raised/75 dark:border-white/10 dark:bg-white/[0.025]">
           <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 text-center text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:text-left dark:text-slate-400">
             <span>
               © {new Date().getFullYear()} Hospedex. Todos os direitos
@@ -187,7 +187,7 @@ function FooterBrand() {
   return (
     <Link
       aria-label="Ir para o início do Marketplace Hospedex"
-      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-white px-2.5 py-1.5 shadow-sm shadow-cyan-950/10 backdrop-blur-xl transition hover:border-primary/35 dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20 dark:hover:border-cyan-300/35"
+      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-surface-raised px-2.5 py-1.5 shadow-sm shadow-cyan-950/10 backdrop-blur-xl transition hover:border-primary/35 dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20 dark:hover:border-cyan-300/35"
       href="/"
     >
       <img
@@ -265,7 +265,7 @@ function MarketplaceBrand() {
   return (
     <Link
       aria-label="Ir para o inicio do Marketplace Hospedex"
-      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-cyan-300/25 bg-card/82 px-2.5 py-1.5 shadow-sm shadow-cyan-950/10 backdrop-blur-xl dark:bg-slate-950/72 dark:shadow-cyan-950/20"
+      className="inline-flex min-w-0 items-center gap-2 rounded-2xl border border-border bg-surface-raised/88 px-2.5 py-1.5 shadow-sm shadow-cyan-950/10 backdrop-blur-xl hover:border-border-active/45 dark:border-cyan-300/25 dark:bg-slate-950/72 dark:shadow-cyan-950/20"
       href="/"
     >
       <img

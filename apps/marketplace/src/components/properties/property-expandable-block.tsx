@@ -37,7 +37,7 @@ export function PropertyExpandableBlock({
       >
         {open ? "Ver menos" : "Ver mais"}
         <ChevronDown
-          className={cn("h-4 w-4 text-cyan-100 transition", open && "rotate-180")}
+          className={cn("h-4 w-4 text-primary transition dark:text-cyan-100", open && "rotate-180")}
         />
       </Button>
     </div>

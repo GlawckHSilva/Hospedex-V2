@@ -153,7 +153,7 @@ export function PropertyGallery({
           <div className="grid gap-3 md:hidden">
             <button
               aria-label="Abrir galeria de fotos"
-              className="group relative h-[420px] overflow-hidden rounded-b-none rounded-t-3xl border border-slate-700/70 bg-secondary text-left shadow-2xl shadow-black/20"
+              className="group relative h-[420px] overflow-hidden rounded-b-none rounded-t-3xl border border-border bg-secondary text-left shadow-2xl shadow-black/20 dark:border-slate-700/70"
               onClick={() => setModalAberta(true)}
               type="button"
             >
@@ -178,8 +178,8 @@ export function PropertyGallery({
                     className={cn(
                       "h-20 w-28 shrink-0 overflow-hidden rounded-2xl border transition",
                       indice === indiceAtivo
-                        ? "border-cyan-300"
-                        : "border-slate-700/70 opacity-75 hover:opacity-100",
+                        ? "border-primary dark:border-cyan-300"
+                        : "border-border opacity-75 hover:opacity-100 dark:border-slate-700/70",
                     )}
                     key={imagem.id}
                     onClick={() => {

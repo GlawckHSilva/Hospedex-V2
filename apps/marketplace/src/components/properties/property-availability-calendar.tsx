@@ -127,7 +127,7 @@ export function PropertyAvailabilityCalendar({
                 "min-h-20 border-b border-r p-2 transition last:border-r-0 hover:bg-primary/5 sm:min-h-24",
                 dia.foraDoMes && "bg-secondary/25 text-muted-foreground/55",
                 dia.iso === formatarIsoLocal(new Date()) &&
-                  "relative bg-cyan-400/10 ring-1 ring-inset ring-cyan-300/45",
+                  "relative bg-accent-soft ring-1 ring-inset ring-border-active/45 dark:bg-cyan-400/10 dark:ring-cyan-300/45",
               )}
               key={dia.iso}
             >
@@ -162,7 +162,7 @@ export function PropertyAvailabilityCalendar({
       </div>
 
       {error ? (
-        <div className="border-t border-amber-400/25 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
+        <div className="border-t border-warning/30 bg-warning/10 p-4 text-sm leading-6 text-warning dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-100">
           Não foi possível carregar a disponibilidade agora. A casa continua
           visível, mas confirme as datas antes de enviar a solicitação.
         </div>

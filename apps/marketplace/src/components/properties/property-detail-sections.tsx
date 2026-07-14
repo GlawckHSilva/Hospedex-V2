@@ -322,7 +322,7 @@ export function PropertyRegionalGuideSection({
                             <StatusBadge tone="neutral">{location.categoryLabel}</StatusBadge>
                             <h3 className="mt-3 font-semibold">{location.name}</h3>
                           </div>
-                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-cyan-400/10 text-cyan-100">
+                          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-accent-soft text-primary dark:bg-cyan-400/10 dark:text-cyan-100">
                             <Store className="h-5 w-5" />
                           </span>
                         </div>

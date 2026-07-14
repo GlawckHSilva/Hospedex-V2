@@ -29,7 +29,7 @@ export function GuestReservationCancelDialog({
   return (
     <>
       <GlassButton
-        className="w-full border-red-400/30 text-red-200 hover:bg-red-500/10"
+        className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 dark:border-red-400/30 dark:text-red-200 dark:hover:bg-red-500/10"
         onClick={() => setAberto(true)}
         variant="secondary"
       >
@@ -38,10 +38,10 @@ export function GuestReservationCancelDialog({
 
       {aberto ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-red-400/25 bg-background p-5 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-destructive/25 bg-background p-5 shadow-2xl dark:border-red-400/25">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-300">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-destructive dark:text-red-300">
                   Cancelamento
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold">Cancelar reserva</h2>
@@ -56,7 +56,7 @@ export function GuestReservationCancelDialog({
               </button>
             </div>
 
-            <div className="mt-5 rounded-xl border border-amber-300/25 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <div className="mt-5 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning dark:border-amber-300/25 dark:bg-amber-500/10 dark:text-amber-100">
               <AlertTriangle className="mb-2 h-4 w-4" />
               O cancelamento segue a politica definida pelo proprietario. O
               proprietario sera notificado e o financeiro da reserva sera
@@ -95,7 +95,7 @@ export function GuestReservationCancelDialog({
               <label className="grid gap-2 text-sm font-medium">
                 Motivo do cancelamento
                 <textarea
-                  className="min-h-24 rounded-xl border bg-background/60 p-3 text-sm outline-none focus:border-cyan-300"
+                  className="min-h-24 rounded-xl border bg-background/60 p-3 text-sm outline-none focus:border-primary dark:focus:border-cyan-300"
                   name="motivo"
                   placeholder="Opcional. Explique o motivo para o proprietario."
                 />

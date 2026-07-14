@@ -378,7 +378,7 @@ function MobileReservationBar({
           </p>
         </div>
         <a
-          className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-cyan-500 px-5 text-sm font-semibold text-white shadow-lg shadow-cyan-950/25 transition hover:bg-cyan-400"
+          className="inline-flex h-12 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-cyan-950/20 transition hover:bg-primary-hover dark:bg-cyan-500 dark:text-white dark:hover:bg-cyan-400"
           href="#reserva"
         >
           Conferir
@@ -472,11 +472,11 @@ function PropertyOwnerTrustCard({
         {perfil.avatarUrl ? (
           <img
             alt={`Foto de ${perfil.ownerName}`}
-            className="h-20 w-20 rounded-full border border-cyan-300/20 object-cover"
+            className="h-20 w-20 rounded-full border border-border-active/25 object-cover dark:border-cyan-300/20"
             src={perfil.avatarUrl}
           />
         ) : (
-          <span className="grid h-20 w-20 place-items-center rounded-full border border-cyan-300/20 bg-primary/10 text-xl font-semibold text-primary">
+          <span className="grid h-20 w-20 place-items-center rounded-full border border-border-active/25 bg-primary/10 text-xl font-semibold text-primary dark:border-cyan-300/20">
             {iniciais}
           </span>
         )}
@@ -550,10 +550,10 @@ function PropertyTrustHighlights() {
     <GlassCard className="grid gap-4 border-border bg-card/88 p-5 shadow-2xl shadow-cyan-950/10 backdrop-blur-xl dark:border-slate-600/45 dark:bg-slate-950/78 dark:shadow-black/25 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
       {itens.map(({ icon: Icone, label, texto }) => (
         <div
-          className="border-slate-700/55 sm:border-r sm:pr-4 last:border-r-0"
+          className="border-border sm:border-r sm:pr-4 last:border-r-0 dark:border-slate-700/55"
           key={label}
         >
-          <Icone className="h-6 w-6 text-emerald-400" />
+          <Icone className="h-6 w-6 text-success dark:text-emerald-400" />
           <p className="mt-3 text-sm font-semibold text-foreground">{label}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {texto}
@@ -630,7 +630,7 @@ function ResumoItem({
   if (compact) {
     return (
       <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-border bg-background/70 px-3 py-2.5 dark:border-slate-700/55 dark:bg-slate-950/54">
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-400/10 text-primary">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-accent-soft text-primary dark:bg-cyan-400/10">
           <Icone className="h-4 w-4" />
         </span>
         <div className="min-w-0">

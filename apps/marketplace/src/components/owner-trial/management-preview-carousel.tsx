@@ -65,13 +65,13 @@ export function ManagementPreviewCarousel() {
 
           return (
             <div className="min-w-full px-1" key={modulo.titulo}>
-              <GlassCard className="min-h-[232px] p-5">
+              <GlassCard className="min-h-[232px] border-cyan-300/15 bg-slate-950/72 p-5 text-cyan-50 dark:bg-slate-950/72">
                 <div className="flex items-center gap-3">
                   <span className="grid h-10 w-10 place-items-center rounded-md bg-primary/10 text-primary">
                     <Icone className="h-5 w-5" />
                   </span>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
                       Módulo
                     </p>
                     <h3 className="font-semibold">{modulo.titulo}</h3>
@@ -89,7 +89,7 @@ export function ManagementPreviewCarousel() {
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 px-1">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-cyan-50/70">
           {indiceAtual + 1} de {MODULOS.length}
         </p>
         <div className="flex gap-2">
@@ -116,7 +116,7 @@ export function ManagementPreviewCarousel() {
 function PreviewLinha({ texto }: { texto: string }) {
   return (
     <div className="flex items-center justify-between rounded-md border border-cyan-300/15 bg-cyan-500/5 px-3 py-2 text-sm">
-      <span className="text-muted-foreground">{texto}</span>
+      <span className="text-cyan-50/78">{texto}</span>
       <span className="h-2 w-12 rounded-full bg-cyan-300/45" />
     </div>
   );

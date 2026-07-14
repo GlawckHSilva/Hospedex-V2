@@ -85,7 +85,7 @@ export default async function CadastroTrialPage({
 function Linha({ icon, texto }: { icon: React.ReactNode; texto: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-cyan-300 [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
+      <span className="text-primary dark:text-cyan-300 [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
       <span>{texto}</span>
     </div>
   );

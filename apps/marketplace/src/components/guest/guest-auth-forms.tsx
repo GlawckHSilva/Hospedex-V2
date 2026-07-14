@@ -135,7 +135,7 @@ function CampoIcone({
   return (
     <div className="relative">
       <Icone className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary/80" />
-      <div className="[&_input]:border-cyan-300/25 [&_input]:bg-card/80 [&_input]:pl-10 [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground dark:[&_input]:border-cyan-200/20 dark:[&_input]:bg-slate-950/70 dark:[&_input]:text-slate-100 dark:[&_input]:placeholder:text-slate-300/70">
+      <div className="[&_input]:border-input [&_input]:bg-surface-raised [&_input]:pl-10 [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground dark:[&_input]:border-cyan-200/20 dark:[&_input]:bg-slate-950/70 dark:[&_input]:text-slate-100 dark:[&_input]:placeholder:text-slate-300/70">
         {children}
       </div>
     </div>

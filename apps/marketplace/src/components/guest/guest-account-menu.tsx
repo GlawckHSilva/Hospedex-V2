@@ -58,7 +58,7 @@ export function GuestAccountMenu() {
       <Link
         className={cn(
           buttonVariants({ size: "sm", variant: "secondary" }),
-          "hidden border border-cyan-300/20 bg-cyan-400/10 text-primary hover:bg-cyan-400/15 dark:text-cyan-50 md:inline-flex",
+          "hidden border border-border-active/25 bg-accent-soft text-primary hover:bg-accent-soft/80 dark:border-cyan-300/20 dark:bg-cyan-400/10 dark:text-cyan-50 dark:hover:bg-cyan-400/15 md:inline-flex",
         )}
         href="/minhas-reservas"
       >

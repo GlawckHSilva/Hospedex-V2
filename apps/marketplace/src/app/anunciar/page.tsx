@@ -168,7 +168,7 @@ export default async function AnunciarPage({
               </Link>
             </div>
             {aviso ? (
-              <p className="rounded-lg border border-amber-300/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
+              <p className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning dark:border-amber-300/25 dark:bg-amber-400/10 dark:text-amber-100">
                 {aviso}
               </p>
             ) : null}
@@ -259,12 +259,13 @@ export default async function AnunciarPage({
               <GlassCard
                 className={cn(
                   "relative p-6",
-                  plano.destaque && "border-cyan-300/50 bg-cyan-500/10 shadow-xl shadow-cyan-950/10"
+                  plano.destaque &&
+                    "border-border-active/50 bg-accent-soft shadow-xl shadow-cyan-950/10 dark:border-cyan-300/50 dark:bg-cyan-500/10"
                 )}
                 key={plano.codigo}
               >
                 {plano.destaque ? (
-                  <span className="absolute right-4 top-4 rounded-full border border-cyan-300/40 bg-cyan-500/15 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-100">
+                  <span className="absolute right-4 top-4 rounded-full border border-border-active/40 bg-accent-soft px-3 py-1 text-xs font-semibold text-primary dark:border-cyan-300/40 dark:bg-cyan-500/15 dark:text-cyan-100">
                     Mais escolhido
                   </span>
                 ) : null}
@@ -428,7 +429,7 @@ function PainelPreview() {
 function PreviewLinha({ texto }: { texto: string }) {
   return (
     <div className="flex items-center justify-between rounded-md border border-cyan-300/15 bg-cyan-500/5 px-3 py-2 text-sm">
-      <span className="text-muted-foreground">{texto}</span>
+      <span className="text-cyan-50/78">{texto}</span>
       <span className="h-2 w-12 rounded-full bg-cyan-300/45" />
     </div>
   );

@@ -40,7 +40,7 @@ export function FavoritesList() {
   if (!favoritos.length) {
     return (
       <GlassCard className="mx-auto max-w-2xl border-border bg-card/88 p-6 text-center shadow-2xl shadow-cyan-950/10 dark:border-slate-700/55 dark:bg-slate-950/72 dark:shadow-black/20">
-        <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/12 text-rose-200">
+        <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/12 text-rose-700 dark:text-rose-200">
           <HeartOff className="h-5 w-5" />
         </span>
         <h1 className="mt-4 text-2xl font-semibold text-foreground">
@@ -50,7 +50,7 @@ export function FavoritesList() {
           Toque no coracao de uma hospedagem para salvar aqui e comparar depois.
         </p>
         <Link
-          className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-cyan-400 px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+          className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover dark:bg-cyan-400 dark:text-slate-950 dark:hover:bg-cyan-300"
           href="/propriedades"
         >
           Ver hospedagens
@@ -62,7 +62,7 @@ export function FavoritesList() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="mb-6">
-        <span className="rounded-full border border-rose-300/25 bg-rose-500/12 px-3 py-1 text-xs font-semibold uppercase tracking-normal text-rose-200">
+        <span className="rounded-full border border-rose-500/25 bg-rose-500/12 px-3 py-1 text-xs font-semibold uppercase tracking-normal text-rose-700 dark:border-rose-300/25 dark:text-rose-200">
           Favoritos
         </span>
         <h1 className="mt-3 text-3xl font-semibold text-foreground">
@@ -106,7 +106,7 @@ export function FavoritesList() {
                 </div>
                 <button
                   aria-label="Remover dos favoritos"
-                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-rose-300/25 bg-rose-500/10 text-rose-200 transition hover:bg-rose-500/18"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-700 transition hover:bg-rose-500/18 dark:border-rose-300/25 dark:text-rose-200"
                   onClick={() => removerFavorito(favorito.id)}
                   type="button"
                 >
@@ -115,18 +115,18 @@ export function FavoritesList() {
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-300/20 bg-cyan-400/10 px-2.5 py-1">
+                <span className="inline-flex items-center gap-1 rounded-full border border-border-active/25 bg-accent-soft px-2.5 py-1 dark:border-cyan-300/20 dark:bg-cyan-400/10">
                   <Users className="h-3.5 w-3.5 text-primary" />
                   {favorito.maxGuests} hospede
                   {favorito.maxGuests === 1 ? "" : "s"}
                 </span>
-                <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-2.5 py-1 text-amber-100">
+                <span className="rounded-full border border-warning/25 bg-warning/10 px-2.5 py-1 text-warning dark:border-amber-300/20 dark:bg-amber-400/10 dark:text-amber-100">
                   {formatarPreco(favorito.minPrice)}
                 </span>
               </div>
 
               <Link
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover dark:bg-cyan-400 dark:text-slate-950 dark:hover:bg-cyan-300"
                 href={`/propriedades/${favorito.slug}`}
               >
                 Ver hospedagem

@@ -86,7 +86,7 @@ export function ReservationVoucher({ reserva }: { reserva: ReservaHospedeDetalhe
       </div>
 
       {!disponivel ? (
-        <div className="mt-5 rounded-xl border border-amber-300/25 bg-amber-400/10 p-4 text-sm text-amber-100">
+        <div className="mt-5 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning dark:border-amber-300/25 dark:bg-amber-400/10 dark:text-amber-100">
           O comprovante sera liberado apos a confirmacao da reserva pelo proprietario.
         </div>
       ) : null}

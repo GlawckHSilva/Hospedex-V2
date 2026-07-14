@@ -32,14 +32,14 @@ export default async function ReservaDetalhePage({
         </Link>
 
         {query.sucesso === "reserva-cancelada" ? (
-          <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+          <div className="rounded-xl border border-success/25 bg-success/10 p-4 text-sm text-success dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
             Reserva cancelada com sucesso. O proprietario foi notificado no
             gerenciamento.
           </div>
         ) : null}
 
         {query.erro ? (
-          <div className="rounded-xl border border-red-400/25 bg-red-500/10 p-4 text-sm text-red-100">
+          <div className="rounded-xl border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-100">
             {query.erro}
           </div>
         ) : null}

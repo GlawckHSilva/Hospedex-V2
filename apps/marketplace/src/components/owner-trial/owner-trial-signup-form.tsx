@@ -42,7 +42,7 @@ export function OwnerTrialSignupForm({ erro, plano }: { erro?: string; plano: Pl
       <Stepper etapa={etapa} />
 
       {erro ? (
-        <p className="rounded-lg border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+        <p className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive dark:border-red-400/25 dark:bg-red-500/10 dark:text-red-200">
           {erro}
         </p>
       ) : null}
@@ -103,8 +103,8 @@ export function OwnerTrialSignupForm({ erro, plano }: { erro?: string; plano: Pl
             <option value="debit_card">Cartao de debito</option>
           </Selecao>
         </div>
-        <p className="flex gap-2 rounded-lg border border-cyan-300/20 bg-cyan-400/8 p-4 text-sm leading-6 text-cyan-50">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
+        <p className="flex gap-2 rounded-lg border border-border-active/25 bg-accent-soft p-4 text-sm leading-6 text-muted-foreground dark:border-cyan-300/20 dark:bg-cyan-400/8 dark:text-cyan-50">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary dark:text-cyan-300" />
           Esta escolha e apenas uma preferencia. Nenhum numero de cartao, token ou cobranca sera solicitado agora.
         </p>
       </div>
@@ -112,7 +112,7 @@ export function OwnerTrialSignupForm({ erro, plano }: { erro?: string; plano: Pl
       <div className={cn("space-y-5", etapa !== 3 && "hidden")} data-step="3">
         <GlassCard className="space-y-4 p-5">
           <div className="flex items-start gap-3">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-emerald-500/12 text-emerald-300">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-success/12 text-success dark:text-emerald-300">
               <Check className="h-5 w-5" />
             </span>
             <div>
@@ -129,7 +129,7 @@ export function OwnerTrialSignupForm({ erro, plano }: { erro?: string; plano: Pl
           </ul>
         </GlassCard>
         <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4 text-sm text-muted-foreground">
-          <input className="mt-0.5 h-4 w-4 accent-cyan-400" name="aceiteTermos" required type="checkbox" />
+          <input className="mt-0.5 h-4 w-4 accent-primary" name="aceiteTermos" required type="checkbox" />
           <span>Li e aceito os termos do trial gratuito e a futura cobranca conforme o plano selecionado.</span>
         </label>
       </div>
@@ -163,10 +163,10 @@ function Stepper({ etapa }: { etapa: number }) {
   return (
     <div aria-label={`Etapa ${etapa + 1} de ${ETAPAS.length}`}>
       <div className="h-1 overflow-hidden rounded-full bg-border">
-        <div className="h-full bg-cyan-400 transition-[width] duration-300" style={{ width: `${((etapa + 1) / ETAPAS.length) * 100}%` }} />
+        <div className="h-full bg-primary transition-[width] duration-300 dark:bg-cyan-400" style={{ width: `${((etapa + 1) / ETAPAS.length) * 100}%` }} />
       </div>
       <div className="mt-3 flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold uppercase text-cyan-300">Etapa {etapa + 1} de {ETAPAS.length}</p>
+        <p className="text-xs font-semibold uppercase text-primary dark:text-cyan-300">Etapa {etapa + 1} de {ETAPAS.length}</p>
         <p className="text-sm font-medium text-foreground">{ETAPAS[etapa]}</p>
       </div>
     </div>
@@ -197,7 +197,7 @@ function ResumoPlano({ plano }: { plano: PlanoCadastro }) {
   return (
     <GlassCard className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center">
       <div>
-        <p className="text-xs font-semibold uppercase text-cyan-300">Plano selecionado</p>
+        <p className="text-xs font-semibold uppercase text-primary dark:text-cyan-300">Plano selecionado</p>
         <h2 className="mt-1 text-xl font-semibold text-foreground">{plano.nome}</h2>
         <p className="mt-1 text-sm text-muted-foreground">Ate {plano.limiteCasas} casa(s)</p>
       </div>

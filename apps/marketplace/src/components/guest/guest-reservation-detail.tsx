@@ -142,7 +142,7 @@ export function GuestReservationDetail({
                 />
               </div>
               {reserva.financeiro.cobrancaAberta ? (
-                <div className="rounded-xl border border-cyan-300/20 bg-background/45 p-4 text-sm">
+                <div className="rounded-xl border border-border-active/25 bg-surface-muted/70 p-4 text-sm dark:border-cyan-300/20 dark:bg-background/45">
                   <div className="flex flex-wrap items-center gap-2">
                     <StatusBadge tone="warning">Cobranca aberta</StatusBadge>
                     <StatusBadge tone={tomStatusPagamento(reserva.statusPagamento)}>
@@ -199,12 +199,12 @@ export function GuestReservationDetail({
                             : `Registrado em ${formatarDataHoraHospede(item.criadoEm)}`}
                         </p>
                         {item.tipoReversao === "refund" ? (
-                          <p className="mt-1 text-xs text-amber-200">
+                          <p className="mt-1 text-xs text-warning dark:text-amber-200">
                             Estorno registrado para esta reserva.
                           </p>
                         ) : null}
                         {item.valorEstornado > 0 && item.tipoReversao === null ? (
-                          <p className="mt-1 text-xs text-amber-200">
+                          <p className="mt-1 text-xs text-warning dark:text-amber-200">
                             Valor ja estornado: {formatarMoedaHospede(item.valorEstornado)}
                           </p>
                         ) : null}
