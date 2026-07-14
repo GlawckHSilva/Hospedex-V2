@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { GlassCard } from "@hospedex/ui";
 
+import { formatarQuantidade } from "../../lib/format";
 import {
   listarFavoritosHospedex,
   obterEventoFavoritos,
@@ -14,10 +15,10 @@ import {
 } from "../../lib/favorites/local-favorites";
 
 /**
- * Lista publica de favoritos do visitante/hospede.
+ * Lista pública de favoritos do visitante/hóspede.
  *
  * Usa armazenamento local nesta fase para manter o recurso simples e sem RLS
- * nova. A rota ja fica pronta para futura sincronizacao com a conta do hospede.
+ * nova. A rota já fica pronta para futura sincronização com a conta do hóspede.
  */
 export function FavoritesList() {
   const [favoritos, setFavoritos] = useState<FavoritoHospedex[]>([]);
@@ -47,7 +48,7 @@ export function FavoritesList() {
           Nenhum favorito salvo
         </h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Toque no coracao de uma hospedagem para salvar aqui e comparar depois.
+          Toque no coração de uma hospedagem para salvar aqui e comparar depois.
         </p>
         <Link
           className="mt-5 inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover dark:bg-cyan-400 dark:text-slate-950 dark:hover:bg-cyan-300"
@@ -70,7 +71,7 @@ export function FavoritesList() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Favoritos deste navegador. Entre na hospedagem para solicitar datas e
-          falar com o anfitriao.
+          falar com o anfitrião.
         </p>
       </div>
 
@@ -117,8 +118,11 @@ export function FavoritesList() {
               <div className="mt-4 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <span className="inline-flex items-center gap-1 rounded-full border border-border-active/25 bg-accent-soft px-2.5 py-1 dark:border-cyan-300/20 dark:bg-cyan-400/10">
                   <Users className="h-3.5 w-3.5 text-primary" />
-                  {favorito.maxGuests} hospede
-                  {favorito.maxGuests === 1 ? "" : "s"}
+                  {formatarQuantidade(
+                    favorito.maxGuests,
+                    "hóspede",
+                    "hóspedes",
+                  )}
                 </span>
                 <span className="rounded-full border border-warning/25 bg-warning/10 px-2.5 py-1 text-warning dark:border-amber-300/20 dark:bg-amber-400/10 dark:text-amber-100">
                   {formatarPreco(favorito.minPrice)}

@@ -184,7 +184,7 @@ export async function carregarReservasHospede(): Promise<
     return {
       dados: null,
       estado: "erro",
-      mensagem: "Nao foi possivel carregar suas reservas."
+      mensagem: "Não foi possível carregar suas reservas."
     };
   }
 
@@ -222,7 +222,7 @@ export async function carregarReservaHospede(
     return {
       dados: null,
       estado: "erro",
-      mensagem: "Nao foi possivel carregar esta reserva."
+      mensagem: "Não foi possível carregar esta reserva."
     };
   }
 
@@ -230,7 +230,7 @@ export async function carregarReservaHospede(
     return {
       dados: null,
       estado: "sem_permissao",
-      mensagem: "Reserva nao encontrada ou sem permissao para esta conta."
+      mensagem: "Reserva não encontrada ou sem permissão para esta conta."
     };
   }
 
@@ -303,7 +303,7 @@ async function carregarContextoHospede(): Promise<
     return {
       dados: null,
       estado: "erro",
-      mensagem: "Perfil nao encontrado para esta conta."
+      mensagem: "Perfil não encontrado para esta conta."
     };
   }
 
@@ -311,7 +311,7 @@ async function carregarContextoHospede(): Promise<
     return {
       dados: null,
       estado: "sem_permissao",
-      mensagem: "Esta conta pertence ao gerenciamento e nao pode acessar a Area do Hospede."
+      mensagem: "Esta conta pertence ao gerenciamento e não pode acessar a Área do Hóspede."
     };
   }
 
@@ -620,7 +620,7 @@ function montarPoliticaCancelamentoHospede(
       ? null
       : reserva.status === "cancelled"
         ? "Esta reserva ja foi cancelada."
-        : "Para cancelamentos em hospedagem ou reserva encerrada, fale com o proprietario.",
+        : "Para cancelamentos em hospedagem ou reserva encerrada, fale com o proprietário.",
     observacoes: regra.notes,
     percentualReembolsoEstimado: percentual,
     podeCancelar,
@@ -826,18 +826,36 @@ function montarRegrasCasa(regras: Record<string, JsonValue>) {
 
   if (checkIn) itens.push(`Check-in padrao a partir de ${checkIn}.`);
   if (checkOut) itens.push(`Check-out padrao ate ${checkOut}.`);
-  if (maximoHospedes) itens.push(`Capacidade maxima de ${maximoHospedes} hospede(s).`);
+  if (maximoHospedes) {
+    itens.push(
+      `Capacidade máxima de ${maximoHospedes} ${
+        maximoHospedes === 1 ? "hóspede" : "hóspedes"
+      }.`,
+    );
+  }
   if (idadeMinima) itens.push(`Responsavel com idade minima de ${idadeMinima} anos.`);
-  if (minimoDiarias) itens.push(`Estadia minima de ${minimoDiarias} diaria(s).`);
-  if (maximoDiarias) itens.push(`Estadia maxima de ${maximoDiarias} diaria(s).`);
+  if (minimoDiarias) {
+    itens.push(
+      `Estadia mínima de ${minimoDiarias} ${
+        minimoDiarias === 1 ? "diária" : "diárias"
+      }.`,
+    );
+  }
+  if (maximoDiarias) {
+    itens.push(
+      `Estadia máxima de ${maximoDiarias} ${
+        maximoDiarias === 1 ? "diária" : "diárias"
+      }.`,
+    );
+  }
   itens.push(
-    booleanoJson(regras, "allowPets") ? "Pets permitidos." : "Pets nao permitidos.",
+    booleanoJson(regras, "allowPets") ? "Pets permitidos." : "Pets não permitidos.",
     booleanoJson(regras, "allowSmoking")
       ? "Fumantes permitidos nas areas autorizadas."
-      : "Fumantes nao permitidos.",
+      : "Fumantes não permitidos.",
     booleanoJson(regras, "allowEvents")
       ? "Eventos permitidos mediante autorizacao."
-      : "Festas e eventos nao permitidos."
+      : "Festas e eventos não permitidos."
   );
   if (regrasAdicionais) itens.push(regrasAdicionais);
   if (instrucoesEspeciais) itens.push(instrucoesEspeciais);

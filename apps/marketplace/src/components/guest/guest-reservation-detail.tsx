@@ -25,6 +25,7 @@ import {
   tomStatusPagamento,
   tomStatusReserva
 } from "../../lib/guest/format";
+import { formatarQuantidade } from "../../lib/format";
 import type { ReservaHospedeDetalhe } from "../../lib/guest/types";
 import { GuestReservationCancelDialog } from "./guest-reservation-cancel-dialog";
 import { ReservationVoucher } from "./reservation-voucher";
@@ -39,7 +40,7 @@ export function GuestReservationDetail({
   const pagamento = reserva.pagamento;
   const formaPagamento = reserva.formaPagamento
     ? LABEL_FORMA_PAGAMENTO[reserva.formaPagamento]
-    : "Nao informada";
+    : "Não informada";
 
   return (
     <div className="grid gap-6">
@@ -82,28 +83,36 @@ export function GuestReservationDetail({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Resumo icon={CalendarDays} label="Check-in" value={formatarDataHospede(reserva.checkIn)} />
               <Resumo icon={CalendarDays} label="Check-out" value={formatarDataHospede(reserva.checkOut)} />
-              <Resumo icon={Users} label="Hospedes" value={`${reserva.hospedesQuantidade}`} />
+              <Resumo
+                icon={Users}
+                label="Hóspedes"
+                value={formatarQuantidade(
+                  reserva.hospedesQuantidade,
+                  "hóspede",
+                  "hóspedes",
+                )}
+              />
               <Resumo icon={WalletCards} label="Total" value={formatarMoedaHospede(reserva.total)} />
             </div>
             <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
-              <Linha label="Codigo" value={reserva.codigo} />
+              <Linha label="Código" value={reserva.codigo} />
               <Linha label="Forma de pagamento" value={formaPagamento} />
               <Linha
                 label="Chegada prevista"
                 value={
                   formatarHorarioPrevisto(reserva.horarioPrevistoCheckIn) ??
-                  "Horario previsto de chegada nao informado pelo hospede."
+                  "Horário previsto de chegada não informado pelo hóspede."
                 }
               />
               <Linha
-                label="Saida prevista"
+                label="Saída prevista"
                 value={
                   formatarHorarioPrevisto(reserva.horarioPrevistoCheckOut) ??
-                  "Horario previsto de saida nao informado pelo hospede."
+                  "Horário previsto de saída não informado pelo hóspede."
                 }
               />
               <Linha label="Taxa de limpeza" value={formatarMoedaHospede(reserva.taxaLimpeza)} />
-              <Linha label="Observacoes" value={reserva.observacoes ?? "Sem observacoes."} />
+              <Linha label="Observações" value={reserva.observacoes ?? "Sem observações."} />
             </div>
           </Secao>
 
@@ -117,7 +126,7 @@ export function GuestReservationDetail({
               </div>
               <p className="text-sm leading-6 text-muted-foreground">
                 {pagamento?.instrucoes ??
-                  "As instrucoes de pagamento serao exibidas quando o proprietario confirmar a reserva."}
+                  "As instruções de pagamento serão exibidas quando o proprietário confirmar a reserva."}
               </p>
               {pagamento?.mensagemPreparada ? (
                 <div className="rounded-xl border bg-background/45 p-4 text-sm text-muted-foreground">
@@ -144,7 +153,7 @@ export function GuestReservationDetail({
               {reserva.financeiro.cobrancaAberta ? (
                 <div className="rounded-xl border border-border-active/25 bg-surface-muted/70 p-4 text-sm dark:border-cyan-300/20 dark:bg-background/45">
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge tone="warning">Cobranca aberta</StatusBadge>
+                    <StatusBadge tone="warning">Cobrança aberta</StatusBadge>
                     <StatusBadge tone={tomStatusPagamento(reserva.statusPagamento)}>
                       {formatarStatusCobranca(reserva.financeiro.cobrancaAberta.status)}
                     </StatusBadge>
@@ -179,7 +188,7 @@ export function GuestReservationDetail({
                 </div>
               ) : (
                 <p className="rounded-xl border border-dashed bg-background/35 p-4 text-sm text-muted-foreground">
-                  Nenhuma cobranca aberta para esta reserva.
+                  Nenhuma cobrança aberta para esta reserva.
                 </p>
               )}
               {reserva.financeiro.pagamentos.length ? (
@@ -205,7 +214,7 @@ export function GuestReservationDetail({
                         ) : null}
                         {item.valorEstornado > 0 && item.tipoReversao === null ? (
                           <p className="mt-1 text-xs text-warning dark:text-amber-200">
-                            Valor ja estornado: {formatarMoedaHospede(item.valorEstornado)}
+                            Valor já estornado: {formatarMoedaHospede(item.valorEstornado)}
                           </p>
                         ) : null}
                       </div>
@@ -223,27 +232,27 @@ export function GuestReservationDetail({
             <div className="grid gap-3 sm:grid-cols-2">
               <Resumo
                 icon={Clock}
-                label="Check-in padrao"
-                value={reserva.checkInHorario ?? "Horario padrao ainda nao informado."}
+                label="Check-in padrão"
+                value={reserva.checkInHorario ?? "Horário padrão ainda não informado."}
               />
               <Resumo
                 icon={Clock}
-                label="Check-out padrao"
-                value={reserva.checkOutHorario ?? "Horario padrao ainda nao informado."}
+                label="Check-out padrão"
+                value={reserva.checkOutHorario ?? "Horário padrão ainda não informado."}
               />
             </div>
             <ListaSimples
               itens={reserva.regrasCasa}
-              tituloVazio="O proprietario ainda nao cadastrou regras para esta casa."
+              tituloVazio="O proprietário ainda não cadastrou regras para esta casa."
             />
             <ListaSimples
               itens={reserva.comodidades.slice(0, 12)}
               titulo="Comodidades"
-              tituloVazio="Esta casa ainda nao possui comodidades cadastradas."
+              tituloVazio="Esta casa ainda não possui comodidades cadastradas."
             />
           </Secao>
 
-          <Secao title="Guia da regiao">
+          <Secao title="Guia da região">
             {reserva.guiaRegiao.length ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {reserva.guiaRegiao.slice(0, 6).map((local) => (
@@ -253,14 +262,14 @@ export function GuestReservationDetail({
                     </p>
                     <h3 className="mt-2 font-semibold">{local.nome}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      {local.endereco ?? local.telefone ?? local.whatsapp ?? "Detalhes nao informados."}
+                      {local.endereco ?? local.telefone ?? local.whatsapp ?? "Detalhes não informados."}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                O proprietario ainda nao cadastrou recomendacoes para esta regiao.
+                O proprietário ainda não cadastrou recomendações para esta região.
               </p>
             )}
           </Secao>
@@ -286,12 +295,12 @@ export function GuestReservationDetail({
           <ReservationVoucher reserva={reserva} />
 
           <GlassCard className="p-5" id="cancelamento">
-            <h2 className="text-lg font-semibold">Localizacao e contato</h2>
+            <h2 className="text-lg font-semibold">Localização e contato</h2>
             <div className="mt-4 grid gap-3 text-sm text-muted-foreground">
               <p className="inline-flex gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 text-primary" />
                 {montarEnderecoCompleto(propriedade) ??
-                  "Endereco ainda nao informado pelo proprietario."}
+                  "Endereço ainda não informado pelo proprietário."}
               </p>
               {propriedade?.googleMapsLink ? (
                 <a
@@ -310,7 +319,7 @@ export function GuestReservationDetail({
                   proprietario?.telefone ??
                   pagamento?.proprietarioWhatsapp ??
                   pagamento?.proprietarioTelefone ??
-                  "Contato do proprietario ainda nao informado."}
+                  "Contato do proprietário ainda não informado."}
               </p>
               {proprietario?.nome || proprietario?.empreendimento ? (
                 <p>
@@ -326,8 +335,8 @@ export function GuestReservationDetail({
           <GlassCard className="p-5">
             <h2 className="text-lg font-semibold">Cancelamento</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Consulte as regras do proprietario antes de cancelar. A reserva
-              cancelada fica registrada para historico e financeiro.
+              Consulte as regras do proprietário antes de cancelar. A reserva
+              cancelada fica registrada para histórico e financeiro.
             </p>
             <div className="mt-4">
               <GuestReservationCancelDialog reserva={reserva} />

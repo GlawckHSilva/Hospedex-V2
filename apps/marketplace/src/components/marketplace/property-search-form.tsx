@@ -4,11 +4,19 @@ import Link from "next/link";
 import type { PropertyType } from "@hospedex/types";
 import { GlassButton, GlassInput, buttonVariants, cn } from "@hospedex/ui";
 
+import {
+  MarketplaceIconField,
+  MarketplacePlainField,
+  marketplaceInputPlainClass,
+  marketplaceInputWithIconClass,
+  marketplaceSelectWithIconClass,
+} from "../forms/marketplace-icon-field";
+
 /**
- * Formulario publico de busca do Marketplace.
+ * Formulário público de busca do Marketplace.
  *
- * Os filtros sao enviados por query string e revalidados no servidor. Isso evita
- * confiar no navegador para regras de disponibilidade, preco ou capacidade.
+ * Os filtros são enviados por query string e revalidados no servidor. Isso evita
+ * confiar no navegador para regras de disponibilidade, preço ou capacidade.
  */
 
 export type PropertySearchFormProps = {
@@ -34,7 +42,7 @@ export function PropertySearchForm({
   mostrarPreco = false,
   precoMaximo,
   precoMinimo,
-  tipo
+  tipo,
 }: PropertySearchFormProps) {
   return (
     <form
@@ -43,109 +51,96 @@ export function PropertySearchForm({
         "glass-panel grid gap-3 p-3 shadow-2xl shadow-cyan-950/10",
         compact
           ? "md:grid-cols-2 xl:grid-cols-[1fr_90px_150px_150px_160px_120px_120px_auto_auto]"
-          : "md:grid-cols-2 xl:grid-cols-[1fr_150px_150px_130px_auto]"
+          : "md:grid-cols-2 xl:grid-cols-[1fr_150px_150px_130px_auto]",
       )}
     >
-      <label className="relative">
-        <span className="sr-only">Destino</span>
-        <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <MarketplaceIconField icon={MapPin} label="Destino" srOnly>
         <GlassInput
-          className="h-12 pl-10"
+          className={marketplaceInputWithIconClass}
           defaultValue={cidade}
           name="cidade"
           placeholder="Destino ou cidade"
         />
-      </label>
+      </MarketplaceIconField>
 
       {compact ? (
-        <label className="relative">
-          <span className="sr-only">Estado</span>
+        <MarketplacePlainField label="Estado" srOnly>
           <GlassInput
-            className="h-12 uppercase"
+            className={cn(marketplaceInputPlainClass, "uppercase")}
             defaultValue={estado}
             maxLength={2}
             name="estado"
             placeholder="UF"
           />
-        </label>
+        </MarketplacePlainField>
       ) : null}
 
-      <label className="relative">
-        <span className="sr-only">Check-in</span>
-        <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <MarketplaceIconField icon={CalendarDays} label="Entrada" srOnly>
         <GlassInput
-          className="h-12 pl-10"
+          className={marketplaceInputWithIconClass}
           defaultValue={dataInicio}
           name="dataInicio"
           type="date"
         />
-      </label>
+      </MarketplaceIconField>
 
-      <label className="relative">
-        <span className="sr-only">Check-out</span>
-        <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <MarketplaceIconField icon={CalendarDays} label="Saída" srOnly>
         <GlassInput
-          className="h-12 pl-10"
+          className={marketplaceInputWithIconClass}
           defaultValue={dataFim}
           name="dataFim"
           type="date"
         />
-      </label>
+      </MarketplaceIconField>
 
-      <label className="relative">
-        <span className="sr-only">Hospedes</span>
-        <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <MarketplaceIconField icon={Users} label="Hóspedes" srOnly>
         <GlassInput
-          className="h-12 pl-10"
+          className={marketplaceInputWithIconClass}
           defaultValue={hospedes}
           min={1}
           name="hospedes"
           placeholder="Hóspedes"
           type="number"
         />
-      </label>
+      </MarketplaceIconField>
 
       {compact ? (
-        <label className="relative">
-          <span className="sr-only">Tipo</span>
-          <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <MarketplaceIconField icon={SlidersHorizontal} label="Tipo" srOnly>
           <select
-            className="glass-input h-12 w-full rounded-md px-10 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className={marketplaceSelectWithIconClass}
             defaultValue={tipo ?? ""}
             name="tipo"
           >
             <option value="">Tipos</option>
             <option value="seasonal_home">Casas</option>
             <option value="inn">Pousadas</option>
-            <option value="small_hotel">Hoteis compactos</option>
+            <option value="small_hotel">Hotéis compactos</option>
           </select>
-        </label>
+        </MarketplaceIconField>
       ) : null}
 
       {mostrarPreco ? (
         <>
-          <label className="relative">
-            <span className="sr-only">Preco minimo</span>
+          <MarketplacePlainField label="Preço mínimo" srOnly>
             <GlassInput
-              className="h-12"
+              className={marketplaceInputPlainClass}
               defaultValue={precoMinimo}
               min={0}
               name="precoMinimo"
               placeholder="Min."
               type="number"
             />
-          </label>
-          <label className="relative">
-            <span className="sr-only">Preco maximo</span>
+          </MarketplacePlainField>
+          <MarketplacePlainField label="Preço máximo" srOnly>
             <GlassInput
-              className="h-12"
+              className={marketplaceInputPlainClass}
               defaultValue={precoMaximo}
               min={0}
               name="precoMaximo"
               placeholder="Max."
               type="number"
             />
-          </label>
+          </MarketplacePlainField>
         </>
       ) : null}
 

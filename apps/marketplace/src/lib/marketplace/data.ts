@@ -511,7 +511,7 @@ async function carregarDisponibilidadePublica(
 
   if (resultado.error) {
     return {
-      erro: `Nao foi possivel carregar a disponibilidade publica: ${resultado.error.message}`,
+      erro: `Não foi possível carregar a disponibilidade pública: ${resultado.error.message}`,
       periodos: []
     };
   }

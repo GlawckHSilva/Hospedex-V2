@@ -9,9 +9,9 @@ import { buttonVariants, cn } from "@hospedex/ui";
 import { sairHospede, useGuestProfile } from "./use-guest-profile";
 
 /**
- * Entrada visivel da Area do Hospede.
+ * Entrada visível da Área do Hóspede.
  *
- * O menu roda no client apenas para refletir a sessao atual no header. A
+ * O menu roda no client apenas para refletir a sessão atual no header. A
  * autorizacao real continua nas Server Components e nas policies RLS.
  */
 export function GuestAccountMenu() {
@@ -73,7 +73,7 @@ export function GuestAccountMenu() {
       >
         {perfil.avatar_url ? (
           <img
-            alt="Avatar do hospede"
+            alt="Avatar do hóspede"
             className="h-7 w-7 rounded-full object-cover"
             src={perfil.avatar_url}
           />

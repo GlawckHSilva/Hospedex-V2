@@ -105,7 +105,7 @@ export function OwnerTrialSignupForm({ erro, plano }: { erro?: string; plano: Pl
         </div>
         <p className="flex gap-2 rounded-lg border border-border-active/25 bg-accent-soft p-4 text-sm leading-6 text-muted-foreground dark:border-cyan-300/20 dark:bg-cyan-400/8 dark:text-cyan-50">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary dark:text-cyan-300" />
-          Esta escolha e apenas uma preferencia. Nenhum numero de cartao, token ou cobranca sera solicitado agora.
+          Esta escolha é apenas uma preferência. Nenhum número de cartão, token ou cobrança será solicitado agora.
         </p>
       </div>
 
@@ -124,8 +124,8 @@ export function OwnerTrialSignupForm({ erro, plano }: { erro?: string; plano: Pl
           </div>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>Seu teste gratis dura 30 dias.</li>
-            <li>Voce podera cancelar ou alterar o plano antes do fim do teste.</li>
-            <li>O limite inicial sera de {plano.limiteCasas} casa(s).</li>
+            <li>Você poderá cancelar ou alterar o plano antes do fim do teste.</li>
+            <li>O limite inicial será de {plano.limiteCasas} casa(s).</li>
           </ul>
         </GlassCard>
         <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-4 text-sm text-muted-foreground">

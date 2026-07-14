@@ -40,10 +40,10 @@ const MOEDAS_DESTINO = ["USD", "EUR"] as const;
 let cacheCotacao: CacheCotacao | null = null;
 
 /**
- * Busca cotacoes server-side para o Marketplace.
+ * Busca cotações server-side para o Marketplace.
  *
- * A chave da API fica restrita ao servidor. Se o provider falhar, a pagina
- * publica continua funcionando e a reserva segue com valor oficial em BRL.
+ * A chave da API fica restrita ao servidor. Se o provider falhar, a página
+ * pública continua funcionando e a reserva segue com valor oficial em BRL.
  */
 export async function carregarCotacoesCambio(): Promise<CotacoesCambio> {
   const provider = obterProvider();
@@ -64,7 +64,7 @@ export async function carregarCotacoesCambio(): Promise<CotacoesCambio> {
     return cotacoes;
   } catch (erro) {
     console.warn(
-      "Nao foi possivel carregar cotacoes internacionais.",
+      "Não foi possível carregar cotações internacionais.",
       erro instanceof Error ? erro.message : "Erro desconhecido."
     );
 

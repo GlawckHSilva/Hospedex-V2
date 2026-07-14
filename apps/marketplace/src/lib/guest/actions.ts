@@ -19,7 +19,7 @@ export async function loginHospedeAction(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/login?erro=${encodeURIComponent("Nao foi possivel entrar.")}`);
+    redirect(`/login?erro=${encodeURIComponent("Não foi possível entrar.")}`);
   }
 
   await supabase.rpc("link_guest_reservations");
@@ -49,7 +49,7 @@ export async function cadastroHospedeAction(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/cadastro?erro=${encodeURIComponent("Nao foi possivel criar sua conta.")}`);
+    redirect(`/cadastro?erro=${encodeURIComponent("Não foi possível criar sua conta.")}`);
   }
 
   if (data.session) {
@@ -114,7 +114,7 @@ export async function cancelarReservaHospedeAction(formData: FormData) {
   const supabase = await criarClienteSupabaseServer();
 
   if (!supabase) {
-    redirect(`${caminhoReserva}?erro=${encodeURIComponent("Nao foi possivel conectar ao Supabase.")}`);
+    redirect(`${caminhoReserva}?erro=${encodeURIComponent("Não foi possível conectar ao Supabase.")}`);
   }
 
   const { data: usuarioResultado } = await supabase.auth.getUser();
@@ -150,15 +150,15 @@ function traduzirErroCancelamentoHospede(mensagemBanco: string) {
   const mensagem = mensagemBanco.toLocaleLowerCase("pt-BR");
 
   if (mensagem.includes("entre")) return "Entre novamente para cancelar esta reserva.";
-  if (mensagem.includes("nao encontrada")) return "Reserva nao encontrada para esta conta.";
+  if (mensagem.includes("nao encontrada")) return "Reserva não encontrada para esta conta.";
   if (mensagem.includes("ja foi cancelada")) return "Esta reserva ja foi cancelada.";
   if (mensagem.includes("hospedagem") || mensagem.includes("encerrada")) {
-    return "Esta reserva ja esta em hospedagem ou encerrada. Fale com o proprietario.";
+    return "Esta reserva já está em hospedagem ou encerrada. Fale com o proprietário.";
   }
-  if (mensagem.includes("calendario")) return "Nao foi possivel liberar o periodo no calendario.";
-  if (mensagem.includes("financeiro")) return "Nao foi possivel atualizar o financeiro da reserva.";
+  if (mensagem.includes("calendario")) return "Não foi possível liberar o período no calendário.";
+  if (mensagem.includes("financeiro")) return "Não foi possível atualizar o financeiro da reserva.";
 
-  return "Nao foi possivel cancelar a reserva.";
+  return "Não foi possível cancelar a reserva.";
 }
 
 async function obterBaseUrl() {

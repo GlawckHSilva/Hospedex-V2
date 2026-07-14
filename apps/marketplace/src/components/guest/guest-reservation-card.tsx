@@ -21,13 +21,14 @@ import {
   tomStatusPagamento,
   tomStatusReserva
 } from "../../lib/guest/format";
+import { formatarQuantidade } from "../../lib/format";
 import type { ReservaHospedeResumo } from "../../lib/guest/types";
 
 export function GuestReservationCard({ reserva }: { reserva: ReservaHospedeResumo }) {
   const propriedade = reserva.propriedade;
   const formaPagamento = reserva.formaPagamento
     ? LABEL_FORMA_PAGAMENTO[reserva.formaPagamento]
-    : "Nao informada";
+    : "Não informada";
 
   return (
     <GlassCard className="overflow-hidden p-0">
@@ -52,12 +53,12 @@ export function GuestReservationCard({ reserva }: { reserva: ReservaHospedeResum
                 Reserva {reserva.codigo}
               </p>
               <h2 className="mt-2 text-xl font-semibold">
-                {propriedade?.nome ?? "Casa indisponivel"}
+                {propriedade?.nome ?? "Casa indisponível"}
               </h2>
               <p className="mt-2 inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
                 {[propriedade?.cidade, propriedade?.estado].filter(Boolean).join(" / ") ||
-                  "Localizacao nao informada"}
+                  "Localização não informada"}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -78,7 +79,15 @@ export function GuestReservationCard({ reserva }: { reserva: ReservaHospedeResum
           <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <Resumo icon={CalendarDays} label="Check-in" value={formatarDataHospede(reserva.checkIn)} />
             <Resumo icon={CalendarDays} label="Check-out" value={formatarDataHospede(reserva.checkOut)} />
-            <Resumo icon={Users} label="Hospedes" value={`${reserva.hospedesQuantidade}`} />
+            <Resumo
+              icon={Users}
+              label="Hóspedes"
+              value={formatarQuantidade(
+                reserva.hospedesQuantidade,
+                "hóspede",
+                "hóspedes",
+              )}
+            />
             <Resumo icon={WalletCards} label="Total" value={formatarMoedaHospede(reserva.total)} />
           </div>
 

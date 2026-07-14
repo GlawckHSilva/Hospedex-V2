@@ -9,16 +9,16 @@ export const LABEL_STATUS_RESERVA: Record<ReservationStatus, string> = {
   cancelled: "Cancelada",
   checked_in: "Hospedado",
   checked_out: "Check-out realizado",
-  completed: "Concluida",
+  completed: "Concluída",
   confirmed: "Confirmada",
   pending: "Pendente"
 };
 
 export const MENSAGEM_STATUS_RESERVA: Partial<Record<ReservationStatus, string>> = {
   cancelled: "Sua reserva foi cancelada.",
-  completed: "Estadia concluida.",
+  completed: "Estadia concluída.",
   confirmed: "Sua reserva foi confirmada.",
-  pending: "Sua solicitacao foi enviada e esta aguardando aprovacao do proprietario."
+  pending: "Sua solicitação foi enviada e está aguardando aprovação do proprietário."
 };
 
 export const LABEL_STATUS_PAGAMENTO: Record<ReservationPaymentStatus, string> = {
@@ -32,10 +32,10 @@ export const LABEL_STATUS_PAGAMENTO: Record<ReservationPaymentStatus, string> = 
 };
 
 export const LABEL_FORMA_PAGAMENTO: Record<ReservationPaymentMethod, string> = {
-  bank_transfer: "Transferencia bancaria",
+  bank_transfer: "Transferência bancária",
   cash: "Dinheiro",
-  credit_card: "Cartao de credito",
-  debit_card: "Cartao de debito",
+  credit_card: "Cartão de crédito",
+  debit_card: "Cartão de débito",
   pix: "Pix"
 };
 
@@ -48,10 +48,10 @@ export function formatarMoedaHospede(valor: number | null | undefined) {
 }
 
 export function formatarDataHospede(valor: string | null | undefined) {
-  if (!valor) return "Nao informado";
+  if (!valor) return "Não informado";
 
   const data = new Date(`${valor}T12:00:00`);
-  if (Number.isNaN(data.getTime())) return "Nao informado";
+  if (Number.isNaN(data.getTime())) return "Não informado";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
@@ -61,10 +61,10 @@ export function formatarDataHospede(valor: string | null | undefined) {
 }
 
 export function formatarDataHoraHospede(valor: string | null | undefined) {
-  if (!valor) return "Nao informado";
+  if (!valor) return "Não informado";
 
   const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) return "Nao informado";
+  if (Number.isNaN(data.getTime())) return "Não informado";
 
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",

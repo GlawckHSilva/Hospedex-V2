@@ -66,13 +66,13 @@ export async function iniciarTrialProprietarioAction(formData: FormData) {
       try {
         await criarClienteSupabaseAdmin().auth.admin.deleteUser(authUserId);
       } catch (erroRemocao) {
-        console.error("Nao foi possivel remover o usuario Auth incompleto.", erroRemocao);
+        console.error("Não foi possível remover o usuário Auth incompleto.", erroRemocao);
       }
     }
 
-    console.error("Erro ao iniciar trial publico do proprietario.", erro);
+    console.error("Erro ao iniciar trial público do proprietário.", erro);
     const mensagem =
-      erro instanceof ErroCadastro ? erro.message : "Nao foi possivel criar sua conta agora.";
+      erro instanceof ErroCadastro ? erro.message : "Não foi possível criar sua conta agora.";
     redirect(`/anunciar/cadastro?plan=${encodeURIComponent(planoCodigo)}&erro=${encodeURIComponent(mensagem)}`);
   }
 
@@ -102,7 +102,7 @@ function validarEntrada(formData: FormData, planoCodigo: string) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ErroCadastro("Informe um e-mail valido.");
   if (!/^\d{10,13}$/.test(telefone.replace(/\D/g, ""))) throw new ErroCadastro("Informe um telefone valido.");
   if (senha.length < 8) throw new ErroCadastro("A senha deve ter pelo menos 8 caracteres.");
-  if (senha !== confirmacaoSenha) throw new ErroCadastro("As senhas nao conferem.");
+  if (senha !== confirmacaoSenha) throw new ErroCadastro("As senhas não conferem.");
   if (!/^[A-Z]{2}$/.test(estado)) throw new ErroCadastro("Informe o estado com 2 letras.");
   if (!Number.isInteger(quantidadeEstimada) || quantidadeEstimada < 1) {
     throw new ErroCadastro("Informe uma quantidade de casas valida.");
@@ -139,7 +139,7 @@ async function carregarPlano(
     .eq("status", "active")
     .maybeSingle<{ id: string; max_properties: number }>();
 
-  if (error || !data) throw new ErroCadastro("O plano selecionado nao esta disponivel.");
+  if (error || !data) throw new ErroCadastro("O plano selecionado não está disponível.");
   return data;
 }
 
@@ -170,18 +170,18 @@ function gerarChaveLicenca() {
 
 function traduzirErroAuth(mensagem?: string) {
   const erro = mensagem?.toLowerCase() ?? "";
-  if (erro.includes("already") || erro.includes("registered")) return "Ja existe uma conta com este e-mail.";
-  if (erro.includes("password")) return "A senha informada nao atende aos requisitos de seguranca.";
+  if (erro.includes("already") || erro.includes("registered")) return "Já existe uma conta com este e-mail.";
+  if (erro.includes("password")) return "A senha informada não atende aos requisitos de segurança.";
   if (erro.includes("email")) return "Informe um e-mail valido.";
-  return "Nao foi possivel criar o acesso de proprietario.";
+  return "Não foi possível criar o acesso de proprietário.";
 }
 
 function traduzirErroBanco(mensagem: string) {
   const erro = mensagem.toLowerCase();
-  if (erro.includes("plano")) return "O plano selecionado nao esta disponivel.";
+  if (erro.includes("plano")) return "O plano selecionado não está disponível.";
   if (erro.includes("quantidade")) return "A quantidade de casas excede o limite do plano.";
-  if (erro.includes("e-mail") || erro.includes("email")) return "Ja existe uma conta com este e-mail.";
-  return "Nao foi possivel ativar o trial. Nenhuma cobranca foi realizada.";
+  if (erro.includes("e-mail") || erro.includes("email")) return "Já existe uma conta com este e-mail.";
+  return "Não foi possível ativar o trial. Nenhuma cobrança foi realizada.";
 }
 
 class ErroCadastro extends Error {}

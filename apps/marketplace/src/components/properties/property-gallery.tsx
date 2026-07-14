@@ -77,9 +77,9 @@ export function PropertyGallery({
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-lg bg-primary/10 text-primary">
             <Images className="h-5 w-5" />
           </span>
-          <p className="mt-4 font-semibold">Fotos em preparacao</p>
+          <p className="mt-4 font-semibold">Fotos em preparação</p>
           <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-            O proprietario ainda nao adicionou fotos a galeria.
+            O proprietário ainda não adicionou fotos à galeria.
           </p>
         </div>
       </div>
@@ -509,7 +509,7 @@ function obterImagensGaleria(property: PropriedadePublica) {
   const imagensOrdenadas = ordenarImagens(property.images);
 
   // A capa e usada como fallback para evitar bloco vazio grande quando o
-  // proprietario ainda nao adicionou fotos extras na galeria.
+  // proprietário ainda não adicionou fotos extras na galeria.
   if (imagensOrdenadas.length) return imagensOrdenadas;
   return property.coverImage ? [property.coverImage] : [];
 }

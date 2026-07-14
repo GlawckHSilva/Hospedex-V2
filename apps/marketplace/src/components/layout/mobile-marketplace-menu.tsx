@@ -23,7 +23,7 @@ import { sairHospede, useGuestProfile } from "../guest/use-guest-profile";
  * Menu principal do Marketplace em telas pequenas.
  *
  * O TopNav esconde os links abaixo de md para preservar espaco. Este menu
- * garante que o hospede continue com acesso claro a Inicio, Hospedagens,
+ * garante que o hóspede continue com acesso claro a Início, Hospedagens,
  * Destinos e Anunciar no mobile, sem misturar com a area logada.
  */
 export function MobileMarketplaceMenu() {
@@ -118,7 +118,7 @@ export function MobileMarketplaceMenu() {
               <div className="flex items-center gap-3 rounded-xl bg-accent-soft px-3 py-3 dark:bg-cyan-400/10">
                 {perfil.avatar_url ? (
                   <img
-                    alt="Avatar do hospede"
+                    alt="Avatar do hóspede"
                     className="h-9 w-9 rounded-full object-cover"
                     src={perfil.avatar_url}
                   />
@@ -129,7 +129,7 @@ export function MobileMarketplaceMenu() {
                 )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-foreground dark:text-cyan-50">
-                    {perfil.full_name ?? "Hospede"}
+                    {perfil.full_name ?? "Hóspede"}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
                     {perfil.email}

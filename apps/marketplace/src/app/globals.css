@@ -51,10 +51,21 @@
 /* Padroniza controles nativos do formulario publico de reserva.
    O objetivo e evitar icones escuros do navegador em date/time/select sem alterar a logica da reserva. */
 .marketplace-reservation-control {
+  border-radius: var(--radius-md);
   border-color: color-mix(in oklch, var(--border) 68%, var(--primary) 18%);
   background: color-mix(in oklch, var(--card) 92%, var(--background) 8%);
   color: var(--foreground);
   color-scheme: light;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  min-height: 48px;
+  width: 100%;
+  outline: none;
+}
+
+.marketplace-reservation-control:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 34%, transparent);
 }
 
 .dark .marketplace-reservation-control {
@@ -69,6 +80,77 @@
 .marketplace-reservation-control:disabled {
   cursor: not-allowed;
   opacity: 0.68;
+}
+
+.marketplace-form-field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.marketplace-form-label {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1rem;
+  min-height: 1rem;
+  text-transform: uppercase;
+}
+
+.marketplace-form-help {
+  color: var(--primary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1rem;
+}
+
+.dark .marketplace-form-help {
+  color: rgb(207 250 254 / 0.78);
+}
+
+.marketplace-icon-control {
+  display: block;
+  min-width: 0;
+  position: relative;
+}
+
+.marketplace-field-icon {
+  color: var(--icon-active, var(--primary));
+  height: 1.125rem;
+  left: 1rem;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.125rem;
+  z-index: 10;
+}
+
+.marketplace-control-with-icon {
+  padding-left: 2.875rem;
+  padding-right: 0.875rem;
+}
+
+.marketplace-control-plain {
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+}
+
+.marketplace-control-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 2.875rem;
+}
+
+.marketplace-control-textarea {
+  min-height: 6rem;
+  padding: 0.75rem 0.875rem;
+  resize: vertical;
+}
+
+.marketplace-search-control {
+  min-height: 2rem;
+  padding-left: 2rem;
 }
 
 select.marketplace-reservation-control {

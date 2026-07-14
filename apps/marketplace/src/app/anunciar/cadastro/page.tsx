@@ -32,10 +32,10 @@ export default async function CadastroTrialPage({
 
     if (vinculo) {
       const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL?.trim() || "https://hospedex.vercel.app";
-      redirect(`${adminUrl}/login?message=${encodeURIComponent("Sua conta de proprietario ja existe. Entre para acessar o gerenciamento.")}`);
+      redirect(`${adminUrl}/login?message=${encodeURIComponent("Sua conta de proprietário já existe. Entre para acessar o gerenciamento.")}`);
     }
 
-    redirect(`/anunciar?aviso=${encodeURIComponent("Saia da conta de hospede atual antes de criar uma conta de proprietario.")}#planos`);
+    redirect(`/anunciar?aviso=${encodeURIComponent("Saia da conta de hóspede atual antes de criar uma conta de proprietário.")}#planos`);
   }
 
   const { data: plano, error } = await supabase

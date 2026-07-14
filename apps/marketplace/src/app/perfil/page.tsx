@@ -23,7 +23,7 @@ export default async function PerfilPage({
         ) : !resultado.dados ? (
           <GuestStateCard
             estado="erro"
-            mensagem="Nao foi possivel carregar seu perfil."
+            mensagem="Não foi possível carregar seu perfil."
           />
         ) : (
           <GuestProfileForm
@@ -38,6 +38,6 @@ export default async function PerfilPage({
 
 function obterMensagem(parametros: Record<string, string | string[] | undefined>) {
   if (parametros.sucesso === "perfil") return "Perfil atualizado com sucesso.";
-  if (parametros.erro === "perfil") return "Nao foi possivel atualizar o perfil.";
+  if (parametros.erro === "perfil") return "Não foi possível atualizar o perfil.";
   return null;
 }

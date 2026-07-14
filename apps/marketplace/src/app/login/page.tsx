@@ -29,7 +29,7 @@ function obterMensagem(parametros: Record<string, string | string[] | undefined>
   }
 
   if (parametros.recuperacao === "enviada") {
-    return "Enviamos as instrucoes de recuperacao para o e-mail informado.";
+    return "Enviamos as instruções de recuperação para o e-mail informado.";
   }
 
   if (typeof parametros.erro === "string") return parametros.erro;

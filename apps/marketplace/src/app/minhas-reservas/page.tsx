@@ -16,11 +16,11 @@ export default async function MinhasReservasPage() {
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:py-14">
         <div className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-            Area do Hospede
+            Área do Hóspede
           </p>
           <h1 className="mt-3 text-4xl font-semibold">Minhas reservas</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Acompanhe solicitacoes, status de pagamento, voucher e instrucoes da viagem.
+            Acompanhe solicitações, status de pagamento, voucher e instruções da viagem.
           </p>
         </div>
 
@@ -41,7 +41,7 @@ export default async function MinhasReservasPage() {
                   Buscar hospedagens
                 </Link>
               }
-              description="Se voce fez uma solicitacao usando este e-mail, aguarde alguns instantes ou confira se entrou com o mesmo e-mail usado na reserva."
+              description="Se você fez uma solicitação usando este e-mail, aguarde alguns instantes ou confira se entrou com o mesmo e-mail usado na reserva."
               icon={<CalendarCheck className="h-5 w-5" />}
               title="Nenhuma reserva encontrada"
             />

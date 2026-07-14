@@ -58,8 +58,8 @@ export function GuestReservationCancelDialog({
 
             <div className="mt-5 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning dark:border-amber-300/25 dark:bg-amber-500/10 dark:text-amber-100">
               <AlertTriangle className="mb-2 h-4 w-4" />
-              O cancelamento segue a politica definida pelo proprietario. O
-              proprietario sera notificado e o financeiro da reserva sera
+              O cancelamento segue a política definida pelo proprietário. O
+              proprietário será notificado e o financeiro da reserva será
               atualizado.
             </div>
 
@@ -85,7 +85,7 @@ export function GuestReservationCancelDialog({
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
                 Percentual aplicado agora: {cancelamento.percentualReembolsoEstimado}%.
-                Valores dependem de confirmacao do proprietario e do meio de
+                Valores dependem de confirmação do proprietário e do meio de
                 pagamento usado.
               </p>
             </div>
@@ -97,7 +97,7 @@ export function GuestReservationCancelDialog({
                 <textarea
                   className="min-h-24 rounded-xl border bg-background/60 p-3 text-sm outline-none focus:border-primary dark:focus:border-cyan-300"
                   name="motivo"
-                  placeholder="Opcional. Explique o motivo para o proprietario."
+                  placeholder="Opcional. Explique o motivo para o proprietário."
                 />
               </label>
 

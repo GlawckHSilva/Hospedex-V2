@@ -11,7 +11,7 @@ export type PerfilHospedeMenu = {
 };
 
 /**
- * Carrega o perfil do hospede autenticado para os menus publicos.
+ * Carrega o perfil do hóspede autenticado para os menus públicos.
  *
  * A consulta fica no client apenas para personalizar a navegacao. A protecao
  * real das reservas continua nas Server Components e nas policies RLS.
@@ -53,7 +53,7 @@ export function useGuestProfile() {
           data ?? {
             avatar_url: null,
             email: usuario.email ?? "",
-            full_name: usuario.email ?? "Hospede"
+            full_name: usuario.email ?? "Hóspede"
           }
         );
         setCarregando(false);
@@ -80,7 +80,7 @@ export function useGuestProfile() {
 }
 
 export function obterIniciaisHospede(perfil: PerfilHospedeMenu | null) {
-  const base = perfil?.full_name || perfil?.email || "Hospede";
+  const base = perfil?.full_name || perfil?.email || "Hóspede";
   return base
     .split(/\s|@/)
     .filter(Boolean)

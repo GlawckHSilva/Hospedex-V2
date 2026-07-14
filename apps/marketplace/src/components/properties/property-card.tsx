@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { GlassCard, StatusBadge } from "@hospedex/ui";
 
+import { formatarQuantidade } from "../../lib/format";
 import type { PropriedadePublica } from "../../lib/marketplace/data";
 import { FavoriteButton } from "./favorite-button";
 
@@ -65,11 +66,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <div className="flex flex-wrap items-center gap-3">
             <span className="inline-flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              até {property.maxGuests}
+              até {formatarQuantidade(property.maxGuests, "hóspede", "hóspedes")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <BedDouble className="h-4 w-4" />
-              {property.bedrooms} quarto{property.bedrooms === 1 ? "" : "s"}
+              {formatarQuantidade(property.bedrooms, "quarto", "quartos")}
             </span>
           </div>
           <div className="flex items-center justify-between gap-3">

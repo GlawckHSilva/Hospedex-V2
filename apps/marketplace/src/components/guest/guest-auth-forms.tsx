@@ -1,9 +1,12 @@
 import { KeyRound, Mail, Phone, User } from "lucide-react";
 import Link from "next/link";
-import type { ComponentType, ReactNode } from "react";
 
 import { GlassCard, GlassInput } from "@hospedex/ui";
 
+import {
+  MarketplaceIconField,
+  marketplaceInputWithIconClass,
+} from "../forms/marketplace-icon-field";
 import {
   cadastroHospedeAction,
   loginHospedeAction,
@@ -15,11 +18,11 @@ export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
   return (
     <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-md">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-        Area do Hospede
+        Área do Hóspede
       </p>
       <h1 className="mt-3 text-3xl font-semibold">Entrar</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Acompanhe suas reservas, pagamento e instrucoes de viagem.
+        Acompanhe suas reservas, pagamento e instruções de viagem.
       </p>
 
       {mensagem ? (
@@ -29,36 +32,46 @@ export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
       ) : null}
 
       <form action={loginHospedeAction} className="mt-6 grid gap-4">
-        <CampoIcone icon={Mail}>
-          <GlassInput name="email" placeholder="E-mail" required type="email" />
-        </CampoIcone>
-        <CampoIcone icon={KeyRound}>
+        <MarketplaceIconField icon={Mail} label="E-mail" srOnly>
           <GlassInput
+            className={marketplaceInputWithIconClass}
+            name="email"
+            placeholder="E-mail"
+            required
+            type="email"
+          />
+        </MarketplaceIconField>
+        <MarketplaceIconField icon={KeyRound} label="Senha" srOnly>
+          <GlassInput
+            className={marketplaceInputWithIconClass}
             name="senha"
             placeholder="Senha"
             required
             type="password"
           />
-        </CampoIcone>
+        </MarketplaceIconField>
         <FormSubmitButton pendingText="Entrando...">Entrar</FormSubmitButton>
       </form>
 
       <form action={recuperarSenhaHospedeAction} className="mt-5 grid gap-3">
         <p className="text-xs text-muted-foreground">
-          Esqueceu a senha? Informe seu e-mail acima e solicite a recuperacao.
+          Esqueceu a senha? Informe seu e-mail acima e solicite a recuperação.
         </p>
-        <GlassInput
-          name="email"
-          placeholder="E-mail para recuperacao"
-          type="email"
-        />
+        <MarketplaceIconField icon={Mail} label="E-mail para recuperação" srOnly>
+          <GlassInput
+            className={marketplaceInputWithIconClass}
+            name="email"
+            placeholder="E-mail para recuperação"
+            type="email"
+          />
+        </MarketplaceIconField>
         <FormSubmitButton pendingText="Enviando...">
           Recuperar senha
         </FormSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Ainda nao tem conta?{" "}
+        Ainda não tem conta?{" "}
         <Link
           className="font-medium text-primary hover:text-primary/80"
           href="/cadastro"
@@ -74,11 +87,11 @@ export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
   return (
     <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-lg">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-        Area do Hospede
+        Área do Hóspede
       </p>
       <h1 className="mt-3 text-3xl font-semibold">Criar conta</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Use o mesmo e-mail informado na solicitacao de hospedagem para vincular
+        Use o mesmo e-mail informado na solicitação de hospedagem para vincular
         suas reservas.
       </p>
 
@@ -89,31 +102,47 @@ export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
       ) : null}
 
       <form action={cadastroHospedeAction} className="mt-6 grid gap-4">
-        <CampoIcone icon={User}>
-          <GlassInput name="nome" placeholder="Nome completo" required />
-        </CampoIcone>
-        <CampoIcone icon={Mail}>
-          <GlassInput name="email" placeholder="E-mail" required type="email" />
-        </CampoIcone>
-        <CampoIcone icon={Phone}>
-          <GlassInput name="telefone" placeholder="Telefone" />
-        </CampoIcone>
-        <CampoIcone icon={KeyRound}>
+        <MarketplaceIconField icon={User} label="Nome completo" srOnly>
           <GlassInput
+            className={marketplaceInputWithIconClass}
+            name="nome"
+            placeholder="Nome completo"
+            required
+          />
+        </MarketplaceIconField>
+        <MarketplaceIconField icon={Mail} label="E-mail" srOnly>
+          <GlassInput
+            className={marketplaceInputWithIconClass}
+            name="email"
+            placeholder="E-mail"
+            required
+            type="email"
+          />
+        </MarketplaceIconField>
+        <MarketplaceIconField icon={Phone} label="Telefone" srOnly>
+          <GlassInput
+            className={marketplaceInputWithIconClass}
+            name="telefone"
+            placeholder="Telefone"
+          />
+        </MarketplaceIconField>
+        <MarketplaceIconField icon={KeyRound} label="Senha" srOnly>
+          <GlassInput
+            className={marketplaceInputWithIconClass}
             minLength={6}
             name="senha"
             placeholder="Senha"
             required
             type="password"
           />
-        </CampoIcone>
+        </MarketplaceIconField>
         <FormSubmitButton pendingText="Criando...">
           Criar conta
         </FormSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Ja tem conta?{" "}
+        Já tem conta?{" "}
         <Link
           className="font-medium text-primary hover:text-primary/80"
           href="/login"
@@ -122,22 +151,5 @@ export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
         </Link>
       </p>
     </GlassCard>
-  );
-}
-
-function CampoIcone({
-  children,
-  icon: Icone,
-}: {
-  children: ReactNode;
-  icon: ComponentType<{ className?: string }>;
-}) {
-  return (
-    <div className="relative">
-      <Icone className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-primary/80" />
-      <div className="[&_input]:border-input [&_input]:bg-surface-raised [&_input]:pl-10 [&_input]:text-foreground [&_input]:placeholder:text-muted-foreground dark:[&_input]:border-cyan-200/20 dark:[&_input]:bg-slate-950/70 dark:[&_input]:text-slate-100 dark:[&_input]:placeholder:text-slate-300/70">
-        {children}
-      </div>
-    </div>
   );
 }

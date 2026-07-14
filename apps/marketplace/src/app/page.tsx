@@ -32,7 +32,7 @@ export const dynamic = "force-dynamic";
 
 const categoriasMarketplace = [
   {
-    description: "Casas completas para familia, grupos e estadias longas.",
+    description: "Casas completas para família, grupos e estadias longas.",
     href: "/propriedades?tipo=seasonal_home",
     icon: House,
     title: "Casas",
@@ -44,10 +44,10 @@ const categoriasMarketplace = [
     title: "Pousadas",
   },
   {
-    description: "Operacao compacta, quartos e estrutura profissional.",
+    description: "Operação compacta, quartos e estrutura profissional.",
     href: "/propriedades?tipo=small_hotel",
     icon: Hotel,
-    title: "Hoteis compactos",
+    title: "Hotéis compactos",
   },
 ] as const;
 
@@ -58,7 +58,7 @@ const beneficios = [
     title: "Reserva segura",
   },
   {
-    description: "Fale com o anfitriao antes de confirmar.",
+    description: "Fale com o anfitrião antes de confirmar.",
     icon: BadgeCheck,
     title: "Contato direto",
   },
@@ -96,18 +96,18 @@ export default async function MarketplaceHomePage() {
                 className="border-white/20 bg-white/12 text-white"
                 tone="neutral"
               >
-                Casas, pousadas e pequenos hoteis
+                Casas, pousadas e pequenos hotéis
               </StatusBadge>
             </div>
 
             <h1 className="mt-5 break-words text-[2.35rem] font-semibold leading-[1.08] tracking-normal sm:text-5xl lg:text-[4rem]">
               Hospedagens para sua{" "}
-              <span className="text-cyan-300">proxima viagem.</span>
+              <span className="text-cyan-300">próxima viagem.</span>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl break-words text-base leading-7 text-cyan-50/82 sm:text-lg">
-              Busque casas, pousadas e hoteis independentes.
+              Busque casas, pousadas e hotéis independentes.
               <br className="sm:hidden" /> Veja fotos, regras e fale direto com
-              o anfitriao.
+              o anfitrião.
             </p>
           </div>
 
@@ -145,7 +145,7 @@ export default async function MarketplaceHomePage() {
           <SectionHeader
             actionHref="/propriedades"
             actionLabel="Ver todas"
-            description="Veja algumas opcoes disponiveis para sua proxima viagem."
+            description="Veja algumas opções disponíveis para sua próxima viagem."
             eyebrow="Hospedagens"
             title="Hospedagens em destaque"
           />
@@ -238,7 +238,7 @@ export default async function MarketplaceHomePage() {
                       {categoria.description}
                     </p>
                     <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-primary transition group-hover:text-primary-hover">
-                      Ver opcoes
+                      Ver opções
                       <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                     </span>
                   </Link>
@@ -327,7 +327,7 @@ function MarketplaceSearchCard() {
       />
       <SearchField
         icon={<Users className="h-5 w-5" />}
-        label="Hospedes"
+        label="Hóspedes"
         min={1}
         name="hospedes"
         placeholder="2"
@@ -364,10 +364,12 @@ function SearchField({
       <span className="text-xs font-bold uppercase tracking-normal text-cyan-200/78">
         {label}
       </span>
-      <span className="flex items-center gap-2">
-        <span className="text-cyan-300">{icon}</span>
+      <span className="relative block min-w-0">
+        <span className="pointer-events-none absolute left-0 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center text-cyan-300">
+          {icon}
+        </span>
         <input
-          className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-white outline-none placeholder:text-cyan-50/70"
+          className="w-full min-w-0 bg-transparent pl-8 text-sm font-semibold text-white outline-none placeholder:text-cyan-50/70"
           min={min}
           name={name}
           placeholder={placeholder}
@@ -399,7 +401,7 @@ function PropertyShowcaseCard({
             />
           ) : (
             <div className="grid h-full place-items-center bg-cyan-500/10 text-sm font-semibold">
-              Fotos em preparacao
+            Fotos em preparação
             </div>
           )}
           <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/78 to-transparent" />
@@ -434,7 +436,7 @@ function PropertyShowcaseCard({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5" />
-            {propriedade.maxGuests} hospede
+            {propriedade.maxGuests} hóspede
             {propriedade.maxGuests === 1 ? "" : "s"}
           </span>
           <span className="inline-flex items-center gap-1.5">

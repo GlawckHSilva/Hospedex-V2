@@ -14,10 +14,10 @@ import {
 import { VoucherActions } from "./voucher-actions";
 
 /**
- * Card de acoes do comprovante da reserva.
+ * Card de ações do comprovante da reserva.
  *
- * O comprovante nao fica renderizado como previa fixa no painel para evitar
- * poluir a tela do hospede. Ele e aberto sob demanda em modal e impresso como
+ * O comprovante não fica renderizado como prévia fixa no painel para evitar
+ * poluir a tela do hóspede. Ele é aberto sob demanda em modal e impresso como
  * documento HTML isolado.
  */
 export function ReservationVoucher({ reserva }: { reserva: ReservaHospedeDetalhe }) {
@@ -87,7 +87,7 @@ export function ReservationVoucher({ reserva }: { reserva: ReservaHospedeDetalhe
 
       {!disponivel ? (
         <div className="mt-5 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning dark:border-amber-300/25 dark:bg-amber-400/10 dark:text-amber-100">
-          O comprovante sera liberado apos a confirmacao da reserva pelo proprietario.
+          O comprovante será liberado após a confirmação da reserva pelo proprietário.
         </div>
       ) : null}
 

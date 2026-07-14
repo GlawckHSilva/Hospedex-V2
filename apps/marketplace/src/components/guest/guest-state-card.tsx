@@ -29,7 +29,7 @@ export function GuestStateCard({
           mensagem ??
           (semSessao
             ? "Entre para visualizar suas reservas."
-            : "Nao foi possivel liberar o acesso para esta conta.")
+            : "Não foi possível liberar o acesso para esta conta.")
         }
         icon={
           semSessao ? (
@@ -42,9 +42,9 @@ export function GuestStateCard({
         }
         title={
           semSessao
-            ? "Sessao necessaria"
+            ? "Sessão necessária"
             : estado === "sem_permissao"
-              ? "Sem permissao"
+              ? "Sem permissão"
               : "Erro ao carregar"
         }
       />

@@ -14,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
@@ -28,11 +28,21 @@ import {
 import type { ReservationPaymentMethod } from "@hospedex/types";
 
 import {
+  MarketplaceIconField,
+  MarketplacePlainField,
+  marketplaceInputPlainClass,
+  marketplaceInputWithIconClass,
+  marketplaceSelectPlainClass,
+  marketplaceSelectWithIconClass,
+  marketplaceTextareaClass,
+} from "../forms/marketplace-icon-field";
+import {
   converterValorBrl,
   formatarDataCotacao,
   formatarMoeda,
 } from "../../lib/currency/format";
 import type { CotacoesCambio } from "../../lib/currency/types";
+import { formatarDiarias, formatarQuantidade } from "../../lib/format";
 import { solicitarReservaPublicaAction } from "../../lib/marketplace/actions";
 import type { PropriedadePublica } from "../../lib/marketplace/data";
 import { criarClienteSupabaseBrowser } from "../../lib/supabase/client";
@@ -67,20 +77,8 @@ type DadosHospedeLogado = {
   telefone: string;
 };
 
-const inputIconClass =
-  "pointer-events-none absolute left-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground";
 const selectIconClass =
   "pointer-events-none absolute right-4 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground";
-const reservationInputWithIconClass =
-  "marketplace-reservation-control h-12 min-w-0 pl-11 pr-3 text-left text-sm text-foreground placeholder:text-muted-foreground";
-const reservationInputPlainClass =
-  "marketplace-reservation-control h-12 min-w-0 px-3 text-left text-sm text-foreground placeholder:text-muted-foreground";
-const reservationSelectWithIconClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md pl-11 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
-const reservationSelectPlainClass =
-  "marketplace-reservation-control h-12 w-full min-w-0 appearance-none rounded-md px-3 pr-11 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
-const reservationTextareaClass =
-  "marketplace-reservation-control min-h-24 w-full resize-y rounded-md px-3 py-3 text-sm leading-5 text-foreground placeholder:text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 const LIMITE_PADRAO_HOSPEDES_EXTRAS = 10;
 
 /**
@@ -342,10 +340,9 @@ function ReservationFormFields({
       ) : null}
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Field label="Entrada">
-          <CalendarDays className={inputIconClass} />
+        <MarketplaceIconField icon={CalendarDays} label="Entrada">
           <GlassInput
-            className={reservationInputWithIconClass}
+            className={marketplaceInputWithIconClass}
             disabled={bloqueado}
             name="checkIn"
             onChange={(evento) => setCheckIn(evento.target.value)}
@@ -353,11 +350,10 @@ function ReservationFormFields({
             type="date"
             value={checkIn}
           />
-        </Field>
-        <Field label="Saída">
-          <CalendarDays className={inputIconClass} />
+        </MarketplaceIconField>
+        <MarketplaceIconField icon={CalendarDays} label="Saída">
           <GlassInput
-            className={reservationInputWithIconClass}
+            className={marketplaceInputWithIconClass}
             disabled={bloqueado}
             name="checkOut"
             onChange={(evento) => setCheckOut(evento.target.value)}
@@ -365,14 +361,17 @@ function ReservationFormFields({
             type="date"
             value={checkOut}
           />
-        </Field>
+        </MarketplaceIconField>
       </div>
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Field label="Horário previsto de chegada">
-          <Clock className={inputIconClass} />
+        <MarketplaceIconField
+          helpText={`Padrão da casa: ${property.checkIn}.`}
+          icon={Clock}
+          label="Horário previsto de chegada"
+        >
           <GlassInput
-            className={reservationInputWithIconClass}
+            className={marketplaceInputWithIconClass}
             disabled={bloqueado}
             name="horarioPrevistoCheckIn"
             onChange={(evento) =>
@@ -381,14 +380,14 @@ function ReservationFormFields({
             type="time"
             value={horarioPrevistoCheckIn}
           />
-          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
-            Padrão da casa: {property.checkIn}.
-          </span>
-        </Field>
-        <Field label="Horário previsto de saída">
-          <Clock className={inputIconClass} />
+        </MarketplaceIconField>
+        <MarketplaceIconField
+          helpText={`Padrão da casa: ${property.checkOut}.`}
+          icon={Clock}
+          label="Horário previsto de saída"
+        >
           <GlassInput
-            className={reservationInputWithIconClass}
+            className={marketplaceInputWithIconClass}
             disabled={bloqueado}
             name="horarioPrevistoCheckOut"
             onChange={(evento) =>
@@ -397,16 +396,16 @@ function ReservationFormFields({
             type="time"
             value={horarioPrevistoCheckOut}
           />
-          <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
-            Padrão da casa: {property.checkOut}.
-          </span>
-        </Field>
+        </MarketplaceIconField>
       </div>
 
-      <Field label="Hóspedes">
-        <Users className={inputIconClass} />
+      <MarketplaceIconField
+        helpText={obterTextoLimiteHospedes(property)}
+        icon={Users}
+        label="Hóspedes"
+      >
         <GlassInput
-          className={reservationInputWithIconClass}
+          className={marketplaceInputWithIconClass}
           disabled={bloqueado}
           inputMode="numeric"
           max={obterMaximoHospedesSelecionavel(property)}
@@ -427,40 +426,42 @@ function ReservationFormFields({
           type="number"
           value={quantidadeHospedes}
         />
-        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
-          {obterTextoLimiteHospedes(property)}
-        </span>
-      </Field>
+      </MarketplaceIconField>
 
-      <Field label="Nome do hóspede">
-        <User className={inputIconClass} />
+      <MarketplaceIconField icon={User} label="Nome do hóspede">
         <GlassInput
-          className={reservationInputWithIconClass}
+          className={marketplaceInputWithIconClass}
           disabled={bloqueado}
           name="hospedeNome"
           onChange={(evento) => setNomeHospede(evento.target.value)}
           required
           value={nomeHospede}
         />
-      </Field>
+      </MarketplaceIconField>
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <Field label="Telefone">
-          <Phone className={inputIconClass} />
+        <MarketplaceIconField icon={Phone} label="Telefone">
           <GlassInput
-            className={reservationInputWithIconClass}
+            className={marketplaceInputWithIconClass}
             disabled={bloqueado}
             name="hospedeTelefone"
             onChange={(evento) => setTelefoneHospede(evento.target.value)}
             required
             value={telefoneHospede}
           />
-        </Field>
-        <Field label="E-mail">
-          <Mail className={inputIconClass} />
+        </MarketplaceIconField>
+        <MarketplaceIconField
+          helpText={
+            emailHospedeBloqueado
+              ? "Este e-mail está vinculado à sua conta."
+              : null
+          }
+          icon={Mail}
+          label="E-mail"
+        >
           <GlassInput
             className={cn(
-              reservationInputWithIconClass,
+              marketplaceInputWithIconClass,
               emailHospedeBloqueado &&
                 "cursor-not-allowed border-border bg-muted text-muted-foreground dark:border-cyan-300/35 dark:bg-cyan-400/10",
             )}
@@ -472,26 +473,24 @@ function ReservationFormFields({
             type="email"
             value={emailHospede}
           />
-          {emailHospedeBloqueado ? (
-            <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
-              Este e-mail está vinculado à sua conta.
-            </span>
-          ) : null}
-        </Field>
+        </MarketplaceIconField>
       </div>
 
-      <Field label="CPF opcional">
+      <MarketplacePlainField label="CPF opcional">
         <GlassInput
-          className={reservationInputPlainClass}
+          className={marketplaceInputPlainClass}
           disabled={bloqueado}
           name="hospedeDocumento"
         />
-      </Field>
+      </MarketplacePlainField>
 
-      <Field label="Preferência de pagamento">
-        <Banknote className={inputIconClass} />
+      <MarketplaceIconField
+        helpText="Nenhum pagamento é realizado nesta etapa."
+        icon={Banknote}
+        label="Preferência de pagamento"
+      >
         <select
-          className={reservationSelectWithIconClass}
+          className={marketplaceSelectWithIconClass}
           disabled={bloqueado}
           name="formaPagamento"
           onChange={(evento) =>
@@ -510,15 +509,12 @@ function ReservationFormFields({
           ))}
         </select>
         <ChevronDown className={selectIconClass} />
-        <span className="mt-1 block text-[11px] font-medium normal-case leading-4 text-primary dark:text-cyan-100/75">
-          Nenhum pagamento é realizado nesta etapa.
-        </span>
-      </Field>
+      </MarketplaceIconField>
 
       {formaPagamento === "credit_card" ? (
-        <Field label="Parcelas">
+        <MarketplacePlainField label="Parcelas">
           <select
-            className={reservationSelectPlainClass}
+            className={marketplaceSelectPlainClass}
             disabled={bloqueado}
             onChange={(evento) =>
               setParcelas(Number.parseInt(evento.target.value, 10))
@@ -535,18 +531,17 @@ function ReservationFormFields({
             ))}
           </select>
           <ChevronDown className={selectIconClass} />
-        </Field>
+        </MarketplacePlainField>
       ) : null}
 
-      <label className="grid gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-        Observações
+      <MarketplacePlainField label="Observações">
         <textarea
-          className={reservationTextareaClass}
+          className={marketplaceTextareaClass}
           disabled={bloqueado}
           name="observacoes"
           placeholder="Conte o motivo da viagem, horário previsto de chegada ou pedidos importantes."
         />
-      </label>
+      </MarketplacePlainField>
 
       <ResumoValores
         cotacoesCambio={cotacoesCambio}
@@ -601,7 +596,7 @@ function ResumoValores({
   return (
     <div className="grid gap-3 rounded-lg border bg-background/70 p-4 text-sm">
       <ResumoLinha
-        label={`${resumo.noites} diária(s)`}
+        label={formatarDiarias(resumo.noites)}
         valor={resumo.diarias}
       />
       {resumo.taxaLimpeza ? (
@@ -609,11 +604,11 @@ function ResumoValores({
       ) : null}
       {resumo.hospedesExtras > 0 ? (
         <ResumoLinha
-          label={`${resumo.quantidadeHospedesExtras} ${
-            resumo.quantidadeHospedesExtras === 1
-              ? "hóspede extra"
-              : "hóspedes extras"
-          }`}
+          label={formatarQuantidade(
+            resumo.quantidadeHospedesExtras,
+            "hóspede extra",
+            "hóspedes extras",
+          )}
           valor={resumo.hospedesExtras}
         />
       ) : null}
@@ -801,15 +796,6 @@ function ReservationSuccess({
   );
 }
 
-function Field({ children, label }: { children: ReactNode; label: string }) {
-  return (
-    <label className="grid min-w-0 gap-2 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-      {label}
-      <span className="relative min-w-0">{children}</span>
-    </label>
-  );
-}
-
 function calcularResumoReserva({
   checkIn,
   checkOut,
@@ -887,10 +873,23 @@ function obterTextoLimiteHospedes(property: PropriedadePublica) {
   const maximo = obterMaximoHospedesSelecionavel(property);
 
   if (permiteHospedesExtras(property)) {
-    return `${capacidade} hóspede${capacidade === 1 ? "" : "s"} incluso${capacidade === 1 ? "" : "s"} sem extra. Até ${maximo} com adicional.`;
+    const inclusos =
+      capacidade === 1
+        ? "1 hóspede incluído sem custo adicional."
+        : `Até ${capacidade} hóspedes incluídos sem custo adicional.`;
+
+    return `${inclusos} Hóspedes adicionais têm cobrança extra até ${formatarQuantidade(
+      maximo,
+      "hóspede",
+      "hóspedes",
+    )}.`;
   }
 
-  return `Esta casa permite até ${capacidade} hóspede${capacidade === 1 ? "" : "s"}.`;
+  return `Esta casa permite até ${formatarQuantidade(
+    capacidade,
+    "hóspede",
+    "hóspedes",
+  )}.`;
 }
 
 function obterQuantidadeHospedesParaResumo(

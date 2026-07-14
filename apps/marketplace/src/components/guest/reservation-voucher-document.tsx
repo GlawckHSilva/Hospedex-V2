@@ -8,15 +8,16 @@ import {
   LABEL_STATUS_PAGAMENTO,
   LABEL_STATUS_RESERVA
 } from "../../lib/guest/format";
+import { formatarQuantidade } from "../../lib/format";
 import type { ReservaHospedeDetalhe } from "../../lib/guest/types";
 
 type VoucherStatus = "cancelado" | "pendente" | "provisorio" | "valido";
 
 /**
- * Documento imprimivel do voucher.
+ * Documento imprimível do voucher.
  *
- * Esta camada nao altera reserva, pagamento ou financeiro. Ela somente monta
- * um documento limpo com os dados que a rota protegida do hospede ja carregou.
+ * Esta camada não altera reserva, pagamento ou financeiro. Ela somente monta
+ * um documento limpo com os dados que a rota protegida do hóspede já carregou.
  */
 export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHospedeDetalhe }) {
   const statusVoucher = obterStatusVoucher(reserva);
@@ -49,11 +50,11 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
       </div>
 
       {statusVoucher === "provisorio" ? (
-        <VoucherNotice>Este voucher so tera validade completa apos a confirmacao do pagamento.</VoucherNotice>
+        <VoucherNotice>Este voucher só terá validade completa após a confirmação do pagamento.</VoucherNotice>
       ) : null}
       {statusVoucher === "cancelado" ? (
         <VoucherNotice tone="danger">
-          Reserva cancelada. Este voucher nao possui validade para hospedagem.
+          Reserva cancelada. Este voucher não possui validade para hospedagem.
         </VoucherNotice>
       ) : null}
 
@@ -65,22 +66,29 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
             value={[reserva.propriedade?.cidade, reserva.propriedade?.estado].filter(Boolean).join("/")}
           />
           <VoucherLine
-            label="Anfitriao"
+            label="Anfitrião"
             value={reserva.proprietario?.nome ?? reserva.proprietario?.empreendimento ?? reserva.pagamento?.proprietarioNome}
           />
         </VoucherSection>
 
-        <VoucherSection icon={User} title="Hospede">
+        <VoucherSection icon={User} title="Hóspede">
           <VoucherLine label="Nome" value={reserva.hospede?.nome} />
           <VoucherLine label="Telefone/WhatsApp" value={reserva.hospede?.telefone} />
           <VoucherLine label="E-mail" value={reserva.hospede?.email} />
         </VoucherSection>
 
-        <VoucherSection icon={CalendarDays} title="Periodo">
+        <VoucherSection icon={CalendarDays} title="Período">
           <VoucherLine label="Check-in" value={formatarDataComHorario(reserva.checkIn, reserva.horarioPrevistoCheckIn)} />
           <VoucherLine label="Check-out" value={formatarDataComHorario(reserva.checkOut, reserva.horarioPrevistoCheckOut)} />
           <VoucherLine label="Noites" value={formatarNoites(reserva)} />
-          <VoucherLine label="Hospedes" value={`${reserva.hospedesQuantidade}`} />
+          <VoucherLine
+            label="Hóspedes"
+            value={formatarQuantidade(
+              reserva.hospedesQuantidade,
+              "hóspede",
+              "hóspedes",
+            )}
+          />
         </VoucherSection>
 
         <VoucherSection icon={WalletCards} title="Pagamento">
@@ -91,10 +99,10 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
           <VoucherLine label="Valor pendente" value={formatarMoedaHospede(reserva.financeiro.valorPendente)} />
         </VoucherSection>
 
-        <VoucherSection icon={MapPin} title="Endereco e contato">
-          <VoucherLine label="Endereco" value={montarEnderecoCompleto(reserva.propriedade)} />
+        <VoucherSection icon={MapPin} title="Endereço e contato">
+          <VoucherLine label="Endereço" value={montarEnderecoCompleto(reserva.propriedade)} />
           <VoucherLine
-            label="Contato do anfitriao"
+            label="Contato do anfitrião"
             value={
               reserva.proprietario?.whatsapp ??
               reserva.proprietario?.telefone ??
@@ -104,14 +112,14 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
           />
         </VoucherSection>
 
-        <VoucherSection icon={Home} title="Observacao curta">
+        <VoucherSection icon={Home} title="Observação curta">
           <p className="voucher-observation text-sm font-medium leading-5 text-slate-800">
             {obterObservacaoCurta(reserva.observacoes)}
           </p>
         </VoucherSection>
 
         <footer className="voucher-footer rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs leading-5 text-slate-600">
-          <p>Documento emitido pelo Hospedex para conferencia da reserva.</p>
+          <p>Documento emitido pelo Hospedex para conferência da reserva.</p>
         </footer>
       </div>
     </article>
@@ -121,12 +129,12 @@ export function ReservationVoucherDocument({ reserva }: { reserva: ReservaHosped
 export function montarTextoVoucher(reserva: ReservaHospedeDetalhe) {
   const linhas = [
     "Reserva Hospedex",
-    `Codigo: ${reserva.codigo}`,
+    `Código: ${reserva.codigo}`,
     reserva.propriedade?.nome ? `Hospedagem: ${reserva.propriedade.nome}` : null,
-    reserva.hospede?.nome ? `Hospede: ${reserva.hospede.nome}` : null,
+    reserva.hospede?.nome ? `Hóspede: ${reserva.hospede.nome}` : null,
     `Check-in: ${formatarDataComHorario(reserva.checkIn, reserva.horarioPrevistoCheckIn)}`,
     `Check-out: ${formatarDataComHorario(reserva.checkOut, reserva.horarioPrevistoCheckOut)}`,
-    `Hospedes: ${reserva.hospedesQuantidade}`,
+    `Hóspedes: ${formatarQuantidade(reserva.hospedesQuantidade, "hóspede", "hóspedes")}`,
     `Valor total: ${formatarMoedaHospede(reserva.financeiro.valorTotal)}`,
     `Valor pago: ${formatarMoedaHospede(reserva.financeiro.valorPago)}`,
     `Valor pendente: ${formatarMoedaHospede(reserva.financeiro.valorPendente)}`,
@@ -221,12 +229,12 @@ function obterStatusVoucher(reserva: ReservaHospedeDetalhe): VoucherStatus {
 }
 
 function formatarFormaPagamento(reserva: ReservaHospedeDetalhe) {
-  return reserva.formaPagamento ? LABEL_FORMA_PAGAMENTO[reserva.formaPagamento] : "Nao informada";
+  return reserva.formaPagamento ? LABEL_FORMA_PAGAMENTO[reserva.formaPagamento] : "Não informada";
 }
 
 function formatarDataComHorario(data: string, horario: string | null) {
   const horarioFormatado = formatarHorarioPrevisto(horario);
-  return horarioFormatado ? `${formatarDataHospede(data)} as ${horarioFormatado}` : formatarDataHospede(data);
+  return horarioFormatado ? `${formatarDataHospede(data)} às ${horarioFormatado}` : formatarDataHospede(data);
 }
 
 function formatarNoites(reserva: ReservaHospedeDetalhe) {

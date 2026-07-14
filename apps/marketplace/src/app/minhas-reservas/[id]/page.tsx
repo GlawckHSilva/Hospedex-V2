@@ -33,7 +33,7 @@ export default async function ReservaDetalhePage({
 
         {query.sucesso === "reserva-cancelada" ? (
           <div className="rounded-xl border border-success/25 bg-success/10 p-4 text-sm text-success dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
-            Reserva cancelada com sucesso. O proprietario foi notificado no
+            Reserva cancelada com sucesso. O proprietário foi notificado no
             gerenciamento.
           </div>
         ) : null}
@@ -49,7 +49,7 @@ export default async function ReservaDetalhePage({
         ) : !resultado.dados ? (
           <GuestStateCard
             estado="sem_permissao"
-            mensagem="Reserva nao encontrada ou sem permissao para esta conta."
+            mensagem="Reserva não encontrada ou sem permissão para esta conta."
           />
         ) : (
           <GuestReservationDetail reserva={resultado.dados} />
