@@ -116,6 +116,42 @@ export function AdminShell({
     ? logoConfiguracoesUrl ?? contexto.profile.avatar_url
     : contexto.profile.avatar_url;
   const configuracoesHref = gerenciamento ? "/configuracoes" : "/super-admin/configuracoes";
+  const topbar = (
+    <TopbarAdmin
+      acaoSairMenu={acaoSairMenu}
+      avatarUrl={avatarVisualUrl}
+      emailUsuario={contexto.profile.email}
+      gerenciamento={gerenciamento}
+      iniciaisUsuario={iniciaisUsuario}
+      nomeUsuario={nomeUsuario}
+      notificacoes={notificacoes}
+      onAbrirMenu={() => setMenuAberto(true)}
+      configuracoesHref={configuracoesHref}
+      tituloPerfil={tituloPerfil}
+    />
+  );
+  const sidebar = (
+    <SidebarAdmin
+      acaoSairSidebar={acaoSairSidebar}
+      gerenciamento={gerenciamento}
+      itens={itensMenu}
+      pathname={pathname}
+      tituloPerfil={tituloPerfil}
+    />
+  );
+  const conteudoPrincipal = (
+    <motion.main
+      animate={{ opacity: 1, y: 0 }}
+      className={cn("min-w-0", gerenciamento && "px-4 py-4 sm:px-5 lg:px-6 lg:py-5")}
+      // O conteudo principal precisa nascer visivel; se a animacao falhar,
+      // o usuario nao pode ficar com a pagina carregada e invisivel.
+      initial={false}
+      transition={{ duration: 0.28, ease: "easeOut" }}
+    >
+      <AvisoLicenca estadoLicenca={estadoLicenca} />
+      {children}
+    </motion.main>
+  );
 
   return (
     <div
@@ -128,40 +164,25 @@ export function AdminShell({
     >
       <InteractiveCardEffects />
 
-      <TopbarAdmin
-        acaoSairMenu={acaoSairMenu}
-        avatarUrl={avatarVisualUrl}
-        emailUsuario={contexto.profile.email}
-        gerenciamento={gerenciamento}
-        iniciaisUsuario={iniciaisUsuario}
-        nomeUsuario={nomeUsuario}
-        notificacoes={notificacoes}
-        onAbrirMenu={() => setMenuAberto(true)}
-        configuracoesHref={configuracoesHref}
-        tituloPerfil={tituloPerfil}
-      />
-
-      <div className="grid w-full gap-6 px-4 py-4 sm:px-5 lg:grid-cols-[272px_minmax(0,1fr)] lg:px-4">
-        <SidebarAdmin
-          acaoSairSidebar={acaoSairSidebar}
-          gerenciamento={gerenciamento}
-          itens={itensMenu}
-          pathname={pathname}
-          tituloPerfil={tituloPerfil}
-        />
-
-        <motion.main
-          animate={{ opacity: 1, y: 0 }}
-          className="min-w-0"
-          // O conteudo principal precisa nascer visivel; se a animacao falhar,
-          // o usuario nao pode ficar com a pagina carregada e invisivel.
-          initial={false}
-          transition={{ duration: 0.28, ease: "easeOut" }}
-        >
-          <AvisoLicenca estadoLicenca={estadoLicenca} />
-          {children}
-        </motion.main>
-      </div>
+      {gerenciamento ? (
+        // No Gerenciamento, a sidebar precisa nascer no topo da viewport para
+        // evitar a faixa vazia acima do menu e integrar melhor header/conteudo.
+        <div className="min-h-screen lg:grid lg:grid-cols-[272px_minmax(0,1fr)]">
+          {sidebar}
+          <div className="min-w-0">
+            {topbar}
+            {conteudoPrincipal}
+          </div>
+        </div>
+      ) : (
+        <>
+          {topbar}
+          <div className="grid w-full gap-6 px-4 py-4 sm:px-5 lg:grid-cols-[272px_minmax(0,1fr)] lg:px-4">
+            {sidebar}
+            {conteudoPrincipal}
+          </div>
+        </>
+      )}
 
       <AnimatePresence>
         {menuAberto ? (
@@ -461,7 +482,7 @@ function SidebarAdmin({
 
   return (
     <aside className="hidden min-h-0 lg:block">
-      <div className="sticky top-20 flex h-[calc(100dvh-5.5rem)] min-h-0 flex-col overflow-hidden border-r border-border/80 bg-card/72 px-4 py-4 shadow-[18px_0_50px_rgba(0,0,0,0.10)] dark:shadow-[18px_0_50px_rgba(0,0,0,0.16)] backdrop-blur-xl">
+      <div className="sticky top-0 flex h-screen min-h-0 flex-col overflow-hidden border-r border-border/80 bg-card/72 px-4 py-5 shadow-[18px_0_50px_rgba(0,0,0,0.10)] backdrop-blur-xl dark:shadow-[18px_0_50px_rgba(0,0,0,0.16)]">
         <div className="flex shrink-0 items-center gap-2 pb-5">
           <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
           <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
