@@ -229,7 +229,7 @@ function PropertyTopExperience({
 
   return (
     <section
-      className="relative isolate scroll-mt-24 overflow-hidden border-b border-white/10 bg-slate-950 px-0 pb-5 pt-0 text-white sm:px-6 lg:px-4 lg:pb-8 lg:pt-8"
+      className="relative isolate scroll-mt-24 overflow-hidden border-b border-border bg-background px-0 pb-5 pt-0 text-foreground dark:border-white/10 dark:bg-slate-950 dark:text-white sm:px-6 lg:px-4 lg:pb-8 lg:pt-8"
       id="fotos"
     >
       <div className="absolute right-4 top-4 z-10 lg:hidden">
@@ -239,19 +239,19 @@ function PropertyTopExperience({
         </FadeIn>
       </div>
 
-      <div className="mx-auto flex max-w-[1180px] flex-col text-white lg:justify-start">
+      <div className="mx-auto flex max-w-[1180px] flex-col text-foreground dark:text-white lg:justify-start">
         <FadeIn className="lg:hidden">
           <PropertyGallery mobileHero property={propriedade} />
         </FadeIn>
 
         <FadeIn className="hidden items-start gap-6 lg:flex">
           <div className="min-w-0">
-            <h1 className="max-w-4xl break-words text-4xl font-semibold leading-tight tracking-normal">
+            <h1 className="max-w-4xl break-words text-4xl font-semibold leading-tight tracking-normal text-foreground dark:text-white">
               {propriedade.name}
             </h1>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-300">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground dark:text-slate-300">
               <span className="inline-flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-cyan-300" />
+                <MapPin className="h-4 w-4 text-primary dark:text-cyan-300" />
                 {propriedade.locationLabel}
               </span>
               <span>
@@ -262,7 +262,7 @@ function PropertyTopExperience({
               </span>
               {propriedade.reviews.total ? (
                 <span className="inline-flex items-center gap-2">
-                  <Star className="h-4 w-4 fill-cyan-300 text-cyan-300" />
+                  <Star className="h-4 w-4 fill-primary text-primary dark:fill-cyan-300 dark:text-cyan-300" />
                   {propriedade.reviews.average?.toFixed(1)} em{" "}
                   {propriedade.reviews.total} avaliações
                 </span>
@@ -271,43 +271,43 @@ function PropertyTopExperience({
           </div>
         </FadeIn>
 
-        <FadeIn className="relative z-10 -mt-8 rounded-t-[2rem] border border-white/10 bg-slate-950 px-6 pb-5 pt-6 text-center text-white shadow-2xl shadow-black/30 sm:mx-0 lg:hidden">
-          <h1 className="mx-auto max-w-sm break-words text-3xl font-semibold leading-tight tracking-normal text-white">
+        <FadeIn className="relative z-10 -mt-8 rounded-t-[2rem] border border-border bg-card px-6 pb-5 pt-6 text-center text-foreground shadow-2xl shadow-cyan-950/10 dark:border-white/10 dark:bg-slate-950 dark:text-white dark:shadow-black/30 sm:mx-0 lg:hidden">
+          <h1 className="mx-auto max-w-sm break-words text-3xl font-semibold leading-tight tracking-normal text-foreground dark:text-white">
             {propriedade.name}
           </h1>
-          <p className="mt-2 text-sm leading-5 text-slate-300">
+          <p className="mt-2 text-sm leading-5 text-muted-foreground dark:text-slate-300">
             {propriedade.propertyTypeLabel} em {propriedade.locationLabel}
           </p>
-          <p className="mt-1 text-sm leading-5 text-slate-400">
+          <p className="mt-1 text-sm leading-5 text-muted-foreground dark:text-slate-400">
             {propriedade.maxGuests} hóspedes ·{" "}
             {formatarQuantidade(propriedade.structure.bedrooms)} quartos ·{" "}
             {formatarQuantidade(propriedade.structure.beds)} camas ·{" "}
             {formatarQuantidade(propriedade.structure.bathrooms)} banheiros
           </p>
-          <div className="mt-5 grid grid-cols-3 items-center divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-3 text-center">
+          <div className="mt-5 grid grid-cols-3 items-center divide-x divide-border rounded-2xl border border-border bg-background/70 px-2 py-3 text-center dark:divide-white/10 dark:border-white/10 dark:bg-white/[0.04]">
             {propriedade.reviews.total ? (
               <div className="px-2">
-                <p className="text-base font-semibold text-white">
+                <p className="text-base font-semibold text-foreground dark:text-white">
                   {propriedade.reviews.average?.toFixed(1)}
                 </p>
-                <p className="text-[11px] text-slate-400">avaliação</p>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">avaliação</p>
               </div>
             ) : (
               <div className="px-2">
-                <p className="text-base font-semibold text-white">Novo</p>
-                <p className="text-[11px] text-slate-400">anúncio</p>
+                <p className="text-base font-semibold text-foreground dark:text-white">Novo</p>
+                <p className="text-[11px] text-muted-foreground dark:text-slate-400">anúncio</p>
               </div>
             )}
             <div className="px-2">
-              <p className="text-sm font-semibold text-white">Casa</p>
-              <p className="text-[11px] text-slate-400">publicada</p>
+              <p className="text-sm font-semibold text-foreground dark:text-white">Casa</p>
+              <p className="text-[11px] text-muted-foreground dark:text-slate-400">publicada</p>
             </div>
             <div className="px-2">
-              <p className="text-base font-semibold text-white">{totalFotos}</p>
-              <p className="text-[11px] text-slate-400">fotos</p>
+              <p className="text-base font-semibold text-foreground dark:text-white">{totalFotos}</p>
+              <p className="text-[11px] text-muted-foreground dark:text-slate-400">fotos</p>
             </div>
           </div>
-          <div className="mt-5 flex items-center gap-3 border-t border-white/10 pt-5 text-left">
+          <div className="mt-5 flex items-center gap-3 border-t border-border pt-5 text-left dark:border-white/10">
             {perfil.avatarUrl ? (
               <img
                 alt={`Foto de ${nomeAnfitriao}`}
@@ -315,37 +315,37 @@ function PropertyTopExperience({
                 src={perfil.avatarUrl}
               />
             ) : (
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-cyan-300/15 text-sm font-semibold text-cyan-100">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent-soft text-sm font-semibold text-primary dark:bg-cyan-300/15 dark:text-cyan-100">
                 {iniciaisAnfitriao}
               </span>
             )}
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">
+              <p className="truncate text-sm font-semibold text-foreground dark:text-white">
                 Anfitrião: {nomeAnfitriao}
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-muted-foreground dark:text-slate-400">
                 Check-in {propriedade.checkIn} · Check-out{" "}
                 {propriedade.checkOut}
               </p>
             </div>
           </div>
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-left shadow-lg shadow-black/20">
+          <div className="mt-4 rounded-2xl border border-border bg-background/70 p-3 text-left shadow-lg shadow-cyan-950/10 dark:border-white/10 dark:bg-white/[0.04] dark:shadow-black/20">
             <div className="flex items-end justify-between gap-3">
               <div>
-                <p className="text-xs text-slate-400">Diária inicial</p>
-                <p className="mt-1 text-xl font-semibold text-white">
+                <p className="text-xs text-muted-foreground dark:text-slate-400">Diária inicial</p>
+                <p className="mt-1 text-xl font-semibold text-foreground dark:text-white">
                   {formatarPreco(propriedade.minPrice)}
-                  <span className="text-sm font-medium text-slate-400">
+                  <span className="text-sm font-medium text-muted-foreground dark:text-slate-400">
                     /noite
                   </span>
                 </p>
               </div>
-              <span className="rounded-full bg-cyan-300/12 px-2.5 py-1 text-xs font-semibold text-cyan-100">
+              <span className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-semibold text-primary dark:bg-cyan-300/12 dark:text-cyan-100">
                 Solicitação
               </span>
             </div>
             <a
-              className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-full bg-cyan-500 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-950/20 transition hover:bg-cyan-400"
+              className="mt-3 inline-flex h-12 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-cyan-950/20 transition hover:bg-primary-hover dark:bg-cyan-500 dark:text-white dark:hover:bg-cyan-400"
               href="#reserva"
             >
               Solicitar reserva

@@ -330,7 +330,9 @@ function GaleriaCompacta({
           aria-label={`Abrir foto ${indice + 1}`}
           className={cn(
             "group relative aspect-[1.45/1] overflow-hidden rounded-xl border bg-secondary",
-            indice === 0 ? "border-cyan-300" : "border-slate-700/70",
+            indice === 0
+              ? "border-primary dark:border-cyan-300"
+              : "border-border dark:border-slate-700/70",
           )}
           key={imagem.id}
           onClick={() => onAbrir(indice)}
@@ -348,7 +350,7 @@ function GaleriaCompacta({
       {imagens.length > 1 ? (
         <button
           aria-label="Ver todas as fotos"
-          className="grid aspect-[1.45/1] place-items-center rounded-xl border border-slate-700/70 bg-slate-900/80 text-center text-white transition hover:border-cyan-300/60 max-lg:col-span-2"
+          className="grid aspect-[1.45/1] place-items-center rounded-xl border border-border bg-card text-center text-foreground transition hover:border-primary/60 dark:border-slate-700/70 dark:bg-slate-900/80 dark:text-white dark:hover:border-cyan-300/60 max-lg:col-span-2"
           onClick={() => onAbrir(0)}
           type="button"
         >
@@ -356,7 +358,7 @@ function GaleriaCompacta({
             <strong className="block text-2xl">
               {imagens.length > 4 ? `+${imagens.length - 4}` : imagens.length}
             </strong>
-            <span className="mt-1 block text-sm text-slate-400">Ver todas</span>
+            <span className="mt-1 block text-sm text-muted-foreground dark:text-slate-400">Ver todas</span>
           </span>
         </button>
       ) : null}
@@ -449,8 +451,8 @@ function GaleriaImagemUnica({
               className={cn(
                 "h-16 w-24 shrink-0 overflow-hidden rounded-xl border transition",
                 indice === indiceAtivo
-                  ? "border-cyan-300 opacity-100"
-                  : "border-white/10 opacity-72 hover:opacity-100",
+                  ? "border-primary opacity-100 dark:border-cyan-300"
+                  : "border-border opacity-72 hover:opacity-100 dark:border-white/10",
               )}
               key={imagem.id}
               onClick={() => onSelecionar(indice)}

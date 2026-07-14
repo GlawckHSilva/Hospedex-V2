@@ -248,18 +248,18 @@ export default async function MarketplaceHomePage() {
           </div>
         </section>
 
-        <section className="bg-[#061323] px-4 py-7 sm:px-6" id="proprietarios">
-          <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] border border-cyan-200/15 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.22),transparent_34%),linear-gradient(135deg,#061323,#082338_52%,#064457)] p-5 text-white shadow-2xl shadow-black/25 sm:p-6">
-            <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(103,232,249,0.22),transparent_62%)] lg:block" />
+        <section className="bg-background px-4 py-7 sm:px-6" id="proprietarios">
+          <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] border border-border bg-[radial-gradient(circle_at_top_right,rgba(34,199,230,0.18),transparent_34%),linear-gradient(135deg,#ffffff,#f3fbfd_54%,#ddf5f8)] p-5 text-foreground shadow-2xl shadow-cyan-950/10 dark:border-cyan-200/15 dark:bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.22),transparent_34%),linear-gradient(135deg,#061323,#082338_52%,#064457)] dark:text-white dark:shadow-black/25 sm:p-6">
+            <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(0,122,158,0.16),transparent_62%)] dark:bg-[radial-gradient(circle_at_center,rgba(103,232,249,0.22),transparent_62%)] lg:block" />
             <div className="relative grid gap-5 lg:grid-cols-[1.12fr_auto_auto] lg:items-center">
               <div>
-                <span className="inline-flex rounded-full border border-cyan-200/25 bg-cyan-300/12 px-3 py-1 text-xs font-semibold text-cyan-100">
+                <span className="inline-flex rounded-full border border-primary/20 bg-accent-soft px-3 py-1 text-xs font-semibold text-primary dark:border-cyan-200/25 dark:bg-cyan-300/12 dark:text-cyan-100">
                   Para proprietários
                 </span>
-                <h2 className="mt-3 max-w-2xl text-balance text-2xl font-semibold tracking-normal text-white sm:text-[2rem] sm:leading-tight">
+                <h2 className="mt-3 max-w-2xl text-balance text-2xl font-semibold tracking-normal text-foreground dark:text-white sm:text-[2rem] sm:leading-tight">
                   Transforme sua hospedagem em uma nova fonte de renda.
                 </h2>
-                <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
+                <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground dark:text-slate-300">
                   Cadastre sua propriedade, organize reservas e receba
                   solicitações pelo Hospedex.
                 </p>
@@ -273,7 +273,7 @@ export default async function MarketplaceHomePage() {
                 <Link
                   className={cn(
                     buttonVariants({ size: "lg" }),
-                    "justify-center bg-cyan-300 text-slate-950 hover:bg-cyan-200",
+                    "justify-center bg-primary text-primary-foreground hover:bg-primary-hover dark:bg-cyan-300 dark:text-slate-950 dark:hover:bg-cyan-200",
                   )}
                   href="/anunciar"
                 >
@@ -283,7 +283,7 @@ export default async function MarketplaceHomePage() {
                 <Link
                   className={cn(
                     buttonVariants({ size: "lg", variant: "outline" }),
-                    "justify-center border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-cyan-100",
+                    "justify-center border-border bg-white text-foreground hover:border-primary/45 hover:text-primary dark:border-white/15 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:hover:text-cyan-100",
                   )}
                   href={
                     process.env.NEXT_PUBLIC_ADMIN_URL?.trim() ||
@@ -548,8 +548,8 @@ function SectionHeader({
 
 function OwnerStep({ number, text }: { number: string; text: string }) {
   return (
-    <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/14 bg-white/[0.055] px-3 py-2 text-white">
-      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">
+    <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-border bg-white px-3 py-2 text-foreground shadow-sm shadow-cyan-950/5 dark:border-white/14 dark:bg-white/[0.055] dark:text-white dark:shadow-none">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground dark:bg-cyan-300 dark:text-slate-950">
         {number}
       </span>
       <span className="whitespace-nowrap text-sm font-medium leading-tight">
