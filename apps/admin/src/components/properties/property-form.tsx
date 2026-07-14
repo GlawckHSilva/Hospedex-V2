@@ -13,6 +13,9 @@ import {
   Banknote,
   Camera,
   CheckCircle2,
+  Cloud,
+  CloudOff,
+  Copy,
   Clock3,
   CreditCard,
   GripVertical,
@@ -30,6 +33,7 @@ import {
   Trash2,
   WalletCards,
   Save,
+  RefreshCw,
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -46,9 +50,18 @@ import { usarAutenticacao } from "../auth/auth-provider";
 import {
   atualizarPropriedadeAction,
   criarPropriedadeAction,
+  salvarRascunhoPropriedadeAction,
   type ResultadoSalvarPropriedade,
 } from "../../lib/properties/actions";
-import type { PropriedadeComRelacionamentos } from "../../lib/properties/types";
+import {
+  lerRascunhoCasaLocal,
+  notificarRascunhoCasaAtualizado,
+  obterChaveRascunhoCasa,
+} from "../../lib/properties/property-draft-local";
+import type {
+  PropriedadeComRelacionamentos,
+  RascunhoFormularioCasa,
+} from "../../lib/properties/types";
 import {
   TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_BYTES,
   TAMANHO_MAXIMO_IMAGEM_PROPRIEDADE_MB,
@@ -68,6 +81,7 @@ export type PropertyFormProps = {
   modo: "criar" | "editar";
   podeGerenciar: boolean;
   propriedade?: PropriedadeComRelacionamentos;
+  userId?: string;
 };
 
 type EtapaId =
@@ -589,33 +603,22 @@ function validarFormularioCasa(
   return erros;
 }
 
-type CampoRascunhoCasa = {
-  checked?: boolean;
-  tipo: string;
-  valor: string;
-};
-
-type RascunhoCasaLocal = {
-  campos: Record<string, CampoRascunhoCasa[]>;
-  etapaAtual: number;
-  incluiArquivos: boolean;
-  operacaoId?: string;
-  salvoEm: string;
-  versao: 1;
-};
-
 type ControleFormularioCasa =
   | HTMLInputElement
   | HTMLSelectElement
   | HTMLTextAreaElement;
 
-function obterChaveRascunhoCasa(
-  modo: PropertyFormProps["modo"],
-  userId: string,
-  propriedadeId?: string,
-) {
-  return `hospedex:v2:rascunho-casa:${userId}:${modo}:${propriedadeId ?? "nova"}`;
-}
+type EstadoSincronizacaoRascunho =
+  | "aguardando"
+  | "falha"
+  | "local"
+  | "salvando"
+  | "servidor";
+
+type ConflitoRascunhoCasa = {
+  local: RascunhoFormularioCasa;
+  servidor: RascunhoFormularioCasa;
+};
 
 function deveIgnorarCampoRascunho(campo: ControleFormularioCasa) {
   if (!campo.name) return true;
@@ -628,8 +631,8 @@ function serializarRascunhoCasa(
   formulario: HTMLFormElement,
   etapaAtual: number,
   operacaoId: string,
-): RascunhoCasaLocal {
-  const campos: RascunhoCasaLocal["campos"] = {};
+): RascunhoFormularioCasa {
+  const campos: RascunhoFormularioCasa["campos"] = {};
   const controles = Array.from(
     formulario.querySelectorAll<ControleFormularioCasa>(
       "input, select, textarea",
@@ -644,7 +647,7 @@ function serializarRascunhoCasa(
 
     const valores = campos[campo.name] ?? [];
     if (campo instanceof HTMLInputElement) {
-      const valor: CampoRascunhoCasa = {
+      const valor: RascunhoFormularioCasa["campos"][string][number] = {
         tipo: campo.type,
         valor: campo.value,
       };
@@ -673,7 +676,7 @@ function serializarRascunhoCasa(
 
 function aplicarRascunhoCasa(
   formulario: HTMLFormElement,
-  rascunho: RascunhoCasaLocal,
+  rascunho: RascunhoFormularioCasa,
 ) {
   const controles = Array.from(
     formulario.querySelectorAll<ControleFormularioCasa>(
@@ -728,11 +731,20 @@ function obterEtapasComErro(erros: ErrosFormularioCasa): EtapaId[] {
   return Array.from(new Set(etapas));
 }
 
+function obterTextoSincronizacao(estado: EstadoSincronizacaoRascunho) {
+  if (estado === "salvando") return "Salvando rascunho...";
+  if (estado === "servidor") return "Todas as alteracoes foram salvas";
+  if (estado === "aguardando") return "Aguardando conexao";
+  if (estado === "falha") return "Falha na sincronizacao";
+  return "Salvo neste dispositivo";
+}
+
 export function PropertyForm({
   comodidadesDisponiveis,
   modo,
   podeGerenciar,
   propriedade,
+  userId,
 }: PropertyFormProps) {
   const { contexto } = usarAutenticacao();
   const router = useRouter();
@@ -742,13 +754,17 @@ export function PropertyForm({
   const erroServidor = searchParams.get("erro");
   const chaveRascunho = obterChaveRascunhoCasa(
     modo,
-    contexto?.userId ?? "usuario",
+    userId ?? contexto?.userId ?? "usuario",
     propriedade?.id,
   );
   const [etapaAtual, setEtapaAtual] = useState(0);
   const [errosCampos, setErrosCampos] = useState<ErrosFormularioCasa>({});
   const [erroImagem, setErroImagem] = useState<string | null>(null);
   const [avisoRascunho, setAvisoRascunho] = useState<string | null>(null);
+  const [conflitoRascunho, setConflitoRascunho] =
+    useState<ConflitoRascunhoCasa | null>(null);
+  const [estadoSincronizacao, setEstadoSincronizacao] =
+    useState<EstadoSincronizacaoRascunho>("local");
   const [previewCapa, setPreviewCapa] = useState<string | null>(null);
   const [imagemCapaId, setImagemCapaId] = useState<string | null>(null);
   const [operacaoId, setOperacaoId] = useState(
@@ -756,6 +772,9 @@ export function PropertyForm({
   );
   const [resultadoSalvamento, setResultadoSalvamento] =
     useState<ResultadoSalvarPropriedade | null>(null);
+  const [tipoFalha, setTipoFalha] = useState<
+    "salvamento" | "sincronizacao" | null
+  >(null);
   const [salvando, setSalvando] = useState(false);
   const salvandoRef = useRef(false);
   const [previewsGaleria, setPreviewsGaleria] = useState<PreviewGaleria[]>(() =>
@@ -775,6 +794,11 @@ export function PropertyForm({
   const galeriaRef = useRef<HTMLInputElement>(null);
   const arquivosGaleriaRef = useRef<File[]>([]);
   const timerRascunhoRef = useRef<number | null>(null);
+  const primeiraSincronizacaoRef = useRef(true);
+  const promessaSincronizacaoRef = useRef<Promise<boolean> | null>(null);
+  const sincronizarRascunhoAtualRef = useRef<() => Promise<boolean>>(
+    async () => false,
+  );
   const previewCapaRef = useRef<string | null>(null);
   const previewsGaleriaRef = useRef<PreviewGaleria[]>([]);
   const endereco = propriedade?.enderecoFormatado;
@@ -811,40 +835,28 @@ export function PropertyForm({
     const formulario = formRef.current;
     if (!formulario) return;
 
-    let rascunhoSalvo: string | null;
-    try {
-      rascunhoSalvo = window.localStorage.getItem(chaveRascunho);
-    } catch {
+    const rascunhoLocal = lerRascunhoCasaLocal(chaveRascunho);
+    const rascunhoServidor = propriedade?.rascunhoFormulario ?? null;
+
+    if (
+      rascunhoLocal &&
+      rascunhoServidor &&
+      rascunhoLocal.salvoEm !== rascunhoServidor.salvoEm
+    ) {
+      setConflitoRascunho({
+        local: rascunhoLocal,
+        servidor: rascunhoServidor,
+      });
+      setAvisoRascunho(
+        "Existem alteracoes diferentes neste dispositivo e no servidor. Escolha qual versao deseja recuperar.",
+      );
       return;
     }
-    if (!rascunhoSalvo) return;
 
-    try {
-      const rascunho = JSON.parse(rascunhoSalvo) as RascunhoCasaLocal;
-      if (rascunho.versao !== 1) return;
-
-      if (modo === "criar") {
-        setOperacaoId(rascunho.operacaoId ?? crypto.randomUUID());
-      }
-
-      aplicarRascunhoCasa(formulario, rascunho);
-      setEtapaAtual(
-        Math.min(Math.max(rascunho.etapaAtual, 0), ETAPAS.length - 1),
-      );
-      sincronizarEstadosControladosDoFormulario();
-      setAvisoRascunho(
-        rascunho.incluiArquivos
-          ? "Rascunho recuperado. Reenvie as imagens antes de salvar, pois o navegador nao restaura arquivos por seguranca."
-          : "Rascunho recuperado neste dispositivo.",
-      );
-    } catch {
-      try {
-        window.localStorage.removeItem(chaveRascunho);
-      } catch {
-        // Sem acao: armazenamento local pode estar indisponivel no navegador.
-      }
-    }
-  }, [chaveRascunho, modo]);
+    const rascunho = rascunhoLocal ?? rascunhoServidor;
+    if (!rascunho) return;
+    recuperarRascunho(rascunho, rascunhoLocal ? "local" : "servidor");
+  }, [chaveRascunho, modo, propriedade?.rascunhoFormulario]);
 
   useEffect(() => {
     if (modo === "criar" && !operacaoId) setOperacaoId(crypto.randomUUID());
@@ -879,24 +891,67 @@ export function PropertyForm({
     }
   }
 
-  function salvarRascunhoLocal(mensagem?: string | null) {
+  function recuperarRascunho(
+    rascunho: RascunhoFormularioCasa,
+    origem: "local" | "servidor",
+  ) {
     const formulario = formRef.current;
     if (!formulario) return;
 
-    // O rascunho local evita perda de dados quando a validacao do servidor
-    // rejeita o envio. Arquivos nao sao restauraveis por seguranca do browser.
-    const rascunho = serializarRascunhoCasa(
-      formulario,
-      etapaAtual,
-      operacaoId || propriedade?.id || crypto.randomUUID(),
+    if (modo === "criar") setOperacaoId(rascunho.operacaoId);
+    aplicarRascunhoCasa(formulario, rascunho);
+    setEtapaAtual(
+      Math.min(Math.max(rascunho.etapaAtual, 0), ETAPAS.length - 1),
+    );
+    sincronizarEstadosControladosDoFormulario();
+    setEstadoSincronizacao(origem === "servidor" ? "servidor" : "local");
+    setAvisoRascunho(
+      rascunho.incluiArquivos
+        ? "Rascunho recuperado. Selecione novamente as imagens locais antes de salvar."
+        : origem === "servidor"
+          ? "Rascunho recuperado do servidor."
+          : "Rascunho recuperado neste dispositivo.",
+    );
+  }
+
+  function escolherVersaoRascunho(rascunho: RascunhoFormularioCasa) {
+    recuperarRascunho(
+      rascunho,
+      conflitoRascunho?.servidor === rascunho ? "servidor" : "local",
     );
     try {
       window.localStorage.setItem(chaveRascunho, JSON.stringify(rascunho));
+      notificarRascunhoCasaAtualizado();
     } catch {
+      setEstadoSincronizacao("falha");
+    }
+    setConflitoRascunho(null);
+  }
+
+  function salvarRascunhoLocal(
+    mensagem?: string | null,
+    etapaOverride = etapaAtual,
+  ): RascunhoFormularioCasa | null {
+    const formulario = formRef.current;
+    if (!formulario || !operacaoId) return null;
+
+    // O rascunho local evita perda de dados quando a validacao do servidor
+    // rejeita o envio. Arquivos ficam fora do localStorage por seguranca.
+    const rascunho = serializarRascunhoCasa(
+      formulario,
+      etapaOverride,
+      operacaoId,
+    );
+    try {
+      window.localStorage.setItem(chaveRascunho, JSON.stringify(rascunho));
+      notificarRascunhoCasaAtualizado();
+      setEstadoSincronizacao(navigator.onLine ? "local" : "aguardando");
+    } catch {
+      setEstadoSincronizacao("falha");
       setAvisoRascunho(
         "Nao foi possivel salvar o rascunho neste navegador. Revise os campos destacados antes de sair.",
       );
-      return;
+      return null;
     }
     if (mensagem !== null) {
       setAvisoRascunho(
@@ -904,25 +959,125 @@ export function PropertyForm({
           "Rascunho salvo neste dispositivo. Voce pode corrigir os campos sem perder o que digitou.",
       );
     }
+    return rascunho;
   }
 
-  function agendarRascunhoLocal() {
+  async function executarSincronizacaoRascunho(
+    etapaOverride = etapaAtual,
+  ): Promise<boolean> {
+    const formulario = formRef.current;
+    const rascunho = salvarRascunhoLocal(null, etapaOverride);
+    if (!formulario || !rascunho) return false;
+    if (!navigator.onLine) {
+      setEstadoSincronizacao("aguardando");
+      setAvisoRascunho(
+        "Sem conexao. O rascunho foi salvo neste dispositivo e sera sincronizado quando a conexao voltar.",
+      );
+      return false;
+    }
+
+    setEstadoSincronizacao("salvando");
+    const dados = new FormData(formulario);
+    dados.delete("imagemCapaArquivo");
+    dados.delete("imagensGaleriaArquivos");
+    dados.set("operacaoId", rascunho.operacaoId);
+    dados.set("etapaWizard", String(etapaOverride + 1));
+    dados.set("rascunhoFormulario", JSON.stringify(rascunho));
+
+    try {
+      const resultado = await salvarRascunhoPropriedadeAction(dados);
+      if (!resultado.sucesso) {
+        setResultadoSalvamento(resultado);
+        setTipoFalha("sincronizacao");
+        setEstadoSincronizacao("falha");
+        setAvisoRascunho(
+          `${resultado.mensagem} Ele continua salvo neste dispositivo.`,
+        );
+        return false;
+      }
+
+      const sincronizado: RascunhoFormularioCasa = {
+        ...rascunho,
+        ...(resultado.sincronizadoEm
+          ? { sincronizadoEm: resultado.sincronizadoEm }
+          : {}),
+      };
+      window.localStorage.setItem(
+        chaveRascunho,
+        JSON.stringify(sincronizado),
+      );
+      notificarRascunhoCasaAtualizado();
+      setEstadoSincronizacao("servidor");
+      setAvisoRascunho("Todas as alteracoes foram salvas.");
+      setResultadoSalvamento(null);
+      setTipoFalha(null);
+      if (primeiraSincronizacaoRef.current) {
+        primeiraSincronizacaoRef.current = false;
+        router.refresh();
+      }
+      return true;
+    } catch (erro) {
+      console.error("Falha ao sincronizar o rascunho da casa.", erro);
+      setEstadoSincronizacao("falha");
+      setAvisoRascunho(
+        "Nao foi possivel conectar ao servidor. O rascunho foi salvo neste dispositivo.",
+      );
+      return false;
+    }
+  }
+
+  function sincronizarRascunho(
+    etapaOverride = etapaAtual,
+  ): Promise<boolean> {
+    if (promessaSincronizacaoRef.current) {
+      return promessaSincronizacaoRef.current;
+    }
+    const promessa = executarSincronizacaoRascunho(etapaOverride).finally(
+      () => {
+        promessaSincronizacaoRef.current = null;
+      },
+    );
+    promessaSincronizacaoRef.current = promessa;
+    return promessa;
+  }
+
+  function agendarSincronizacaoRascunho() {
     if (timerRascunhoRef.current) {
       window.clearTimeout(timerRascunhoRef.current);
     }
 
     timerRascunhoRef.current = window.setTimeout(() => {
-      salvarRascunhoLocal(null);
-    }, 700);
+      void sincronizarRascunho();
+    }, 1_000);
   }
 
   function descartarRascunhoLocal() {
     try {
       window.localStorage.removeItem(chaveRascunho);
+      notificarRascunhoCasaAtualizado();
     } catch {
       // Sem acao: o descarte visual ja remove o aviso para o usuario.
     }
     setAvisoRascunho(null);
+    setEstadoSincronizacao("local");
+  }
+
+  async function copiarDetalhesSuporte() {
+    const detalhes = {
+      codigo: resultadoSalvamento?.codigoSuporte ?? "SEM-CODIGO",
+      dataHora: new Date().toISOString(),
+      etapa: `${etapaAtual + 1}/${ETAPAS.length} - ${etapa.label}`,
+      operacao: modo === "editar" ? "editar-casa" : "criar-casa",
+      propriedadeId: operacaoId,
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(detalhes, null, 2));
+      setAvisoRascunho("Detalhes seguros copiados para o suporte.");
+    } catch {
+      setAvisoRascunho(
+        "Nao foi possivel copiar automaticamente. Informe o codigo exibido ao suporte.",
+      );
+    }
   }
 
   function validarImagem(arquivo?: File) {
@@ -1095,7 +1250,8 @@ export function PropertyForm({
 
   function aoAlterarFormulario(evento: FormEvent<HTMLFormElement>) {
     limparErroDoCampo(evento);
-    agendarRascunhoLocal();
+    salvarRascunhoLocal(null);
+    agendarSincronizacaoRascunho();
   }
 
   function removerErrosDosCampos(nomes: string[]) {
@@ -1143,12 +1299,15 @@ export function PropertyForm({
 
   function navegarParaEtapa(indiceDestino: number) {
     if (indiceDestino <= etapaAtual || validarAteEtapaDestino(indiceDestino)) {
+      void sincronizarRascunho(indiceDestino);
       setEtapaAtual(indiceDestino);
     }
   }
 
   function voltarEtapa() {
-    setEtapaAtual((indiceAtual) => Math.max(indiceAtual - 1, 0));
+    const destino = Math.max(etapaAtual - 1, 0);
+    void sincronizarRascunho(destino);
+    setEtapaAtual(destino);
   }
 
   function fecharWizard() {
@@ -1179,14 +1338,16 @@ export function PropertyForm({
     }
 
     setErrosCampos((errosAtuais) => removerErrosDaEtapa(errosAtuais, etapa.id));
-    setEtapaAtual((indiceAtual) =>
-      Math.min(indiceAtual + 1, ETAPAS.length - 1),
-    );
+    const destino = Math.min(etapaAtual + 1, ETAPAS.length - 1);
+    void sincronizarRascunho(destino);
+    setEtapaAtual(destino);
   }
 
   async function validarEnvio(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     if (salvandoRef.current) return;
+
+    salvarRascunhoLocal(null);
 
     if (!podeGerenciar || erroImagem) {
       salvarRascunhoLocal(
@@ -1226,13 +1387,15 @@ export function PropertyForm({
 
     setErrosCampos({});
     setResultadoSalvamento(null);
-    salvarRascunhoLocal(null);
     salvandoRef.current = true;
     setSalvando(true);
 
     try {
+      await sincronizarRascunho();
+      dados.set("etapaWizard", String(etapaAtual + 1));
       const resultado = await action(dados);
       setResultadoSalvamento(resultado);
+      setTipoFalha(resultado.sucesso ? null : "salvamento");
 
       if (!resultado.sucesso) {
         setAvisoRascunho(
@@ -1257,6 +1420,7 @@ export function PropertyForm({
           "Nao foi possivel confirmar o salvamento da casa. Seus dados foram mantidos. Verifique sua conexao e tente novamente.",
         sucesso: false,
       });
+      setTipoFalha("salvamento");
       setAvisoRascunho(
         "A confirmacao do servidor nao chegou. Tente salvar novamente; a mesma casa sera reutilizada.",
       );
@@ -1265,6 +1429,37 @@ export function PropertyForm({
       setSalvando(false);
     }
   }
+
+  sincronizarRascunhoAtualRef.current = () => sincronizarRascunho();
+
+  useEffect(() => {
+    function preservarAntesDeSair() {
+      const formulario = formRef.current;
+      if (!formulario || !operacaoId) return;
+      try {
+        const rascunho = serializarRascunhoCasa(
+          formulario,
+          etapaAtual,
+          operacaoId,
+        );
+        window.localStorage.setItem(chaveRascunho, JSON.stringify(rascunho));
+        notificarRascunhoCasaAtualizado();
+      } catch {
+        // O navegador pode bloquear armazenamento durante o fechamento.
+      }
+    }
+
+    function sincronizarAoVoltarConexao() {
+      void sincronizarRascunhoAtualRef.current();
+    }
+
+    window.addEventListener("beforeunload", preservarAntesDeSair);
+    window.addEventListener("online", sincronizarAoVoltarConexao);
+    return () => {
+      window.removeEventListener("beforeunload", preservarAntesDeSair);
+      window.removeEventListener("online", sincronizarAoVoltarConexao);
+    };
+  }, [chaveRascunho, etapaAtual, operacaoId]);
 
   function obterContextoValidacaoCasa() {
     return {
@@ -1299,6 +1494,17 @@ export function PropertyForm({
           etapasConcluidas={etapasConcluidas}
           onEtapaClick={(indice) => navegarParaEtapa(indice)}
         />
+        <div className="mt-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          {estadoSincronizacao === "salvando" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-600" />
+          ) : estadoSincronizacao === "aguardando" ||
+            estadoSincronizacao === "falha" ? (
+            <CloudOff className="h-3.5 w-3.5 text-amber-500" />
+          ) : (
+            <Cloud className="h-3.5 w-3.5 text-cyan-600" />
+          )}
+          {obterTextoSincronizacao(estadoSincronizacao)}
+        </div>
       </div>
 
       <div className="flex-1 px-5 py-6 pb-32 sm:px-8 sm:pb-36">
@@ -1315,6 +1521,85 @@ export function PropertyForm({
                 Codigo para suporte: {resultadoSalvamento.codigoSuporte}
               </p>
             ) : null}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {tipoFalha === "salvamento" ? (
+                <ActionButton
+                  icon={<RefreshCw className="h-4 w-4" />}
+                  onClick={() => formRef.current?.requestSubmit()}
+                  size="sm"
+                  type="button"
+                  variant="edit"
+                >
+                  Tentar novamente
+                </ActionButton>
+              ) : (
+                <ActionButton
+                  icon={<RefreshCw className="h-4 w-4" />}
+                  onClick={() => void sincronizarRascunho()}
+                  size="sm"
+                  type="button"
+                  variant="edit"
+                >
+                  Tentar sincronizar
+                </ActionButton>
+              )}
+              <ActionButton
+                icon={<Copy className="h-4 w-4" />}
+                onClick={() => void copiarDetalhesSuporte()}
+                size="sm"
+                type="button"
+                variant="view"
+              >
+                Copiar detalhes para o suporte
+              </ActionButton>
+              <ActionButton
+                onClick={() => {
+                  setResultadoSalvamento(null);
+                  setTipoFalha(null);
+                }}
+                size="sm"
+                type="button"
+                variant="view"
+              >
+                Continuar editando
+              </ActionButton>
+              <ActionButton
+                onClick={fecharWizard}
+                size="sm"
+                type="button"
+                variant="view"
+              >
+                Ver rascunhos
+              </ActionButton>
+            </div>
+          </div>
+        ) : null}
+        {conflitoRascunho ? (
+          <div className="mb-4 rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-3 text-sm">
+            <p className="font-semibold">Escolha a versao que deseja manter.</p>
+            <p className="mt-1 text-muted-foreground">
+              Nenhuma versao sera sobrescrita sem sua confirmacao.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <ActionButton
+                onClick={() => escolherVersaoRascunho(conflitoRascunho.local)}
+                size="sm"
+                type="button"
+                variant="view"
+              >
+                Usar versao deste dispositivo
+              </ActionButton>
+              <ActionButton
+                onClick={() =>
+                  escolherVersaoRascunho(conflitoRascunho.servidor)
+                }
+                size="sm"
+                type="button"
+                variant="edit"
+              >
+                Usar versao do servidor
+              </ActionButton>
+            </div>
           </div>
         ) : null}
         {avisoRascunho ? (
@@ -1471,7 +1756,7 @@ export function PropertyForm({
           <ActionButton
             disabled={!podeGerenciar || salvando}
             icon={<Save className="h-4 w-4" />}
-            onClick={() => salvarRascunhoLocal()}
+            onClick={() => void sincronizarRascunho()}
             size="md"
             type="button"
             variant="view"

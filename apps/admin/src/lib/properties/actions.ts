@@ -1,8 +1,10 @@
 "use server";
 
 import type {
+  JsonValue,
   MediaAssetRow,
   PropertyRow,
+  PropertySettingRow,
   PropertyStatus,
   PropertyType,
 } from "@hospedex/types";
@@ -26,7 +28,7 @@ import {
   type ClienteSupabaseServer,
   type EscopoGerenciamento,
 } from "./permissions";
-import type { EnderecoPropriedade } from "./types";
+import type { EnderecoPropriedade, RascunhoFormularioCasa } from "./types";
 import type {
   FormasPagamentoPropriedade,
   TipoCobrancaHospedeExtra,
@@ -130,8 +132,106 @@ export type ResultadoSalvarPropriedade = {
   codigoSuporte?: string;
   mensagem: string;
   propriedadeId?: string;
+  sincronizadoEm?: string;
   sucesso: boolean;
 };
+
+export async function salvarRascunhoPropriedadeAction(
+  formData: FormData,
+): Promise<ResultadoSalvarPropriedade> {
+  let escopo: EscopoGerenciamento | null = null;
+  const etapaWizard = textoOpcional(formData, "etapaWizard") ?? "desconhecida";
+
+  try {
+    escopo = await carregarEscopoGerenciamento();
+    const propriedadeId = uuidObrigatorio(formData, "operacaoId", "operacao");
+    const rascunho = obterRascunhoFormulario(formData, propriedadeId);
+    const supabase = await criarClienteSupabaseServer();
+
+    await garantirTenantOperacionalParaCasas(supabase, escopo.tenantId);
+    await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
+
+    const { data: existente, error: erroBusca } = await supabase
+      .from("properties")
+      .select("*")
+      .eq("id", propriedadeId)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId)
+      .is("deleted_at", null)
+      .maybeSingle<PropertyRow>();
+
+    if (erroBusca) {
+      throw erroOperacaoCasa(
+        erroBusca.message,
+        "Nao foi possivel verificar o rascunho no servidor.",
+      );
+    }
+
+    if (!existente) {
+      await garantirLimitePropriedades(supabase, escopo.tenantId);
+    }
+
+    // Casas publicadas nao recebem dados parciais nas colunas publicas.
+    // O autosave delas fica apenas no JSON interno protegido por RLS.
+    if (!existente || existente.status === "draft") {
+      const registroRascunho = montarRegistroRascunho(
+        formData,
+        escopo,
+        propriedadeId,
+        existente,
+      );
+      const { error: erroRascunho } = existente
+        ? await supabase
+            .from("properties")
+            .update(registroRascunho)
+            .eq("id", propriedadeId)
+            .eq("tenant_id", escopo.tenantId)
+            .eq("owner_id", escopo.ownerId)
+        : await supabase.from("properties").insert(registroRascunho);
+
+      if (erroRascunho) {
+        console.error("Erro bruto ao persistir a casa em rascunho.", {
+          mensagemTecnica: erroRascunho.message,
+          propriedadeId,
+          tenantId: escopo.tenantId,
+        });
+        throw erroOperacaoCasa(
+          erroRascunho.message,
+          "Nao foi possivel salvar o rascunho no servidor.",
+        );
+      }
+    }
+
+    await salvarPayloadRascunhoServidor(
+      supabase,
+      escopo.tenantId,
+      propriedadeId,
+      rascunho,
+    );
+
+    const sincronizadoEm = new Date().toISOString();
+    revalidatePath(CAMINHO_PROPRIEDADES);
+    return {
+      mensagem: "Rascunho salvo no servidor.",
+      propriedadeId,
+      sincronizadoEm,
+      sucesso: true,
+    };
+  } catch (erro) {
+    return criarResultadoErroCasa(
+      erro,
+      "Erro ao sincronizar rascunho da casa.",
+      escopo
+        ? {
+            ...montarContextoErroCasa("criar", escopo),
+            etapaWizard,
+            operacao: "sincronizar-rascunho",
+          }
+        : { acao: "criar", etapaWizard, operacao: "sincronizar-rascunho" },
+      textoOpcional(formData, "operacaoId") ?? undefined,
+    );
+  }
+}
 
 export async function criarPropriedadeAction(
   formData: FormData,
@@ -163,8 +263,8 @@ export async function criarPropriedadeAction(
     if (!existente) await garantirLimitePropriedades(supabase, escopo.tenantId);
 
     // O ID vem do rascunho local e permanece igual em novas tentativas.
-    const { error } = await supabase.from("properties").upsert(
-      {
+    // Se a resposta anterior se perdeu, atualizamos a mesma casa em vez de duplicar.
+    const registroPrincipal = {
         id: propriedadeId,
         tenant_id: escopo.tenantId,
         // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
@@ -184,19 +284,23 @@ export async function criarPropriedadeAction(
         structure_details: entrada.estrutura,
         pricing_details: entrada.valores,
         timezone: "America/Sao_Paulo",
-      },
-      { onConflict: "id" },
-    );
+      };
+    const { error } = existente
+      ? await supabase
+          .from("properties")
+          .update(registroPrincipal)
+          .eq("id", propriedadeId)
+          .eq("tenant_id", escopo.tenantId)
+          .eq("owner_id", escopo.ownerId)
+      : await supabase.from("properties").insert(registroPrincipal);
 
     if (error) {
-      if (process.env.NODE_ENV !== "production") {
-        console.error("Erro bruto ao inserir os dados principais da casa.", {
-          role: escopo.contexto.role,
-          tenantId: escopo.tenantId,
-          userId: escopo.contexto.userId,
-          mensagemTecnica: error.message,
-        });
-      }
+      console.error("Erro bruto ao inserir os dados principais da casa.", {
+        role: escopo.contexto.role,
+        tenantId: escopo.tenantId,
+        userId: escopo.contexto.userId,
+        mensagemTecnica: error.message,
+      });
       throw erroOperacaoCasa(error.message, ERRO_PERMISSAO_CASAS);
     }
 
@@ -209,6 +313,7 @@ export async function criarPropriedadeAction(
       propriedadeId,
       entrada,
     );
+    await limparRascunhoServidor(supabase, escopo.tenantId, propriedadeId);
     revalidarModulo();
     return {
       mensagem: "Casa criada com sucesso.",
@@ -219,7 +324,13 @@ export async function criarPropriedadeAction(
     return criarResultadoErroCasa(
       erro,
       "Erro ao criar propriedade.",
-      escopo ? montarContextoErroCasa("criar", escopo) : { acao: "criar" },
+      {
+        ...(escopo
+          ? montarContextoErroCasa("criar", escopo)
+          : { acao: "criar" }),
+        etapaWizard: textoOpcional(formData, "etapaWizard") ?? "desconhecida",
+        operacao: "salvamento-final",
+      },
       textoOpcional(formData, "operacaoId") ?? undefined,
     );
   }
@@ -295,6 +406,11 @@ export async function atualizarPropriedadeAction(
       propriedade.id,
       entrada,
     );
+    await limparRascunhoServidor(
+      supabase,
+      escopo.tenantId,
+      propriedade.id,
+    );
     revalidarModulo();
     return {
       mensagem: "Casa atualizada com sucesso.",
@@ -305,9 +421,13 @@ export async function atualizarPropriedadeAction(
     return criarResultadoErroCasa(
       erro,
       "Erro ao atualizar propriedade.",
-      escopo
-        ? montarContextoErroCasa("atualizar", escopo)
-        : { acao: "atualizar" },
+      {
+        ...(escopo
+          ? montarContextoErroCasa("atualizar", escopo)
+          : { acao: "atualizar" }),
+        etapaWizard: textoOpcional(formData, "etapaWizard") ?? "desconhecida",
+        operacao: "salvamento-final",
+      },
       textoOpcional(formData, "propriedadeId") ?? undefined,
     );
   }
@@ -583,6 +703,234 @@ export async function atualizarRegrasReservaAction(formData: FormData) {
   }
 
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=regras-reserva-atualizadas`);
+}
+
+function obterRascunhoFormulario(
+  formData: FormData,
+  propriedadeId: string,
+): RascunhoFormularioCasa {
+  const conteudo = textoObrigatorio(
+    formData,
+    "rascunhoFormulario",
+    "rascunho da casa",
+  );
+  if (conteudo.length > 250_000) {
+    throw new ErroRegraNegocio("O rascunho ultrapassou o limite permitido.");
+  }
+
+  let valor: unknown;
+  try {
+    valor = JSON.parse(conteudo);
+  } catch {
+    throw new ErroRegraNegocio("O rascunho recebido e invalido.");
+  }
+
+  if (
+    !ehObjetoDesconhecido(valor) ||
+    valor.versao !== 1 ||
+    valor.operacaoId !== propriedadeId ||
+    typeof valor.salvoEm !== "string" ||
+    !ehObjetoDesconhecido(valor.campos)
+  ) {
+    throw new ErroRegraNegocio("O rascunho recebido e invalido.");
+  }
+
+  const campos: RascunhoFormularioCasa["campos"] = {};
+  for (const [nome, entradas] of Object.entries(valor.campos).slice(0, 160)) {
+    if (
+      /(token|senha|password|secret|credential|api.?key)/i.test(nome) ||
+      !Array.isArray(entradas)
+    ) {
+      continue;
+    }
+
+    campos[nome] = entradas.slice(0, 50).flatMap((entrada) => {
+      if (
+        !ehObjetoDesconhecido(entrada) ||
+        typeof entrada.tipo !== "string" ||
+        typeof entrada.valor !== "string"
+      ) {
+        return [];
+      }
+      return [
+        {
+          ...(typeof entrada.checked === "boolean"
+            ? { checked: entrada.checked }
+            : {}),
+          tipo: entrada.tipo.slice(0, 40),
+          valor: entrada.valor.slice(0, 12_000),
+        },
+      ];
+    });
+  }
+
+  return {
+    campos,
+    etapaAtual:
+      typeof valor.etapaAtual === "number"
+        ? Math.max(0, Math.min(7, Math.trunc(valor.etapaAtual)))
+        : 0,
+    incluiArquivos: valor.incluiArquivos === true,
+    operacaoId: propriedadeId,
+    salvoEm: valor.salvoEm,
+    ...(typeof valor.sincronizadoEm === "string"
+      ? { sincronizadoEm: valor.sincronizadoEm }
+      : {}),
+    versao: 1,
+  };
+}
+
+function montarRegistroRascunho(
+  formData: FormData,
+  escopo: EscopoGerenciamento,
+  propriedadeId: string,
+  existente: PropertyRow | null,
+) {
+  const nome = textoOpcional(formData, "nome") || existente?.name || "Casa em cadastro";
+  const tipoInformado = textoOpcional(formData, "tipo");
+  const tipo = TIPOS_PROPRIEDADE.includes(tipoInformado as PropertyType)
+    ? (tipoInformado as PropertyType)
+    : existente?.property_type || "seasonal_home";
+  const enderecoAtual = objetoJson(existente?.address);
+  const estruturaAtual = objetoJson(existente?.structure_details);
+  const valoresAtuais = objetoJson(existente?.pricing_details);
+
+  return {
+    id: propriedadeId,
+    tenant_id: escopo.tenantId,
+    owner_id: escopo.ownerId,
+    name: nome,
+    slug: existente?.slug || gerarIdentificadorUrl(nome, propriedadeId),
+    property_type: tipo,
+    status: "draft" as const,
+    headline: textoOpcional(formData, "descricaoCurta") || existente?.headline,
+    description:
+      textoOpcional(formData, "descricaoCompleta") || existente?.description,
+    short_description:
+      textoOpcional(formData, "descricaoCurta") || existente?.short_description,
+    full_description:
+      textoOpcional(formData, "descricaoCompleta") || existente?.full_description,
+    is_public: false,
+    marketplace_featured: false,
+    public_details: existente?.public_details || {},
+    address: {
+      ...enderecoAtual,
+      cidade: textoOpcional(formData, "cidade") || enderecoAtual.cidade || "",
+      estado: textoOpcional(formData, "estado") || enderecoAtual.estado || "",
+      linha1: textoOpcional(formData, "endereco") || enderecoAtual.linha1 || "",
+    },
+    structure_details: {
+      ...estruturaAtual,
+      banheiros: numeroRascunho(formData, "banheirosCasa", estruturaAtual.banheiros),
+      hospedesMaximos: numeroRascunho(
+        formData,
+        "hospedesMaximos",
+        estruturaAtual.hospedesMaximos,
+      ),
+      quartos: numeroRascunho(formData, "quartos", estruturaAtual.quartos),
+    },
+    pricing_details: {
+      ...valoresAtuais,
+      valorDiaria: numeroRascunho(formData, "valorDiaria", valoresAtuais.valorDiaria),
+    },
+    timezone: existente?.timezone || "America/Sao_Paulo",
+  };
+}
+
+async function salvarPayloadRascunhoServidor(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedadeId: string,
+  rascunho: RascunhoFormularioCasa,
+) {
+  const { data: configuracao, error: erroBusca } = await supabase
+    .from("property_settings")
+    .select("settings")
+    .eq("property_id", propriedadeId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle<Pick<PropertySettingRow, "settings">>();
+
+  if (erroBusca) {
+    throw erroOperacaoCasa(
+      erroBusca.message,
+      "Nao foi possivel carregar o rascunho do servidor.",
+    );
+  }
+
+  const settings = objetoJson(configuracao?.settings);
+  const { error } = await supabase.from("property_settings").upsert(
+    {
+      property_id: propriedadeId,
+      tenant_id: tenantId,
+      settings: {
+        ...settings,
+        formDraft: rascunho as unknown as JsonValue,
+      },
+    },
+    { onConflict: "property_id" },
+  );
+
+  if (error) {
+    console.error("Erro bruto ao persistir o payload do rascunho da casa.", {
+      mensagemTecnica: error.message,
+      propriedadeId,
+      tenantId,
+    });
+    throw erroOperacaoCasa(
+      error.message,
+      "Nao foi possivel salvar o rascunho no servidor.",
+    );
+  }
+}
+
+async function limparRascunhoServidor(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedadeId: string,
+) {
+  const { data, error: erroBusca } = await supabase
+    .from("property_settings")
+    .select("settings")
+    .eq("property_id", propriedadeId)
+    .eq("tenant_id", tenantId)
+    .maybeSingle<Pick<PropertySettingRow, "settings">>();
+  if (erroBusca || !data) return;
+
+  const settings = objetoJson(data.settings);
+  if (!("formDraft" in settings)) return;
+  delete settings.formDraft;
+
+  const { error } = await supabase
+    .from("property_settings")
+    .update({ settings })
+    .eq("property_id", propriedadeId)
+    .eq("tenant_id", tenantId);
+  if (error) {
+    throw erroOperacaoCasa(
+      error.message,
+      "A casa foi salva, mas nao foi possivel finalizar o rascunho.",
+    );
+  }
+}
+
+function objetoJson(valor: JsonValue | undefined): Record<string, JsonValue> {
+  return ehObjetoDesconhecido(valor) && !Array.isArray(valor)
+    ? (valor as Record<string, JsonValue>)
+    : {};
+}
+
+function ehObjetoDesconhecido(valor: unknown): valor is Record<string, unknown> {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+function numeroRascunho(
+  formData: FormData,
+  chave: string,
+  anterior: JsonValue | undefined,
+) {
+  const texto = textoOpcional(formData, chave)?.replace(",", ".");
+  const numero = texto ? Number(texto) : Number(anterior);
+  return Number.isFinite(numero) && numero >= 0 ? numero : 0;
 }
 
 function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
@@ -1810,9 +2158,11 @@ function criarResultadoErroCasa(
   console.error(mensagemLog, {
     codigoSuporte,
     contexto,
+    dataHora: new Date().toISOString(),
     mensagemTecnica,
     mensagemUsuario: mensagem,
     propriedadeId,
+    stack: erro instanceof Error ? erro.stack : undefined,
   });
 
   return {
@@ -1859,7 +2209,13 @@ function traduzirErroSupabase(
   ) {
     return "Sessão expirada. Entre novamente.";
   }
-  if (mensagem.includes("network") || mensagem.includes("fetch failed")) {
+  if (
+    mensagem.includes("network") ||
+    mensagem.includes("fetch failed") ||
+    mensagem.includes("timeout") ||
+    mensagem.includes("timed out") ||
+    mensagem.includes("aborted")
+  ) {
     return "Falha de conexão com o Supabase. Tente novamente em instantes.";
   }
 

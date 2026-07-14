@@ -1,8 +1,8 @@
 "use client";
 
-import { Building2, Crown, Plus, Search } from "lucide-react";
+import { Building2, CloudOff, Crown, Plus, Search } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Badge, Card, CardContent, FadeIn } from "@hospedex/ui";
 
@@ -14,6 +14,11 @@ import type {
   PropriedadeComRelacionamentos,
   SearchParamsModulo,
 } from "../../lib/properties/types";
+import {
+  EVENTO_RASCUNHO_CASA,
+  listarRascunhosCasasLocais,
+  obterCampoRascunho,
+} from "../../lib/properties/property-draft-local";
 import { PropertyCard } from "./property-card";
 import { PropertyForm } from "./property-form";
 
@@ -28,6 +33,7 @@ import { PropertyForm } from "./property-form";
 export type PropertyModuleProps = DadosModuloPropriedades &
   SearchParamsModulo & {
     tenantNome: string;
+    userId: string;
   };
 
 type FiltroStatus = "todos" | "ativas" | "inativas";
@@ -60,6 +66,7 @@ export function PropertyModule({
   podeGerenciar,
   propriedades,
   sucesso,
+  userId,
 }: PropertyModuleProps) {
   return (
     <FadeIn className="space-y-5">
@@ -109,6 +116,7 @@ export function PropertyModule({
         comodidadesDisponiveis={comodidadesDisponiveis}
         podeGerenciar={podeGerenciar}
         propriedades={propriedades}
+        userId={userId}
       />
     </FadeIn>
   );
@@ -118,18 +126,41 @@ function VisaoPropriedades({
   comodidadesDisponiveis,
   podeGerenciar,
   propriedades,
+  userId,
 }: Pick<
   PropertyModuleProps,
-  "comodidadesDisponiveis" | "podeGerenciar" | "propriedades"
+  "comodidadesDisponiveis" | "podeGerenciar" | "propriedades" | "userId"
 >) {
   const [busca, setBusca] = useState("");
   const [status, setStatus] = useState<FiltroStatus>("todos");
   const [publicacao, setPublicacao] = useState<FiltroPublicacao>("todas");
   const [ordem, setOrdem] = useState<OrdenacaoCasas>("recentes");
+  const [rascunhosLocais, setRascunhosLocais] = useState(() =>
+    listarRascunhosCasasLocais(userId),
+  );
   const propriedadesFiltradas = useMemo(
     () => filtrarPropriedades(propriedades, { busca, ordem, publicacao, status }),
     [busca, ordem, propriedades, publicacao, status],
   );
+  const idsServidor = useMemo(
+    () => new Set(propriedades.map((propriedade) => propriedade.id)),
+    [propriedades],
+  );
+  const rascunhosPendentes = rascunhosLocais.filter(
+    (rascunho) => !idsServidor.has(rascunho.operacaoId),
+  );
+
+  useEffect(() => {
+    const atualizar = () =>
+      setRascunhosLocais(listarRascunhosCasasLocais(userId));
+    atualizar();
+    window.addEventListener(EVENTO_RASCUNHO_CASA, atualizar);
+    window.addEventListener("storage", atualizar);
+    return () => {
+      window.removeEventListener(EVENTO_RASCUNHO_CASA, atualizar);
+      window.removeEventListener("storage", atualizar);
+    };
+  }, [userId]);
 
   return (
     <>
@@ -184,9 +215,37 @@ function VisaoPropriedades({
           <BotaoNovaCasa
             comodidadesDisponiveis={comodidadesDisponiveis}
             podeGerenciar={podeGerenciar}
+            userId={userId}
           />
         </CardContent>
       </Card>
+
+      {rascunhosPendentes.map((rascunho) => (
+        <Card
+          className="admin-glass-card border-amber-400/30"
+          key={rascunho.operacaoId}
+        >
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <CloudOff className="mt-0.5 h-5 w-5 text-amber-500" />
+              <div>
+                <p className="font-semibold">
+                  {obterCampoRascunho(rascunho, "nome") || "Casa sem titulo"}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Salvo neste dispositivo — aguardando sincronizacao.
+                </p>
+              </div>
+            </div>
+            <BotaoNovaCasa
+              comodidadesDisponiveis={comodidadesDisponiveis}
+              podeGerenciar={podeGerenciar}
+              triggerLabel="Continuar rascunho"
+              userId={userId}
+            />
+          </CardContent>
+        </Card>
+      ))}
 
       {propriedadesFiltradas.length > 0 ? (
         <>
@@ -215,6 +274,7 @@ function VisaoPropriedades({
               <BotaoNovaCasa
                 comodidadesDisponiveis={comodidadesDisponiveis}
                 podeGerenciar={podeGerenciar}
+                userId={userId}
               />
             ) : null
           }
@@ -238,7 +298,11 @@ function VisaoPropriedades({
 function BotaoNovaCasa({
   comodidadesDisponiveis,
   podeGerenciar,
-}: Pick<PropertyModuleProps, "comodidadesDisponiveis" | "podeGerenciar">) {
+  triggerLabel = "Nova casa",
+  userId,
+}: Pick<PropertyModuleProps, "comodidadesDisponiveis" | "podeGerenciar" | "userId"> & {
+  triggerLabel?: string;
+}) {
   return (
     <EntityModal
       description="Cadastre as informacoes principais para publicar sua hospedagem."
@@ -248,13 +312,14 @@ function BotaoNovaCasa({
       title="Nova casa"
       triggerClassName="h-11 justify-center"
       triggerIcon={<Plus className="h-4 w-4" />}
-      triggerLabel="Nova casa"
+      triggerLabel={triggerLabel}
       triggerVariant="default"
     >
       <PropertyForm
         comodidadesDisponiveis={comodidadesDisponiveis}
         modo="criar"
         podeGerenciar={podeGerenciar}
+        userId={userId}
       />
     </EntityModal>
   );

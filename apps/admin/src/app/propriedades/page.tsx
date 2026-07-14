@@ -46,6 +46,7 @@ export default async function PropriedadesPage({ searchParams }: PageProps) {
         erro={lerParametro(params, "erro")}
         sucesso={lerParametro(params, "sucesso")}
         tenantNome={contexto.tenant.name}
+        userId={contexto.userId}
       />
     </AdminLayoutBase>
   );

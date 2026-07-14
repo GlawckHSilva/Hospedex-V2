@@ -19,6 +19,7 @@ import type {
   FormasPagamentoPropriedade,
   LimitesPlanoPropriedades,
   PropriedadeComRelacionamentos,
+  RascunhoFormularioCasa,
   TipoChavePixPropriedade,
   ValoresPropriedade,
 } from "./types";
@@ -211,21 +212,70 @@ function montarPropriedades(
     vinculosComodidades,
   );
 
-  return propriedades.map((propriedade) => ({
-    ...propriedade,
-    detalhesPublicos: normalizarDetalhesPublicos(propriedade.public_details),
-    enderecoFormatado: normalizarEndereco(propriedade.address),
-    estrutura: normalizarEstrutura(propriedade.structure_details),
-    imagemCapa: obterImagemPrincipal(
-      imagensPorPropriedade.get(propriedade.id) ?? [],
-    ),
-    imagens: imagensPorPropriedade.get(propriedade.id) ?? [],
-    comodidades: comodidadesPorPropriedade.get(propriedade.id) ?? [],
-    regras:
+  return propriedades.map((propriedade) => {
+    const regras =
       configuracoesPorPropriedade.get(propriedade.id) ??
-      criarRegrasPadrao(propriedade),
-    valores: normalizarValores(propriedade.pricing_details),
-  }));
+      criarRegrasPadrao(propriedade);
+
+    return {
+      ...propriedade,
+      detalhesPublicos: normalizarDetalhesPublicos(propriedade.public_details),
+      enderecoFormatado: normalizarEndereco(propriedade.address),
+      estrutura: normalizarEstrutura(propriedade.structure_details),
+      imagemCapa: obterImagemPrincipal(
+        imagensPorPropriedade.get(propriedade.id) ?? [],
+      ),
+      imagens: imagensPorPropriedade.get(propriedade.id) ?? [],
+      comodidades: comodidadesPorPropriedade.get(propriedade.id) ?? [],
+      regras,
+      rascunhoFormulario: normalizarRascunhoFormulario(regras.settings),
+      valores: normalizarValores(propriedade.pricing_details),
+    };
+  });
+}
+
+function normalizarRascunhoFormulario(
+  settings: JsonValue,
+): RascunhoFormularioCasa | null {
+  const configuracoes = valorEhObjeto(settings) ? settings : {};
+  const valor = configuracoes.formDraft;
+  if (!valorEhObjeto(valor) || valor.versao !== 1) return null;
+  if (
+    typeof valor.operacaoId !== "string" ||
+    typeof valor.salvoEm !== "string" ||
+    typeof valor.etapaAtual !== "number" ||
+    typeof valor.incluiArquivos !== "boolean" ||
+    !valorEhObjeto(valor.campos)
+  ) {
+    return null;
+  }
+
+  const campos: RascunhoFormularioCasa["campos"] = {};
+  for (const [nome, itens] of Object.entries(valor.campos)) {
+    if (!Array.isArray(itens)) continue;
+    campos[nome] = itens
+      .filter(valorEhObjeto)
+      .filter(
+        (item) => typeof item.tipo === "string" && typeof item.valor === "string",
+      )
+      .map((item) => ({
+        ...(typeof item.checked === "boolean" ? { checked: item.checked } : {}),
+        tipo: item.tipo as string,
+        valor: item.valor as string,
+      }));
+  }
+
+  return {
+    campos,
+    etapaAtual: valor.etapaAtual,
+    incluiArquivos: valor.incluiArquivos,
+    operacaoId: valor.operacaoId,
+    salvoEm: valor.salvoEm,
+    ...(typeof valor.sincronizadoEm === "string"
+      ? { sincronizadoEm: valor.sincronizadoEm }
+      : {}),
+    versao: 1,
+  };
 }
 
 function indexarPorPropriedade<TItem extends { property_id: string | null }>(
@@ -533,7 +583,7 @@ function obterBooleanoJson(
   return valor[chave] === true;
 }
 
-function valorEhObjeto(valor: JsonValue): valor is Record<string, JsonValue> {
+function valorEhObjeto(valor: unknown): valor is Record<string, JsonValue> {
   return Boolean(valor) && typeof valor === "object" && !Array.isArray(valor);
 }
 

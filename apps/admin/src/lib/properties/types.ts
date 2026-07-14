@@ -33,6 +33,22 @@ export type DetalhesPublicosPropriedade = {
   tituloPublico: string;
 };
 
+export type CampoRascunhoCasa = {
+  checked?: boolean;
+  tipo: string;
+  valor: string;
+};
+
+export type RascunhoFormularioCasa = {
+  campos: Record<string, CampoRascunhoCasa[]>;
+  etapaAtual: number;
+  incluiArquivos: boolean;
+  operacaoId: string;
+  salvoEm: string;
+  sincronizadoEm?: string;
+  versao: 1;
+};
+
 export type EstruturaPropriedade = {
   areaExterna: boolean;
   banheiros: number;
@@ -117,6 +133,7 @@ export type PropriedadeComRelacionamentos = PropertyRow & {
   imagens: MediaAssetRow[];
   comodidades: AmenityRow[];
   regras: PropertySettingRow;
+  rascunhoFormulario: RascunhoFormularioCasa | null;
   valores: ValoresPropriedade;
 };
 
