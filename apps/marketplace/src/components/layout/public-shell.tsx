@@ -83,10 +83,10 @@ export function PublicShell({ children }: PublicShellProps) {
       <main>{children}</main>
       <footer className="bg-[#061323] text-white shadow-[0_-24px_80px_rgba(0,0,0,0.24)]">
         <div className="h-px bg-gradient-to-r from-transparent via-cyan-300/75 to-transparent" />
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.2fr_0.9fr_1.05fr_0.9fr] lg:gap-9 lg:py-9">
+        <div className="mx-auto grid max-w-7xl gap-7 px-4 py-7 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.12fr_0.72fr_0.95fr_0.78fr] lg:gap-10 lg:py-8">
           <section className="max-w-sm">
             <FooterBrand />
-            <p className="mt-4 text-sm leading-6 text-slate-300">
+            <p className="mt-3 text-sm leading-6 text-slate-300">
               Casas, pousadas e pequenos hotéis independentes para sua próxima
               viagem.
             </p>
@@ -115,33 +115,28 @@ export function PublicShell({ children }: PublicShellProps) {
             ) : null}
           </section>
 
-          <nav
-            aria-label="Rodape do Marketplace"
-            className="grid gap-7 md:col-span-2 md:grid-cols-3 lg:col-span-3"
-          >
-            {footerNavigation.map((grupo) => (
-              <div className="min-w-0" key={grupo.title}>
-                <strong className="text-sm font-semibold text-white">
-                  {grupo.title}
-                </strong>
-                <ul className="mt-3 grid gap-2 text-sm">
-                  {grupo.links.map((link) => (
-                    <li key={link.label}>
-                      <FooterLink {...link} />
-                    </li>
-                  ))}
-                </ul>
-                {grupo.title === "Informações" ? (
-                  <p className="mt-3 text-sm leading-5 text-slate-400">
-                    Novidades por e-mail em breve.
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </nav>
+          {footerNavigation.map((grupo) => (
+            <nav aria-label={grupo.title} className="min-w-0" key={grupo.title}>
+              <strong className="text-sm font-semibold text-white">
+                {grupo.title}
+              </strong>
+              <ul className="mt-3 grid gap-1.5 text-sm">
+                {grupo.links.map((link) => (
+                  <li key={link.label}>
+                    <FooterLink {...link} />
+                  </li>
+                ))}
+              </ul>
+              {grupo.title === "Informações" ? (
+                <p className="mt-3 text-sm leading-5 text-slate-400">
+                  Novidades por e-mail em breve.
+                </p>
+              ) : null}
+            </nav>
+          ))}
         </div>
         <div className="border-t border-white/10 bg-white/[0.025]">
-          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-4 text-center text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:text-left">
+          <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-3 text-center text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:text-left">
             <span>
               © {new Date().getFullYear()} Hospedex. Todos os direitos
               reservados.
@@ -163,7 +158,7 @@ type FooterLinkProps = {
 
 function FooterLink({ external, href, icon: Icone, label }: FooterLinkProps) {
   const className =
-    "inline-flex min-h-8 max-w-full items-center gap-1.5 rounded-lg text-slate-300 transition hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45";
+    "inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-lg text-slate-300 transition hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/45";
 
   if (external) {
     return (
@@ -174,7 +169,7 @@ function FooterLink({ external, href, icon: Icone, label }: FooterLinkProps) {
         target="_blank"
       >
         {Icone ? <Icone className="h-3.5 w-3.5" /> : null}
-        <span>{label}</span>
+        <span className="whitespace-nowrap">{label}</span>
         <ArrowUpRight className="h-3.5 w-3.5" />
       </a>
     );

@@ -248,18 +248,15 @@ export default async function MarketplaceHomePage() {
           </div>
         </section>
 
-        <section
-          className="mx-auto max-w-7xl px-4 pb-8 pt-5 sm:px-6"
-          id="proprietarios"
-        >
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-cyan-200/15 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.25),transparent_34%),linear-gradient(135deg,#061323,#082338_52%,#064457)] p-5 text-white shadow-2xl shadow-cyan-950/20 sm:p-6">
+        <section className="bg-[#061323] px-4 py-7 sm:px-6" id="proprietarios">
+          <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] border border-cyan-200/15 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.22),transparent_34%),linear-gradient(135deg,#061323,#082338_52%,#064457)] p-5 text-white shadow-2xl shadow-black/25 sm:p-6">
             <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(103,232,249,0.22),transparent_62%)] lg:block" />
-            <div className="relative grid gap-5 lg:grid-cols-[1.08fr_0.95fr_auto] lg:items-center">
+            <div className="relative grid gap-5 lg:grid-cols-[1.12fr_auto_auto] lg:items-center">
               <div>
                 <span className="inline-flex rounded-full border border-cyan-200/25 bg-cyan-300/12 px-3 py-1 text-xs font-semibold text-cyan-100">
                   Para proprietários
                 </span>
-                <h2 className="mt-3 text-balance text-2xl font-semibold tracking-normal text-white sm:text-3xl">
+                <h2 className="mt-3 max-w-2xl text-balance text-2xl font-semibold tracking-normal text-white sm:text-[2rem] sm:leading-tight">
                   Transforme sua hospedagem em uma nova fonte de renda.
                 </h2>
                 <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">
@@ -267,7 +264,7 @@ export default async function MarketplaceHomePage() {
                   solicitações pelo Hospedex.
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="flex flex-wrap gap-2 lg:justify-center">
                 <OwnerStep number="1" text="Cadastre" />
                 <OwnerStep number="2" text="Publique" />
                 <OwnerStep number="3" text="Receba solicitações" />
@@ -551,11 +548,13 @@ function SectionHeader({
 
 function OwnerStep({ number, text }: { number: string; text: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.055] p-3 text-white">
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">
+    <div className="flex min-h-11 items-center gap-2 rounded-2xl border border-white/14 bg-white/[0.055] px-3 py-2 text-white">
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cyan-300 text-sm font-semibold text-slate-950">
         {number}
       </span>
-      <span className="text-sm font-medium leading-tight">{text}</span>
+      <span className="whitespace-nowrap text-sm font-medium leading-tight">
+        {text}
+      </span>
     </div>
   );
 }
