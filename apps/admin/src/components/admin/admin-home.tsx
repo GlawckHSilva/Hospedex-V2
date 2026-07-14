@@ -222,7 +222,7 @@ function MiniGrafico({
       {serie.map((ponto) => (
         <span
           aria-label={`${ponto.rotulo}: ${ponto.valor}`}
-          className={`dashboard-mini-bar flex-1 rounded-t-sm${ponto.valor === maiorValor ? " dashboard-mini-bar--max" : ""}`}
+          className={`dashboard-mini-bar flex-1${ponto.valor === maiorValor ? " dashboard-mini-bar--max" : ""}`}
           key={ponto.rotulo}
           style={{ height: `${Math.max(12, (ponto.valor / maiorValor) * 100)}%` }}
           title={`${ponto.rotulo}: ${formatarNumero(ponto.valor)}`}

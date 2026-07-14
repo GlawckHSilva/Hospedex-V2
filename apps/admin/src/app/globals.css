@@ -301,6 +301,7 @@
 
 .admin-management-shell .admin-dashboard .dashboard-mini-bar {
   background: #22afc5;
+  border-radius: 6px 6px 2px 2px;
   transition: background-color 160ms ease;
 }
 
