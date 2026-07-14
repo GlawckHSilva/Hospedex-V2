@@ -54,9 +54,11 @@ import {
   type ResultadoSalvarPropriedade,
 } from "../../lib/properties/actions";
 import {
+  encontrarRascunhoCasaLocal,
   lerRascunhoCasaLocal,
   notificarRascunhoCasaAtualizado,
   obterChaveRascunhoCasa,
+  removerRascunhosCasaLocal,
 } from "../../lib/properties/property-draft-local";
 import type {
   PropriedadeComRelacionamentos,
@@ -752,9 +754,10 @@ export function PropertyForm({
     modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const searchParams = useSearchParams();
   const erroServidor = searchParams.get("erro");
+  const usuarioRascunho = userId ?? contexto?.userId ?? "usuario";
   const chaveRascunho = obterChaveRascunhoCasa(
     modo,
-    userId ?? contexto?.userId ?? "usuario",
+    usuarioRascunho,
     propriedade?.id,
   );
   const [etapaAtual, setEtapaAtual] = useState(0);
@@ -835,7 +838,11 @@ export function PropertyForm({
     const formulario = formRef.current;
     if (!formulario) return;
 
-    const rascunhoLocal = lerRascunhoCasaLocal(chaveRascunho);
+    // Um cadastro sincronizado passa de "criar" para "editar". A busca pelo
+    // operationId preserva a copia local mais recente nessa transicao.
+    const rascunhoLocal = propriedade?.id
+      ? encontrarRascunhoCasaLocal(usuarioRascunho, propriedade.id)
+      : lerRascunhoCasaLocal(chaveRascunho);
     const rascunhoServidor = propriedade?.rascunhoFormulario ?? null;
 
     if (
@@ -856,7 +863,13 @@ export function PropertyForm({
     const rascunho = rascunhoLocal ?? rascunhoServidor;
     if (!rascunho) return;
     recuperarRascunho(rascunho, rascunhoLocal ? "local" : "servidor");
-  }, [chaveRascunho, modo, propriedade?.rascunhoFormulario]);
+  }, [
+    chaveRascunho,
+    modo,
+    propriedade?.id,
+    propriedade?.rascunhoFormulario,
+    usuarioRascunho,
+  ]);
 
   useEffect(() => {
     if (modo === "criar" && !operacaoId) setOperacaoId(crypto.randomUUID());
@@ -920,6 +933,7 @@ export function PropertyForm({
       conflitoRascunho?.servidor === rascunho ? "servidor" : "local",
     );
     try {
+      removerRascunhosCasaLocal(usuarioRascunho, rascunho.operacaoId);
       window.localStorage.setItem(chaveRascunho, JSON.stringify(rascunho));
       notificarRascunhoCasaAtualizado();
     } catch {
@@ -1054,6 +1068,7 @@ export function PropertyForm({
   function descartarRascunhoLocal() {
     try {
       window.localStorage.removeItem(chaveRascunho);
+      removerRascunhosCasaLocal(usuarioRascunho, operacaoId);
       notificarRascunhoCasaAtualizado();
     } catch {
       // Sem acao: o descarte visual ja remove o aviso para o usuario.

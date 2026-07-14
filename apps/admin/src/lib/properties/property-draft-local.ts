@@ -46,6 +46,33 @@ export function listarRascunhosCasasLocais(userId: string) {
   }
 }
 
+export function encontrarRascunhoCasaLocal(
+  userId: string,
+  operacaoId: string,
+) {
+  return (
+    listarRascunhosCasasLocais(userId).find(
+      (rascunho) => rascunho.operacaoId === operacaoId,
+    ) ?? null
+  );
+}
+
+export function removerRascunhosCasaLocal(
+  userId: string,
+  operacaoId: string,
+) {
+  if (typeof window === "undefined") return;
+  const prefixo = `hospedex:v2:rascunho-casa:${userId}:`;
+
+  Object.keys(window.localStorage)
+    .filter((chave) => chave.startsWith(prefixo))
+    .forEach((chave) => {
+      if (lerRascunhoCasaLocal(chave)?.operacaoId === operacaoId) {
+        window.localStorage.removeItem(chave);
+      }
+    });
+}
+
 export function obterCampoRascunho(
   rascunho: RascunhoFormularioCasa,
   nome: string,
