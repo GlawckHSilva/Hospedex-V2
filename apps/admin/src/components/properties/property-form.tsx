@@ -48,8 +48,6 @@ import { WizardStepper } from "../management/wizard-stepper";
 import { PropertyAmenitiesStep } from "./property-amenities-step";
 import { usarAutenticacao } from "../auth/auth-provider";
 import {
-  atualizarPropriedadeAction,
-  criarPropriedadeAction,
   salvarRascunhoPropriedadeAction,
   type ResultadoSalvarPropriedade,
 } from "../../lib/properties/actions";
@@ -750,8 +748,6 @@ export function PropertyForm({
 }: PropertyFormProps) {
   const { contexto } = usarAutenticacao();
   const router = useRouter();
-  const action =
-    modo === "editar" ? atualizarPropriedadeAction : criarPropriedadeAction;
   const searchParams = useSearchParams();
   const erroServidor = searchParams.get("erro");
   const usuarioRascunho = userId ?? contexto?.userId ?? "usuario";
@@ -1326,13 +1322,12 @@ export function PropertyForm({
   }
 
   function fecharWizard() {
-    // O formulário não controla a modal diretamente; por isso acionamos o
-    // botão oficial de fechar do AppModal para manter Portal, ESC e backdrop
-    // com uma única fonte de verdade.
+    // Fechamento autorizado apenas depois de sucesso completo no servidor.
+    // O formulário não controla a modal diretamente; por isso emite um evento
+    // interno para a AppModal encerrar o Portal sem depender de clique visual.
     formRef.current
       ?.closest('[role="dialog"]')
-      ?.querySelector<HTMLButtonElement>('button[aria-label="Fechar modal"]')
-      ?.click();
+      ?.dispatchEvent(new Event("hospedex:fechar-modal"));
   }
 
   function avancarEtapa() {
@@ -1407,7 +1402,7 @@ export function PropertyForm({
 
     try {
       await sincronizarRascunho();
-      const resultado = await action(dados);
+      const resultado = await salvarCasaFinal(dados);
       setResultadoSalvamento(resultado);
       setTipoFalha(resultado.sucesso ? null : "salvamento");
 
@@ -1545,6 +1540,25 @@ export function PropertyForm({
     });
 
     return dados;
+  }
+
+  async function salvarCasaFinal(dados: FormData) {
+    const resposta = await fetch("/api/properties/save", {
+      body: dados,
+      credentials: "same-origin",
+      method: "POST",
+    });
+    const resultado = (await resposta.json().catch(() => null)) as
+      | ResultadoSalvarPropriedade
+      | null;
+
+    if (resultado) return resultado;
+
+    return {
+      mensagem:
+        "Nao foi possivel confirmar o salvamento da casa. Seus dados foram mantidos. Tente novamente.",
+      sucesso: false,
+    } satisfies ResultadoSalvarPropriedade;
   }
 
   return (

@@ -149,19 +149,31 @@ export function AppModal({
   useEffect(() => {
     if (!open) return;
 
+    function fecharPorEventoInterno() {
+      onOpenChange(false);
+    }
+
     function fecharComEscape(evento: KeyboardEvent) {
       if (evento.key === "Escape") solicitarFechamento();
     }
 
     const overflowAnterior = document.body.style.overflow;
     document.addEventListener("keydown", fecharComEscape);
+    dialogRef.current?.addEventListener(
+      "hospedex:fechar-modal",
+      fecharPorEventoInterno,
+    );
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", fecharComEscape);
+      dialogRef.current?.removeEventListener(
+        "hospedex:fechar-modal",
+        fecharPorEventoInterno,
+      );
       document.body.style.overflow = overflowAnterior;
     };
-  }, [open, solicitarFechamento]);
+  }, [onOpenChange, open, solicitarFechamento]);
 
   const modal = (
     <AnimatePresence>
