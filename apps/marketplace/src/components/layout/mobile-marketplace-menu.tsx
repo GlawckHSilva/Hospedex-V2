@@ -1,8 +1,13 @@
 "use client";
 
 import {
+  BadgePlus,
+  BedDouble,
   Heart,
+  Home,
+  LogIn,
   LogOut,
+  MapPinned,
   Menu,
   Moon,
   Sun,
@@ -18,6 +23,13 @@ import { cn } from "@hospedex/ui";
 
 import { marketplaceNavigation } from "../../config/navigation";
 import { sairHospede, useGuestProfile } from "../guest/use-guest-profile";
+
+const iconesNavegacao = {
+  "/": Home,
+  "/propriedades": BedDouble,
+  "/#destinos": MapPinned,
+  "/anunciar": BadgePlus,
+} as const;
 
 /**
  * Menu principal do Marketplace em telas pequenas.
@@ -77,37 +89,42 @@ export function MobileMarketplaceMenu() {
           aria-label="Navegacao mobile do Marketplace"
           className="absolute right-0 top-12 z-50 w-60 rounded-2xl border border-border bg-card p-2 text-foreground shadow-2xl shadow-slate-950/15 dark:border-cyan-300/20 dark:bg-slate-950 dark:shadow-cyan-950/30"
         >
-          {marketplaceNavigation.map((item) => (
-            <Link
-              className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
-              href={item.href}
-              key={item.href}
-              onClick={() => setAberto(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {marketplaceNavigation.map((item) => {
+            const Icone = iconesNavegacao[item.href];
+
+            return (
+              <Link
+                className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
+                href={item.href}
+                key={item.href}
+                onClick={() => setAberto(false)}
+              >
+                <Icone className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+                {item.label}
+              </Link>
+            );
+          })}
           <Link
-            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-rose-400/10 hover:text-rose-600 dark:text-slate-200 dark:hover:text-rose-100"
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
             href="/favoritos"
             onClick={() => setAberto(false)}
           >
-            <Heart className="h-4 w-4 text-rose-600 dark:text-rose-300" />
+            <Heart className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
             Favoritos
           </Link>
           <div className="my-2 h-px bg-cyan-300/10" />
           <button
-            className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary disabled:opacity-60 dark:text-slate-200 dark:hover:text-cyan-100"
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary disabled:opacity-60 dark:text-slate-200 dark:hover:text-cyan-100"
             disabled={!temaMontado}
             onClick={() => setTheme(modoEscuro ? "light" : "dark")}
             type="button"
           >
-            <span>{modoEscuro ? "Modo claro" : "Modo escuro"}</span>
             {modoEscuro ? (
-              <Sun className="h-4 w-4" />
+              <Sun className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
             ) : (
-              <Moon className="h-4 w-4" />
+              <Moon className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
             )}
+            <span>{modoEscuro ? "Modo claro" : "Modo escuro"}</span>
           </button>
 
           <div className="my-2 h-px bg-cyan-300/10" />
@@ -137,37 +154,37 @@ export function MobileMarketplaceMenu() {
                 </div>
               </div>
               <Link
-                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
+                className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
                 href="/minhas-reservas"
                 onClick={() => setAberto(false)}
               >
-                <TicketCheck className="h-4 w-4" />
+                <TicketCheck className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
                 Minhas reservas
               </Link>
               <Link
-                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
+                className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
                 href="/perfil"
                 onClick={() => setAberto(false)}
               >
-                <UserRound className="h-4 w-4" />
+                <UserRound className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
                 Perfil
               </Link>
               <button
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
+                className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-foreground transition hover:bg-cyan-400/10 hover:text-primary dark:text-slate-200 dark:hover:text-cyan-100"
                 onClick={sairHospede}
                 type="button"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
                 Sair
               </button>
             </div>
           ) : (
             <Link
-              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold text-primary transition hover:bg-cyan-400/10 dark:text-cyan-100"
+              className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-primary transition hover:bg-cyan-400/10 dark:text-cyan-100"
               href="/login"
               onClick={() => setAberto(false)}
             >
-              <UserRound className="h-4 w-4" />
+              <LogIn className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
               Entrar
             </Link>
           )}
