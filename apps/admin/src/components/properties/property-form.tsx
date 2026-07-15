@@ -1385,7 +1385,7 @@ export function PropertyForm({
     }
 
     const formulario = evento.currentTarget;
-    const dados = new FormData(formulario);
+    const dados = montarDadosSalvamento(formulario);
     const tamanhoArquivos = Array.from(dados.values()).reduce(
       (total, valor) => total + (valor instanceof File ? valor.size : 0),
       0,
@@ -1407,7 +1407,6 @@ export function PropertyForm({
 
     try {
       await sincronizarRascunho();
-      dados.set("etapaWizard", String(etapaAtual + 1));
       const resultado = await action(dados);
       setResultadoSalvamento(resultado);
       setTipoFalha(resultado.sucesso ? null : "salvamento");
@@ -1421,13 +1420,17 @@ export function PropertyForm({
 
       descartarRascunhoLocal();
       formulario.dataset.bloquearFechamento = "false";
-      fecharWizard();
-      router.replace(
-        `/propriedades?sucesso=${
-          modo === "editar" ? "propriedade-atualizada" : "propriedade-criada"
-        }`,
-      );
+      salvandoRef.current = false;
+      setSalvando(false);
       router.refresh();
+      window.setTimeout(() => {
+        fecharWizard();
+        router.replace(
+          `/propriedades?sucesso=${
+            modo === "editar" ? "propriedade-atualizada" : "propriedade-criada"
+          }`,
+        );
+      }, 0);
     } catch (erro) {
       console.error("Falha de conexao ao salvar a casa.", erro);
       setResultadoSalvamento({
@@ -1481,10 +1484,67 @@ export function PropertyForm({
       possuiComodidade: quantidadeComodidadesValidas > 0,
       possuiImagemPrincipal: Boolean(
         previewCapa ||
-        previewsGaleria.some((preview) => preview.principal) ||
-        propriedade?.imagemCapa?.url,
+        previewsGaleria.some((preview) => preview.principal),
       ),
     };
+  }
+
+  function montarDadosSalvamento(formulario: HTMLFormElement) {
+    const dados = new FormData(formulario);
+    const previews = previewsGaleriaRef.current;
+    const arquivoCapa = capaRef.current?.files?.[0] ?? null;
+    let indiceNovaImagem = 0;
+
+    dados.set("operacaoId", operacaoId);
+    dados.set("etapaWizard", String(etapaAtual + 1));
+    dados.delete("imagemCapaArquivo");
+    dados.delete("imagemCapaId");
+    dados.delete("possuiImagemPrincipalAtual");
+    dados.delete("imagensGaleriaArquivos");
+    dados.delete("galeriaArquivoIds");
+    dados.delete("titulosGaleria");
+    dados.delete("ordensGaleria");
+    dados.delete("imagemPrincipalGaleriaIndice");
+    dados.delete("imagensExistentesIds");
+    dados.delete("titulosImagensExistentes");
+    dados.delete("ordensImagensExistentes");
+    dados.delete("imagemPrincipalExistenteId");
+    dados.delete("imagensExistentesRemovidasIds");
+
+    if (arquivoCapa && imagemCapaId) {
+      dados.append("imagemCapaArquivo", arquivoCapa);
+      dados.set("imagemCapaId", imagemCapaId);
+    }
+
+    idsImagensRemovidas.forEach((imagemId) => {
+      dados.append("imagensExistentesRemovidasIds", imagemId);
+    });
+
+    previews.forEach((preview) => {
+      if (preview.origem === "existente" && preview.existenteId) {
+        dados.append("imagensExistentesIds", preview.existenteId);
+        dados.append("titulosImagensExistentes", preview.titulo);
+        dados.append("ordensImagensExistentes", String(preview.ordem));
+        if (preview.principal) {
+          dados.set("imagemPrincipalExistenteId", preview.existenteId);
+          dados.set("possuiImagemPrincipalAtual", "true");
+        }
+        return;
+      }
+
+      if (preview.origem === "nova" && preview.arquivo) {
+        dados.append("imagensGaleriaArquivos", preview.arquivo);
+        dados.append("galeriaArquivoIds", preview.id);
+        dados.append("titulosGaleria", preview.titulo);
+        dados.append("ordensGaleria", String(preview.ordem));
+        if (preview.principal) {
+          dados.set("imagemPrincipalGaleriaIndice", String(indiceNovaImagem));
+        }
+        indiceNovaImagem += 1;
+      }
+    });
+
+    return dados;
   }
 
   return (
