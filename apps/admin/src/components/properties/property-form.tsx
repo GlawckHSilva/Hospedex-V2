@@ -798,6 +798,8 @@ export function PropertyForm({
   const sincronizarRascunhoAtualRef = useRef<() => Promise<boolean>>(
     async () => false,
   );
+  const rascunhoInicialVerificadoRef = useRef(false);
+  const aplicandoRascunhoRef = useRef(false);
   const previewCapaRef = useRef<string | null>(null);
   const previewsGaleriaRef = useRef<PreviewGaleria[]>([]);
   const endereco = propriedade?.enderecoFormatado;
@@ -833,6 +835,7 @@ export function PropertyForm({
   useEffect(() => {
     const formulario = formRef.current;
     if (!formulario) return;
+    if (rascunhoInicialVerificadoRef.current) return;
 
     // Um cadastro sincronizado passa de "criar" para "editar". A busca pelo
     // operationId preserva a copia local mais recente nessa transicao.
@@ -853,12 +856,15 @@ export function PropertyForm({
       setAvisoRascunho(
         "Existem alteracoes diferentes neste dispositivo e no servidor. Escolha qual versao deseja recuperar.",
       );
+      rascunhoInicialVerificadoRef.current = true;
       return;
     }
 
     const rascunho = rascunhoLocal ?? rascunhoServidor;
-    if (!rascunho) return;
-    recuperarRascunho(rascunho, rascunhoLocal ? "local" : "servidor");
+    if (rascunho) {
+      recuperarRascunho(rascunho, rascunhoLocal ? "local" : "servidor");
+    }
+    rascunhoInicialVerificadoRef.current = true;
   }, [
     chaveRascunho,
     modo,
@@ -908,7 +914,12 @@ export function PropertyForm({
     if (!formulario) return;
 
     if (modo === "criar") setOperacaoId(rascunho.operacaoId);
-    aplicarRascunhoCasa(formulario, rascunho);
+    aplicandoRascunhoRef.current = true;
+    try {
+      aplicarRascunhoCasa(formulario, rascunho);
+    } finally {
+      aplicandoRascunhoRef.current = false;
+    }
     setEtapaAtual(
       Math.min(Math.max(rascunho.etapaAtual, 0), ETAPAS.length - 1),
     );
@@ -1260,6 +1271,7 @@ export function PropertyForm({
   }
 
   function aoAlterarFormulario(evento: FormEvent<HTMLFormElement>) {
+    if (aplicandoRascunhoRef.current) return;
     limparErroDoCampo(evento);
     salvarRascunhoLocal(null);
     agendarSincronizacaoRascunho();
