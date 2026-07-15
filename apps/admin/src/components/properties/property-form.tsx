@@ -2086,7 +2086,7 @@ function CampoStatusSegmentado({
             className={cn(
               "flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition",
               valorAtual === option.valor &&
-                "bg-cyan-500/20 text-cyan-100 ring-1 ring-cyan-300/40",
+                "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-500/60 dark:bg-cyan-500/20 dark:text-cyan-100 dark:ring-cyan-300/40",
               disabled && "cursor-not-allowed opacity-60",
             )}
             key={option.valor}
