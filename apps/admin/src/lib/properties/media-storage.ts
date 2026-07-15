@@ -68,11 +68,12 @@ export async function enviarImagemParaStorage(
     .from(BUCKET_MIDIA_PROPRIEDADES)
     .upload(caminho, arquivo, {
       contentType: arquivo.type,
-      // Uma nova tentativa da mesma operacao substitui o mesmo objeto, sem duplicar arquivos.
-      upsert: Boolean(chaveIdempotencia)
+      // O caminho estavel identifica repeticoes. Evitamos upsert porque ele
+      // exige SELECT no bucket, leitura bloqueada para impedir enumeracao.
+      upsert: false
     });
 
-  if (error) {
+  if (error && !objetoStorageJaExiste(error.message)) {
     console.error("Falha no upload da imagem da casa.", {
       bucket: BUCKET_MIDIA_PROPRIEDADES,
       caminho,
@@ -104,6 +105,15 @@ export async function enviarImagemParaStorage(
     path: caminho,
     url: data.publicUrl
   };
+}
+
+function objetoStorageJaExiste(mensagem: string) {
+  const normalizada = mensagem.toLowerCase();
+  return (
+    normalizada.includes("already exists") ||
+    normalizada.includes("duplicate") ||
+    normalizada.includes("resource exists")
+  );
 }
 
 export async function removerImagemDoStorage(
