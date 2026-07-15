@@ -1,5 +1,8 @@
+"use client";
+
 import { KeyRound, Mail, Phone, User } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { GlassCard, GlassInput } from "@hospedex/ui";
 
@@ -14,87 +17,141 @@ import {
 } from "../../lib/guest/actions";
 import { FormSubmitButton } from "./form-submit-button";
 
+type ModoLoginHospede = "login" | "recuperacao";
+
 export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
+  const [modo, setModo] = useState<ModoLoginHospede>("login");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const idCampo = modo === "login" ? "guest-login-email" : "guest-recovery-email";
+    window.setTimeout(() => {
+      document.getElementById(idCampo)?.focus();
+    }, 0);
+  }, [modo]);
+
   return (
-    <GlassCard className="marketplace-login-card mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 sm:max-w-md sm:p-8">
+    <GlassCard className="marketplace-login-card mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-5 sm:max-w-md sm:p-7">
       <p className="text-xs font-semibold uppercase tracking-normal text-primary">
-        Área do Hóspede
-      </p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
-        Entrar no Hospedex
-      </h1>
-      <p className="mt-3 text-sm leading-6 text-muted-foreground">
-        Acesse sua área para acompanhar reservas, pagamentos e sua viagem.
+        Area do Hospede
       </p>
 
+      <div aria-live="polite">
+        {modo === "login" ? (
+          <>
+            <h1 className="mt-3 text-3xl font-semibold tracking-normal">
+              Entrar no Hospedex
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Acesse suas reservas, pagamentos e instrucoes de viagem.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-3 text-3xl font-semibold tracking-normal">
+              Recuperar senha
+            </h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              Informe seu e-mail para receber as instrucoes de recuperacao.
+            </p>
+          </>
+        )}
+      </div>
+
       {mensagem ? (
-        <div className="mt-5 rounded-lg border border-primary/25 bg-primary/10 p-3 text-sm text-primary">
+        <div
+          aria-live="polite"
+          className="mt-5 rounded-lg border border-primary/25 bg-primary/10 p-3 text-sm text-primary"
+        >
           {mensagem}
         </div>
       ) : null}
 
-      <form action={loginHospedeAction} className="mt-7 grid gap-4">
-        <MarketplaceIconField icon={Mail} label="E-mail">
-          <GlassInput
-            className={marketplaceInputWithIconClass + " marketplace-login-input"}
-            name="email"
-            placeholder="E-mail"
-            required
-            type="email"
-          />
-        </MarketplaceIconField>
-        <MarketplaceIconField icon={KeyRound} label="Senha">
-          <GlassInput
-            className={marketplaceInputWithIconClass + " marketplace-login-input"}
-            name="senha"
-            placeholder="Senha"
-            required
-            type="password"
-          />
-        </MarketplaceIconField>
-        <FormSubmitButton
-          className="marketplace-login-primary-button mt-1 h-12 rounded-xl"
-          pendingText="Entrando..."
-        >
-          Entrar
-        </FormSubmitButton>
-      </form>
+      {modo === "login" ? (
+        <form action={loginHospedeAction} className="mt-6 grid gap-4">
+          <MarketplaceIconField icon={Mail} label="E-mail">
+            <GlassInput
+              autoComplete="email"
+              className={marketplaceInputWithIconClass + " marketplace-login-input"}
+              id="guest-login-email"
+              name="email"
+              onChange={(evento) => setEmail(evento.target.value)}
+              placeholder="voce@email.com"
+              required
+              type="email"
+              value={email}
+            />
+          </MarketplaceIconField>
+          <MarketplaceIconField icon={KeyRound} label="Senha">
+            <GlassInput
+              autoComplete="current-password"
+              className={marketplaceInputWithIconClass + " marketplace-login-input"}
+              name="senha"
+              placeholder="Sua senha"
+              required
+              type="password"
+            />
+          </MarketplaceIconField>
+          <FormSubmitButton
+            className="marketplace-login-primary-button mt-1 h-12 rounded-xl"
+            pendingText="Entrando..."
+          >
+            Entrar
+          </FormSubmitButton>
+        </form>
+      ) : (
+        <form action={recuperarSenhaHospedeAction} className="mt-6 grid gap-4">
+          <MarketplaceIconField icon={Mail} label="E-mail">
+            <GlassInput
+              autoComplete="email"
+              className={marketplaceInputWithIconClass + " marketplace-login-input"}
+              id="guest-recovery-email"
+              name="email"
+              onChange={(evento) => setEmail(evento.target.value)}
+              placeholder="voce@email.com"
+              required
+              type="email"
+              value={email}
+            />
+          </MarketplaceIconField>
+          <FormSubmitButton
+            className="marketplace-login-primary-button mt-1 h-12 rounded-xl"
+            pendingText="Enviando..."
+          >
+            Enviar link de recuperacao
+          </FormSubmitButton>
+        </form>
+      )}
 
-      <form
-        action={recuperarSenhaHospedeAction}
-        className="marketplace-login-recovery mt-6 grid gap-3 border-t border-border/70 pt-5 dark:border-cyan-300/12"
-      >
-        <div>
-          <p className="text-sm font-semibold text-foreground">Esqueceu sua senha?</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Informe seu e-mail para receber as instruções de recuperação.
-          </p>
-        </div>
-        <MarketplaceIconField icon={Mail} label="E-mail para recuperação">
-          <GlassInput
-            className={marketplaceInputWithIconClass + " marketplace-login-input"}
-            name="email"
-            placeholder="E-mail para recuperação"
-            type="email"
-          />
-        </MarketplaceIconField>
-        <FormSubmitButton
-          className="marketplace-login-secondary-button h-11 rounded-xl"
-          pendingText="Enviando..."
-        >
-          Recuperar senha
-        </FormSubmitButton>
-      </form>
+      <div className="mt-5 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+        {modo === "login" ? (
+          <button
+            className="w-fit font-medium text-primary underline-offset-4 transition hover:text-primary-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+            onClick={() => setModo("recuperacao")}
+            type="button"
+          >
+            Esqueceu sua senha?
+          </button>
+        ) : (
+          <button
+            className="w-fit font-medium text-primary underline-offset-4 transition hover:text-primary-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+            onClick={() => setModo("login")}
+            type="button"
+          >
+            Voltar para entrar
+          </button>
+        )}
 
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Ainda não tem conta?{" "}
-        <Link
-          className="font-medium text-primary hover:text-primary/80"
-          href="/cadastro"
-        >
-          Criar conta
-        </Link>
-      </p>
+        <span className="text-muted-foreground">
+          Ainda nao tem conta?{" "}
+          <Link
+            className="font-medium text-primary hover:text-primary-hover"
+            href="/cadastro"
+          >
+            Criar conta
+          </Link>
+        </span>
+      </div>
     </GlassCard>
   );
 }
@@ -103,11 +160,11 @@ export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
   return (
     <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-lg">
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
-        Área do Hóspede
+        Area do Hospede
       </p>
       <h1 className="mt-3 text-3xl font-semibold">Criar conta</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Use o mesmo e-mail informado na solicitação de hospedagem para vincular
+        Use o mesmo e-mail informado na solicitacao de hospedagem para vincular
         suas reservas.
       </p>
 
@@ -152,13 +209,11 @@ export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
             type="password"
           />
         </MarketplaceIconField>
-        <FormSubmitButton pendingText="Criando...">
-          Criar conta
-        </FormSubmitButton>
+        <FormSubmitButton pendingText="Criando...">Criar conta</FormSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        Já tem conta?{" "}
+        Ja tem conta?{" "}
         <Link
           className="font-medium text-primary hover:text-primary/80"
           href="/login"

@@ -202,6 +202,79 @@
   color: #a5f3fc;
 }
 
+/* A tela de login do hospede usa a foto local fornecida no projeto.
+   O gradiente separa texto e fotografia sem depender de imagem externa. */
+.marketplace-login-visual {
+  background-image:
+    image-set(
+      url("/images/auth/hospedex-guest-login.webp") type("image/webp"),
+      url("/images/auth/hospedex-guest-login.jpg") type("image/jpeg")
+    );
+  background-position: 62% center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.marketplace-login-photo-gradient {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(248 252 255 / 0.96) 0%,
+      rgb(238 249 252 / 0.84) 34%,
+      rgb(238 249 252 / 0.32) 63%,
+      transparent 100%
+    ),
+    linear-gradient(
+      0deg,
+      rgb(248 252 255 / 0.54) 0%,
+      transparent 42%
+    );
+}
+
+.dark .marketplace-login-photo-gradient {
+  background:
+    linear-gradient(
+      90deg,
+      rgb(2 6 17 / 0.95) 0%,
+      rgb(6 16 31 / 0.82) 35%,
+      rgb(6 16 31 / 0.34) 64%,
+      transparent 100%
+    ),
+    linear-gradient(
+      0deg,
+      rgb(2 6 17 / 0.6) 0%,
+      transparent 44%
+    );
+}
+
+@media (max-width: 1023px) {
+  .marketplace-login-visual {
+    background-position: 67% 44%;
+  }
+
+  .marketplace-login-photo-gradient {
+    background:
+      linear-gradient(
+        0deg,
+        rgb(248 252 255 / 0.96) 0%,
+        rgb(248 252 255 / 0.72) 42%,
+        transparent 100%
+      ),
+      linear-gradient(90deg, rgb(248 252 255 / 0.7), transparent 64%);
+  }
+
+  .dark .marketplace-login-photo-gradient {
+    background:
+      linear-gradient(
+        0deg,
+        rgb(2 6 17 / 0.96) 0%,
+        rgb(2 6 17 / 0.72) 42%,
+        transparent 100%
+      ),
+      linear-gradient(90deg, rgb(2 6 17 / 0.72), transparent 64%);
+  }
+}
+
 @keyframes marketplace-login-grid {
   from {
     transform: translate3d(0, 0, 0);
