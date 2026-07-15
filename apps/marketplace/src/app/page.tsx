@@ -121,15 +121,15 @@ export default async function MarketplaceHomePage() {
 
               return (
                 <GlassCard
-                  className="marketplace-home-benefit flex min-h-24 items-center gap-4 p-4 text-left text-white"
+                  className="marketplace-home-benefit flex min-h-24 items-center gap-4 p-4 text-left text-foreground dark:text-white"
                   key={beneficio.title}
                 >
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-accent-soft text-primary dark:bg-cyan-400/10 dark:text-cyan-300">
                     <Icone className="h-5 w-5" />
                   </span>
-                  <div className="min-w-0 text-white">
+                  <div className="min-w-0 text-foreground dark:text-white">
                     <h2 className="text-sm font-semibold">{beneficio.title}</h2>
-                    <p className="mt-1 break-words text-sm leading-5 text-cyan-50/80">
+                    <p className="mt-1 break-words text-sm leading-5 text-muted-foreground dark:text-cyan-50/80">
                       {beneficio.description}
                     </p>
                   </div>
@@ -360,16 +360,16 @@ function SearchField({
   type?: string;
 }) {
   return (
-    <label className="grid min-w-0 gap-1 rounded-[1.5rem] px-4 py-3 text-cyan-50 transition hover:bg-white/8 lg:border-r lg:border-cyan-100/12 lg:last:border-r-0">
-      <span className="text-xs font-bold uppercase tracking-normal text-cyan-200/78">
+    <label className="grid min-w-0 gap-1 rounded-[1.5rem] px-4 py-3 text-foreground transition hover:bg-primary/5 dark:text-cyan-50 dark:hover:bg-white/8 lg:border-r lg:border-border dark:lg:border-cyan-100/12 lg:last:border-r-0">
+      <span className="text-xs font-bold uppercase tracking-normal text-primary dark:text-cyan-200/78">
         {label}
       </span>
       <span className="relative block min-w-0">
-        <span className="pointer-events-none absolute left-0 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center text-cyan-300">
+        <span className="pointer-events-none absolute left-0 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center text-primary dark:text-cyan-300">
           {icon}
         </span>
         <input
-          className="w-full min-w-0 bg-transparent pl-8 text-sm font-semibold text-white outline-none placeholder:text-cyan-50/70"
+          className="w-full min-w-0 bg-transparent pl-8 text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground dark:text-white dark:placeholder:text-cyan-50/70"
           min={min}
           name={name}
           placeholder={placeholder}

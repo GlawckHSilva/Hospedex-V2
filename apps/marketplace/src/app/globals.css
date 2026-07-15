@@ -30,20 +30,45 @@
 }
 
 .marketplace-home-search {
-  background: rgb(2 10 28 / 0.72);
-  border: 1px solid rgb(103 232 249 / 0.32);
-  box-shadow: 0 22px 55px rgb(2 8 23 / 0.42);
+  background: color-mix(in oklch, var(--card) 96%, transparent);
+  border: 1px solid var(--border);
+  box-shadow: 0 22px 55px rgb(15 23 42 / 0.16);
   backdrop-filter: blur(18px);
 }
 
+.marketplace-home-search input {
+  color-scheme: light;
+}
+
 .marketplace-home-benefit {
-  background: rgb(2 10 28 / 0.68);
-  border-color: rgb(103 232 249 / 0.24);
-  box-shadow: 0 16px 36px rgb(2 8 23 / 0.3);
+  background: color-mix(in oklch, var(--card) 97%, transparent);
+  border-color: var(--border);
+  box-shadow: 0 16px 36px rgb(15 23 42 / 0.14);
   backdrop-filter: blur(16px);
 }
 
 .marketplace-home-benefit:hover {
+  background: color-mix(in oklch, var(--card) 94%, var(--primary) 6%);
+  border-color: color-mix(in oklch, var(--border) 72%, var(--primary) 28%);
+}
+
+.dark .marketplace-home-search {
+  background: rgb(2 10 28 / 0.72);
+  border-color: rgb(103 232 249 / 0.32);
+  box-shadow: 0 22px 55px rgb(2 8 23 / 0.42);
+}
+
+.dark .marketplace-home-search input {
+  color-scheme: dark;
+}
+
+.dark .marketplace-home-benefit {
+  background: rgb(2 10 28 / 0.68);
+  border-color: rgb(103 232 249 / 0.24);
+  box-shadow: 0 16px 36px rgb(2 8 23 / 0.3);
+}
+
+.dark .marketplace-home-benefit:hover {
   background: rgb(2 25 45 / 0.76);
   border-color: rgb(103 232 249 / 0.44);
 }
