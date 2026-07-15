@@ -158,12 +158,14 @@ export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
 
 export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
   return (
-    <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-lg">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+    <GlassCard className="marketplace-login-card mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-5 sm:max-w-md sm:p-7">
+      <p className="text-xs font-semibold uppercase tracking-normal text-primary">
         Area do Hospede
       </p>
-      <h1 className="mt-3 text-3xl font-semibold">Criar conta</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <h1 className="mt-3 text-3xl font-semibold tracking-normal">
+        Criar conta no Hospedex
+      </h1>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">
         Use o mesmo e-mail informado na solicitacao de hospedagem para vincular
         suas reservas.
       </p>
@@ -175,41 +177,50 @@ export function GuestSignupCard({ mensagem }: { mensagem: string | null }) {
       ) : null}
 
       <form action={cadastroHospedeAction} className="mt-6 grid gap-4">
-        <MarketplaceIconField icon={User} label="Nome completo" srOnly>
+        <MarketplaceIconField icon={User} label="Nome completo">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            autoComplete="name"
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             name="nome"
             placeholder="Nome completo"
             required
           />
         </MarketplaceIconField>
-        <MarketplaceIconField icon={Mail} label="E-mail" srOnly>
+        <MarketplaceIconField icon={Mail} label="E-mail">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            autoComplete="email"
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             name="email"
-            placeholder="E-mail"
+            placeholder="voce@email.com"
             required
             type="email"
           />
         </MarketplaceIconField>
-        <MarketplaceIconField icon={Phone} label="Telefone" srOnly>
+        <MarketplaceIconField icon={Phone} label="Telefone">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            autoComplete="tel"
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             name="telefone"
             placeholder="Telefone"
           />
         </MarketplaceIconField>
-        <MarketplaceIconField icon={KeyRound} label="Senha" srOnly>
+        <MarketplaceIconField icon={KeyRound} label="Senha">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            autoComplete="new-password"
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             minLength={6}
             name="senha"
-            placeholder="Senha"
+            placeholder="Minimo de 6 caracteres"
             required
             type="password"
           />
         </MarketplaceIconField>
-        <FormSubmitButton pendingText="Criando...">Criar conta</FormSubmitButton>
+        <FormSubmitButton
+          className="marketplace-login-primary-button mt-1 h-12 rounded-xl"
+          pendingText="Criando..."
+        >
+          Criar conta
+        </FormSubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
