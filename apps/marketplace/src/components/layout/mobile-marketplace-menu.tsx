@@ -31,6 +31,14 @@ const iconesNavegacao = {
   "/anunciar": BadgePlus,
 } as const;
 
+const classeIconeMenu =
+  "shrink-0 text-slate-700 dark:text-slate-100";
+
+const propriedadesIconeMenu = {
+  size: 17,
+  strokeWidth: 1.5,
+} as const;
+
 /**
  * Menu principal do Marketplace em telas pequenas.
  *
@@ -81,7 +89,11 @@ export function MobileMarketplaceMenu() {
         onClick={() => setAberto((valor) => !valor)}
         type="button"
       >
-        {aberto ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        {aberto ? (
+          <X size={17} strokeWidth={1.5} />
+        ) : (
+          <Menu size={17} strokeWidth={1.5} />
+        )}
       </button>
 
       {aberto ? (
@@ -99,7 +111,10 @@ export function MobileMarketplaceMenu() {
                 key={item.href}
                 onClick={() => setAberto(false)}
               >
-                <Icone className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+                <Icone
+                  className={classeIconeMenu}
+                  {...propriedadesIconeMenu}
+                />
                 {item.label}
               </Link>
             );
@@ -109,7 +124,7 @@ export function MobileMarketplaceMenu() {
             href="/favoritos"
             onClick={() => setAberto(false)}
           >
-            <Heart className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+            <Heart className={classeIconeMenu} {...propriedadesIconeMenu} />
             Favoritos
           </Link>
           <div className="my-2 h-px bg-cyan-300/10" />
@@ -120,9 +135,9 @@ export function MobileMarketplaceMenu() {
             type="button"
           >
             {modoEscuro ? (
-              <Sun className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+              <Sun className={classeIconeMenu} {...propriedadesIconeMenu} />
             ) : (
-              <Moon className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+              <Moon className={classeIconeMenu} {...propriedadesIconeMenu} />
             )}
             <span>{modoEscuro ? "Modo claro" : "Modo escuro"}</span>
           </button>
@@ -158,7 +173,10 @@ export function MobileMarketplaceMenu() {
                 href="/minhas-reservas"
                 onClick={() => setAberto(false)}
               >
-                <TicketCheck className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+                <TicketCheck
+                  className={classeIconeMenu}
+                  {...propriedadesIconeMenu}
+                />
                 Minhas reservas
               </Link>
               <Link
@@ -166,7 +184,10 @@ export function MobileMarketplaceMenu() {
                 href="/perfil"
                 onClick={() => setAberto(false)}
               >
-                <UserRound className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+                <UserRound
+                  className={classeIconeMenu}
+                  {...propriedadesIconeMenu}
+                />
                 Perfil
               </Link>
               <button
@@ -174,7 +195,10 @@ export function MobileMarketplaceMenu() {
                 onClick={sairHospede}
                 type="button"
               >
-                <LogOut className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+                <LogOut
+                  className={classeIconeMenu}
+                  {...propriedadesIconeMenu}
+                />
                 Sair
               </button>
             </div>
@@ -184,7 +208,7 @@ export function MobileMarketplaceMenu() {
               href="/login"
               onClick={() => setAberto(false)}
             >
-              <LogIn className="h-5 w-5 shrink-0 text-primary dark:text-cyan-300" />
+              <LogIn className={classeIconeMenu} {...propriedadesIconeMenu} />
               Entrar
             </Link>
           )}
