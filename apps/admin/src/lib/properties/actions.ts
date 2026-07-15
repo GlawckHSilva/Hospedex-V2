@@ -2297,10 +2297,15 @@ function redirecionarComErro(
   mensagemLog: string,
   contexto?: Record<string, unknown>,
 ): never {
-  const mensagemTecnica = erro instanceof Error ? erro.message : null;
+  const mensagemTecnica =
+    erro instanceof ErroRegraNegocio
+      ? (erro.causaTecnica ?? erro.message)
+      : erro instanceof Error
+        ? erro.message
+        : null;
   const mensagem =
     erro instanceof ErroRegraNegocio
-      ? traduzirErroSupabase(erro.message, erro.message)
+      ? traduzirErroSupabase(mensagemTecnica, erro.message)
       : traduzirErroSupabase(
           mensagemTecnica,
           "Não foi possível concluir a operação.",
@@ -2322,10 +2327,15 @@ function criarResultadoErroCasa(
   contexto: Record<string, unknown>,
   propriedadeId?: string,
 ): ResultadoSalvarPropriedade {
-  const mensagemTecnica = erro instanceof Error ? erro.message : null;
+  const mensagemTecnica =
+    erro instanceof ErroRegraNegocio
+      ? (erro.causaTecnica ?? erro.message)
+      : erro instanceof Error
+        ? erro.message
+        : null;
   const mensagem =
     erro instanceof ErroRegraNegocio
-      ? traduzirErroSupabase(erro.message, erro.message)
+      ? traduzirErroSupabase(mensagemTecnica, erro.message)
       : traduzirErroSupabase(
           mensagemTecnica,
           "Nao foi possivel confirmar o salvamento da casa. Seus dados foram mantidos. Verifique sua conexao e tente novamente.",
@@ -2357,8 +2367,17 @@ function traduzirErroSupabase(
   const mensagem = mensagemTecnica?.toLowerCase() ?? "";
 
   if (!mensagem) return fallback;
-  if (mensagem.includes("row-level security") || mensagem.includes("rls")) {
-    return fallbackEhSeguro(fallback) ? fallback : ERRO_PERMISSAO_CASAS;
+  if (
+    mensagem.includes("row-level security") ||
+    mensagem.includes("rls") ||
+    mensagem.includes("permission denied") ||
+    mensagem.includes("unauthorized") ||
+    mensagem.includes("not authorized") ||
+    mensagem.includes("403")
+  ) {
+    return fallbackEhSeguro(fallback)
+      ? "Voce nao possui permissao para alterar as imagens desta casa."
+      : ERRO_PERMISSAO_CASAS;
   }
   if (
     mensagem.includes("duplicate key") &&
@@ -2373,11 +2392,24 @@ function traduzirErroSupabase(
     return "Existe um valor inválido no cadastro da casa. Revise os dados e tente novamente.";
   }
   if (
-    mensagem.includes("storage") ||
-    mensagem.includes("imagem") ||
     mensagem.includes("mime")
   ) {
     return "Não foi possível salvar a imagem. Verifique o formato e tente novamente.";
+  }
+  if (
+    mensagem.includes("file size") ||
+    mensagem.includes("payload too large") ||
+    mensagem.includes("entity too large") ||
+    mensagem.includes("exceeded") ||
+    mensagem.includes("limite")
+  ) {
+    return "A imagem ultrapassa o limite permitido. Envie uma imagem menor e tente novamente.";
+  }
+  if (mensagem.includes("bucket")) {
+    return "Nao foi possivel conectar ao armazenamento da casa. Entre em contato com o suporte.";
+  }
+  if (mensagem.includes("storage")) {
+    return "Nao foi possivel conectar ao armazenamento da casa. Tente novamente em instantes.";
   }
   if (
     mensagem.includes("jwt") ||
@@ -2403,7 +2435,10 @@ function erroOperacaoCasa(
   mensagemTecnica: string | null | undefined,
   fallback: string,
 ) {
-  return new ErroRegraNegocio(traduzirErroSupabase(mensagemTecnica, fallback));
+  return new ErroRegraNegocio(
+    traduzirErroSupabase(mensagemTecnica, fallback),
+    mensagemTecnica ?? undefined,
+  );
 }
 
 async function executarEtapaCasa<T>(
@@ -2413,7 +2448,12 @@ async function executarEtapaCasa<T>(
   try {
     return await etapa();
   } catch (erro) {
-    const mensagemTecnica = erro instanceof Error ? erro.message : null;
+    const mensagemTecnica =
+      erro instanceof ErroRegraNegocio
+        ? (erro.causaTecnica ?? erro.message)
+        : erro instanceof Error
+          ? erro.message
+          : null;
     throw erroOperacaoCasa(mensagemTecnica, fallback);
   }
 }

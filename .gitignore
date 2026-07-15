@@ -18,3 +18,6 @@ database/supabase/.temp
 *.tsbuildinfo
 
 .vercel
+.env
+.env.*
+!.env.example

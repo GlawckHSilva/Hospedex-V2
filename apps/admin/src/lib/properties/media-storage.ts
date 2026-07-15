@@ -56,6 +56,14 @@ export async function enviarImagemParaStorage(
   validarImagem(arquivo);
 
   const caminho = montarCaminhoStorage(destino, arquivo, chaveIdempotencia);
+  console.info("Upload de imagem da casa iniciado.", {
+    bucket: BUCKET_MIDIA_PROPRIEDADES,
+    escopo: destino.escopo,
+    mimeType: arquivo.type,
+    propertyId: destino.propertyId,
+    tamanhoBytes: arquivo.size,
+    tenantId: destino.tenantId,
+  });
   const { error } = await supabase.storage
     .from(BUCKET_MIDIA_PROPRIEDADES)
     .upload(caminho, arquivo, {
@@ -64,7 +72,30 @@ export async function enviarImagemParaStorage(
       upsert: Boolean(chaveIdempotencia)
     });
 
-  if (error) throw new ErroRegraNegocio(`Erro ao enviar imagem para o Storage: ${error.message}`);
+  if (error) {
+    console.error("Falha no upload da imagem da casa.", {
+      bucket: BUCKET_MIDIA_PROPRIEDADES,
+      caminho,
+      escopo: destino.escopo,
+      mensagemTecnica: error.message,
+      mimeType: arquivo.type,
+      propertyId: destino.propertyId,
+      tamanhoBytes: arquivo.size,
+      tenantId: destino.tenantId,
+    });
+    throw new ErroRegraNegocio(
+      "Nao foi possivel enviar a imagem para o armazenamento.",
+      `Storage upload falhou: ${error.message}`,
+    );
+  }
+
+  console.info("Upload de imagem da casa concluido.", {
+    bucket: BUCKET_MIDIA_PROPRIEDADES,
+    caminho,
+    escopo: destino.escopo,
+    propertyId: destino.propertyId,
+    tenantId: destino.tenantId,
+  });
 
   const { data } = supabase.storage.from(BUCKET_MIDIA_PROPRIEDADES).getPublicUrl(caminho);
 

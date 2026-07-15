@@ -1423,9 +1423,7 @@ export function PropertyForm({
       setTipoFalha(resultado.sucesso ? null : "salvamento");
 
       if (!resultado.sucesso) {
-        setAvisoRascunho(
-          `${resultado.mensagem} Seus dados continuam disponiveis para nova tentativa.`,
-        );
+        setAvisoRascunho(null);
         return;
       }
 
@@ -1450,9 +1448,7 @@ export function PropertyForm({
         sucesso: false,
       });
       setTipoFalha("salvamento");
-      setAvisoRascunho(
-        "A confirmacao do servidor nao chegou. Tente salvar novamente; a mesma casa sera reutilizada.",
-      );
+      setAvisoRascunho(null);
     } finally {
       salvandoRef.current = false;
       setSalvando(false);
@@ -1631,7 +1627,14 @@ export function PropertyForm({
         ) : null}
         {resultadoSalvamento && !resultadoSalvamento.sucesso ? (
           <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-3 text-sm text-destructive">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em]">
+              Salvamento interrompido
+            </p>
             <p>{resultadoSalvamento.mensagem}</p>
+            <p className="mt-1 text-xs text-destructive/80">
+              Seus dados continuam salvos em rascunho. Tente novamente sem fechar
+              o modal.
+            </p>
             {resultadoSalvamento.codigoSuporte ? (
               <p className="mt-1 text-xs font-semibold">
                 Codigo para suporte: {resultadoSalvamento.codigoSuporte}

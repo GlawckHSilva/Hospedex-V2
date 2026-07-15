@@ -13,7 +13,20 @@ import { podeGerenciarPropriedades } from "./data";
  * alterações operacionais nunca dependam de ids enviados pelo navegador.
  */
 
-export class ErroRegraNegocio extends Error {}
+export class ErroRegraNegocio extends Error {
+  /**
+   * Guarda a causa real do erro para os logs de suporte.
+   *
+   * A mensagem principal continua amigavel para o usuario, mas a causa tecnica
+   * evita que erros de Storage/RLS sejam mascarados como falha de formato.
+   */
+  constructor(
+    message: string,
+    public readonly causaTecnica?: string,
+  ) {
+    super(message);
+  }
+}
 
 export type ClienteSupabaseServer = Awaited<ReturnType<typeof criarClienteSupabaseServer>>;
 
