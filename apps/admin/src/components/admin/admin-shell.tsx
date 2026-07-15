@@ -262,7 +262,7 @@ function TopbarAdmin({
           </Button>
 
           <div className={cn(gerenciamento && "lg:hidden")}>
-            <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" surface />
+            <HospedexBrand adaptarAoTema href={gerenciamento ? "/" : "/super-admin"} size="sm" surface />
           </div>
         </div>
 
@@ -484,7 +484,7 @@ function SidebarAdmin({
     <aside className="hidden min-h-0 lg:block">
       <div className="sticky top-0 flex h-screen min-h-0 flex-col overflow-hidden border-r border-border/80 bg-card/72 px-4 py-5 shadow-[18px_0_50px_rgba(0,0,0,0.10)] backdrop-blur-xl dark:shadow-[18px_0_50px_rgba(0,0,0,0.16)]">
         <div className="flex shrink-0 items-center gap-2 pb-5">
-          <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
+          <HospedexBrand adaptarAoTema href={gerenciamento ? "/" : "/super-admin"} size="sm" />
           <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
             V2
           </Badge>
@@ -550,7 +550,7 @@ function MenuMobileAdmin({
       >
         <div className="flex shrink-0 items-center justify-between pb-5">
           <div className="flex items-center gap-2">
-            <HospedexBrand href={gerenciamento ? "/" : "/super-admin"} size="sm" />
+            <HospedexBrand adaptarAoTema href={gerenciamento ? "/" : "/super-admin"} size="sm" />
             <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
               V2
             </Badge>

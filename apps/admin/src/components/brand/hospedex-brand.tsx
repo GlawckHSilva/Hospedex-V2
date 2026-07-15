@@ -6,6 +6,7 @@ import { cn } from "@hospedex/ui";
 type TamanhoMarcaHospedex = "sm" | "md" | "lg" | "xl";
 
 export type HospedexBrandProps = {
+  adaptarAoTema?: boolean;
   className?: string;
   href?: string;
   priority?: boolean;
@@ -31,6 +32,7 @@ const TAMANHOS_MARCA: Record<
  * sidebar. O texto segue a regra definida: "Hospe" em ciano e "dex" branco.
  */
 export function HospedexBrand({
+  adaptarAoTema = false,
   className,
   href,
   priority = false,
@@ -46,12 +48,19 @@ export function HospedexBrand({
         tamanho.gap,
         surface &&
           "rounded-2xl border border-cyan-300/20 bg-slate-950/80 px-2.5 py-1.5 shadow-sm shadow-cyan-950/20 backdrop-blur-xl",
+        surface &&
+          adaptarAoTema &&
+          "border-slate-300 bg-white/85 shadow-slate-200/40 dark:border-cyan-300/20 dark:bg-slate-950/80 dark:shadow-cyan-950/20",
         className
       )}
     >
       <Image
         alt={showText ? "" : "Hospedex"}
-        className={cn("shrink-0 object-contain", tamanho.logo)}
+        className={cn(
+          "shrink-0 object-contain",
+          adaptarAoTema && "brightness-0 dark:brightness-100",
+          tamanho.logo
+        )}
         height={853}
         priority={priority}
         src="/brand/hospedex-logo-white.png"
@@ -64,8 +73,12 @@ export function HospedexBrand({
             tamanho.texto
           )}
         >
-          <span className="text-cyan-300">Hospe</span>
-          <span className="text-white">dex</span>
+          <span className={adaptarAoTema ? "text-cyan-700 dark:text-cyan-300" : "text-cyan-300"}>
+            Hospe
+          </span>
+          <span className={adaptarAoTema ? "text-slate-900 dark:text-white" : "text-white"}>
+            dex
+          </span>
         </span>
       ) : null}
     </span>
