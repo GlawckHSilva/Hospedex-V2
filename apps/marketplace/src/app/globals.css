@@ -73,6 +73,189 @@
   border-color: rgb(103 232 249 / 0.44);
 }
 
+/* A cena de login reutiliza os tokens do Marketplace e mantém a autenticação
+   separada da camada visual. As animações são leves e apenas decorativas. */
+.marketplace-login-scene {
+  background:
+    linear-gradient(115deg, rgb(8 145 178 / 0.08), transparent 42%),
+    linear-gradient(145deg, #f8fcff 0%, #eef9fc 54%, #e8f5f9 100%);
+}
+
+.marketplace-login-scene::before {
+  position: absolute;
+  inset: -12%;
+  z-index: -1;
+  content: "";
+  background-image:
+    linear-gradient(rgb(15 118 148 / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(15 118 148 / 0.08) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 82%, transparent);
+  animation: marketplace-login-grid 28s linear infinite;
+}
+
+.dark .marketplace-login-scene {
+  background:
+    linear-gradient(115deg, rgb(34 211 238 / 0.09), transparent 42%),
+    linear-gradient(135deg, #020611 0%, #06101f 50%, #030712 100%);
+}
+
+.dark .marketplace-login-scene::before {
+  background-image:
+    linear-gradient(rgb(148 163 184 / 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(148 163 184 / 0.07) 1px, transparent 1px);
+}
+
+.marketplace-login-beam {
+  position: absolute;
+  left: -15%;
+  z-index: -1;
+  width: 130%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(8 145 178 / 0.38), transparent);
+  opacity: 0.55;
+  transform: rotate(-7deg);
+  animation: marketplace-login-beam 12s ease-in-out infinite alternate;
+}
+
+.marketplace-login-beam-one {
+  top: 27%;
+}
+
+.marketplace-login-beam-two {
+  top: 72%;
+  opacity: 0.3;
+  transform: rotate(6deg);
+  animation-delay: -5s;
+}
+
+.marketplace-login-intro {
+  animation: marketplace-login-enter 0.65s ease-out both;
+}
+
+.marketplace-login-form-shell {
+  animation: marketplace-login-enter 0.65s 0.08s ease-out both;
+}
+
+.marketplace-login-card {
+  border-color: color-mix(in oklch, var(--border) 72%, var(--primary) 28%);
+  background: color-mix(in oklch, var(--card) 92%, transparent);
+  box-shadow:
+    0 30px 80px rgb(15 23 42 / 0.18),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(24px);
+}
+
+.dark .marketplace-login-card {
+  border-color: rgb(103 232 249 / 0.2);
+  background: rgb(2 8 23 / 0.74);
+  box-shadow:
+    0 32px 90px rgb(0 0 0 / 0.38),
+    inset 0 1px 0 rgb(255 255 255 / 0.07);
+}
+
+.marketplace-reservation-control.marketplace-login-input {
+  min-height: 52px;
+  border-color: color-mix(in oklch, var(--border) 78%, var(--primary) 22%);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.marketplace-reservation-control.marketplace-login-input:hover {
+  border-color: color-mix(in oklch, var(--border) 55%, var(--primary) 45%);
+}
+
+.marketplace-login-primary-button,
+.marketplace-login-secondary-button {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.marketplace-login-primary-button:hover,
+.marketplace-login-secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.marketplace-login-primary-button {
+  box-shadow: 0 14px 32px rgb(8 145 178 / 0.25);
+}
+
+.marketplace-login-secondary-button {
+  border-color: color-mix(in oklch, var(--border) 62%, var(--primary) 38%);
+  background: color-mix(in oklch, var(--card) 90%, var(--primary) 10%);
+  color: var(--primary);
+  box-shadow: none;
+}
+
+.marketplace-login-secondary-button:hover {
+  background: color-mix(in oklch, var(--card) 82%, var(--primary) 18%);
+}
+
+.dark .marketplace-login-secondary-button {
+  border-color: rgb(103 232 249 / 0.24);
+  background: rgb(34 211 238 / 0.08);
+  color: #a5f3fc;
+}
+
+@keyframes marketplace-login-grid {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(72px, 72px, 0);
+  }
+}
+
+@keyframes marketplace-login-beam {
+  from {
+    translate: -5% 0;
+  }
+  to {
+    translate: 5% 0;
+  }
+}
+
+@keyframes marketplace-login-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketplace-login-scene::before,
+  .marketplace-login-beam,
+  .marketplace-login-intro,
+  .marketplace-login-form-shell {
+    animation: none;
+  }
+
+  .marketplace-login-primary-button:hover,
+  .marketplace-login-secondary-button:hover {
+    transform: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .marketplace-login-scene::before {
+    background-size: 92px 92px;
+    opacity: 0.55;
+  }
+
+  .marketplace-login-beam-two {
+    display: none;
+  }
+}
+
 /* Padroniza controles nativos do formulario publico de reserva.
    O objetivo e evitar icones escuros do navegador em date/time/select sem alterar a logica da reserva. */
 .marketplace-reservation-control {

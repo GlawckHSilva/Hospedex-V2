@@ -16,13 +16,15 @@ import { FormSubmitButton } from "./form-submit-button";
 
 export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
   return (
-    <GlassCard className="mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 shadow-2xl shadow-cyan-950/20 sm:max-w-md">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+    <GlassCard className="marketplace-login-card mx-auto w-full max-w-[calc(100vw-2rem)] overflow-hidden p-6 sm:max-w-md sm:p-8">
+      <p className="text-xs font-semibold uppercase tracking-normal text-primary">
         Área do Hóspede
       </p>
-      <h1 className="mt-3 text-3xl font-semibold">Entrar</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Acompanhe suas reservas, pagamento e instruções de viagem.
+      <h1 className="mt-3 text-3xl font-semibold tracking-normal sm:text-4xl">
+        Entrar no Hospedex
+      </h1>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        Acesse sua área para acompanhar reservas, pagamentos e sua viagem.
       </p>
 
       {mensagem ? (
@@ -31,41 +33,55 @@ export function GuestLoginCard({ mensagem }: { mensagem: string | null }) {
         </div>
       ) : null}
 
-      <form action={loginHospedeAction} className="mt-6 grid gap-4">
-        <MarketplaceIconField icon={Mail} label="E-mail" srOnly>
+      <form action={loginHospedeAction} className="mt-7 grid gap-4">
+        <MarketplaceIconField icon={Mail} label="E-mail">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             name="email"
             placeholder="E-mail"
             required
             type="email"
           />
         </MarketplaceIconField>
-        <MarketplaceIconField icon={KeyRound} label="Senha" srOnly>
+        <MarketplaceIconField icon={KeyRound} label="Senha">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             name="senha"
             placeholder="Senha"
             required
             type="password"
           />
         </MarketplaceIconField>
-        <FormSubmitButton pendingText="Entrando...">Entrar</FormSubmitButton>
+        <FormSubmitButton
+          className="marketplace-login-primary-button mt-1 h-12 rounded-xl"
+          pendingText="Entrando..."
+        >
+          Entrar
+        </FormSubmitButton>
       </form>
 
-      <form action={recuperarSenhaHospedeAction} className="mt-5 grid gap-3">
-        <p className="text-xs text-muted-foreground">
-          Esqueceu a senha? Informe seu e-mail acima e solicite a recuperação.
-        </p>
-        <MarketplaceIconField icon={Mail} label="E-mail para recuperação" srOnly>
+      <form
+        action={recuperarSenhaHospedeAction}
+        className="marketplace-login-recovery mt-6 grid gap-3 border-t border-border/70 pt-5 dark:border-cyan-300/12"
+      >
+        <div>
+          <p className="text-sm font-semibold text-foreground">Esqueceu sua senha?</p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            Informe seu e-mail para receber as instruções de recuperação.
+          </p>
+        </div>
+        <MarketplaceIconField icon={Mail} label="E-mail para recuperação">
           <GlassInput
-            className={marketplaceInputWithIconClass}
+            className={marketplaceInputWithIconClass + " marketplace-login-input"}
             name="email"
             placeholder="E-mail para recuperação"
             type="email"
           />
         </MarketplaceIconField>
-        <FormSubmitButton pendingText="Enviando...">
+        <FormSubmitButton
+          className="marketplace-login-secondary-button h-11 rounded-xl"
+          pendingText="Enviando..."
+        >
           Recuperar senha
         </FormSubmitButton>
       </form>
