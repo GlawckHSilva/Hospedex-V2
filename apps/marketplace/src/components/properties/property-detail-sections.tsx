@@ -181,22 +181,17 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
       <GlassCard className="w-full max-w-full overflow-hidden p-4 sm:p-5">
         <div className="flex flex-col gap-2">
           <StatusBadge className="w-fit" tone="success">
-            Regras da casa
+            Estadia
           </StatusBadge>
-          <h2 className="text-xl font-semibold">Políticas da hospedagem</h2>
+          <h2 className="text-xl font-semibold">Informações da estadia</h2>
           <p className="text-sm leading-6 text-muted-foreground">
-            InformaÃ§Ãµes pÃºblicas cadastradas pelo proprietÃ¡rio para orientar a reserva.
+            Horários, regras e orientações importantes para sua hospedagem.
           </p>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3">
           <RuleMetric icon={Clock} label="Check-in" value={rules.checkIn} />
           <RuleMetric icon={Clock} label="Check-out" value={rules.checkOut} />
-          <RuleMetric
-            icon={Users}
-            label="Capacidade"
-            value={`${rules.maxGuests} ${rules.maxGuests === 1 ? "hÃ³spede" : "hÃ³spedes"}`}
-          />
           <RuleMetric
             icon={CalendarClock}
             label="Estadia mÃ­nima"
@@ -420,8 +415,8 @@ function RuleMetric({
     <div className="flex min-w-0 items-center gap-2.5 rounded-xl border bg-background/70 px-3 py-2.5">
       <Icone className="h-4 w-4 shrink-0 text-primary" />
       <div className="min-w-0">
-        <p className="truncate text-[11px] uppercase tracking-normal text-muted-foreground">{label}</p>
-        <p className="truncate text-sm font-semibold">{value}</p>
+        <p className="break-words text-[11px] uppercase tracking-normal text-muted-foreground">{label}</p>
+        <p className="break-words text-sm font-semibold leading-snug">{value}</p>
       </div>
     </div>
   );
@@ -450,8 +445,8 @@ function RulePermission({
       >
         {allowed ? <Icone className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
       </div>
-      <p className="mt-2 truncate text-[11px] uppercase tracking-normal text-muted-foreground">{label}</p>
-      <p className="mt-0.5 line-clamp-2 text-xs font-semibold sm:text-sm">
+      <p className="mt-2 break-words text-[11px] uppercase tracking-normal text-muted-foreground">{label}</p>
+      <p className="mt-0.5 text-xs font-semibold leading-snug sm:text-sm">
         {allowed ? enabledLabel : disabledLabel}
       </p>
     </div>

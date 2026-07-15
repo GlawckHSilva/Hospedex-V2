@@ -100,7 +100,7 @@ export function PropertyGallery({
   return (
     <>
       {mobileHero ? (
-        <div className="md:hidden">
+        <div className="lg:hidden">
           <button
             aria-label="Abrir galeria de fotos"
             className="group relative h-[420px] w-full overflow-hidden bg-secondary text-left shadow-2xl shadow-black/30"

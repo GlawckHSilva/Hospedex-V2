@@ -366,7 +366,7 @@ function ReservationFormFields({
 
       <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <MarketplaceIconField
-          helpText={`Padrão da casa: ${property.checkIn}.`}
+          helpText={`Check-in disponível ${property.checkIn.replace(/^A /, "a ")}.`}
           icon={Clock}
           label="Horário previsto de chegada"
         >
@@ -382,7 +382,7 @@ function ReservationFormFields({
           />
         </MarketplaceIconField>
         <MarketplaceIconField
-          helpText={`Padrão da casa: ${property.checkOut}.`}
+          helpText={`Check-out ${property.checkOut.replace(/^Até /, "até ")}.`}
           icon={Clock}
           label="Horário previsto de saída"
         >
@@ -637,15 +637,6 @@ function ResumoValores({
         </span>
       ) : null}
       <ConversaoTotal cotacoesCambio={cotacoesCambio} totalBrl={resumo.total} />
-      <span className="flex items-center justify-between gap-3 text-muted-foreground">
-        <span className="inline-flex items-center gap-2">
-          <Clock className="h-4 w-4 text-primary" />
-          Horários
-        </span>
-        <strong className="text-right text-foreground">
-          {property.checkIn} / {property.checkOut}
-        </strong>
-      </span>
     </div>
   );
 }
@@ -732,8 +723,8 @@ function PerfilConfianca({ property }: { property: PropriedadePublica }) {
           </span>
         )}
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{perfil.ownerName}</p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="break-words text-sm font-semibold">{perfil.ownerName}</p>
+          <p className="break-words text-xs text-muted-foreground">
             {perfil.businessName}
           </p>
         </div>

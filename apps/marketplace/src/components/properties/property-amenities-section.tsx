@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@hospedex/ui";
@@ -28,18 +28,7 @@ export function PropertyAmenitiesSection({
     : amenities.slice(0, LIMITE_INICIAL);
 
   if (!amenities.length) {
-    return (
-      <div className="rounded-lg border border-dashed bg-background/60 p-4 text-sm text-muted-foreground">
-        <Sparkles className="mb-3 h-5 w-5 text-primary" />
-        <p className="font-semibold text-foreground">
-          Comodidades ainda não informadas.
-        </p>
-        <p className="mt-1 leading-6">
-          O proprietário ainda não cadastrou comodidades públicas para esta
-          hospedagem.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -51,7 +40,7 @@ export function PropertyAmenitiesSection({
             key={comodidade.id}
           >
             <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />
-            <span className="truncate">{comodidade.name}</span>
+            <span className="break-words">{comodidade.name}</span>
           </span>
         ))}
       </div>
