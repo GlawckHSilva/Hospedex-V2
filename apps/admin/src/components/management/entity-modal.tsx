@@ -193,7 +193,7 @@ export function AppModal({
             aria-labelledby={titleId}
             aria-modal="true"
             className={cn(
-              "relative my-auto flex max-h-[calc(100svh-3rem)] w-full flex-col overflow-hidden rounded-2xl border border-cyan-300/20 bg-card/95 shadow-2xl shadow-cyan-950/25 ring-1 ring-white/10",
+              "relative my-auto flex max-h-[calc(100svh-3rem)] w-full flex-col overflow-clip rounded-2xl border border-cyan-300/20 bg-card/95 shadow-2xl shadow-cyan-950/25 ring-1 ring-white/10",
               sizeClass[size],
             )}
             exit={{ opacity: 0, scale: 0.98, y: 10 }}
