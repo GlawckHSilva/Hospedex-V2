@@ -1581,7 +1581,7 @@ export function PropertyForm({
 
   return (
     <form
-      className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)_auto]"
+      className="flex h-full min-h-0 flex-col overflow-hidden"
       data-bloquear-fechamento={salvando ? "true" : "false"}
       onChange={aoAlterarFormulario}
       onInput={aoAlterarFormulario}
@@ -1593,7 +1593,7 @@ export function PropertyForm({
         <input name="propriedadeId" type="hidden" value={propriedade.id} />
       ) : null}
 
-      <div className="border-b border-cyan-300/10 bg-card/95 px-5 py-5 backdrop-blur-xl sm:px-8">
+      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-5 py-5 backdrop-blur-xl sm:px-8">
         <WizardStepper
           etapaAtual={etapaAtual}
           etapas={ETAPAS}
@@ -1614,7 +1614,7 @@ export function PropertyForm({
         </div>
       </div>
 
-      <div className="min-h-0 overflow-y-auto overscroll-contain px-5 py-6 sm:px-8">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-8">
         {erroServidor ? (
           <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
             {erroServidor}
