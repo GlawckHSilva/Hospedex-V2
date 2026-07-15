@@ -20,6 +20,7 @@ export function NotificationBell({ resumo }: NotificationBellProps) {
   return (
     <div className="relative">
       <Button
+        aria-expanded={aberto}
         aria-label="Abrir notificacoes"
         className="relative"
         onClick={() => setAberto((valor) => !valor)}
@@ -34,8 +35,8 @@ export function NotificationBell({ resumo }: NotificationBellProps) {
       </Button>
 
       {aberto ? (
-        <div className="absolute right-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-cyan-300/20 bg-background/92 p-3 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
-          <div className="flex items-center justify-between gap-3">
+        <div className="fixed inset-x-3 top-[4.5rem] z-50 flex max-h-[calc(100dvh-5.25rem)] flex-col rounded-xl border border-cyan-300/20 bg-background/95 p-3 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem] sm:max-h-[min(36rem,calc(100dvh-5rem))]">
+          <div className="flex shrink-0 items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">Notificacoes</p>
               <p className="text-xs text-muted-foreground">
@@ -51,7 +52,7 @@ export function NotificationBell({ resumo }: NotificationBellProps) {
             ) : null}
           </div>
 
-          <div className="mt-3 space-y-2">
+          <div className="admin-sidebar-scrollbar mt-3 min-h-0 space-y-2 overflow-y-auto overscroll-contain pr-1">
             {resumo.itens.length ? (
               resumo.itens.map((item) => (
                 <Link
@@ -63,9 +64,9 @@ export function NotificationBell({ resumo }: NotificationBellProps) {
                   key={item.key}
                   onClick={() => setAberto(false)}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="font-medium">{item.titulo}</p>
-                    {!item.lida ? <Badge variant="info">novo</Badge> : null}
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <p className="min-w-0 break-words font-medium">{item.titulo}</p>
+                    {!item.lida ? <Badge className="shrink-0" variant="info">novo</Badge> : null}
                   </div>
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
                     {item.descricao}
@@ -80,7 +81,7 @@ export function NotificationBell({ resumo }: NotificationBellProps) {
           </div>
 
           <Link
-            className="mt-3 flex items-center justify-center gap-2 rounded-lg border border-cyan-300/20 px-3 py-2 text-sm font-medium text-cyan-700 transition hover:bg-cyan-500/10 dark:text-cyan-200"
+            className="mt-3 flex shrink-0 items-center justify-center gap-2 rounded-lg border border-cyan-300/20 px-3 py-2 text-sm font-medium text-cyan-700 transition hover:bg-cyan-500/10 dark:text-cyan-200"
             href="/notificacoes"
             onClick={() => setAberto(false)}
           >
