@@ -51,10 +51,10 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
       <GlassCard className="w-full max-w-full overflow-hidden p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <StatusBadge tone="info">AvaliaÃ§Ãµes</StatusBadge>
-            <h2 className="mt-3 text-xl font-semibold">ExperiÃªncias dos hÃ³spedes</h2>
+            <StatusBadge tone="info">Avaliações</StatusBadge>
+            <h2 className="mt-3 text-xl font-semibold">Experiências dos hóspedes</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              ComentÃ¡rios aprovados pelo proprietÃ¡rio para esta casa.
+              Comentários aprovados pelo proprietário para esta casa.
             </p>
           </div>
 
@@ -66,7 +66,7 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              {reviews.total} {reviews.total === 1 ? "avaliaÃ§Ã£o" : "avaliaÃ§Ãµes"}
+              {reviews.total} {reviews.total === 1 ? "avaliação" : "avaliações"}
             </p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
                     <div className="mt-4 rounded-md border border-primary/20 bg-primary/5 p-4">
                       <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-normal text-primary">
                         <MessageCircle className="h-4 w-4" />
-                        Resposta do proprietÃ¡rio
+                        Resposta do proprietário
                       </p>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         {review.ownerResponse}
@@ -134,9 +134,9 @@ export function PropertyReviewsSection({ reviews }: PropertyReviewsSectionProps)
         ) : (
           <PremiumEmptyState
             className="mt-6 border border-dashed bg-background/60"
-            description="Quando hÃ³spedes avaliarem esta hospedagem, os comentÃ¡rios aparecerÃ£o aqui."
+            description="Quando hóspedes avaliarem esta hospedagem, os comentários aparecerão aqui."
             icon={<Star className="h-5 w-5" />}
-            title="Ainda sem avaliaÃ§Ãµes"
+            title="Ainda sem avaliações"
           />
         )}
       </GlassCard>
@@ -148,29 +148,29 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
   const permissionItems = [
     {
       allowed: rules.allowChildren,
-      disabledLabel: "CrianÃ§as sob consulta",
-      enabledLabel: "CrianÃ§as permitidas",
+      disabledLabel: "Crianças sob consulta",
+      enabledLabel: "Crianças permitidas",
       icon: Users,
-      label: "CrianÃ§as"
+      label: "Crianças"
     },
     {
       allowed: rules.allowPets,
-      disabledLabel: "Pets nÃ£o permitidos",
+      disabledLabel: "Pets não permitidos",
       enabledLabel: "Pets permitidos",
       icon: PawPrint,
       label: "Pets"
     },
     {
       allowed: rules.allowSmoking,
-      disabledLabel: "Ambiente para nÃ£o fumantes",
-      enabledLabel: "Fumantes em Ã¡reas autorizadas",
+      disabledLabel: "Ambiente para não fumantes",
+      enabledLabel: "Fumantes em áreas autorizadas",
       icon: Cigarette,
       label: "Fumantes"
     },
     {
       allowed: rules.allowEvents,
-      disabledLabel: "Eventos nÃ£o permitidos",
-      enabledLabel: "Eventos com aprovaÃ§Ã£o prÃ©via",
+      disabledLabel: "Eventos não permitidos",
+      enabledLabel: "Eventos com aprovação prévia",
       icon: Sparkles,
       label: "Eventos"
     }
@@ -194,17 +194,17 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
           <RuleMetric icon={Clock} label="Check-out" value={rules.checkOut} />
           <RuleMetric
             icon={CalendarClock}
-            label="Estadia mÃ­nima"
+            label="Estadia mínima"
             value={`${rules.minNights} ${rules.minNights === 1 ? "noite" : "noites"}`}
           />
           <RuleMetric
             icon={ShieldCheck}
-            label="ResponsÃ¡vel"
+            label="Responsável"
             value={`${rules.minResponsibleAge} anos ou mais`}
           />
           <RuleMetric
             icon={CalendarClock}
-            label="Estadia mÃ¡xima"
+            label="Estadia máxima"
             value={
               rules.maxNights
                 ? `${rules.maxNights} ${rules.maxNights === 1 ? "noite" : "noites"}`
@@ -235,7 +235,7 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
           <div className="mt-4 rounded-lg border bg-background/70 p-3 sm:p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <Sparkles className="h-4 w-4 text-primary" />
-              InstruÃ§Ãµes especiais
+              Instruções especiais
             </h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {rules.specialInstructions}
@@ -247,7 +247,7 @@ export function PropertyRulesSection({ rules }: PropertyRulesSectionProps) {
           <div className="mt-4 rounded-lg border bg-background/70 p-3 sm:p-4">
             <h3 className="flex items-center gap-2 font-semibold">
               <ShieldCheck className="h-4 w-4 text-primary" />
-              PolÃ­tica de cancelamento
+              Política de cancelamento
             </h3>
             {rules.cancellationPolicy.itens.length ? (
               <div className="mt-3 grid gap-2">
@@ -283,11 +283,11 @@ export function PropertyRegionalGuideSection({
       <GlassCard className="w-full max-w-full overflow-hidden p-4 sm:p-5">
         <div className="flex flex-col gap-2">
           <StatusBadge className="w-fit" tone="info">
-            Guia da regiÃ£o
+            Guia da região
           </StatusBadge>
-          <h2 className="text-xl font-semibold">Locais prÃ³ximos recomendados</h2>
+          <h2 className="text-xl font-semibold">Locais próximos recomendados</h2>
           <p className="text-sm leading-6 text-muted-foreground">
-            RecomendaÃ§Ãµes ativas cadastradas pelo proprietÃ¡rio para hÃ³spedes.
+            Recomendações ativas cadastradas pelo proprietário para hóspedes.
           </p>
         </div>
 
@@ -376,9 +376,9 @@ export function PropertyRegionalGuideSection({
         ) : (
           <PremiumEmptyState
             className="mt-6 border border-dashed bg-background/60"
-            description="O proprietÃ¡rio ainda nÃ£o cadastrou recomendaÃ§Ãµes locais para esta hospedagem."
+            description="O proprietário ainda não cadastrou recomendações locais para esta hospedagem."
             icon={<MapPin className="h-5 w-5" />}
-            title="Nenhuma recomendaÃ§Ã£o local cadastrada ainda."
+            title="Nenhuma recomendação local cadastrada ainda."
           />
         )}
       </GlassCard>
@@ -490,7 +490,7 @@ function StarRating({ rating }: { rating: number }) {
 
 function formatarDataPublica(data: string) {
   const parsed = new Date(data);
-  if (Number.isNaN(parsed.getTime())) return "Data nÃ£o informada";
+  if (Number.isNaN(parsed.getTime())) return "Data não informada";
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",

@@ -979,19 +979,23 @@ function montarPoliticaCancelamentoPublica(
   }
 
   const itens = [
-    `Até ${regras.cancellation_refund_until_days} dias antes do check-in: reembolso de ${formatarPercentual(
+    `Até ${formatarPrazoDias(regras.cancellation_refund_until_days)} antes do check-in: reembolso de ${formatarPercentual(
       regras.cancellation_refund_until_percentage
     )}.`,
-    `Até ${regras.cancellation_late_until_days} dias antes do check-in: reembolso de ${formatarPercentual(
+    `Até ${formatarPrazoDias(regras.cancellation_late_until_days)} antes do check-in: reembolso de ${formatarPercentual(
       regras.cancellation_late_refund_percentage
     )}.`,
-    `Dentro dos últimos ${regras.cancellation_no_refund_within_days} dias: sem reembolso.`
+    `Dentro dos últimos ${formatarPrazoDias(regras.cancellation_no_refund_within_days)}: sem reembolso.`
   ];
 
   return {
     itens,
     observacoes: normalizarTextoOpcional(regras.cancellation_notes)
   };
+}
+
+function formatarPrazoDias(valor: number) {
+  return `${valor} ${valor === 1 ? "dia" : "dias"}`;
 }
 
 function montarGuiaRegiaoPublico(
