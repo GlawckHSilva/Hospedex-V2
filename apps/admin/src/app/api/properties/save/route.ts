@@ -16,12 +16,44 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+function contarArquivos(formData: FormData, chave: string) {
+  return formData
+    .getAll(chave)
+    .filter((valor): valor is File => valor instanceof File && valor.size > 0)
+    .length;
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
+    const operacaoId = formData.get("operacaoId")?.toString() ?? null;
+    const propriedadeId = formData.get("propriedadeId")?.toString() ?? null;
+    const quantidadeCapa = contarArquivos(formData, "imagemCapaArquivo");
+    const quantidadeGaleria = contarArquivos(
+      formData,
+      "imagensGaleriaArquivos",
+    );
+
+    console.info("Salvamento final de casa recebido.", {
+      galeriaIds: formData.getAll("galeriaArquivoIds").length,
+      imagemCapaIds: formData.has("imagemCapaId") ? 1 : 0,
+      modo: propriedadeId ? "editar" : "criar",
+      operacaoId,
+      propriedadeId,
+      quantidadeCapa,
+      quantidadeGaleria,
+    });
+
     const resultado = formData.has("propriedadeId")
       ? await atualizarPropriedadeAction(formData)
       : await criarPropriedadeAction(formData);
+
+    console.info("Salvamento final de casa concluido.", {
+      modo: propriedadeId ? "editar" : "criar",
+      operacaoId,
+      propriedadeId: resultado.propriedadeId ?? propriedadeId,
+      sucesso: resultado.sucesso,
+    });
 
     return NextResponse.json(resultado);
   } catch (erro) {

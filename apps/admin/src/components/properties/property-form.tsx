@@ -1072,6 +1072,12 @@ export function PropertyForm({
     }, 1_000);
   }
 
+  function cancelarSincronizacaoRascunhoAgendada() {
+    if (!timerRascunhoRef.current) return;
+    window.clearTimeout(timerRascunhoRef.current);
+    timerRascunhoRef.current = null;
+  }
+
   function descartarRascunhoLocal() {
     try {
       window.localStorage.removeItem(chaveRascunho);
@@ -1365,8 +1371,7 @@ export function PropertyForm({
     setEtapaAtual(destino);
   }
 
-  async function validarEnvio(evento: FormEvent<HTMLFormElement>) {
-    evento.preventDefault();
+  async function salvarFormularioFinal(formulario: HTMLFormElement) {
     if (salvandoRef.current) return;
 
     salvarRascunhoLocal(null);
@@ -1379,7 +1384,7 @@ export function PropertyForm({
     }
 
     const erros = validarFormularioCasa(
-      evento.currentTarget,
+      formulario,
       undefined,
       obterContextoValidacaoCasa(),
     );
@@ -1391,7 +1396,6 @@ export function PropertyForm({
       return;
     }
 
-    const formulario = evento.currentTarget;
     const dados = montarDadosSalvamento(formulario);
     const tamanhoArquivos = Array.from(dados.values()).reduce(
       (total, valor) => total + (valor instanceof File ? valor.size : 0),
@@ -1409,11 +1413,11 @@ export function PropertyForm({
 
     setErrosCampos({});
     setResultadoSalvamento(null);
+    cancelarSincronizacaoRascunhoAgendada();
     salvandoRef.current = true;
     setSalvando(true);
 
     try {
-      await sincronizarRascunho();
       const resultado = await salvarCasaFinal(dados);
       setResultadoSalvamento(resultado);
       setTipoFalha(resultado.sucesso ? null : "salvamento");
@@ -1453,6 +1457,17 @@ export function PropertyForm({
       salvandoRef.current = false;
       setSalvando(false);
     }
+  }
+
+  async function validarEnvio(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault();
+    await salvarFormularioFinal(evento.currentTarget);
+  }
+
+  function salvarFormularioPeloBotao() {
+    const formulario = formRef.current;
+    if (!formulario) return;
+    void salvarFormularioFinal(formulario);
   }
 
   sincronizarRascunhoAtualRef.current = () => sincronizarRascunho();
@@ -1626,7 +1641,7 @@ export function PropertyForm({
               {tipoFalha === "salvamento" ? (
                 <ActionButton
                   icon={<RefreshCw className="h-4 w-4" />}
-                  onClick={() => formRef.current?.requestSubmit()}
+                  onClick={salvarFormularioPeloBotao}
                   size="sm"
                   type="button"
                   variant="edit"
@@ -1893,6 +1908,7 @@ export function PropertyForm({
             <BotaoSalvarCasa
               bloqueado={bloqueado}
               modo={modo}
+              onSalvar={salvarFormularioPeloBotao}
               salvando={salvando}
             />
           )}
@@ -1905,10 +1921,12 @@ export function PropertyForm({
 function BotaoSalvarCasa({
   bloqueado,
   modo,
+  onSalvar,
   salvando,
 }: {
   bloqueado: boolean;
   modo: "criar" | "editar";
+  onSalvar: () => void;
   salvando: boolean;
 }) {
   return (
@@ -1921,8 +1939,9 @@ function BotaoSalvarCasa({
           <CheckCircle2 className="h-4 w-4" />
         )
       }
+      onClick={onSalvar}
       size="lg"
-      type="submit"
+      type="button"
       variant="add"
     >
       {salvando
