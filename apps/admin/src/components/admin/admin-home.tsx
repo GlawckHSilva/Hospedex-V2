@@ -244,7 +244,7 @@ function GraficoReceitaPeriodo({ dados }: { dados: ReceitaPeriodoDashboard[] }) 
         </div>
         <CircleDollarSign className="h-5 w-5 text-primary" />
       </div>
-      <div className="mt-4 h-72">
+      <div className="mt-4 h-72 min-w-0">
         {possuiReceita ? (
           <ResponsiveContainer height="100%" width="100%">
             <AreaChart data={dados}>
