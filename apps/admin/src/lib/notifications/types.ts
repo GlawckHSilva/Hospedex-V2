@@ -4,6 +4,11 @@ import type {
   PermissionCode
 } from "@hospedex/types";
 
+export type EstadoNotificacaoGerenciamento = Pick<
+  ManagementNotificationStateRow,
+  "deleted_at" | "notification_key" | "read_at"
+>;
+
 export type FiltroStatusNotificacao = "lidas" | "nao_lidas" | "todas";
 export type FiltroTipoNotificacao = ManagementNotificationType | "todos";
 
@@ -19,7 +24,7 @@ export type NotificacaoGerenciamento = {
   key: string;
   lida: boolean;
   permissoes: PermissionCode[];
-  state: ManagementNotificationStateRow | null;
+  state: EstadoNotificacaoGerenciamento | null;
   tipo: ManagementNotificationType;
   titulo: string;
   tom: "azul" | "laranja" | "roxo" | "verde" | "vermelho";

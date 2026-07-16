@@ -95,17 +95,27 @@ export type DadosDashboardProprietario = {
 };
 
 type DadosOperacionais = {
-  hospedes: ReservationGuestRow[];
-  licencas: LicenseRow[];
+  hospedes: HospedeDashboard[];
+  licencas: LicencaDashboard[];
   licencasPermitidas: boolean;
-  limpezasPendentes: CleaningTaskRow[];
+  limpezasPendentes: LimpezaDashboard[];
   limpezaPermitida: boolean;
-  propriedades: PropertyRow[];
+  propriedades: PropriedadeDashboard[];
   propriedadesPermitidas: boolean;
-  reservas: ReservationRow[];
-  reservasPendentes: ReservationRow[];
-  transacoesReceita: TransactionRow[];
+  reservas: ReservaDashboard[];
+  reservasPendentes: ReservaDashboard[];
+  transacoesReceita: TransacaoDashboard[];
 };
+
+type HospedeDashboard = Pick<ReservationGuestRow, "full_name" | "reservation_id">;
+type LicencaDashboard = Pick<LicenseRow, "expires_at" | "status">;
+type LimpezaDashboard = Pick<CleaningTaskRow, "property_id">;
+type PropriedadeDashboard = Pick<PropertyRow, "deleted_at" | "id" | "name" | "status">;
+type ReservaDashboard = Pick<
+  ReservationRow,
+  "check_in" | "check_out" | "code" | "id" | "property_id" | "status"
+>;
+type TransacaoDashboard = Pick<TransactionRow, "amount" | "paid_at">;
 
 type PeriodoDashboard = {
   fimMesExclusivo: string;
@@ -213,65 +223,65 @@ async function carregarDadosOperacionais(
     podeVerPropriedades
       ? supabase
           .from("properties")
-          .select("*")
+          .select("id, name, status, deleted_at")
           .eq("tenant_id", tenantId)
           .eq("owner_id", ownerId)
           .is("deleted_at", null)
           .order("name", { ascending: true })
-          .returns<PropertyRow[]>()
-      : consultaVazia<PropertyRow>(),
+          .returns<PropriedadeDashboard[]>()
+      : consultaVazia<PropriedadeDashboard>(),
     podeVerReservas
       ? supabase
           .from("reservations")
-          .select("*")
+          .select("id, code, property_id, status, check_in, check_out")
           .eq("tenant_id", tenantId)
           .eq("owner_id", ownerId)
           .gte("check_out", periodo.inicioGrafico)
           .lte("check_in", periodo.fimProximos)
           .order("check_in", { ascending: true })
-          .returns<ReservationRow[]>()
-      : consultaVazia<ReservationRow>(),
+          .returns<ReservaDashboard[]>()
+      : consultaVazia<ReservaDashboard>(),
     podeVerReservas
       ? supabase
           .from("reservations")
-          .select("*")
+          .select("id, code, property_id, status, check_in, check_out")
           .eq("tenant_id", tenantId)
           .eq("owner_id", ownerId)
           .in("status", STATUS_RESERVA_PENDENTE)
           .order("check_in", { ascending: true })
-          .returns<ReservationRow[]>()
-      : consultaVazia<ReservationRow>(),
+          .returns<ReservaDashboard[]>()
+      : consultaVazia<ReservaDashboard>(),
     podeVerFinanceiro
       ? supabase
           .from("transactions")
-          .select("*")
+          .select("amount, paid_at")
           .eq("tenant_id", tenantId)
           .eq("transaction_type", "income")
           .eq("status", "paid")
           .gte("paid_at", `${periodo.inicioGrafico}T00:00:00`)
           .lt("paid_at", `${periodo.fimMesExclusivo}T00:00:00`)
           .order("paid_at", { ascending: true })
-          .returns<TransactionRow[]>()
-      : consultaVazia<TransactionRow>(),
+          .returns<TransacaoDashboard[]>()
+      : consultaVazia<TransacaoDashboard>(),
     podeVerLimpeza
       ? supabase
           .from("cleaning_tasks")
-          .select("*")
+          .select("property_id")
           .eq("tenant_id", tenantId)
           .eq("owner_id", ownerId)
           .in("status", [...STATUS_LIMPEZA_PENDENTE])
           .order("scheduled_for", { ascending: true, nullsFirst: false })
-          .returns<CleaningTaskRow[]>()
-      : consultaVazia<CleaningTaskRow>(),
+          .returns<LimpezaDashboard[]>()
+      : consultaVazia<LimpezaDashboard>(),
     podeVerLicencas
       ? supabase
           .from("licenses")
-          .select("*")
+          .select("status, expires_at")
           .eq("tenant_id", tenantId)
           .eq("owner_id", ownerId)
           .order("expires_at", { ascending: true, nullsFirst: false })
-          .returns<LicenseRow[]>()
-      : consultaVazia<LicenseRow>()
+          .returns<LicencaDashboard[]>()
+      : consultaVazia<LicencaDashboard>()
   ]);
 
   registrarErroModulo(erros, "propriedades", propriedadesResultado.error);
@@ -312,7 +322,7 @@ async function carregarDadosOperacionais(
 
 async function carregarHospedesEventos(
   tenantId: string,
-  reservas: ReservationRow[],
+  reservas: ReservaDashboard[],
   periodo: PeriodoDashboard,
   erros: ErroDashboardModulo[]
 ) {
@@ -326,11 +336,11 @@ async function carregarHospedesEventos(
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("reservation_guests")
-    .select("*")
+    .select("reservation_id, full_name")
     .eq("tenant_id", tenantId)
     .eq("is_primary", true)
     .in("reservation_id", idsUnicos)
-    .returns<ReservationGuestRow[]>();
+    .returns<HospedeDashboard[]>();
 
   registrarErroModulo(erros, "reservas", error);
   return data ?? [];
@@ -514,7 +524,7 @@ function montarReceitaPorPeriodo(
   });
 }
 
-function montarReservasPorStatus(reservas: ReservationRow[]): ReservaStatusDashboard[] {
+function montarReservasPorStatus(reservas: ReservaDashboard[]): ReservaStatusDashboard[] {
   return STATUS_RESERVA_DASHBOARD.map((status) => ({
     cor: COR_STATUS_RESERVA[status],
     label: LABEL_STATUS_RESERVA[status],
@@ -524,7 +534,7 @@ function montarReservasPorStatus(reservas: ReservationRow[]): ReservaStatusDashb
 }
 
 function montarEventosReserva(
-  reservas: ReservationRow[],
+  reservas: ReservaDashboard[],
   dados: DadosOperacionais,
   campoData: "check_in" | "check_out"
 ): EventoReservaDashboard[] {
@@ -544,7 +554,7 @@ function montarEventosReserva(
 }
 
 function obterReservasProximas(
-  reservas: ReservationRow[],
+  reservas: ReservaDashboard[],
   periodo: PeriodoDashboard,
   campoData: "check_in" | "check_out"
 ) {
@@ -555,7 +565,7 @@ function obterReservasProximas(
 }
 
 function montarSerieDiaria(
-  reservas: ReservationRow[],
+  reservas: ReservaDashboard[],
   campoData: "check_in" | "check_out",
   periodo: PeriodoDashboard
 ): PontoSerieDashboard[] {
@@ -586,7 +596,7 @@ function montarSerieOcupacao(
   });
 }
 
-function montarSeriePropriedades(propriedades: PropertyRow[]): PontoSerieDashboard[] {
+function montarSeriePropriedades(propriedades: PropriedadeDashboard[]): PontoSerieDashboard[] {
   const status = [
     ["Publicadas", "published"],
     ["Pausadas", "paused"],
@@ -616,7 +626,11 @@ function calcularOcupacao(dados: DadosOperacionais, inicio: string, fimExclusivo
   return Math.min(100, Math.round((noitesOcupadas / noitesDisponiveis) * 100));
 }
 
-function contarNoitesNoPeriodo(reserva: ReservationRow, inicio: string, fimExclusivo: string): number {
+function contarNoitesNoPeriodo(
+  reserva: ReservaDashboard,
+  inicio: string,
+  fimExclusivo: string
+): number {
   const inicioReserva = criarData(reserva.check_in);
   const fimReserva = criarData(reserva.check_out);
   const inicioPeriodo = criarData(inicio);
@@ -628,7 +642,7 @@ function contarNoitesNoPeriodo(reserva: ReservationRow, inicio: string, fimExclu
 }
 
 function contarReservasPorData(
-  reservas: ReservationRow[],
+  reservas: ReservaDashboard[],
   campoData: "check_in" | "check_out",
   data: string
 ) {
@@ -636,7 +650,7 @@ function contarReservasPorData(
     .length;
 }
 
-function obterLicencaVencendo(licencas: LicenseRow[], hoje: string) {
+function obterLicencaVencendo(licencas: LicencaDashboard[], hoje: string) {
   return licencas
     .filter((licenca) => ["trial", "active"].includes(licenca.status))
     .find((licenca) => {

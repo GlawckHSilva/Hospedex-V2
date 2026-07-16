@@ -57,63 +57,92 @@ export async function carregarDadosModuloReservas(
   }
 
   const supabase = await criarClienteSupabaseServer();
-  const estadoLicenca = await carregarEstadoLicencaTenant(tenantId);
+  const [propriedadesResultado, reservasResultado, estadoLicenca] =
+    await Promise.all([
+      supabase
+        .from("properties")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .is("deleted_at", null)
+        .order("name", { ascending: true })
+        .returns<PropertyRow[]>(),
+      criarConsultaReservas(tenantId, filtros),
+      carregarEstadoLicencaTenant(tenantId),
+    ]);
+
+  registrarErroLeitura("propriedades", propriedadesResultado.error);
+  registrarErroLeitura("reservas", reservasResultado.error);
+
+  const propriedades = propriedadesResultado.data ?? [];
+  const reservasOperacionais = filtrarPorPropriedadesAtivas(
+    reservasResultado.data ?? [],
+    propriedades,
+  );
+  const reservaIds = reservasOperacionais.map((reserva) => reserva.id);
   const [
-    propriedadesResultado,
-    reservasResultado,
     hospedesResultado,
     historicoResultado,
     cobrancasResultado,
     pagamentosResultado,
     extrasResultado,
-    observacoesResultado
+    observacoesResultado,
+    lancamentosFinanceiros,
   ] = await Promise.all([
-    supabase
-      .from("properties")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .is("deleted_at", null)
-      .order("name", { ascending: true })
-      .returns<PropertyRow[]>(),
-    criarConsultaReservas(tenantId, filtros),
-    supabase
-      .from("reservation_guests")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .returns<ReservationGuestRow[]>(),
-    supabase
-      .from("reservation_status_history")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: true })
-      .returns<ReservationStatusHistoryRow[]>(),
-    supabase
-      .from("reservation_charges")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .returns<ReservationChargeRow[]>(),
-    supabase
-      .from("reservation_payments")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: true })
-      .returns<ReservationPaymentRow[]>(),
-    supabase
-      .from("reservation_extra_services")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: true })
-      .returns<ReservationExtraServiceRow[]>(),
-    supabase
-      .from("reservation_notes")
-      .select("*")
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: true })
-      .returns<ReservationNoteRow[]>()
+    reservaIds.length
+      ? supabase
+          .from("reservation_guests")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("reservation_id", reservaIds)
+          .returns<ReservationGuestRow[]>()
+      : consultaVazia<ReservationGuestRow>(),
+    reservaIds.length
+      ? supabase
+          .from("reservation_status_history")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("reservation_id", reservaIds)
+          .order("created_at", { ascending: true })
+          .returns<ReservationStatusHistoryRow[]>()
+      : consultaVazia<ReservationStatusHistoryRow>(),
+    reservaIds.length
+      ? supabase
+          .from("reservation_charges")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("reservation_id", reservaIds)
+          .returns<ReservationChargeRow[]>()
+      : consultaVazia<ReservationChargeRow>(),
+    reservaIds.length
+      ? supabase
+          .from("reservation_payments")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("reservation_id", reservaIds)
+          .order("created_at", { ascending: true })
+          .returns<ReservationPaymentRow[]>()
+      : consultaVazia<ReservationPaymentRow>(),
+    reservaIds.length
+      ? supabase
+          .from("reservation_extra_services")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("reservation_id", reservaIds)
+          .order("created_at", { ascending: true })
+          .returns<ReservationExtraServiceRow[]>()
+      : consultaVazia<ReservationExtraServiceRow>(),
+    reservaIds.length
+      ? supabase
+          .from("reservation_notes")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .in("reservation_id", reservaIds)
+          .order("created_at", { ascending: true })
+          .returns<ReservationNoteRow[]>()
+      : consultaVazia<ReservationNoteRow>(),
+    carregarLancamentosFinanceiros(tenantId, reservaIds),
   ]);
 
-  registrarErroLeitura("propriedades", propriedadesResultado.error);
-  registrarErroLeitura("reservas", reservasResultado.error);
   registrarErroLeitura("hóspedes da reserva", hospedesResultado.error);
   registrarErroLeitura("histórico da reserva", historicoResultado.error);
   registrarErroLeitura("serviços extras", extrasResultado.error);
@@ -121,12 +150,6 @@ export async function carregarDadosModuloReservas(
 
   registrarErroLeitura("cobrancas da reserva", cobrancasResultado.error);
   registrarErroLeitura("pagamentos da reserva", pagamentosResultado.error);
-
-  const propriedades = propriedadesResultado.data ?? [];
-  const reservasOperacionais = filtrarPorPropriedadesAtivas(
-    reservasResultado.data ?? [],
-    propriedades
-  );
 
   const reservas = montarReservas(
     reservasOperacionais,
@@ -137,10 +160,7 @@ export async function carregarDadosModuloReservas(
     pagamentosResultado.data ?? [],
     extrasResultado.data ?? [],
     observacoesResultado.data ?? [],
-    await carregarLancamentosFinanceiros(
-      tenantId,
-      reservasOperacionais.map((reserva) => reserva.id)
-    )
+    lancamentosFinanceiros,
   ).filter((reserva) => correspondeFiltrosRelacionados(reserva, filtros));
 
   return {
@@ -218,6 +238,10 @@ async function carregarLancamentosFinanceiros(tenantId: string, reservaIds: stri
   return data ?? [];
 }
 
+function consultaVazia<T>() {
+  return Promise.resolve({ data: [] as T[], error: null });
+}
+
 function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
@@ -229,10 +253,19 @@ function montarReservas(
   observacoes: ReservationNoteRow[],
   lancamentos: TransactionRow[]
 ): ReservaComRelacionamentos[] {
+  const hospedesPorReserva = agruparPorReserva(hospedes);
+  const historicoPorReserva = agruparPorReserva(historico);
+  const cobrancasPorReserva = agruparPorReserva(cobrancas);
+  const pagamentosPorReserva = agruparPorReserva(pagamentos);
+  const extrasPorReserva = agruparPorReserva(extras);
+  const observacoesPorReserva = agruparPorReserva(observacoes);
+  const lancamentosPorReserva = agruparPorReserva(lancamentos);
+
   return reservas.map((reserva) => {
-    const servicosExtras = extras.filter(
-      (extra) => extra.reservation_id === reserva.id && extra.status === "active"
+    const servicosExtras = (extrasPorReserva.get(reserva.id) ?? []).filter(
+      (extra) => extra.status === "active"
     );
+    const lancamentosFinanceiros = lancamentosPorReserva.get(reserva.id) ?? [];
     const valorServicosExtras = servicosExtras.reduce(
       (total, extra) => total + Number(extra.total_amount),
       0
@@ -242,23 +275,31 @@ function montarReservas(
       ...reserva,
       propriedade:
         propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
-      hospedes: hospedes.filter((hospede) => hospede.reservation_id === reserva.id),
-      historico: historico.filter((item) => item.reservation_id === reserva.id),
-      cobrancas: cobrancas.filter((cobranca) => cobranca.reservation_id === reserva.id),
-      pagamentos: pagamentos.filter((pagamento) => pagamento.reservation_id === reserva.id),
-      lancamentosFinanceiros: lancamentos.filter(
-        (lancamento) => lancamento.reservation_id === reserva.id
-      ),
-      statusPagamento: obterStatusPagamentoReserva(
-        reserva,
-        lancamentos.filter((lancamento) => lancamento.reservation_id === reserva.id)
-      ),
+      hospedes: hospedesPorReserva.get(reserva.id) ?? [],
+      historico: historicoPorReserva.get(reserva.id) ?? [],
+      cobrancas: cobrancasPorReserva.get(reserva.id) ?? [],
+      pagamentos: pagamentosPorReserva.get(reserva.id) ?? [],
+      lancamentosFinanceiros,
+      statusPagamento: obterStatusPagamentoReserva(reserva, lancamentosFinanceiros),
       servicosExtras,
-      observacoes: observacoes.filter((observacao) => observacao.reservation_id === reserva.id),
+      observacoes: observacoesPorReserva.get(reserva.id) ?? [],
       valorServicosExtras,
       valorTotalComExtras: Number(reserva.total_amount) + valorServicosExtras
     };
   });
+}
+
+function agruparPorReserva<T extends { reservation_id: string | null }>(itens: T[]) {
+  const grupos = new Map<string, T[]>();
+
+  itens.forEach((item) => {
+    if (!item.reservation_id) return;
+    const grupo = grupos.get(item.reservation_id) ?? [];
+    grupo.push(item);
+    grupos.set(item.reservation_id, grupo);
+  });
+
+  return grupos;
 }
 
 function correspondeFiltrosRelacionados(

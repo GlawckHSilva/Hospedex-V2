@@ -1,7 +1,6 @@
 import type {
   CleaningTaskRow,
   LicenseRow,
-  ManagementNotificationStateRow,
   PermissionCode,
   ReservationRow,
   ReservationStatusHistoryRow,
@@ -15,6 +14,7 @@ import type {
   FiltrosNotificacoes,
   FiltroStatusNotificacao,
   FiltroTipoNotificacao,
+  EstadoNotificacaoGerenciamento,
   NotificacaoGerenciamento,
   ResumoNotificacoesGerenciamento
 } from "./types";
@@ -97,7 +97,11 @@ export async function carregarNotificacoesGerenciamento(
     ...notificacoesDeHistorico(historicoPagamentos, contexto),
     ...notificacoesDeLicencas(licencas, hoje, contexto)
   ];
-  const estados = await carregarEstados(tenantId, contexto.userId);
+  const estados = await carregarEstados(
+    tenantId,
+    contexto.userId,
+    derivadas.map((notificacao) => notificacao.key)
+  );
   const estadosPorKey = new Map(estados.map((estado) => [estado.notification_key, estado]));
   const notificacoes = derivadas
     .map((notificacao) => aplicarEstado(notificacao, estadosPorKey.get(notificacao.key) ?? null))
@@ -128,7 +132,7 @@ async function carregarReservas(
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("reservations")
-    .select("*")
+    .select("id, code, status, created_at, cancelled_at, updated_at, check_in, check_out")
     .eq("tenant_id", tenantId)
     .eq("owner_id", ownerId)
     .in("status", ["pending", "awaiting_payment", "confirmed", "checked_in", "cancelled"])
@@ -150,7 +154,7 @@ async function carregarLimpezas(
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("cleaning_tasks")
-    .select("*")
+    .select("id, scheduled_for, created_at, notes, title")
     .eq("tenant_id", tenantId)
     .eq("owner_id", ownerId)
     .in("status", ["awaiting_cleaning", "in_cleaning"])
@@ -168,7 +172,7 @@ async function carregarTransacoes(contexto: ContextoAutenticacao, tenantId: stri
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("transactions")
-    .select("*")
+    .select("id, status, paid_at, updated_at, amount, currency, reservation_id")
     .eq("tenant_id", tenantId)
     .in("status", ["pending", "paid"])
     .not("reservation_id", "is", null)
@@ -186,7 +190,7 @@ async function carregarHistoricoPagamento(contexto: ContextoAutenticacao, tenant
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("reservation_status_history")
-    .select("*")
+    .select("id, created_at, reason")
     .eq("tenant_id", tenantId)
     .eq("from_status", "awaiting_payment")
     .eq("to_status", "confirmed")
@@ -208,7 +212,7 @@ async function carregarLicencas(
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("licenses")
-    .select("*")
+    .select("id, expires_at, license_key")
     .eq("tenant_id", tenantId)
     .eq("owner_id", ownerId)
     .in("status", ["trial", "active"])
@@ -220,14 +224,17 @@ async function carregarLicencas(
   return data ?? [];
 }
 
-async function carregarEstados(tenantId: string, userId: string) {
+async function carregarEstados(tenantId: string, userId: string, chaves: string[]) {
+  if (chaves.length === 0) return [];
+
   const supabase = await criarClienteSupabaseServer();
   const { data, error } = await supabase
     .from("management_notification_states")
-    .select("*")
+    .select("notification_key, read_at, deleted_at")
     .eq("tenant_id", tenantId)
     .eq("user_id", userId)
-    .returns<ManagementNotificationStateRow[]>();
+    .in("notification_key", chaves)
+    .returns<EstadoNotificacaoGerenciamento[]>();
 
   registrarErro("estado de notificacoes", error);
   return data ?? [];
@@ -419,7 +426,7 @@ function criarNotificacao(
 
 function aplicarEstado(
   notificacao: NotificacaoGerenciamento,
-  state: ManagementNotificationStateRow | null
+  state: EstadoNotificacaoGerenciamento | null
 ): NotificacaoGerenciamento {
   return {
     ...notificacao,

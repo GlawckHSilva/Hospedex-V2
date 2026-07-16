@@ -1,4 +1,5 @@
 ﻿import { ArrowUpRight, BedDouble, MapPin, Sparkles, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { GlassCard, StatusBadge } from "@hospedex/ui";
@@ -15,12 +16,17 @@ export function PropertyCard({ property }: PropertyCardProps) {
   return (
     <GlassCard className="group overflow-hidden rounded-[1.35rem]">
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-        <Link aria-label={`Ver ${property.name}`} href={`/propriedades/${property.slug}`}>
+        <Link
+          aria-label={`Ver ${property.name}`}
+          className="absolute inset-0"
+          href={`/propriedades/${property.slug}`}
+        >
           {property.coverImage ? (
-            <img
+            <Image
               alt={property.coverImage.alt}
-              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-              loading="lazy"
+              className="object-cover transition duration-500 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1280px) 30vw, (min-width: 768px) 46vw, 100vw"
               src={property.coverImage.url}
             />
           ) : (

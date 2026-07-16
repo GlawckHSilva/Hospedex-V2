@@ -13,6 +13,7 @@ import {
   Star,
   Users,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -390,13 +391,15 @@ function PropertyShowcaseCard({
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
         <Link
           aria-label={`Ver ${propriedade.name}`}
+          className="absolute inset-0"
           href={`/propriedades/${propriedade.slug}`}
         >
           {propriedade.coverImage ? (
-            <img
+            <Image
               alt={propriedade.coverImage.alt}
-              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              loading="lazy"
+              className="object-cover transition duration-700 group-hover:scale-105"
+              fill
+              sizes="(min-width: 1280px) 20vw, (min-width: 640px) 42vw, 78vw"
               src={propriedade.coverImage.url}
             />
           ) : (
