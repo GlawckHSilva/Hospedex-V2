@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   CartesianGrid,
   Cell,
@@ -62,6 +63,7 @@ export function ReportsModule({
   servicosExtras,
   tenantNome,
 }: ReportsModuleProps) {
+  const router = useRouter();
   const possuiDados =
     resumo.reservasPeriodo > 0 ||
     resumo.receitaPeriodo > 0 ||
@@ -69,6 +71,13 @@ export function ReportsModule({
     propriedadesRentaveis.length > 0 ||
     servicosExtras.length > 0;
   const periodoFormatado = `${formatarData(filtros.dataInicio)} a ${formatarData(filtros.dataFim)}`;
+  const limparFiltros = () => router.push("/relatorios");
+  const aplicarPeriodo = (dataInicio: string, dataFim: string) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("dataInicio", dataInicio);
+    params.set("dataFim", dataFim);
+    router.push(`/relatorios?${params.toString()}`);
+  };
 
   return (
     <FadeIn className="reports-page space-y-5">
@@ -147,7 +156,7 @@ export function ReportsModule({
                 categorias={categoriasFinanceiras}
                 value={filtros.categoriaFinanceiraId ?? ""}
               />
-              <AtalhosPeriodo />
+              <AtalhosPeriodo onAplicar={aplicarPeriodo} />
             </div>
             <div className="flex items-end gap-2 xl:col-start-4 xl:row-start-1">
               <Button onClick={limparFiltros} type="button" variant="outline">
@@ -588,7 +597,11 @@ function CampoCategoria({
   );
 }
 
-function AtalhosPeriodo() {
+function AtalhosPeriodo({
+  onAplicar,
+}: {
+  onAplicar: (dataInicio: string, dataFim: string) => void;
+}) {
   const atalhos = [
     { label: "Hoje", intervalo: calcularAtalhoPeriodo("hoje") },
     { label: "Esta semana", intervalo: calcularAtalhoPeriodo("semana") },
@@ -603,7 +616,7 @@ function AtalhosPeriodo() {
         {atalhos.map((atalho) => (
           <Button
             key={atalho.label}
-            onClick={() => aplicarPeriodo(atalho.intervalo.dataInicio, atalho.intervalo.dataFim)}
+            onClick={() => onAplicar(atalho.intervalo.dataInicio, atalho.intervalo.dataFim)}
             size="sm"
             type="button"
             variant="outline"
@@ -787,17 +800,6 @@ function exportarCsv(linhas: string[][], filtros: DadosModuloRelatorios["filtros
 
 function imprimirRelatorio() {
   window.print();
-}
-
-function aplicarPeriodo(dataInicio: string, dataFim: string) {
-  const params = new URLSearchParams(window.location.search);
-  params.set("dataInicio", dataInicio);
-  params.set("dataFim", dataFim);
-  window.location.assign(`/relatorios?${params.toString()}`);
-}
-
-function limparFiltros() {
-  window.location.assign("/relatorios");
 }
 
 function calcularAtalhoPeriodo(tipo: "hoje" | "semana" | "mes" | "30dias") {
