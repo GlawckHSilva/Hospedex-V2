@@ -30,7 +30,7 @@ const CHECKLIST_BASE: ChecklistBase[] = [
     descricao: "Adicione localização, capacidade e informações principais.",
     href: "/propriedades",
     id: "primeira-casa",
-    permissoes: ["properties.read"],
+    permissoes: ["properties.manage"],
     titulo: "Cadastrar a primeira casa",
     tourKey: "properties:first-property:v1" as TutorialTourKey
   },
@@ -40,7 +40,7 @@ const CHECKLIST_BASE: ChecklistBase[] = [
     descricao: "Inclua imagem principal, diária e dados mínimos da hospedagem.",
     href: "/propriedades",
     id: "basicos",
-    permissoes: ["properties.read"],
+    permissoes: ["properties.manage"],
     titulo: "Adicionar foto principal e valores",
     tourKey: "properties:first-property:v1" as TutorialTourKey
   },
@@ -61,7 +61,7 @@ const CHECKLIST_BASE: ChecklistBase[] = [
     descricao: "Finalize a hospedagem somente quando estiver pronta.",
     href: "/propriedades",
     id: "publicacao",
-    permissoes: ["properties.read"],
+    permissoes: ["properties.manage"],
     titulo: "Publicar a casa no Marketplace",
     tourKey: "properties:first-property:v1" as TutorialTourKey
   }
