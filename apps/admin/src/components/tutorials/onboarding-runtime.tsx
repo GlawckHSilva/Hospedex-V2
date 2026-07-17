@@ -29,8 +29,8 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     if (!activeTour) return [];
     return activeTour.steps.map((step) => ({
       content: step.content,
-      disableBeacon: true,
       placement: step.placement ?? "auto",
+      skipBeacon: true,
       target: () => encontrarTargetVisivel(step.targetId),
       title: step.title
     }));
@@ -169,6 +169,7 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
           close: "Fechar",
           last: "Concluir",
           next: "Próximo",
+          nextWithProgress: "Próximo ({current} de {total})",
           skip: "Pular tutorial"
         }}
         onEvent={handleJoyride}
