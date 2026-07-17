@@ -115,9 +115,19 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
 }
 
 function CartaoMetrica({ card }: { card: CardDashboard }) {
+  const tourId =
+    card.icone === "reservas"
+      ? "dashboard-reservas"
+      : card.icone === "receita"
+        ? "dashboard-financeiro"
+        : undefined;
+
   return (
     <div className="h-full">
-      <GlassCard className="group h-full overflow-hidden p-5 transition duration-200" data-tour={`dashboard-card-${card.icone}`}>
+      <GlassCard
+        className="group h-full overflow-hidden p-5 transition duration-200"
+        data-tour-id={tourId}
+      >
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="dashboard-card-title text-sm">{card.titulo}</p>

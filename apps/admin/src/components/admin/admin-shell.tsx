@@ -277,6 +277,16 @@ function TopbarAdmin({
             <p className="text-xs text-muted-foreground">Contexto ativo</p>
           </div>
           <ThemeToggle />
+          {gerenciamento ? (
+            <Link
+              aria-label="Abrir ajuda e tutoriais"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
+              data-tour-id="ajuda-contextual"
+              href="/ajuda"
+            >
+              <CircleHelp className="h-4 w-4" />
+            </Link>
+          ) : null}
           {tituloPerfil !== "Super Admin" ? <NotificationBell resumo={notificacoes} /> : null}
           <PerfilUsuarioMenu
             acaoSairMenu={acaoSairMenu}
@@ -471,7 +481,7 @@ function SidebarAdmin({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">Menu administrativo</p>
           </div>
-          <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
+        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1" data-tour-id="menu-principal">
             {itens.map((item) => (
               <ItemMenu key={item.href} item={item} pathname={pathname} />
             ))}
@@ -508,7 +518,7 @@ function SidebarAdmin({
             </>
           )}
         </div>
-        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" data-tour-id="menu-principal">
           <MenuAgrupado grupos={grupos} pathname={pathname} />
           <div className="mt-5 border-t border-border/80 pt-3">{acaoSairSidebar}</div>
         </nav>
@@ -657,13 +667,20 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
   return (
     <Link
       className={classes}
-      data-tour={`menu-${item.href === "/" ? "dashboard" : item.href.replace("/", "").replaceAll("/", "-")}`}
+      data-tour-id={obterTourIdItemMenu(item.href)}
       href={item.href}
       {...(onNavigate ? { onClick: onNavigate } : {})}
     >
       {conteudo}
     </Link>
   );
+}
+
+function obterTourIdItemMenu(href: string) {
+  if (href === "/") return "menu-dashboard";
+  if (href === "/propriedades") return "menu-casas";
+  if (href === "/reservas") return "menu-reservas";
+  return `menu-${href.replace("/", "").replaceAll("/", "-")}`;
 }
 
 function agruparItensSidebar(

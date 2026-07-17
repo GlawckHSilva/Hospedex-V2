@@ -6,10 +6,17 @@ import { CheckCircle2, LifeBuoy, Sparkles } from "lucide-react";
 import { Button } from "@hospedex/ui";
 
 import { dispensarBoasVindasAction } from "../../lib/tutorials/actions";
+import type { TutorialTourKey } from "../../lib/tutorials/tour-registry";
 import type { TutorialResumoGerenciamento } from "../../lib/tutorials/types";
 import { AppModal } from "../management/entity-modal";
 
-export function OnboardingGate({ resumo }: { resumo: TutorialResumoGerenciamento | null }) {
+export function OnboardingGate({
+  onStartTour,
+  resumo
+}: {
+  onStartTour: (tourKey: TutorialTourKey) => void;
+  resumo: TutorialResumoGerenciamento | null;
+}) {
   const [visivel, setVisivel] = useState(Boolean(resumo?.mostrarBoasVindas));
   const [pendente, startTransition] = useTransition();
 
@@ -18,6 +25,11 @@ export function OnboardingGate({ resumo }: { resumo: TutorialResumoGerenciamento
   function fechar() {
     setVisivel(false);
     startTransition(() => void dispensarBoasVindasAction());
+  }
+
+  function iniciar(tourKey: TutorialTourKey) {
+    fechar();
+    onStartTour(tourKey);
   }
 
   return (
@@ -51,13 +63,12 @@ export function OnboardingGate({ resumo }: { resumo: TutorialResumoGerenciamento
           </div>
         ) : null}
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button
-            disabled={pendente}
-            onClick={fechar}
-            type="button"
-          >
+          <Button disabled={pendente} onClick={() => iniciar("properties:first-property:v1")} type="button">
             <CheckCircle2 className="mr-2 h-4 w-4" />
-            Começar
+            Começar configuração
+          </Button>
+          <Button disabled={pendente} onClick={() => iniciar("dashboard:introduction:v1")} type="button" variant="outline">
+            Conhecer o painel
           </Button>
           <Button
             disabled={pendente}

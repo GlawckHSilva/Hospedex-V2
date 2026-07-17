@@ -6,6 +6,7 @@ import {
   TUTORIAL_WELCOME_KEY,
   obterChecklistPermitido
 } from "./registry";
+import { TUTORIAL_TOURS } from "./tour-registry";
 import type { TutorialProgressRow, TutorialResumoGerenciamento } from "./types";
 
 export async function carregarOnboardingGerenciamento(
@@ -41,6 +42,16 @@ export async function carregarOnboardingGerenciamento(
     mostrarBoasVindas: !boasVindas || boasVindas.status === "not_started",
     somenteLeitura: licenca.isReadOnlyByExpiredLicense,
     tutorialKey: TUTORIAL_GERENCIAMENTO_KEY,
+    tours: Object.values(TUTORIAL_TOURS).map((tour) => {
+      const progressoTour = progressos.find((item) => item.tutorial_key === tour.key);
+      return {
+        description: tour.description,
+        duration: tour.duration,
+        key: tour.key,
+        status: progressoTour?.status ?? "not_started",
+        title: tour.title
+      };
+    }),
     usuarioNome: contexto.profile.full_name ?? contexto.profile.email
   };
 }
@@ -50,11 +61,9 @@ async function carregarChecks(tenantId: string): Promise<Record<string, boolean>
   const [
     configuracoes,
     primeiraCasa,
-    fotos,
+    basicos,
     publicacao,
-    calendario,
-    reserva,
-    pagamento
+    disponibilidadeCobranca
   ] = await Promise.all([
     supabase
       .from("tenant_settings")
@@ -70,14 +79,7 @@ async function carregarChecks(tenantId: string): Promise<Record<string, boolean>
       .is("deleted_at", null)
       .limit(1)
       .maybeSingle<{ id: string }>(),
-    supabase
-      .from("media_assets")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .eq("media_type", "image")
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle<{ id: string }>(),
+    hasConfiguredPropertyBasics(tenantId),
     supabase
       .from("properties")
       .select("id")
@@ -87,6 +89,45 @@ async function carregarChecks(tenantId: string): Promise<Record<string, boolean>
       .is("deleted_at", null)
       .limit(1)
       .maybeSingle<{ id: string }>(),
+    hasConfiguredAvailabilityAndBilling(tenantId)
+  ]);
+
+  return {
+    configuracoes: Boolean(configuracoes.data),
+    "primeira-casa": Boolean(primeiraCasa.data),
+    basicos,
+    publicacao: Boolean(publicacao.data),
+    "disponibilidade-cobranca": disponibilidadeCobranca
+  };
+}
+
+async function hasConfiguredPropertyBasics(tenantId: string) {
+  const supabase = await criarClienteSupabaseServer();
+  const [{ data: propriedade }, { data: foto }] = await Promise.all([
+    supabase
+      .from("properties")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .not("pricing_details", "is", null)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+    supabase
+      .from("media_assets")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("media_type", "image")
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle<{ id: string }>()
+  ]);
+
+  return Boolean(propriedade && foto);
+}
+
+async function hasConfiguredAvailabilityAndBilling(tenantId: string) {
+  const supabase = await criarClienteSupabaseServer();
+  const [{ data: bloqueio }, { data: configuracao }] = await Promise.all([
     supabase
       .from("calendar_availability_blocks")
       .select("id")
@@ -94,27 +135,13 @@ async function carregarChecks(tenantId: string): Promise<Record<string, boolean>
       .limit(1)
       .maybeSingle<{ id: string }>(),
     supabase
-      .from("reservations")
+      .from("tenant_settings")
       .select("id")
       .eq("tenant_id", tenantId)
-      .limit(1)
-      .maybeSingle<{ id: string }>(),
-    supabase
-      .from("reservations")
-      .select("id")
-      .eq("tenant_id", tenantId)
-      .in("payment_status", ["paid", "received"])
+      .or("pix_key.not.is.null,mercado_pago_enabled.eq.true,payment_collection_method.not.is.null")
       .limit(1)
       .maybeSingle<{ id: string }>()
   ]);
 
-  return {
-    configuracoes: Boolean(configuracoes.data),
-    "primeira-casa": Boolean(primeiraCasa.data),
-    fotos: Boolean(fotos.data),
-    publicacao: Boolean(publicacao.data),
-    calendario: Boolean(calendario.data),
-    reserva: Boolean(reserva.data),
-    pagamento: Boolean(pagamento.data)
-  };
+  return Boolean(bloqueio || configuracao);
 }

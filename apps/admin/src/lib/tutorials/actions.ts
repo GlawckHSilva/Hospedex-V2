@@ -36,6 +36,24 @@ export async function concluirEtapaTutorialAction(formData: FormData) {
   });
 }
 
+export async function salvarEventoTourAction(input: {
+  completedSteps?: string[];
+  currentStep: number;
+  status: "in_progress" | "completed" | "dismissed";
+  tutorialKey: string;
+}) {
+  const agora = new Date().toISOString();
+  await salvarProgresso(input.tutorialKey, {
+    completed_at: input.status === "completed" ? agora : null,
+    completed_steps: input.completedSteps ?? [],
+    current_step: input.currentStep,
+    dismissed_at: input.status === "dismissed" ? agora : null,
+    last_seen_at: agora,
+    started_at: agora,
+    status: input.status
+  });
+}
+
 async function salvarProgresso(tutorialKey: string, dados: Record<string, unknown>) {
   const contexto = await exigirAutenticacao();
   if (!contexto.tenant || contexto.role === "super_admin") return;
@@ -58,6 +76,7 @@ async function salvarProgresso(tutorialKey: string, dados: Record<string, unknow
     {
       ...dados,
       completed_steps: completedSteps,
+      last_seen_at: new Date().toISOString(),
       tenant_id: contexto.tenant.id,
       tutorial_key: tutorialKey,
       tutorial_version: TUTORIAL_VERSION,

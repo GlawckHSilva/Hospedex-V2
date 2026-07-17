@@ -12,14 +12,18 @@ export type TutorialProgressRow = {
   started_at: string | null;
   completed_at: string | null;
   dismissed_at: string | null;
+  last_seen_at: string | null;
+  created_at: string;
   updated_at: string;
 };
 
 export type TutorialEtapa = {
   id: string;
+  actionLabel: string;
   titulo: string;
   descricao: string;
   href: string;
+  tourKey: string;
   dataTour?: string;
   concluida: boolean;
   bloqueada?: boolean;
@@ -31,5 +35,14 @@ export type TutorialResumoGerenciamento = {
   mostrarBoasVindas: boolean;
   somenteLeitura: boolean;
   tutorialKey: string;
+  tours: TutorialCard[];
   usuarioNome: string;
+};
+
+export type TutorialCard = {
+  key: string;
+  title: string;
+  description: string;
+  duration: string;
+  status: TutorialStatus;
 };

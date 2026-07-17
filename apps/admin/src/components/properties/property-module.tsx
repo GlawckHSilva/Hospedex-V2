@@ -249,16 +249,18 @@ function VisaoPropriedades({
 
       {propriedadesFiltradas.length > 0 ? (
         <>
-          <EntityGrid className="xl:grid-cols-2 2xl:grid-cols-2">
-            {propriedadesFiltradas.map((propriedade) => (
-              <PropertyCard
-                key={propriedade.id}
-                comodidadesDisponiveis={comodidadesDisponiveis}
-                podeGerenciar={podeGerenciar}
-                propriedade={propriedade}
-              />
-            ))}
-          </EntityGrid>
+          <div data-tour-id="casas-lista">
+            <EntityGrid className="xl:grid-cols-2 2xl:grid-cols-2">
+              {propriedadesFiltradas.map((propriedade) => (
+                <PropertyCard
+                  key={propriedade.id}
+                  comodidadesDisponiveis={comodidadesDisponiveis}
+                  podeGerenciar={podeGerenciar}
+                  propriedade={propriedade}
+                />
+              ))}
+            </EntityGrid>
+          </div>
           <div className="admin-glass-card flex flex-col gap-3 rounded-xl border p-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
             <span>
               Mostrando {propriedadesFiltradas.length} de {propriedades.length}{" "}
@@ -304,24 +306,26 @@ function BotaoNovaCasa({
   triggerLabel?: string;
 }) {
   return (
-    <EntityModal
-      description="Cadastre as informacoes principais para publicar sua hospedagem."
-      disabled={!podeGerenciar}
-      eyebrow="CADASTRO"
-      size="full"
-      title="Nova casa"
-      triggerClassName="h-11 justify-center"
-      triggerIcon={<Plus className="h-4 w-4" />}
-      triggerLabel={triggerLabel}
-      triggerVariant="default"
-    >
-      <PropertyForm
-        comodidadesDisponiveis={comodidadesDisponiveis}
-        modo="criar"
-        podeGerenciar={podeGerenciar}
-        userId={userId}
-      />
-    </EntityModal>
+    <span data-tour-id={triggerLabel === "Nova casa" ? "casas-nova" : undefined}>
+      <EntityModal
+        description="Cadastre as informacoes principais para publicar sua hospedagem."
+        disabled={!podeGerenciar}
+        eyebrow="CADASTRO"
+        size="full"
+        title="Nova casa"
+        triggerClassName="h-11 justify-center"
+        triggerIcon={<Plus className="h-4 w-4" />}
+        triggerLabel={triggerLabel}
+        triggerVariant="default"
+      >
+        <PropertyForm
+          comodidadesDisponiveis={comodidadesDisponiveis}
+          modo="criar"
+          podeGerenciar={podeGerenciar}
+          userId={userId}
+        />
+      </EntityModal>
+    </span>
   );
 }
 

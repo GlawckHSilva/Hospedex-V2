@@ -9,7 +9,7 @@ import { carregarEstadoLicencaTenant } from "../../lib/license-state";
 import { carregarResumoNotificacoesGerenciamento } from "../../lib/notifications/data";
 import { criarClienteSupabaseServer } from "../../lib/supabase/server";
 import { carregarOnboardingGerenciamento } from "../../lib/tutorials/data";
-import { OnboardingGate } from "../tutorials/onboarding-gate";
+import { OnboardingRuntime } from "../tutorials/onboarding-runtime";
 import { AdminShell } from "./admin-shell";
 
 export type AdminLayoutBaseProps = {
@@ -44,7 +44,7 @@ export async function AdminLayoutBase({ children, contexto }: AdminLayoutBasePro
       notificacoes={notificacoes}
     >
       {children}
-      <OnboardingGate resumo={onboarding} />
+      <OnboardingRuntime resumo={onboarding} />
     </AdminShell>
   );
 }

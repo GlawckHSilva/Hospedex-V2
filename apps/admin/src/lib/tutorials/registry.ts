@@ -1,6 +1,7 @@
 import type { PermissionCode } from "@hospedex/types";
 
 import type { ContextoAutenticacao } from "../auth/types";
+import type { TutorialTourKey } from "./tour-registry";
 import type { TutorialEtapa } from "./types";
 
 export const TUTORIAL_GERENCIAMENTO_KEY = "gerenciamento-primeiros-passos";
@@ -14,62 +15,55 @@ type ChecklistBase = Omit<TutorialEtapa, "concluida" | "bloqueada"> & {
 
 const CHECKLIST_BASE: ChecklistBase[] = [
   {
-    id: "configuracoes",
-    titulo: "Configurar dados do empreendimento",
-    descricao: "Logo, contato, cidade, horários e preferências.",
-    href: "/configuracoes",
+    actionLabel: "Configurar negócio",
     dataTour: "configuracoes-gerais",
-    permissoes: ["settings.manage"]
+    descricao: "Complete dados públicos, contato e preferências básicas.",
+    href: "/configuracoes",
+    id: "configuracoes",
+    permissoes: ["settings.manage"],
+    titulo: "Completar os dados do negócio",
+    tourKey: "dashboard:introduction:v1" as TutorialTourKey
   },
   {
-    id: "primeira-casa",
-    titulo: "Cadastrar a primeira casa",
-    descricao: "Base para fotos, valores, regras e disponibilidade.",
-    href: "/propriedades",
+    actionLabel: "Cadastrar casa",
     dataTour: "casas-lista",
-    permissoes: ["properties.read"]
+    descricao: "Adicione localização, capacidade e informações principais.",
+    href: "/propriedades",
+    id: "primeira-casa",
+    permissoes: ["properties.read"],
+    titulo: "Cadastrar a primeira casa",
+    tourKey: "properties:first-property:v1" as TutorialTourKey
   },
   {
-    id: "fotos",
-    titulo: "Adicionar fotos da casa",
-    descricao: "Defina capa e galeria para a página pública.",
-    href: "/propriedades",
+    actionLabel: "Revisar casa",
     dataTour: "casas-galeria",
-    permissoes: ["properties.read"]
-  },
-  {
-    id: "publicacao",
-    titulo: "Publicar uma casa",
-    descricao: "Deixe a hospedagem pronta para aparecer no Marketplace.",
+    descricao: "Inclua imagem principal, diária e dados mínimos da hospedagem.",
     href: "/propriedades",
-    dataTour: "casas-publicacao",
-    permissoes: ["properties.read"]
+    id: "basicos",
+    permissoes: ["properties.read"],
+    titulo: "Adicionar foto principal e valores",
+    tourKey: "properties:first-property:v1" as TutorialTourKey
   },
   {
-    id: "calendario",
-    titulo: "Revisar disponibilidade",
-    descricao: "Bloqueios e reservas usam o calendário da casa.",
-    href: "/calendario",
+    actionLabel: "Abrir calendário",
     dataTour: "calendario",
+    descricao: "Revise bloqueios e formas de cobrança antes de publicar.",
     featureFlag: "calendar",
-    permissoes: ["calendar.read", "reservations.read"]
+    href: "/calendario",
+    id: "disponibilidade-cobranca",
+    permissoes: ["calendar.read", "settings.manage"],
+    titulo: "Configurar disponibilidade e cobrança",
+    tourKey: "dashboard:introduction:v1" as TutorialTourKey
   },
   {
-    id: "reserva",
-    titulo: "Criar ou acompanhar uma reserva",
-    descricao: "Solicitações e reservas manuais aparecem no mesmo fluxo.",
-    href: "/reservas",
-    dataTour: "reservas",
-    featureFlag: "manual_approval",
-    permissoes: ["reservations.read"]
-  },
-  {
-    id: "pagamento",
-    titulo: "Registrar um pagamento",
-    descricao: "Pagamentos recebidos alimentam o Financeiro.",
-    href: "/financeiro",
-    dataTour: "financeiro",
-    permissoes: ["finance.read"]
+    actionLabel: "Publicar casa",
+    dataTour: "casas-publicacao",
+    descricao: "Finalize a hospedagem somente quando estiver pronta.",
+    href: "/propriedades",
+    id: "publicacao",
+    permissoes: ["properties.read"],
+    titulo: "Publicar a casa no Marketplace",
+    tourKey: "properties:first-property:v1" as TutorialTourKey
   }
 ];
 
@@ -89,6 +83,8 @@ function itemPermitido(contexto: ContextoAutenticacao, item: ChecklistBase) {
   }
 
   const featureOk = !item.featureFlag || contexto.featureFlags[item.featureFlag];
-  const permissoesOk = !item.permissoes?.length || item.permissoes.some((p) => contexto.permissions.includes(p));
+  const permissoesOk =
+    !item.permissoes?.length ||
+    item.permissoes.some((permissao) => contexto.permissions.includes(permissao));
   return featureOk && permissoesOk;
 }

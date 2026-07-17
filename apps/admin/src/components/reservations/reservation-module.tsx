@@ -157,7 +157,11 @@ export function ReservationModule({
         />
       </section>
 
-      <nav aria-label="Filtros principais de reservas" className="flex flex-wrap gap-2">
+      <nav
+        aria-label="Filtros principais de reservas"
+        className="flex flex-wrap gap-2"
+        data-tour-id="reservas-status"
+      >
         {ABAS_RESERVAS.map((aba) => {
           const ativa = (filtros.aba ?? "todas") === aba.key;
 
