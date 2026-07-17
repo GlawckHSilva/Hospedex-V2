@@ -9,7 +9,7 @@ import type { TutorialTourKey } from "../../lib/tutorials/tour-registry";
 import type { TutorialResumoGerenciamento } from "../../lib/tutorials/types";
 
 export function OnboardingChecklist({ resumo }: { resumo: TutorialResumoGerenciamento | null }) {
-  if (!resumo?.checklist.length) return null;
+  if (!resumo?.mostrarChecklist || !resumo.checklist.length) return null;
 
   return (
     <section className="admin-glass-panel p-5" data-tour-id="checklist-onboarding">

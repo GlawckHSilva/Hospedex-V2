@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, PlayCircle, RotateCcw, Search } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronDown, Circle, PlayCircle, RotateCcw, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { Badge } from "@hospedex/ui";
@@ -11,6 +11,7 @@ import type { TutorialResumoGerenciamento } from "../../lib/tutorials/types";
 
 export function HelpCenter({ resumo }: { resumo: TutorialResumoGerenciamento | null }) {
   const [busca, setBusca] = useState("");
+  const [checklistAberto, setChecklistAberto] = useState(false);
   const tours = resumo?.tours ?? [];
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
@@ -41,6 +42,63 @@ export function HelpCenter({ resumo }: { resumo: TutorialResumoGerenciamento | n
           </span>
         </label>
       </div>
+
+      {resumo ? (
+        <div className="admin-glass-card p-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <Badge variant={resumo.status === "completed" ? "success" : "info"}>
+                {labelStatus(resumo.status)}
+              </Badge>
+              <h2 className="mt-3 text-lg font-semibold">Primeiros passos do Gerenciamento</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {resumo.status === "completed"
+                  ? "Você finalizou a configuração inicial do Hospedex."
+                  : `${resumo.progresso}% concluído. Continue de onde parou.`}
+              </p>
+              {resumo.completedAt ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Concluído em {formatarData(resumo.completedAt)}
+                </p>
+              ) : null}
+            </div>
+            <button
+              aria-expanded={checklistAberto}
+              className="inline-flex items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold text-primary"
+              onClick={() => setChecklistAberto((aberto) => !aberto)}
+              type="button"
+            >
+              Rever checklist
+              <ChevronDown className={`ml-2 h-4 w-4 transition ${checklistAberto ? "rotate-180" : ""}`} />
+            </button>
+          </div>
+
+          {checklistAberto ? (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              {resumo.checklist.map((etapa) => (
+                <div className="flex items-start gap-3 rounded-lg border bg-background/55 p-3" key={etapa.id}>
+                  {etapa.concluida || resumo.status === "completed" ? (
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                  ) : (
+                    <Circle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{etapa.titulo}</p>
+                    <button
+                      className="mt-2 inline-flex items-center text-xs font-semibold text-primary hover:underline"
+                      onClick={() => iniciarTour(etapa.tourKey as TutorialTourKey)}
+                      type="button"
+                    >
+                      <PlayCircle className="mr-1 h-3.5 w-3.5" />
+                      Abrir guia
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         {filtrados.map((tour) => (
@@ -89,4 +147,8 @@ function labelStatus(status: string) {
   if (status === "in_progress") return "Em andamento";
   if (status === "dismissed") return "Pulado";
   return "Não iniciado";
+}
+
+function formatarData(valor: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" }).format(new Date(valor));
 }

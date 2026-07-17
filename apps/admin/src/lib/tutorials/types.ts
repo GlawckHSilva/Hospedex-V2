@@ -31,9 +31,13 @@ export type TutorialEtapa = {
 
 export type TutorialResumoGerenciamento = {
   checklist: TutorialEtapa[];
+  completedAt: string | null;
   progresso: number;
+  mostrarChecklist: boolean;
   mostrarBoasVindas: boolean;
+  mostrarConfirmacaoConclusao: boolean;
   somenteLeitura: boolean;
+  status: TutorialStatus;
   storageScope: string;
   tutorialKey: string;
   tours: TutorialCard[];
