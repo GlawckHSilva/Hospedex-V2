@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BedDouble,
@@ -107,8 +107,9 @@ export function AdminShell({
   notificacoes
 }: AdminShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [menuAberto, setMenuAberto] = useState(false);
-  const itensMenu = obterMenuAdmin(contexto);
+  const itensMenu = useMemo(() => obterMenuAdmin(contexto), [contexto]);
   const perfil = obterPerfilMenuAdmin(contexto.role);
   const tituloPerfil = obterTituloPerfilAdmin(perfil);
   const nomeUsuario = contexto.profile.full_name ?? contexto.profile.email;
@@ -118,6 +119,12 @@ export function AdminShell({
     ? logoConfiguracoesUrl ?? contexto.profile.avatar_url
     : contexto.profile.avatar_url;
   const configuracoesHref = gerenciamento ? "/configuracoes" : "/super-admin/configuracoes";
+
+  useEffect(() => {
+    // Prefetch discreto das rotas principais reduz a espera percebida entre módulos.
+    itensMenu.forEach((item) => router.prefetch(item.href));
+  }, [itensMenu, router]);
+
   const topbar = (
     <TopbarAdmin
       acaoSairMenu={acaoSairMenu}
@@ -672,6 +679,7 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
       className={classes}
       data-tour-id={obterTourIdItemMenu(item.href)}
       href={item.href}
+      prefetch
       {...(onNavigate ? { onClick: onNavigate } : {})}
     >
       {conteudo}
