@@ -6,6 +6,21 @@ import type {
   UserRole
 } from "@hospedex/types";
 
+export type PerfilContextoAutenticacao = Pick<
+  ProfileRow,
+  "avatar_url" | "email" | "full_name" | "id" | "platform_role"
+>;
+
+export type TenantContextoAutenticacao = Pick<
+  TenantRow,
+  "deleted_at" | "id" | "name" | "owner_id" | "status"
+>;
+
+export type VinculoContextoAutenticacao = Pick<
+  TenantMemberRow,
+  "id" | "member_role" | "property_scope" | "role_id" | "status" | "tenant_id" | "user_id"
+>;
+
 /**
  * Representa o contexto autenticado do Admin.
  *
@@ -14,10 +29,10 @@ import type {
  */
 export type ContextoAutenticacao = {
   userId: string;
-  profile: ProfileRow;
-  tenant: TenantRow | null;
+  profile: PerfilContextoAutenticacao;
+  tenant: TenantContextoAutenticacao | null;
   role: UserRole;
-  memberships: TenantMemberRow[];
+  memberships: VinculoContextoAutenticacao[];
   permissions: PermissionCode[];
   featureFlags: Record<string, boolean>;
 };

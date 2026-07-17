@@ -2,18 +2,20 @@ import type {
   LicenseRow,
   PermissionCode,
   PlanFeatureRow,
-  ProfileRow,
   SubscriptionRow,
-  TenantMemberRow,
   TenantStatus,
-  TenantRow,
   UserRole,
 } from "@hospedex/types";
 import { redirect } from "next/navigation";
 
 import { supabaseEstaConfigurado } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
-import type { ContextoAutenticacao } from "./types";
+import type {
+  ContextoAutenticacao,
+  PerfilContextoAutenticacao,
+  TenantContextoAutenticacao,
+  VinculoContextoAutenticacao,
+} from "./types";
 
 const STATUS_TENANT_COM_ACESSO_GERENCIAMENTO: TenantStatus[] = [
   "trial",
@@ -53,14 +55,26 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
       return null;
     }
 
-    const { data: profile, error: erroProfile } = await comTempoLimite(
-      supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle<ProfileRow>(),
-      "Tempo limite ao carregar profile autenticado.",
-    );
+    const [profileResultado, membershipsResultado] = await Promise.all([
+      comTempoLimite(
+        supabase
+          .from("profiles")
+          .select("id,email,full_name,avatar_url,platform_role")
+          .eq("id", userId)
+          .maybeSingle<PerfilContextoAutenticacao>(),
+        "Tempo limite ao carregar profile autenticado.",
+      ),
+      comTempoLimite(
+        supabase
+          .from("tenant_members")
+          .select("id,tenant_id,user_id,role_id,member_role,status,property_scope")
+          .eq("user_id", userId)
+          .eq("status", "active")
+          .returns<VinculoContextoAutenticacao[]>(),
+        "Tempo limite ao carregar vinculos do usuario.",
+      ),
+    ]);
+    const { data: profile, error: erroProfile } = profileResultado;
 
     if (erroProfile) {
       console.error(
@@ -74,16 +88,7 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
       return null;
     }
 
-    const { data: membershipsData, error: erroMemberships } =
-      await comTempoLimite(
-        supabase
-          .from("tenant_members")
-          .select("*")
-          .eq("user_id", userId)
-          .eq("status", "active")
-          .returns<TenantMemberRow[]>(),
-        "Tempo limite ao carregar vinculos do usuario.",
-      );
+    const { data: membershipsData, error: erroMemberships } = membershipsResultado;
 
     if (erroMemberships) {
       console.error(
@@ -98,9 +103,9 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
       ? await comTempoLimite(
           supabase
             .from("tenants")
-            .select("*")
+            .select("id,owner_id,name,status,deleted_at")
             .eq("owner_id", userId)
-            .maybeSingle<TenantRow>(),
+            .maybeSingle<TenantContextoAutenticacao>(),
           "Tempo limite ao carregar tenant do proprietario.",
         )
       : { data: null };
@@ -114,9 +119,9 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
         ? await comTempoLimite(
             supabase
               .from("tenants")
-              .select("*")
+              .select("id,owner_id,name,status,deleted_at")
               .eq("id", tenantId)
-              .maybeSingle<TenantRow>(),
+              .maybeSingle<TenantContextoAutenticacao>(),
             "Tempo limite ao carregar tenant ativo.",
           )
         : { data: tenantProprioAcessivel };
@@ -136,13 +141,10 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
       roleResolvida === "super_admin" || tenantAcessivel
         ? roleResolvida
         : "guest";
-    const permissions = await carregarPermissoes(
-      vinculoAtivo?.role_id ?? null,
-      role,
-    );
-    const featureFlags = tenantAcessivel
-      ? await carregarFeatureFlags(tenantAcessivel)
-      : {};
+    const [permissions, featureFlags] = await Promise.all([
+      carregarPermissoes(vinculoAtivo?.role_id ?? null, role),
+      tenantAcessivel ? carregarFeatureFlags(tenantAcessivel) : {},
+    ]);
 
     return {
       userId,
@@ -177,9 +179,9 @@ export async function exigirSuperAdmin(): Promise<ContextoAutenticacao> {
 }
 
 function resolverRole(
-  profile: ProfileRow,
-  membership: TenantMemberRow | null,
-  ownedTenant: TenantRow | null,
+  profile: PerfilContextoAutenticacao,
+  membership: VinculoContextoAutenticacao | null,
+  ownedTenant: TenantContextoAutenticacao | null,
 ): UserRole {
   if (profile.platform_role === "super_admin") return "super_admin";
   if (ownedTenant) return "owner";
@@ -189,8 +191,8 @@ function resolverRole(
 }
 
 function tenantPermiteAcessoGerenciamento(
-  tenant: TenantRow | null,
-): tenant is TenantRow {
+  tenant: TenantContextoAutenticacao | null,
+): tenant is TenantContextoAutenticacao {
   return Boolean(
     tenant &&
       !tenant.deleted_at &&
@@ -220,7 +222,7 @@ async function carregarPermissoes(
 }
 
 async function carregarFeatureFlags(
-  tenant: TenantRow,
+  tenant: TenantContextoAutenticacao,
 ): Promise<Record<string, boolean>> {
   const supabase = await criarClienteSupabaseServer();
   const [{ data: flagsData }, { data: tenantFeaturesData }, { data: assinatura }, { data: licenca }] =
@@ -299,7 +301,7 @@ async function carregarFeatureFlags(
 }
 
 function tenantEstaEmTrialAtivo(
-  tenant: TenantRow,
+  tenant: TenantContextoAutenticacao,
   licenca: Pick<LicenseRow, "status" | "expires_at"> | null,
   assinatura: Pick<SubscriptionRow, "status"> | null,
 ): boolean {

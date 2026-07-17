@@ -1,11 +1,13 @@
 import type {
   FeatureFlagRow,
   TenantFeatureRow,
-  TenantRow,
   TenantSettingRow
 } from "@hospedex/types";
 
-import type { ContextoAutenticacao } from "../auth/types";
+import type {
+  ContextoAutenticacao,
+  TenantContextoAutenticacao
+} from "../auth/types";
 import { carregarResumoCredencialMercadoPago } from "../payments/mercado-pago-credentials";
 import { normalizarVariavelAmbiente } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
@@ -107,7 +109,7 @@ export async function carregarDadosConfiguracoesGerenciamento(
 }
 
 function normalizarConfiguracoes(
-  tenant: TenantRow,
+  tenant: TenantContextoAutenticacao,
   configuracoes: TenantSettingRow | null,
   mercadoPagoCredencial = {
     conectado: false,
