@@ -22,7 +22,7 @@ export default async function AdminHomePage() {
   ]);
 
   return (
-    <AdminLayoutBase contexto={contexto}>
+    <AdminLayoutBase contexto={contexto} onboarding={onboarding}>
       <OnboardingChecklist resumo={onboarding} />
       <AdminHome contexto={contexto} dashboard={dashboard} />
     </AdminLayoutBase>

@@ -587,7 +587,10 @@ function MenuMobileAdmin({
           </Button>
         </div>
 
-        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+        <nav
+          className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
+          data-tour-id="menu-principal"
+        >
           <MenuAgrupado grupos={grupos} onNavigate={onFechar} pathname={pathname} />
           <div className="mt-5 border-t border-border/80 pt-3">{acaoSairMobile}</div>
         </nav>

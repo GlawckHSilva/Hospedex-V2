@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { CheckCircle2, LifeBuoy, Sparkles } from "lucide-react";
 
 import { Button } from "@hospedex/ui";
@@ -19,6 +19,10 @@ export function OnboardingGate({
 }) {
   const [visivel, setVisivel] = useState(Boolean(resumo?.mostrarBoasVindas));
   const [pendente, startTransition] = useTransition();
+
+  useEffect(() => {
+    setVisivel(Boolean(resumo?.mostrarBoasVindas));
+  }, [resumo?.mostrarBoasVindas]);
 
   if (!resumo) return null;
 

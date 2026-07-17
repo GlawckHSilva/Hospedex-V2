@@ -41,6 +41,7 @@ export async function carregarOnboardingGerenciamento(
     progresso,
     mostrarBoasVindas: !boasVindas || boasVindas.status === "not_started",
     somenteLeitura: licenca.isReadOnlyByExpiredLicense,
+    storageScope: `${contexto.tenant.id}:${contexto.userId}`,
     tutorialKey: TUTORIAL_GERENCIAMENTO_KEY,
     tours: Object.values(TUTORIAL_TOURS).map((tour) => {
       const progressoTour = progressos.find((item) => item.tutorial_key === tour.key);

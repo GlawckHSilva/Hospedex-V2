@@ -17,7 +17,7 @@ export default async function AjudaPage() {
   const resumo = await carregarOnboardingGerenciamento(contexto);
 
   return (
-    <AdminLayoutBase contexto={contexto}>
+    <AdminLayoutBase contexto={contexto} onboarding={resumo}>
       <HelpCenter resumo={resumo} />
     </AdminLayoutBase>
   );

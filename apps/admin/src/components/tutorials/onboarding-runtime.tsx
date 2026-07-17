@@ -23,14 +23,15 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
   const [run, setRun] = useState(false);
   const [state, setState] = useState<TourState>("idle");
   const completedSteps = useRef<string[]>([]);
+  const storageKey = `${STORAGE_KEY}:${resumo?.storageScope ?? "sem-contexto"}`;
 
   const joyrideSteps = useMemo<Step[]>(() => {
     if (!activeTour) return [];
     return activeTour.steps.map((step) => ({
       content: step.content,
-      disableBeacon: true,
       placement: step.placement ?? "auto",
-      target: `[data-tour-id="${step.targetId}"]`,
+      skipBeacon: true,
+      target: () => encontrarTargetVisivel(step.targetId),
       title: step.title
     }));
   }, [activeTour]);
@@ -44,15 +45,18 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     setStepIndex(index);
     setRun(false);
     setState("loading");
-    salvarLocalmente(tour.key, index);
-  }, []);
+    salvarLocalmente(storageKey, tour.key, index);
+  }, [storageKey]);
 
   useEffect(() => {
-    const salvo = lerTourLocal();
-    if (salvo?.tourKey && TUTORIAL_TOURS[salvo.tourKey]) {
+    const salvo = lerTourLocal(storageKey);
+    const tour = salvo?.tourKey ? TUTORIAL_TOURS[salvo.tourKey] : null;
+    if (salvo && tour && salvo.stepIndex >= 0 && salvo.stepIndex < tour.steps.length) {
       startTour(salvo.tourKey, salvo.stepIndex);
+    } else if (salvo) {
+      removerTourLocal(storageKey);
     }
-  }, [startTour]);
+  }, [startTour, storageKey]);
 
   useEffect(() => {
     function handleStart(evento: Event) {
@@ -76,6 +80,7 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     }
 
     let cancelado = false;
+    prepararNavegacaoMobile(step.targetId);
     esperarTarget(step.targetId).then((encontrou) => {
       if (cancelado) return;
       if (!encontrou) {
@@ -109,14 +114,14 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     setStepIndex(nextIndex);
     setRun(false);
     setState("loading");
-    salvarLocalmente(activeTour.key, nextIndex);
-  }, [activeTour, stepIndex]);
+    salvarLocalmente(storageKey, activeTour.key, nextIndex);
+  }, [activeTour, stepIndex, storageKey]);
 
   function finalizar(status: "completed" | "dismissed") {
     if (!activeTour) return;
     setRun(false);
     setState(status === "completed" ? "completed" : "skipped");
-    removerTourLocal();
+    removerTourLocal(storageKey);
     startTransition(() => {
       void salvarEventoTourAction({
         completedSteps: completedSteps.current,
@@ -150,7 +155,7 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
       setStepIndex(nextIndex);
       setRun(false);
       setState("loading");
-      salvarLocalmente(activeTour.key, nextIndex);
+      salvarLocalmente(storageKey, activeTour.key, nextIndex);
     }
   }
 
@@ -164,6 +169,7 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
           close: "Fechar",
           last: "Concluir",
           next: "Próximo",
+          nextWithProgress: "Próximo ({current} de {total})",
           skip: "Pular tutorial"
         }}
         onEvent={handleJoyride}
@@ -191,7 +197,8 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
           tooltip: {
             border: "1px solid var(--border)",
             borderRadius: 16,
-            boxShadow: "0 24px 80px rgba(0,0,0,.28)"
+            boxShadow: "0 24px 80px rgba(0,0,0,.28)",
+            maxWidth: "calc(100vw - 24px)"
           },
           tooltipTitle: { fontSize: 16, fontWeight: 700 }
         }}
@@ -202,13 +209,11 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
 
 function esperarTarget(targetId: string) {
   const inicio = performance.now();
-  const selector = `[data-tour-id="${targetId}"]`;
 
   return new Promise<boolean>((resolve) => {
     function verificar() {
-      const elemento = document.querySelector<HTMLElement>(selector);
-      const visivel = elemento && elemento.offsetParent !== null;
-      if (visivel) {
+      const elemento = encontrarTargetVisivel(targetId);
+      if (elemento) {
         elemento.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
         resolve(true);
         return;
@@ -223,19 +228,46 @@ function esperarTarget(targetId: string) {
   });
 }
 
-function salvarLocalmente(tourKey: TutorialTourKey, stepIndex: number) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ stepIndex, tourKey }));
+function encontrarTargetVisivel(targetId: string) {
+  const elementos = document.querySelectorAll<HTMLElement>(`[data-tour-id="${targetId}"]`);
+  return Array.from(elementos).find((elemento) => elemento.offsetParent !== null) ?? null;
 }
 
-function lerTourLocal(): { stepIndex: number; tourKey: TutorialTourKey } | null {
+function prepararNavegacaoMobile(targetId: string) {
+  if (window.matchMedia("(min-width: 1024px)").matches) return;
+
+  if (targetId.startsWith("menu-")) {
+    document.querySelector<HTMLButtonElement>('[aria-label="Abrir menu"]')?.click();
+    return;
+  }
+
+  document.querySelector<HTMLButtonElement>('[aria-label="Fechar menu"]')?.click();
+}
+
+function salvarLocalmente(storageKey: string, tourKey: TutorialTourKey, stepIndex: number) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    localStorage.setItem(storageKey, JSON.stringify({ stepIndex, tourKey }));
+  } catch {
+    // O tutorial continua funcionando quando o navegador bloqueia armazenamento local.
+  }
+}
+
+function lerTourLocal(storageKey: string): { stepIndex: number; tourKey: TutorialTourKey } | null {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return null;
+    const salvo = JSON.parse(raw) as Partial<{ stepIndex: number; tourKey: TutorialTourKey }>;
+    if (!Number.isInteger(salvo.stepIndex) || typeof salvo.tourKey !== "string") return null;
+    return salvo as { stepIndex: number; tourKey: TutorialTourKey };
   } catch {
     return null;
   }
 }
 
-function removerTourLocal() {
-  localStorage.removeItem(STORAGE_KEY);
+function removerTourLocal(storageKey: string) {
+  try {
+    localStorage.removeItem(storageKey);
+  } catch {
+    // Nada precisa ser removido quando o armazenamento nao esta disponivel.
+  }
 }

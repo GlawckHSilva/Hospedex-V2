@@ -34,6 +34,7 @@ export type TutorialResumoGerenciamento = {
   progresso: number;
   mostrarBoasVindas: boolean;
   somenteLeitura: boolean;
+  storageScope: string;
   tutorialKey: string;
   tours: TutorialCard[];
   usuarioNome: string;

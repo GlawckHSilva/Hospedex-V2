@@ -9,12 +9,14 @@ import { carregarEstadoLicencaTenant } from "../../lib/license-state";
 import { carregarResumoNotificacoesGerenciamento } from "../../lib/notifications/data";
 import { criarClienteSupabaseServer } from "../../lib/supabase/server";
 import { carregarOnboardingGerenciamento } from "../../lib/tutorials/data";
+import type { TutorialResumoGerenciamento } from "../../lib/tutorials/types";
 import { OnboardingRuntime } from "../tutorials/onboarding-runtime";
 import { AdminShell } from "./admin-shell";
 
 export type AdminLayoutBaseProps = {
   children: ReactNode;
   contexto: ContextoAutenticacao;
+  onboarding?: TutorialResumoGerenciamento | null;
 };
 
 /**
@@ -23,14 +25,14 @@ export type AdminLayoutBaseProps = {
  * Recebe o contexto já carregado no servidor para que o menu respeite tenant,
  * role, permissões e feature flags sem recalcular autorização no cliente.
  */
-export async function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
+export async function AdminLayoutBase({ children, contexto, onboarding: onboardingInicial }: AdminLayoutBaseProps) {
   const [notificacoes, logoConfiguracoesUrl, estadoLicenca, onboarding] = await Promise.all([
     carregarResumoNotificacoesGerenciamento(contexto),
     carregarLogoConfiguracoesGerenciamento(contexto),
     contexto.tenant && contexto.role !== "super_admin"
       ? carregarEstadoLicencaTenant(contexto.tenant.id)
       : null,
-    carregarOnboardingGerenciamento(contexto)
+    onboardingInicial === undefined ? carregarOnboardingGerenciamento(contexto) : onboardingInicial
   ]);
 
   return (
