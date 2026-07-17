@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { CheckCircle2, LifeBuoy, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@hospedex/ui";
 
-import { dispensarBoasVindasAction } from "../../lib/tutorials/actions";
+import { confirmarConclusaoOnboardingAction, dispensarBoasVindasAction } from "../../lib/tutorials/actions";
 import type { TutorialTourKey } from "../../lib/tutorials/tour-registry";
 import type { TutorialResumoGerenciamento } from "../../lib/tutorials/types";
 import { AppModal } from "../management/entity-modal";
@@ -17,12 +18,16 @@ export function OnboardingGate({
   onStartTour: (tourKey: TutorialTourKey) => void;
   resumo: TutorialResumoGerenciamento | null;
 }) {
+  const router = useRouter();
   const [visivel, setVisivel] = useState(Boolean(resumo?.mostrarBoasVindas));
+  const [conclusaoVisivel, setConclusaoVisivel] = useState(Boolean(resumo?.mostrarConfirmacaoConclusao));
   const [pendente, startTransition] = useTransition();
+  const confirmacaoEnviada = useRef(false);
 
   useEffect(() => {
     setVisivel(Boolean(resumo?.mostrarBoasVindas));
-  }, [resumo?.mostrarBoasVindas]);
+    setConclusaoVisivel(Boolean(resumo?.mostrarConfirmacaoConclusao));
+  }, [resumo?.mostrarBoasVindas, resumo?.mostrarConfirmacaoConclusao]);
 
   if (!resumo) return null;
 
@@ -34,6 +39,46 @@ export function OnboardingGate({
   function iniciar(tourKey: TutorialTourKey) {
     fechar();
     onStartTour(tourKey);
+  }
+
+  function fecharConclusao(destino?: string) {
+    setConclusaoVisivel(false);
+    if (confirmacaoEnviada.current) return;
+    confirmacaoEnviada.current = true;
+    startTransition(async () => {
+      await confirmarConclusaoOnboardingAction();
+      if (destino) router.push(destino);
+    });
+  }
+
+  if (conclusaoVisivel) {
+    return (
+      <AppModal
+        description="Sua conta está configurada. Você pode rever os primeiros passos quando quiser na Central de Ajuda."
+        eyebrow="Configuração concluída"
+        onOpenChange={(open) => {
+          if (!open) fecharConclusao();
+        }}
+        open
+        size="sm"
+        title="Configuração inicial concluída"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button
+            className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+            disabled={pendente}
+            onClick={() => fecharConclusao("/ajuda")}
+            type="button"
+          >
+            <LifeBuoy className="mr-2 h-4 w-4" />
+            Abrir Central de Ajuda
+          </Button>
+          <Button disabled={pendente} onClick={() => fecharConclusao()} type="button" variant="outline">
+            Fechar
+          </Button>
+        </div>
+      </AppModal>
+    );
   }
 
   return (

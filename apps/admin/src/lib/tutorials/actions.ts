@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { exigirAutenticacao } from "../auth/context";
 import { criarClienteSupabaseServer } from "../supabase/server";
-import { TUTORIAL_VERSION, TUTORIAL_WELCOME_KEY } from "./registry";
+import { TUTORIAL_GERENCIAMENTO_KEY, TUTORIAL_VERSION, TUTORIAL_WELCOME_KEY } from "./registry";
 
 export async function dispensarBoasVindasAction() {
   await salvarProgresso(TUTORIAL_WELCOME_KEY, {
@@ -21,6 +21,13 @@ export async function reiniciarBoasVindasAction() {
     dismissed_at: null,
     started_at: new Date().toISOString(),
     status: "not_started"
+  });
+}
+
+export async function confirmarConclusaoOnboardingAction() {
+  await salvarProgresso(TUTORIAL_GERENCIAMENTO_KEY, {
+    dismissed_at: new Date().toISOString(),
+    status: "completed"
   });
 }
 
@@ -61,20 +68,35 @@ async function salvarProgresso(tutorialKey: string, dados: Record<string, unknow
   const supabase = await criarClienteSupabaseServer();
   const { data: existente } = await supabase
     .from("user_tutorial_progress")
-    .select("completed_steps")
+    .select("completed_at,completed_steps,dismissed_at,status")
     .eq("tenant_id", contexto.tenant.id)
     .eq("user_id", contexto.userId)
     .eq("tutorial_key", tutorialKey)
     .eq("tutorial_version", TUTORIAL_VERSION)
-    .maybeSingle<{ completed_steps: string[] }>();
+    .maybeSingle<{
+      completed_at: string | null;
+      completed_steps: string[];
+      dismissed_at: string | null;
+      status: string;
+    }>();
 
   const completedSteps = Array.from(
     new Set([...(existente?.completed_steps ?? []), ...((dados.completed_steps as string[] | undefined) ?? [])])
   );
+  const manterConcluido =
+    tutorialKey === TUTORIAL_GERENCIAMENTO_KEY && existente?.status === "completed";
+  const dadosPersistidos = manterConcluido
+    ? {
+        ...dados,
+        completed_at: existente.completed_at,
+        dismissed_at: dados.dismissed_at ?? existente.dismissed_at,
+        status: "completed"
+      }
+    : dados;
 
   const { error } = await supabase.from("user_tutorial_progress").upsert(
     {
-      ...dados,
+      ...dadosPersistidos,
       completed_steps: completedSteps,
       last_seen_at: new Date().toISOString(),
       tenant_id: contexto.tenant.id,

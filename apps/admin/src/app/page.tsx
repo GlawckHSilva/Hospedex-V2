@@ -23,7 +23,7 @@ export default async function AdminHomePage() {
 
   return (
     <AdminLayoutBase contexto={contexto} onboarding={onboarding}>
-      <OnboardingChecklist resumo={onboarding} />
+      {onboarding?.mostrarChecklist ? <OnboardingChecklist resumo={onboarding} /> : null}
       <AdminHome contexto={contexto} dashboard={dashboard} />
     </AdminLayoutBase>
   );
