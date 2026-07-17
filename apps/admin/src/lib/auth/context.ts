@@ -7,6 +7,7 @@ import type {
   UserRole,
 } from "@hospedex/types";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { supabaseEstaConfigurado } from "../supabase/env";
 import { criarClienteSupabaseServer } from "../supabase/server";
@@ -36,7 +37,7 @@ export function obterCaminhoInicialPorRole(role: UserRole): string {
   return "/sem-acesso";
 }
 
-export async function carregarContextoAutenticacao(): Promise<ContextoAutenticacao | null> {
+async function carregarContextoAutenticacaoSemCache(): Promise<ContextoAutenticacao | null> {
   if (!supabaseEstaConfigurado()) return null;
 
   try {
@@ -162,6 +163,10 @@ export async function carregarContextoAutenticacao(): Promise<ContextoAutenticac
     return null;
   }
 }
+
+// Layout e pagina podem validar o mesmo usuario na mesma renderizacao.
+// O cache por requisicao evita repetir consultas sem compartilhar sessoes entre usuarios.
+export const carregarContextoAutenticacao = cache(carregarContextoAutenticacaoSemCache);
 
 export async function exigirAutenticacao(): Promise<ContextoAutenticacao> {
   const contexto = await carregarContextoAutenticacao();
