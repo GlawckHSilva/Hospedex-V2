@@ -117,7 +117,7 @@ export function AdminHome({ contexto, dashboard }: AdminHomeProps) {
 function CartaoMetrica({ card }: { card: CardDashboard }) {
   return (
     <div className="h-full">
-      <GlassCard className="group h-full overflow-hidden p-5 transition duration-200">
+      <GlassCard className="group h-full overflow-hidden p-5 transition duration-200" data-tour={`dashboard-card-${card.icone}`}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="dashboard-card-title text-sm">{card.titulo}</p>

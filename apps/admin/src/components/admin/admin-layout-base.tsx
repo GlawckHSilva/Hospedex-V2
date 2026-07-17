@@ -8,6 +8,8 @@ import type { ContextoAutenticacao } from "../../lib/auth/types";
 import { carregarEstadoLicencaTenant } from "../../lib/license-state";
 import { carregarResumoNotificacoesGerenciamento } from "../../lib/notifications/data";
 import { criarClienteSupabaseServer } from "../../lib/supabase/server";
+import { carregarOnboardingGerenciamento } from "../../lib/tutorials/data";
+import { OnboardingGate } from "../tutorials/onboarding-gate";
 import { AdminShell } from "./admin-shell";
 
 export type AdminLayoutBaseProps = {
@@ -22,12 +24,13 @@ export type AdminLayoutBaseProps = {
  * role, permissões e feature flags sem recalcular autorização no cliente.
  */
 export async function AdminLayoutBase({ children, contexto }: AdminLayoutBaseProps) {
-  const [notificacoes, logoConfiguracoesUrl, estadoLicenca] = await Promise.all([
+  const [notificacoes, logoConfiguracoesUrl, estadoLicenca, onboarding] = await Promise.all([
     carregarResumoNotificacoesGerenciamento(contexto),
     carregarLogoConfiguracoesGerenciamento(contexto),
     contexto.tenant && contexto.role !== "super_admin"
       ? carregarEstadoLicencaTenant(contexto.tenant.id)
-      : null
+      : null,
+    carregarOnboardingGerenciamento(contexto)
   ]);
 
   return (
@@ -41,6 +44,7 @@ export async function AdminLayoutBase({ children, contexto }: AdminLayoutBasePro
       notificacoes={notificacoes}
     >
       {children}
+      <OnboardingGate resumo={onboarding} />
     </AdminShell>
   );
 }

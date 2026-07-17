@@ -14,6 +14,7 @@ export type IconeMenuAdmin =
   | "featureFlags"
   | "financeiro"
   | "funcionarios"
+  | "ajuda"
   | "guiaRegiao"
   | "hospedes"
   | "inventario"
@@ -182,6 +183,13 @@ const MENU_PROPRIETARIO = [
     descricao: "Preferências do tenant e módulos liberados.",
     icone: "configuracoes",
     permissoes: ["settings.manage"]
+  },
+  {
+    titulo: "Ajuda",
+    href: "/ajuda",
+    descricao: "Tutoriais e primeiros passos do Gerenciamento.",
+    icone: "ajuda",
+    permissoes: ["dashboard.read", "properties.read", "reservations.read"]
   }
 ] as const satisfies readonly ItemMenuAdmin[];
 

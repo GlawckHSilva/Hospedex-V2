@@ -11,6 +11,7 @@ import {
   Building2,
   CalendarDays,
   ChevronDown,
+  CircleHelp,
   ClipboardCheck,
   CreditCard,
   FileText,
@@ -58,6 +59,7 @@ const ICONES_MENU: Record<IconeMenuAdmin, LucideIcon> = {
   configuracoes: Settings,
   dashboard: LayoutDashboard,
   email: Mail,
+  ajuda: CircleHelp,
   featureFlags: Flag,
   financeiro: CreditCard,
   funcionarios: Users,
@@ -653,7 +655,12 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
   );
 
   return (
-    <Link className={classes} href={item.href} {...(onNavigate ? { onClick: onNavigate } : {})}>
+    <Link
+      className={classes}
+      data-tour={`menu-${item.href === "/" ? "dashboard" : item.href.replace("/", "").replaceAll("/", "-")}`}
+      href={item.href}
+      {...(onNavigate ? { onClick: onNavigate } : {})}
+    >
       {conteudo}
     </Link>
   );
