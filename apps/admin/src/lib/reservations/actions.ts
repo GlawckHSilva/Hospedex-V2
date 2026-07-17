@@ -13,6 +13,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { exigirLicencaPermiteAcoesTenant } from "../license-state";
+import { normalizarMoedaFormulario } from "../money";
 import { criarClienteSupabaseServer } from "../supabase/server";
 import { sincronizarHospedeCrm } from "../guests/actions";
 import { sincronizarFinanceiroReservaEditada } from "./finance-sync";
@@ -275,11 +276,15 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
     const supabase = await criarClienteSupabaseServer();
     const reservaId = textoObrigatorio(formData, "reservaId", "reserva");
     const reserva = await carregarReservaGerenciavel(supabase, escopo, reservaId);
-    const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");
+    const valorPagamento = numeroDecimalObrigatorio(formData, "valorPagamento", "valor recebido");
     const cobrancaId = textoOpcional(formData, "cobrancaId");
     const comprovanteUrl = textoOpcional(formData, "comprovanteUrl");
     const formaPagamento = validarFormaPagamentoOpcional(formData, "formaPagamento");
-    const motivo = textoOpcional(formData, "motivo") ?? textoOpcional(formData, "observacao");
+    const dataRecebimento = textoOpcional(formData, "dataRecebimento");
+    const motivo = montarMotivoPagamento(
+      textoOpcional(formData, "motivo") ?? textoOpcional(formData, "observacao"),
+      dataRecebimento
+    );
 
     validarPermissaoFinanceiraReserva(escopo);
 
@@ -289,6 +294,7 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
       );
     }
 
+    await validarValorPagamentoNoSaldo(supabase, escopo, reservaId, valorPagamento, cobrancaId);
     await registrarPagamentoManualOperacional(
       supabase,
       escopo,
@@ -297,7 +303,7 @@ export async function registrarPagamentoManualReservaAction(formData: FormData) 
       formaPagamento ?? reserva.payment_method ?? FORMA_PAGAMENTO_MANUAL_PADRAO,
       cobrancaId,
       comprovanteUrl,
-      motivo ?? "Pagamento manual registrado pelo gerenciamento."
+      motivo
     );
 
     revalidarReservas();
@@ -811,6 +817,38 @@ async function registrarPagamentoManualOperacional(
   }
 }
 
+async function validarValorPagamentoNoSaldo(
+  supabase: ClienteSupabaseServer,
+  escopo: EscopoReserva,
+  reservaId: string,
+  valorPagamento: number,
+  cobrancaId: string | null
+) {
+  if (!cobrancaId) return;
+
+  const { data, error } = await supabase
+    .from("reservation_charges")
+    .select("amount, amount_paid")
+    .eq("id", cobrancaId)
+    .eq("tenant_id", escopo.tenantId)
+    .eq("reservation_id", reservaId)
+    .maybeSingle<{ amount: number | string; amount_paid: number | string }>();
+
+  if (error || !data) {
+    throw new ErroRegraReserva("Cobranca da reserva nao encontrada.");
+  }
+
+  const saldo = Math.max(Number(data.amount) - Number(data.amount_paid), 0);
+  if (valorPagamento > saldo + 0.005) {
+    throw new ErroRegraReserva("Valor recebido nao pode ser maior que o saldo pendente.");
+  }
+}
+
+function montarMotivoPagamento(motivo: string | null, dataRecebimento: string | null) {
+  const texto = motivo ?? "Pagamento manual registrado pelo gerenciamento.";
+  return dataRecebimento ? `${texto} Recebido em ${dataRecebimento}.` : texto;
+}
+
 async function cancelarPagamentoReservaOperacional(
   supabase: ClienteSupabaseServer,
   escopo: EscopoReserva,
@@ -965,14 +1003,20 @@ function textoOpcional(formData: FormData, chave: string): string | null {
 }
 
 function numeroDecimalOpcional(formData: FormData, chave: string): number | null {
-  const valor = formData.get(chave)?.toString().trim().replace(",", ".");
+  const valor = formData.get(chave)?.toString().trim();
   if (!valor) return null;
 
-  const numero = Number(valor);
+  const numero = normalizarMoedaFormulario(valor);
   if (!Number.isFinite(numero) || numero <= 0) {
     throw new ErroRegraReserva("Informe um valor valido.");
   }
 
+  return numero;
+}
+
+function numeroDecimalObrigatorio(formData: FormData, chave: string, label: string): number {
+  const numero = numeroDecimalOpcional(formData, chave);
+  if (numero === null) throw new ErroRegraReserva(`Informe ${label}.`);
   return numero;
 }
 
@@ -990,7 +1034,7 @@ function numeroInteiro(
 }
 
 function numeroMoeda(formData: FormData, chave: string, label: string): number {
-  const valor = Number.parseFloat(textoObrigatorio(formData, chave, label).replace(",", "."));
+  const valor = normalizarMoedaFormulario(textoObrigatorio(formData, chave, label));
   if (Number.isNaN(valor) || valor < 0) {
     throw new ErroRegraReserva(`Informe ${label} válido.`);
   }

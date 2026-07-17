@@ -74,9 +74,10 @@ export function ReservationStatusActions({
 
   return (
     <ConfirmDialog
-      description="As acoes disponiveis dependem do status atual da reserva e preservam o historico operacional."
+      description="Confira os dados antes de executar a operacao."
       disabled={!podeGerenciar || acoes.length === 0}
-      title={`Ações da reserva ${reserva.code}`}
+      size="lg"
+      title={obterTituloModalReserva(reserva)}
       triggerAction="settings"
       triggerClassName="h-9 w-full justify-center"
       triggerIcon={<ClipboardCheck className="h-4 w-4" />}
@@ -84,6 +85,8 @@ export function ReservationStatusActions({
       triggerVariant="outline"
     >
       <div className="space-y-4">
+        <ResumoReserva reserva={reserva} />
+
         <div className="rounded-lg border bg-background/55 p-3 text-sm">
           <p className="text-xs text-muted-foreground">Status atual</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -117,20 +120,37 @@ export function ReservationStatusActions({
                       <input name="cobrancaId" type="hidden" value={acao.cobrancaId} />
                     ) : null}
                     <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                      Valor recebido
+                      Valor recebido agora
                       <input
                         className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        defaultValue={obterSaldoAberto(reserva).toFixed(2)}
-                        min="0.01"
+                        inputMode="decimal"
                         name="valorPagamento"
-                        step="0.01"
-                        type="number"
+                        placeholder={`Saldo: ${formatarMoeda(obterSaldoAberto(reserva))}`}
+                        type="text"
                       />
+                    </label>
+                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                      Forma de pagamento
+                      <select
+                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        defaultValue={reserva.payment_method ?? "pix"}
+                        name="formaPagamento"
+                      >
+                        <option value="pix">Pix</option>
+                        <option value="cash">Dinheiro</option>
+                        <option value="debit_card">Cartao de debito</option>
+                        <option value="credit_card">Cartao de credito</option>
+                        <option value="bank_transfer">Transferencia</option>
+                      </select>
                     </label>
                   </>
                 ) : null}
                 {acao.tipo === "cobranca" ? (
-                  <div className="grid gap-2 rounded-lg border bg-background/45 p-3 md:grid-cols-2">
+                  <details className="rounded-lg border bg-background/45 p-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-cyan-700 dark:text-cyan-200">
+                      Alterar cobranca desta reserva
+                    </summary>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
                     <label className="grid gap-1 text-xs font-medium text-muted-foreground">
                       Metodo de cobranca
                       <select
@@ -143,41 +163,36 @@ export function ReservationStatusActions({
                         <option value="manual">Manual</option>
                       </select>
                     </label>
-                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                      Tipo de cobranca
-                      <select
-                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        defaultValue="default"
-                        name="estrategiaCobranca"
-                      >
-                        <option value="default">Usar padrao</option>
-                        <option value="full">Valor total</option>
-                        <option value="deposit_percent">Sinal percentual</option>
-                        <option value="deposit_fixed">Sinal fixo</option>
-                        <option value="manual_amount">Valor manual</option>
-                      </select>
-                    </label>
-                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                      Percentual do sinal
-                      <input
-                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        max="100"
-                        min="1"
-                        name="percentualSinal"
-                        step="0.01"
-                        type="number"
-                      />
-                    </label>
-                    <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                      Valor fixo/manual
-                      <input
-                        className="h-9 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        min="0.01"
-                        name="valorManualCobranca"
-                        step="0.01"
-                        type="number"
-                      />
-                    </label>
+                    <div className="grid gap-2 text-xs text-muted-foreground md:col-span-2">
+                      <label className="rounded-lg border bg-background/50 p-3">
+                        <input defaultChecked name="estrategiaCobranca" type="radio" value="default" />{" "}
+                        Usar a cobranca configurada na casa.
+                      </label>
+                      <label className="rounded-lg border bg-background/50 p-3">
+                        <input name="estrategiaCobranca" type="radio" value="deposit_percent" />{" "}
+                        Sinal percentual.
+                        <input
+                          className="mt-2 h-9 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          max="100"
+                          min="1"
+                          name="percentualSinal"
+                          placeholder="Percentual do sinal. Ex.: 30"
+                          step="0.01"
+                          type="number"
+                        />
+                      </label>
+                      <label className="rounded-lg border bg-background/50 p-3">
+                        <input name="estrategiaCobranca" type="radio" value="deposit_fixed" />{" "}
+                        Sinal com valor fixo.
+                        <input
+                          className="mt-2 h-9 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          inputMode="decimal"
+                          name="valorSinalFixo"
+                          placeholder="Valor do sinal. Ex.: R$ 500,00"
+                          type="text"
+                        />
+                      </label>
+                    </div>
                     <label className="grid gap-1 text-xs font-medium text-muted-foreground md:col-span-2">
                       Prazo para pagamento em horas
                       <input
@@ -188,7 +203,8 @@ export function ReservationStatusActions({
                         type="number"
                       />
                     </label>
-                  </div>
+                    </div>
+                  </details>
                 ) : null}
                 {acao.tipo === "status" ? (
                   <input name="status" type="hidden" value={acao.statusDestino} />
@@ -223,6 +239,39 @@ export function ReservationStatusActions({
       </div>
     </ConfirmDialog>
   );
+}
+
+function ResumoReserva({ reserva }: { reserva: ReservaComRelacionamentos }) {
+  const hospede = reserva.hospedes.find((item) => item.is_primary) ?? reserva.hospedes[0];
+
+  return (
+    <section className="grid gap-2 rounded-xl border bg-background/55 p-3 text-sm sm:grid-cols-2">
+      <ResumoItem label="Codigo" valor={reserva.code} />
+      <ResumoItem label="Hospede" valor={hospede?.full_name ?? "Nao informado"} />
+      <ResumoItem label="Casa" valor={reserva.propriedade?.name ?? "Casa removida"} />
+      <ResumoItem label="Periodo" valor={`${formatarDataCurta(reserva.check_in)} - ${formatarDataCurta(reserva.check_out)}`} />
+      <ResumoItem label="Hospedes" valor={`${reserva.guests_count}`} />
+      <ResumoItem label="Valor total" valor={formatarMoeda(Number(reserva.total_amount))} />
+      <ResumoItem label="Status" valor={LABEL_STATUS_RESERVA[reserva.status]} />
+    </section>
+  );
+}
+
+function ResumoItem({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-0.5 truncate font-medium">{valor}</p>
+    </div>
+  );
+}
+
+function obterTituloModalReserva(reserva: ReservaComRelacionamentos) {
+  if (reserva.status === "pending") return "Revisar solicitacao";
+  if (reserva.status === "awaiting_payment") return "Registrar pagamento";
+  return `Atualizar reserva ${reserva.code}`;
 }
 
 function obterAcoesReserva(
@@ -354,4 +403,12 @@ function formatarMoeda(valor: number) {
     currency: "BRL",
     style: "currency"
   }).format(valor);
+}
+
+function formatarDataCurta(valor: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(`${valor}T00:00:00`));
 }

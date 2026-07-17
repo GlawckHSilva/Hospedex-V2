@@ -407,9 +407,10 @@ function AcaoConfirmarReserva({
 }) {
   return (
     <ConfirmDialog
-      description="Ao aprovar, uma cobrança será criada e o período ficará segurado temporariamente."
+      description="Analise a solicitação antes de gerar a cobrança."
       disabled={disabled}
-      title="Aprovar reserva e gerar cobrança"
+      size="lg"
+      title="Revisar solicitação"
       triggerAction="add"
       triggerClassName="w-full justify-center"
       triggerIcon={<CheckCircle2 />}
@@ -424,6 +425,7 @@ function AcaoConfirmarReserva({
         pendingLabel="Gerando..."
         placeholder="Observação operacional opcional"
         mostrarCobranca
+        reserva={reserva}
         reservaId={reserva.id}
         valorTotal={Number(reserva.total_amount)}
         variante="add"
@@ -449,7 +451,8 @@ function AcaoRegistrarPagamento({
     <ConfirmDialog
       description="Registra pagamento parcial ou total e atualiza cobrança, financeiro e timeline."
       disabled={disabled}
-      title={label}
+      size="lg"
+      title="Registrar pagamento"
       triggerAction="add"
       triggerClassName="w-full justify-center"
       triggerIcon={<Banknote />}
@@ -463,7 +466,9 @@ function AcaoRegistrarPagamento({
         impacto="Confirme apenas valores já recebidos. A ação fica registrada no financeiro e na timeline."
         pendingLabel="Registrando..."
         placeholder="Observação opcional do pagamento"
+        reserva={reserva}
         reservaId={reserva.id}
+        saldoPendente={valorPadrao}
         valorPagamentoPadrao={valorPadrao}
         variante="add"
         {...(cobrancaAberta ? { cobrancaId: cobrancaAberta.id } : {})}
@@ -540,6 +545,43 @@ function AcaoPagamentoPendente({
   );
 }
 
+function ResumoModalReserva({
+  reserva,
+  saldoPendente,
+}: {
+  reserva: ReservaConfirmacao;
+  saldoPendente: number | undefined;
+}) {
+  return (
+    <section className="grid gap-2 rounded-xl border bg-background/55 p-3 text-sm sm:grid-cols-2">
+      <ResumoModalItem label="Código" valor={reserva.code} />
+      <ResumoModalItem
+        label="Hóspede"
+        valor={reserva.hospedePrincipal?.full_name ?? "Não informado"}
+      />
+      <ResumoModalItem label="Casa" valor={reserva.propriedade?.name ?? "Casa removida"} />
+      <ResumoModalItem label="Período" valor={formatarPeriodo(reserva)} />
+      <ResumoModalItem label="Hóspedes" valor={`${reserva.guests_count}`} />
+      <ResumoModalItem label="Valor total" valor={formatarMoeda(Number(reserva.total_amount))} />
+      {typeof saldoPendente === "number" ? (
+        <ResumoModalItem label="Saldo pendente" valor={formatarMoeda(saldoPendente)} />
+      ) : null}
+      <ResumoModalItem label="Status" valor={LABEL_STATUS_RESERVA[reserva.status]} />
+    </section>
+  );
+}
+
+function ResumoModalItem({ label, valor }: { label: string; valor: string }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-0.5 truncate font-medium">{valor}</p>
+    </div>
+  );
+}
+
 function FormularioConfirmacao({
   action,
   botao,
@@ -549,7 +591,9 @@ function FormularioConfirmacao({
   mostrarCobranca = false,
   pendingLabel,
   placeholder,
+  reserva,
   reservaId,
+  saldoPendente,
   valorTotal,
   valorPagamentoPadrao,
   variante,
@@ -562,7 +606,9 @@ function FormularioConfirmacao({
   mostrarCobranca?: boolean;
   pendingLabel: string;
   placeholder: string;
+  reserva?: ReservaConfirmacao;
   reservaId: string;
+  saldoPendente?: number;
   valorTotal?: number;
   valorPagamentoPadrao?: number;
   variante: "add" | "cancel" | "status";
@@ -571,19 +617,24 @@ function FormularioConfirmacao({
     <form action={action} className="grid gap-3">
       <input name="reservaId" type="hidden" value={reservaId} />
       {cobrancaId ? <input name="cobrancaId" type="hidden" value={cobrancaId} /> : null}
+      {reserva ? <ResumoModalReserva reserva={reserva} saldoPendente={saldoPendente} /> : null}
       <p className="rounded-xl border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm text-muted-foreground">
         {impacto}
       </p>
       {mostrarCobranca ? (
         <fieldset className="grid gap-3 rounded-xl border bg-background/55 p-3">
           <legend className="px-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-600 dark:text-cyan-300">
-            Cobranca da reserva
+            Cobrança configurada para esta casa
           </legend>
           <p className="text-xs leading-5 text-muted-foreground">
-            Valor total da reserva: {formatarMoeda(valorTotal ?? 0)}. Se nada for alterado, o
-            sistema usa o padrao definido em Configuracoes.
+            Valor total: {formatarMoeda(valorTotal ?? 0)}. Usando o padrão da casa, nenhum campo
+            manual precisa ser preenchido.
           </p>
-          <div className="grid gap-3 md:grid-cols-2">
+          <details className="rounded-lg border bg-background/45 p-3">
+            <summary className="cursor-pointer text-sm font-semibold text-cyan-700 dark:text-cyan-200">
+              Alterar cobrança desta reserva
+            </summary>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
             <label className="grid gap-1 text-xs font-medium text-muted-foreground">
               Metodo
               <select
@@ -596,43 +647,36 @@ function FormularioConfirmacao({
                 <option value="manual">Manual</option>
               </select>
             </label>
-            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-              Tipo de cobranca
-              <select
-                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                defaultValue="default"
-                name="estrategiaCobranca"
-              >
-                <option value="default">Usar padrao</option>
-                <option value="full">Valor total</option>
-                <option value="deposit_percent">Sinal percentual</option>
-                <option value="deposit_fixed">Sinal fixo</option>
-                <option value="manual_amount">Valor manual</option>
-              </select>
-            </label>
-            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-              Percentual do sinal
-              <input
-                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                max="100"
-                min="1"
-                name="percentualSinal"
-                placeholder="Ex.: 30"
-                step="0.01"
-                type="number"
-              />
-            </label>
-            <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-              Valor fixo/manual
-              <input
-                className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                min="0.01"
-                name="valorManualCobranca"
-                placeholder="Ex.: 500,00"
-                step="0.01"
-                type="number"
-              />
-            </label>
+            <div className="grid gap-2 text-xs text-muted-foreground md:col-span-2">
+              <label className="rounded-lg border bg-background/50 p-3">
+                <input defaultChecked name="estrategiaCobranca" type="radio" value="default" />{" "}
+                Usar a cobrança padrão da casa.
+              </label>
+              <label className="rounded-lg border bg-background/50 p-3">
+                <input name="estrategiaCobranca" type="radio" value="deposit_percent" />{" "}
+                Cobrar sinal percentual.
+                <input
+                  className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  max="100"
+                  min="1"
+                  name="percentualSinal"
+                  placeholder="Percentual do sinal. Ex.: 30"
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+              <label className="rounded-lg border bg-background/50 p-3">
+                <input name="estrategiaCobranca" type="radio" value="deposit_fixed" />{" "}
+                Cobrar sinal com valor fixo.
+                <input
+                  className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  inputMode="decimal"
+                  name="valorSinalFixo"
+                  placeholder="Valor do sinal. Ex.: R$ 500,00"
+                  type="text"
+                />
+              </label>
+            </div>
             <label className="grid gap-1 text-xs font-medium text-muted-foreground md:col-span-2">
               Prazo para pagamento em horas
               <input
@@ -644,21 +688,46 @@ function FormularioConfirmacao({
                 type="number"
               />
             </label>
-          </div>
+            </div>
+          </details>
         </fieldset>
       ) : null}
       {typeof valorPagamentoPadrao === "number" ? (
-        <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-          Valor recebido
-          <input
-            className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            defaultValue={valorPagamentoPadrao.toFixed(2)}
-            min="0.01"
-            name="valorPagamento"
-            step="0.01"
-            type="number"
-          />
-        </label>
+        <div className="grid gap-3 md:grid-cols-2">
+          <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+            Valor recebido agora
+            <input
+              className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              inputMode="decimal"
+              name="valorPagamento"
+              placeholder={`Saldo: ${formatarMoeda(valorPagamentoPadrao)}`}
+              type="text"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+            Data do recebimento
+            <input
+              className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              defaultValue={new Date().toISOString().slice(0, 10)}
+              name="dataRecebimento"
+              type="date"
+            />
+          </label>
+          <label className="grid gap-1 text-xs font-medium text-muted-foreground md:col-span-2">
+            Forma de pagamento
+            <select
+              className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              defaultValue={reserva?.payment_method ?? "pix"}
+              name="formaPagamento"
+            >
+              <option value="pix">Pix</option>
+              <option value="cash">Dinheiro</option>
+              <option value="debit_card">Cartão de débito</option>
+              <option value="credit_card">Cartão de crédito</option>
+              <option value="bank_transfer">Transferência bancária</option>
+            </select>
+          </label>
+        </div>
       ) : null}
       <textarea
         className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"

@@ -12,6 +12,7 @@ import {
   criarPreferenciaMercadoPago,
   type PreferenciaMercadoPagoResposta
 } from "../payments/mercado-pago";
+import { normalizarMoedaFormulario } from "../money";
 import { carregarAccessTokenMercadoPago } from "../payments/mercado-pago-credentials";
 import { normalizarVariavelAmbiente } from "../supabase/env";
 import type { ClienteSupabaseServer } from "./permissions";
@@ -403,9 +404,9 @@ function validarEstrategiaCobranca(valor: string): EstrategiaCobrancaReserva {
 }
 
 function numeroDecimalOpcional(formData: FormData, chave: string): number | null {
-  const valor = formData.get(chave)?.toString().replace(",", ".").trim();
+  const valor = formData.get(chave)?.toString().trim();
   if (!valor) return null;
-  const numero = Number(valor);
+  const numero = normalizarMoedaFormulario(valor);
   if (!Number.isFinite(numero)) throw new Error("Informe um valor numerico valido.");
   return numero;
 }

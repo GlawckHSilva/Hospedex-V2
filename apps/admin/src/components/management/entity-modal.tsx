@@ -353,6 +353,7 @@ export function ConfirmDialog({
   children,
   description,
   disabled,
+  size = "sm",
   title,
   triggerAction,
   triggerClassName,
@@ -364,6 +365,7 @@ export function ConfirmDialog({
   "eyebrow" | "size" | "triggerSize" | "triggerVariant"
 > & {
   triggerLabel?: string;
+  size?: ModalSize;
   triggerVariant?: ComponentProps<typeof Button>["variant"];
 }) {
   return (
@@ -371,7 +373,7 @@ export function ConfirmDialog({
       description={description}
       disabled={disabled}
       eyebrow="Confirmação"
-      size="sm"
+      size={size}
       title={title}
       triggerAction={
         triggerAction ?? inferirAcaoDoBotao(triggerLabel, triggerVariant)

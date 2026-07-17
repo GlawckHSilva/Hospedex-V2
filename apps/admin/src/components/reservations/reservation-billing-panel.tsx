@@ -290,15 +290,22 @@ function CobrancaCard({
                 <input name="reservaId" type="hidden" value={reservationId} />
                 <input name="cobrancaId" type="hidden" value={charge.id} />
                 <label className="grid gap-1 text-xs font-medium text-muted-foreground">
-                  Valor recebido
+                  Valor recebido agora
                   <input
                     className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    defaultValue={balance.toFixed(2)}
-                    max={balance.toFixed(2)}
-                    min="0.01"
+                    inputMode="decimal"
                     name="valorPagamento"
-                    step="0.01"
-                    type="number"
+                    placeholder={`Saldo: ${formatarMoeda(balance, charge.currency)}`}
+                    type="text"
+                  />
+                </label>
+                <label className="grid gap-1 text-xs font-medium text-muted-foreground">
+                  Data do recebimento
+                  <input
+                    className="h-10 rounded-md border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    defaultValue={new Date().toISOString().slice(0, 10)}
+                    name="dataRecebimento"
+                    type="date"
                   />
                 </label>
                 <label className="grid gap-1 text-xs font-medium text-muted-foreground">

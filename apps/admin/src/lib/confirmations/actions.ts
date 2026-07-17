@@ -14,6 +14,7 @@ import { redirect } from "next/navigation";
 import { exigirAutenticacao } from "../auth/context";
 import type { ContextoAutenticacao } from "../auth/types";
 import { exigirLicencaPermiteAcoesTenant } from "../license-state";
+import { normalizarMoedaFormulario } from "../money";
 import {
   aprovarReservaComMotorDeCobranca,
   obterEntradaCobrancaReserva
@@ -131,10 +132,11 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
     await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
     const reserva = await carregarReserva(supabase, escopo, textoObrigatorio(formData, "reservaId", "reserva"));
     const observacao = textoOpcional(formData, "observacao");
-    const valorPagamento = numeroDecimalOpcional(formData, "valorPagamento");
+    const valorPagamento = numeroDecimalObrigatorio(formData, "valorPagamento", "valor recebido");
     const cobrancaId = textoOpcional(formData, "cobrancaId");
     const comprovanteUrl = textoOpcional(formData, "comprovanteUrl");
     const formaPagamento = validarFormaPagamentoOpcional(formData, "formaPagamento");
+    const dataRecebimento = textoOpcional(formData, "dataRecebimento");
 
     if (STATUS_TERMINAIS.includes(reserva.status)) {
       throw new ErroConfirmacao("Reserva encerrada nao permite registrar pagamento.");
@@ -146,6 +148,7 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
       );
     }
 
+    await validarValorPagamentoNoSaldo(supabase, escopo, reserva.id, valorPagamento, cobrancaId);
     await registrarPagamentoManualAtomico(
       supabase,
       escopo,
@@ -154,7 +157,7 @@ async function registrarPagamentoManualConfirmacao(formData: FormData) {
       formaPagamento ?? reserva.payment_method ?? FORMA_PAGAMENTO_MANUAL_PADRAO,
       cobrancaId,
       comprovanteUrl,
-      observacao ?? "Pagamento manual registrado pela operacao diaria."
+      montarMotivoPagamento(observacao, dataRecebimento)
     );
 
     revalidarConfirmacoes();
@@ -562,6 +565,38 @@ async function registrarPagamentoManualAtomico(
   }
 }
 
+async function validarValorPagamentoNoSaldo(
+  supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
+  escopo: EscopoConfirmacao,
+  reservaId: string,
+  valorPagamento: number,
+  cobrancaId: string | null
+) {
+  if (!cobrancaId) return;
+
+  const { data, error } = await supabase
+    .from("reservation_charges")
+    .select("amount, amount_paid")
+    .eq("id", cobrancaId)
+    .eq("tenant_id", escopo.tenantId)
+    .eq("reservation_id", reservaId)
+    .maybeSingle<{ amount: number | string; amount_paid: number | string }>();
+
+  if (error || !data) {
+    throw new ErroConfirmacao("Cobrança da reserva não encontrada.");
+  }
+
+  const saldo = Math.max(Number(data.amount) - Number(data.amount_paid), 0);
+  if (valorPagamento > saldo + 0.005) {
+    throw new ErroConfirmacao("Valor recebido não pode ser maior que o saldo pendente.");
+  }
+}
+
+function montarMotivoPagamento(motivo: string | null, dataRecebimento: string | null) {
+  const texto = motivo ?? "Pagamento manual registrado pela operação diária.";
+  return dataRecebimento ? `${texto} Recebido em ${dataRecebimento}.` : texto;
+}
+
 async function cancelarPagamentoAtomico(
   supabase: Awaited<ReturnType<typeof criarClienteSupabaseServer>>,
   escopo: EscopoConfirmacao,
@@ -706,10 +741,10 @@ function textoOpcional(formData: FormData, chave: string): string | null {
 }
 
 function numeroDecimalOpcional(formData: FormData, chave: string): number | null {
-  const valor = formData.get(chave)?.toString().trim().replace(",", ".");
+  const valor = formData.get(chave)?.toString().trim();
   if (!valor) return null;
 
-  const numero = Number(valor);
+  const numero = normalizarMoedaFormulario(valor);
   if (!Number.isFinite(numero) || numero <= 0) {
     throw new ErroConfirmacao("Informe um valor valido.");
   }
