@@ -16,17 +16,15 @@ export async function carregarOnboardingGerenciamento(
   if (!contexto.tenant || contexto.role === "super_admin") return null;
 
   const supabase = await criarClienteSupabaseServer();
-  const [progressosResultado, checks, licenca] = await Promise.all([
-    supabase
-      .from("user_tutorial_progress")
-      .select("*")
-      .eq("tenant_id", contexto.tenant.id)
-      .eq("user_id", contexto.userId)
-      .eq("tutorial_version", TUTORIAL_VERSION)
-      .returns<TutorialProgressRow[]>(),
-    carregarChecks(contexto.tenant.id),
-    carregarEstadoLicencaTenant(contexto.tenant.id)
-  ]);
+  const progressosResultado = await supabase
+    .from("user_tutorial_progress")
+    .select(
+      "id,tenant_id,user_id,tutorial_key,tutorial_version,status,current_step,completed_steps,started_at,completed_at,dismissed_at,last_seen_at,created_at,updated_at"
+    )
+    .eq("tenant_id", contexto.tenant.id)
+    .eq("user_id", contexto.userId)
+    .eq("tutorial_version", TUTORIAL_VERSION)
+    .returns<TutorialProgressRow[]>();
 
   if (progressosResultado.error) {
     console.error("Nao foi possivel carregar progresso do onboarding.", progressosResultado.error.message);
@@ -35,10 +33,29 @@ export async function carregarOnboardingGerenciamento(
 
   const progressos = progressosResultado.data ?? [];
   const boasVindas = progressos.find((item) => item.tutorial_key === TUTORIAL_WELCOME_KEY);
+  const progressoPersistido = progressos.find(
+    (item) => item.tutorial_key === TUTORIAL_GERENCIAMENTO_KEY
+  );
+  const onboardingEncerrado =
+    progressoPersistido?.status === "completed" || progressoPersistido?.status === "dismissed";
+  const [checks, licenca] = onboardingEncerrado
+    ? [
+        Object.fromEntries(
+          (progressoPersistido.completed_steps ?? []).map((etapa) => [etapa, true])
+        ),
+        null
+      ]
+    : await Promise.all([
+        carregarChecks(contexto.tenant.id),
+        carregarEstadoLicencaTenant(contexto.tenant.id)
+      ]);
   const checklist = obterChecklistPermitido(contexto, checks);
-  const concluidas = checklist.filter((item) => item.concluida).length;
+  const concluidas =
+    progressoPersistido?.status === "completed"
+      ? checklist.length
+      : checklist.filter((item) => item.concluida).length;
   const progresso = checklist.length ? Math.round((concluidas / checklist.length) * 100) : 0;
-  let progressoChecklist = progressos.find((item) => item.tutorial_key === TUTORIAL_GERENCIAMENTO_KEY);
+  let progressoChecklist = progressoPersistido;
 
   // A conclusão operacional é promovida uma única vez para um registro persistido.
   // Depois disso, alterações nas casas não reabrem uma conquista já concluída.
@@ -62,7 +79,7 @@ export async function carregarOnboardingGerenciamento(
     mostrarBoasVindas:
       status !== "completed" && status !== "dismissed" && (!boasVindas || boasVindas.status === "not_started"),
     mostrarConfirmacaoConclusao: status === "completed" && !progressoChecklist?.dismissed_at,
-    somenteLeitura: licenca.isReadOnlyByExpiredLicense,
+    somenteLeitura: licenca?.isReadOnlyByExpiredLicense ?? false,
     status,
     storageScope: `${contexto.tenant.id}:${contexto.userId}`,
     tutorialKey: TUTORIAL_GERENCIAMENTO_KEY,
