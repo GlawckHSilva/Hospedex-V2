@@ -79,6 +79,20 @@ export function ReservationDetails({
         </Secao>
 
         <Secao titulo="Hospede">
+          <div className="flex items-center gap-3 rounded-lg border bg-background/55 p-3 sm:col-span-2 xl:col-span-3">
+            <AvatarHospede
+              avatarUrl={reserva.hospedePerfil?.avatar_url ?? null}
+              nome={reserva.hospedePerfil?.full_name ?? hospede?.full_name ?? "Hospede"}
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {hospede?.full_name ?? "Nao informado"}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {hospede?.email ?? "E-mail nao informado"}
+              </p>
+            </div>
+          </div>
           <Info label="Nome" valor={hospede?.full_name ?? "Nao informado"} />
           <Info label="Telefone" valor={hospede?.phone ?? "Nao informado"} />
           <Info label="E-mail" valor={hospede?.email ?? "Nao informado"} />
@@ -230,6 +244,35 @@ function Secao({ children, titulo }: { children: ReactNode; titulo: string }) {
       </CardContent>
     </Card>
   );
+}
+
+function AvatarHospede({
+  avatarUrl,
+  nome,
+}: {
+  avatarUrl: string | null;
+  nome: string;
+}) {
+  return (
+    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-400/25 bg-cyan-500/15 text-sm font-bold text-cyan-100 shadow-inner shadow-cyan-950/40">
+      {avatarUrl ? (
+
+        <img alt="" className="h-full w-full object-cover" src={avatarUrl} />
+      ) : (
+        obterIniciais(nome)
+      )}
+    </span>
+  );
+}
+
+function obterIniciais(nome: string) {
+  return nome
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("");
 }
 
 function Info({ label, valor }: { label: string; valor: ReactNode }) {

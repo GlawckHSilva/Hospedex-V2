@@ -117,9 +117,10 @@ export function ReservationCard({
 
         <section className="grid gap-4 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_auto] md:items-center">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-cyan-400/25 bg-cyan-500/15 text-sm font-bold text-cyan-100 shadow-inner shadow-cyan-950/40">
-              {obterIniciais(nomeHospede)}
-            </span>
+            <AvatarHospede
+              avatarUrl={reserva.hospedePerfil?.avatar_url ?? null}
+              nome={reserva.hospedePerfil?.full_name ?? nomeHospede}
+            />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-foreground">
                 {nomeHospede}
@@ -219,6 +220,25 @@ export function ReservationCard({
         </footer>
       </CardContent>
     </Card>
+  );
+}
+
+function AvatarHospede({
+  avatarUrl,
+  nome
+}: {
+  avatarUrl: string | null;
+  nome: string;
+}) {
+  return (
+    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-400/25 bg-cyan-500/15 text-sm font-bold text-cyan-100 shadow-inner shadow-cyan-950/40">
+      {avatarUrl ? (
+
+        <img alt="" className="h-full w-full object-cover" src={avatarUrl} />
+      ) : (
+        obterIniciais(nome)
+      )}
+    </span>
   );
 }
 

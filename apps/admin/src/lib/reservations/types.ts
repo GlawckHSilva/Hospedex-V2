@@ -1,4 +1,5 @@
 import type {
+  ProfileRow,
   PropertyRow,
   ReservationChargeRow,
   ReservationExtraServiceRow,
@@ -43,6 +44,7 @@ export type StatusPagamentoReserva = ReservationPaymentStatus;
 
 export type ReservaComRelacionamentos = ReservationRow & {
   propriedade: PropertyRow | null;
+  hospedePerfil: Pick<ProfileRow, "avatar_url" | "full_name" | "id"> | null;
   hospedes: ReservationGuestRow[];
   historico: ReservationStatusHistoryRow[];
   cobrancas: ReservationChargeRow[];

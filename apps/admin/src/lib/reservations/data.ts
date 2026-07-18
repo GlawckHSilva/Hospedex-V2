@@ -1,4 +1,5 @@
 import type {
+  ProfileRow,
   PropertyRow,
   ReservationChargeRow,
   ReservationExtraServiceRow,
@@ -79,8 +80,16 @@ export async function carregarDadosModuloReservas(
     propriedades,
   );
   const reservaIds = reservasOperacionais.map((reserva) => reserva.id);
+  const hospedePerfilIds = Array.from(
+    new Set(
+      reservasOperacionais
+        .map((reserva) => reserva.guest_user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
   const [
     hospedesResultado,
+    hospedePerfisResultado,
     historicoResultado,
     cobrancasResultado,
     pagamentosResultado,
@@ -96,6 +105,13 @@ export async function carregarDadosModuloReservas(
           .in("reservation_id", reservaIds)
           .returns<ReservationGuestRow[]>()
       : consultaVazia<ReservationGuestRow>(),
+    hospedePerfilIds.length
+      ? supabase
+          .from("profiles")
+          .select("id,full_name,avatar_url")
+          .in("id", hospedePerfilIds)
+          .returns<Array<Pick<ProfileRow, "avatar_url" | "full_name" | "id">>>()
+      : consultaVazia<Pick<ProfileRow, "avatar_url" | "full_name" | "id">>(),
     reservaIds.length
       ? supabase
           .from("reservation_status_history")
@@ -155,6 +171,7 @@ export async function carregarDadosModuloReservas(
     reservasOperacionais,
     propriedades,
     hospedesResultado.data ?? [],
+    hospedePerfisResultado.data ?? [],
     historicoResultado.data ?? [],
     cobrancasResultado.data ?? [],
     pagamentosResultado.data ?? [],
@@ -246,6 +263,7 @@ function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
+  hospedePerfis: Array<Pick<ProfileRow, "avatar_url" | "full_name" | "id">>,
   historico: ReservationStatusHistoryRow[],
   cobrancas: ReservationChargeRow[],
   pagamentos: ReservationPaymentRow[],
@@ -254,6 +272,7 @@ function montarReservas(
   lancamentos: TransactionRow[]
 ): ReservaComRelacionamentos[] {
   const hospedesPorReserva = agruparPorReserva(hospedes);
+  const perfisPorId = new Map(hospedePerfis.map((perfil) => [perfil.id, perfil]));
   const historicoPorReserva = agruparPorReserva(historico);
   const cobrancasPorReserva = agruparPorReserva(cobrancas);
   const pagamentosPorReserva = agruparPorReserva(pagamentos);
@@ -275,6 +294,9 @@ function montarReservas(
       ...reserva,
       propriedade:
         propriedades.find((propriedade) => propriedade.id === reserva.property_id) ?? null,
+      hospedePerfil: reserva.guest_user_id
+        ? perfisPorId.get(reserva.guest_user_id) ?? null
+        : null,
       hospedes: hospedesPorReserva.get(reserva.id) ?? [],
       historico: historicoPorReserva.get(reserva.id) ?? [],
       cobrancas: cobrancasPorReserva.get(reserva.id) ?? [],
