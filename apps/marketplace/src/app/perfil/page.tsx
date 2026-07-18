@@ -38,6 +38,9 @@ export default async function PerfilPage({
 
 function obterMensagem(parametros: Record<string, string | string[] | undefined>) {
   if (parametros.sucesso === "perfil") return "Perfil atualizado com sucesso.";
+  if (parametros.erro === "avatar-formato") return "Envie uma foto JPG, PNG ou WebP valida.";
+  if (parametros.erro === "avatar-tamanho") return "A foto deve ter ate 5 MB.";
+  if (parametros.erro === "avatar-upload") return "Nao foi possivel enviar a foto agora.";
   if (parametros.erro === "perfil") return "Não foi possível atualizar o perfil.";
   return null;
 }

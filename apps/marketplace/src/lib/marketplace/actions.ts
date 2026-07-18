@@ -186,6 +186,14 @@ function obterMensagemPublica(erro: unknown) {
       "a casa esta bloqueada neste periodo",
       "A casa está indisponível neste período."
     ],
+    [
+      "voce nao pode solicitar uma reserva para sua propria hospedagem",
+      "Voce nao pode solicitar uma reserva para sua propria hospedagem."
+    ],
+    [
+      "use o e-mail da sua conta para solicitar esta reserva",
+      "Use o e-mail da sua conta para solicitar esta reserva."
+    ],
     ["informe uma forma de pagamento valida", "Escolha uma forma de pagamento."]
   ];
 

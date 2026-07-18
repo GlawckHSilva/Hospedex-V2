@@ -19,6 +19,7 @@ export type TipoConfirmacao =
 
 export type ReservaConfirmacao = ReservationRow & {
   cobrancas: ReservationChargeRow[];
+  hospedePerfil: Pick<ProfileRow, "avatar_url" | "full_name" | "id"> | null;
   hospedePrincipal: ReservationGuestRow | null;
   lancamentoFinanceiro: TransactionRow | null;
   lancamentosFinanceiros: TransactionRow[];

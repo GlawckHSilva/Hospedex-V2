@@ -109,11 +109,19 @@ export async function carregarDadosConfirmacoes(
     propriedades
   );
   const reservaIds = reservasBase.map((reserva) => reserva.id);
+  const hospedePerfilIds = Array.from(
+    new Set(
+      reservasBase
+        .map((reserva) => reserva.guest_user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
   const tarefaReservaIds = tarefasBase
     .map((tarefa) => tarefa.reservation_id)
     .filter((id): id is string => Boolean(id));
   const [
     hospedes,
+    hospedePerfis,
     historico,
     cobrancas,
     lancamentosFinanceiros,
@@ -123,6 +131,7 @@ export async function carregarDadosConfirmacoes(
     reservasDasTarefas
   ] = await Promise.all([
     carregarHospedes(tenantId, reservaIds),
+    carregarPerfisHospedes(hospedePerfilIds),
     carregarHistorico(tenantId, reservaIds),
     carregarCobrancasReservas(tenantId, reservaIds),
     carregarLancamentosFinanceiros(tenantId, reservaIds),
@@ -137,6 +146,7 @@ export async function carregarDadosConfirmacoes(
     reservasBase,
     propriedades,
     hospedes,
+    hospedePerfis,
     cobrancas,
     lancamentosFinanceiros,
     mensagensWhatsapp,
@@ -210,6 +220,19 @@ async function carregarHospedes(tenantId: string, reservaIds: string[]) {
     .returns<ReservationGuestRow[]>();
 
   registrarErro("hospedes", error);
+  return data ?? [];
+}
+
+async function carregarPerfisHospedes(ids: string[]) {
+  if (!ids.length) return [];
+  const supabase = await criarClienteSupabaseServer();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id,full_name,avatar_url")
+    .in("id", ids)
+    .returns<Array<Pick<ProfileRow, "avatar_url" | "full_name" | "id">>>();
+
+  registrarErro("perfis dos hospedes", error);
   return data ?? [];
 }
 
@@ -351,6 +374,7 @@ function montarReservas(
   reservas: ReservationRow[],
   propriedades: PropertyRow[],
   hospedes: ReservationGuestRow[],
+  hospedePerfis: Array<Pick<ProfileRow, "avatar_url" | "full_name" | "id">>,
   cobrancas: ReservationChargeRow[],
   lancamentosFinanceiros: TransactionRow[],
   mensagensWhatsapp: ReservationWhatsappMessageRow[],
@@ -359,9 +383,16 @@ function montarReservas(
   pagamentos: ReservationPaymentRow[],
   perfis: ProfileRow[]
 ): ReservaConfirmacao[] {
+  const perfisHospedesPorId = new Map(
+    hospedePerfis.map((perfil) => [perfil.id, perfil])
+  );
+
   return reservas.map((reserva) => ({
     ...reserva,
     cobrancas: cobrancas.filter((cobranca) => cobranca.reservation_id === reserva.id),
+    hospedePerfil: reserva.guest_user_id
+      ? perfisHospedesPorId.get(reserva.guest_user_id) ?? null
+      : null,
     hospedePrincipal:
       hospedes.find((hospede) => hospede.reservation_id === reserva.id) ?? null,
     lancamentoFinanceiro:

@@ -6,6 +6,14 @@ import { revalidatePath } from "next/cache";
 
 import { criarClienteSupabaseServer } from "../supabase/server";
 
+const BUCKET_AVATARES = "hospedex-profile-avatars";
+const LIMITE_AVATAR_BYTES = 5 * 1024 * 1024;
+const MIME_AVATAR: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp"
+};
+
 export async function loginHospedeAction(formData: FormData) {
   const email = textoObrigatorio(formData, "email", "e-mail");
   const senha = textoObrigatorio(formData, "senha", "senha");
@@ -86,9 +94,21 @@ export async function atualizarPerfilHospedeAction(formData: FormData) {
   const usuario = usuarioResultado.user;
   if (!usuario) redirect("/login");
 
+  const { data: perfilAtual } = await supabase
+    .from("profiles")
+    .select("avatar_url")
+    .eq("id", usuario.id)
+    .maybeSingle<{ avatar_url: string | null }>();
+  const removerAvatar = formData.get("removerAvatar") === "1";
+  const arquivoAvatar = formData.get("avatar");
+  const avatarUrl = removerAvatar
+    ? null
+    : await enviarAvatarHospede(supabase, usuario.id, arquivoAvatar);
+
   const { error } = await supabase
     .from("profiles")
     .update({
+      ...(removerAvatar || avatarUrl ? { avatar_url: avatarUrl } : {}),
       city: textoOpcional(formData, "cidade"),
       document_number: textoOpcional(formData, "documento"),
       full_name: textoObrigatorio(formData, "nome", "nome"),
@@ -102,8 +122,14 @@ export async function atualizarPerfilHospedeAction(formData: FormData) {
     redirect("/perfil?erro=perfil");
   }
 
+  if ((removerAvatar || avatarUrl) && perfilAtual?.avatar_url) {
+    await removerAvatarAntigo(supabase, perfilAtual.avatar_url);
+  }
+
   revalidatePath("/perfil");
   revalidatePath("/minhas-reservas");
+  revalidatePath("/reservas");
+  revalidatePath("/pendencias");
   redirect("/perfil?sucesso=perfil");
 }
 
@@ -144,6 +170,72 @@ function textoObrigatorio(formData: FormData, chave: string, label: string) {
 function textoOpcional(formData: FormData, chave: string) {
   const valor = formData.get(chave)?.toString().trim();
   return valor || null;
+}
+
+async function enviarAvatarHospede(
+  supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>,
+  userId: string,
+  arquivo: FormDataEntryValue | null
+) {
+  if (!(arquivo instanceof File) || arquivo.size === 0) return null;
+  if (arquivo.size > LIMITE_AVATAR_BYTES) {
+    redirect("/perfil?erro=avatar-tamanho");
+  }
+
+  const extensao = MIME_AVATAR[arquivo.type];
+  if (!extensao || !(await arquivoPareceImagemValida(arquivo))) {
+    redirect("/perfil?erro=avatar-formato");
+  }
+
+  const caminho = `${userId}/avatar-${Date.now()}.${extensao}`;
+  const { error } = await supabase.storage
+    .from(BUCKET_AVATARES)
+    .upload(caminho, arquivo, {
+      cacheControl: "3600",
+      contentType: arquivo.type,
+      upsert: true
+    });
+
+  if (error) {
+    console.error("Erro ao enviar avatar do hospede.", error);
+    redirect("/perfil?erro=avatar-upload");
+  }
+
+  return supabase.storage.from(BUCKET_AVATARES).getPublicUrl(caminho).data.publicUrl;
+}
+
+async function arquivoPareceImagemValida(arquivo: File) {
+  const bytes = new Uint8Array(await arquivo.slice(0, 12).arrayBuffer());
+  const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const png =
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47;
+  const webp =
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50;
+
+  return jpeg || png || webp;
+}
+
+async function removerAvatarAntigo(
+  supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>,
+  avatarUrl: string
+) {
+  const marcador = `/storage/v1/object/public/${BUCKET_AVATARES}/`;
+  const indice = avatarUrl.indexOf(marcador);
+  if (indice < 0) return;
+
+  const caminho = decodeURIComponent(avatarUrl.slice(indice + marcador.length));
+  if (!caminho) return;
+  await supabase.storage.from(BUCKET_AVATARES).remove([caminho]);
 }
 
 function traduzirErroCancelamentoHospede(mensagemBanco: string) {

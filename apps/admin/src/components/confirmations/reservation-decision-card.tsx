@@ -107,17 +107,23 @@ export function ReservationDecisionCard({
             <span className={prioridade.labelClass}>{prioridade.label}</span>
           </div>
 
-          <div>
+          <div className="flex items-center gap-3">
+            <AvatarHospede
+              avatarUrl={reserva.hospedePerfil?.avatar_url ?? null}
+              nome={reserva.hospedePerfil?.full_name ?? hospede?.full_name ?? reserva.code}
+            />
+            <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-600 dark:text-cyan-300">
               {mensagem.title}
             </p>
-            <h3 className="mt-1 text-lg font-semibold tracking-normal">
+            <h3 className="mt-1 truncate text-lg font-semibold tracking-normal">
               {reserva.code}
             </h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 truncate text-sm text-muted-foreground">
               {hospede?.full_name ?? "Hóspede não informado"} ·{" "}
               {reserva.propriedade?.name ?? "Casa removida"}
             </p>
+            </div>
           </div>
 
           <p className="rounded-lg border border-cyan-300/15 bg-cyan-400/10 px-3 py-2 text-sm leading-5 text-muted-foreground">
@@ -239,6 +245,35 @@ function BotaoDetalhes({
   );
 }
 
+function AvatarHospede({
+  avatarUrl,
+  nome,
+}: {
+  avatarUrl: string | null;
+  nome: string;
+}) {
+  return (
+    <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-cyan-400/25 bg-cyan-500/15 text-xs font-bold text-cyan-100 shadow-inner shadow-cyan-950/40">
+      {avatarUrl ? (
+
+        <img alt="" className="h-full w-full object-cover" src={avatarUrl} />
+      ) : (
+        obterIniciais(nome)
+      )}
+    </span>
+  );
+}
+
+function obterIniciais(nome: string) {
+  return nome
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0]?.toUpperCase())
+    .join("");
+}
+
 function MaisAcoes({
   podeCancelarReserva,
   podeGerenciarPagamento,
@@ -342,6 +377,20 @@ function DetalhesReserva({
         </PainelDetalhe>
 
         <PainelDetalhe titulo="Hóspede">
+          <div className="flex items-center gap-3 rounded-lg border bg-background/45 p-3">
+            <AvatarHospede
+              avatarUrl={reserva.hospedePerfil?.avatar_url ?? null}
+              nome={reserva.hospedePerfil?.full_name ?? hospede?.full_name ?? "Hospede"}
+            />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold">
+                {hospede?.full_name ?? "Nao informado"}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {hospede?.email ?? "E-mail nao informado"}
+              </p>
+            </div>
+          </div>
           <Info icon={<User />} label="Nome" valor={hospede?.full_name ?? "Não informado"} />
           <Info icon={<Phone />} label="Telefone" valor={hospede?.phone ?? "Não informado"} />
           <Info icon={<Mail />} label="E-mail" valor={hospede?.email ?? "Não informado"} />

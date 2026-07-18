@@ -307,7 +307,7 @@ async function carregarContextoHospede(): Promise<
     };
   }
 
-  if (perfil.platform_role === "super_admin" || (await usuarioPossuiTenant(supabase, perfil.id))) {
+  if (perfil.platform_role === "super_admin") {
     return {
       dados: null,
       estado: "sem_permissao",
@@ -332,25 +332,6 @@ async function carregarContextoHospede(): Promise<
     estado: "ok",
     mensagem: null
   };
-}
-
-async function usuarioPossuiTenant(
-  supabase: NonNullable<Awaited<ReturnType<typeof criarClienteSupabaseServer>>>,
-  userId: string
-) {
-  const { data, error } = await supabase
-    .from("tenant_members")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .limit(1);
-
-  if (error) {
-    console.error("Erro ao validar se usuario pertence a tenant.", error);
-    return false;
-  }
-
-  return Boolean(data?.length);
 }
 
 async function carregarComplementosReservas(
