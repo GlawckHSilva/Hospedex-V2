@@ -233,14 +233,16 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
       {slot && cardRota
         ? createPortal(
             <Button
-              className="hidden gap-2 xl:inline-flex"
+              aria-label="Conhecer este módulo"
+              className="h-9 w-9 gap-2 p-0 xl:w-auto xl:px-3"
               onClick={() => startTour(cardRota.key)}
               size="sm"
+              title="Conhecer este módulo"
               type="button"
               variant="outline"
             >
               <CircleHelp className="h-4 w-4" />
-              Conhecer este módulo
+              <span className="hidden xl:inline">Conhecer este módulo</span>
             </Button>,
             slot,
           )
