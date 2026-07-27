@@ -1,4 +1,13 @@
-export type TutorialStatus = "not_started" | "in_progress" | "completed" | "dismissed";
+import type { TutorialKind, TutorialTourKey, TutorialTourStep } from "./tour-registry";
+
+export type TutorialStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+  | "dismissed"
+  | "updated";
+
+export type TutorialInvitationStatus = "pending" | "later" | "never" | "started";
 
 export type TutorialProgressRow = {
   id: string;
@@ -6,9 +15,12 @@ export type TutorialProgressRow = {
   user_id: string;
   tutorial_key: string;
   tutorial_version: number;
-  status: TutorialStatus;
+  status: Exclude<TutorialStatus, "updated">;
   current_step: number;
   completed_steps: string[];
+  invitation_status: TutorialInvitationStatus | null;
+  invitation_decided_at: string | null;
+  restarted_at: string | null;
   started_at: string | null;
   completed_at: string | null;
   dismissed_at: string | null;
@@ -17,37 +29,29 @@ export type TutorialProgressRow = {
   updated_at: string;
 };
 
-export type TutorialEtapa = {
-  id: string;
-  actionLabel: string;
-  titulo: string;
-  descricao: string;
-  href: string;
-  tourKey: string;
-  dataTour?: string;
-  concluida: boolean;
-  bloqueada?: boolean;
+export type TutorialCard = {
+  completedAt: string | null;
+  completedSteps: string[];
+  currentStep: number;
+  description: string;
+  durationMinutes: number;
+  icon: string;
+  invitationStatus: TutorialInvitationStatus;
+  key: TutorialTourKey;
+  kind: TutorialKind;
+  progress: number;
+  route: string;
+  status: TutorialStatus;
+  stepCount: number;
+  steps: TutorialTourStep[];
+  title: string;
+  version: number;
 };
 
 export type TutorialResumoGerenciamento = {
-  checklist: TutorialEtapa[];
-  completedAt: string | null;
-  progresso: number;
-  mostrarChecklist: boolean;
+  progressoGeral: number;
   mostrarBoasVindas: boolean;
-  mostrarConfirmacaoConclusao: boolean;
-  somenteLeitura: boolean;
-  status: TutorialStatus;
   storageScope: string;
-  tutorialKey: string;
   tours: TutorialCard[];
   usuarioNome: string;
-};
-
-export type TutorialCard = {
-  key: string;
-  title: string;
-  description: string;
-  duration: string;
-  status: TutorialStatus;
 };
