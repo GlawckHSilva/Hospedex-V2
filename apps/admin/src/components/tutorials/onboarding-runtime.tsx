@@ -420,7 +420,12 @@ function esperarTarget(targetId: string) {
 
 function encontrarTargetVisivel(targetId: string) {
   const elementos = document.querySelectorAll<HTMLElement>(`[data-tour-id="${targetId}"]`);
-  return Array.from(elementos).find((elemento) => elemento.offsetParent !== null) ?? null;
+  return (
+    Array.from(elementos).find((elemento) => {
+      const rect = elemento.getBoundingClientRect();
+      return elemento.offsetParent !== null && rect.width > 0 && rect.height > 0;
+    }) ?? null
+  );
 }
 
 function prepararNavegacaoMobile(targetId: string) {
