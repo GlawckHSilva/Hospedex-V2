@@ -31,6 +31,15 @@ test("apresentação inicial permanece curta", () => {
   assert.ok(onboarding.steps.length <= 5);
 });
 
+test("etapas do menu lateral preferem abrir para a direita", () => {
+  const etapasMenu = catalogo.flatMap((tutorial) =>
+    tutorial.steps.filter((etapa) => etapa.targetId.startsWith("menu-")),
+  );
+
+  assert.ok(etapasMenu.length > 0);
+  etapasMenu.forEach((etapa) => assert.equal(etapa.placement, "right-start"));
+});
+
 test("módulos obrigatórios possuem tutorial", () => {
   const obrigatorios = [
     "dashboard",

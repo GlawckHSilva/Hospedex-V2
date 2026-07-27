@@ -11,9 +11,9 @@
     "roles": ["owner", "staff"],
     "steps": [
       { "id": "welcome", "route": "/", "targetId": "module-dashboard", "title": "Bem-vindo ao Hospedex", "content": "O Gerenciamento reúne casas, reservas, hóspedes e a operação da hospedagem em um único painel." },
-      { "id": "menu", "route": "/", "targetId": "menu-principal", "title": "Menu principal", "content": "O menu mostra somente os módulos liberados pelo plano e pelas suas permissões. No celular, ele fica no botão do canto superior." },
+      { "id": "menu", "route": "/", "targetId": "menu-principal", "placement": "right-start", "title": "Menu principal", "content": "O menu mostra somente os módulos liberados pelo plano e pelas suas permissões. No celular, ele fica no botão do canto superior." },
       { "id": "contexts", "route": "/", "targetId": "module-dashboard", "title": "Gerenciamento e Marketplace", "content": "Aqui você administra a operação. No Marketplace, hóspedes encontram casas públicas e enviam solicitações de reserva." },
-      { "id": "start", "route": "/", "targetId": "menu-casas", "title": "Comece pelas casas", "content": "Cadastre a hospedagem como rascunho, complete dados e fotos e publique quando estiver pronta. As solicitações aparecerão em Reservas." },
+      { "id": "start", "route": "/", "targetId": "menu-casas", "placement": "right-start", "title": "Comece pelas casas", "content": "Cadastre a hospedagem como rascunho, complete dados e fotos e publique quando estiver pronta. As solicitações aparecerão em Reservas." },
       { "id": "help", "route": "/", "targetId": "ajuda-contextual", "title": "Aprenda no seu ritmo", "content": "A Central de Tutoriais guarda o progresso de cada módulo. Você pode continuar, rever ou consultar uma etapa específica quando quiser." }
     ]
   },

@@ -38,6 +38,7 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
   const [state, setState] = useState<TourState>("idle");
   const [concluido, setConcluido] = useState<TutorialTourDefinition | null>(null);
   const [portalPronto, setPortalPronto] = useState(false);
+  const [viewportCompacto, setViewportCompacto] = useState(false);
   const completedSteps = useRef<string[]>([]);
   const storageKey = `${STORAGE_KEY}:${resumo?.storageScope ?? "sem-contexto"}`;
   const tutorialRota = obterTutorialPorRota(pathname);
@@ -53,16 +54,18 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
 
   useEffect(() => setPortalPronto(true), []);
 
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const atualizar = () => setViewportCompacto(media.matches);
+    atualizar();
+    media.addEventListener("change", atualizar);
+    return () => media.removeEventListener("change", atualizar);
+  }, []);
+
   const joyrideSteps = useMemo<Step[]>(() => {
     if (!activeTour) return [];
-    return activeTour.steps.map((step) => ({
-      content: step.content,
-      placement: step.placement ?? "auto",
-      skipBeacon: true,
-      target: () => encontrarTargetVisivel(step.targetId),
-      title: step.title,
-    }));
-  }, [activeTour]);
+    return activeTour.steps.map((step) => criarEtapaJoyride(step, viewportCompacto));
+  }, [activeTour, viewportCompacto]);
 
   const startTour = useCallback(
     (tourKey: TutorialTourKey, options: StartOptions = {}) => {
@@ -284,49 +287,114 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
         <Button onClick={() => setConcluido(null)} type="button">Continuar</Button>
       </AppModal>
 
-      <Joyride
-        continuous
-        locale={{
-          back: "Anterior",
-          close: "Fechar",
-          last: "Concluir",
-          next: "Próximo",
-          nextWithProgress: "Próximo ({current} de {total})",
-          skip: "Continuar depois",
-        }}
-        onEvent={handleJoyride}
-        options={{
-          arrowColor: "var(--card)",
-          backgroundColor: "var(--card)",
-          buttons: ["back", "skip", "primary"],
-          closeButtonAction: "skip",
-          overlayClickAction: false,
-          overlayColor: "rgba(2, 6, 23, 0.58)",
-          primaryColor: "var(--primary)",
-          showProgress: true,
-          spotlightRadius: 14,
-          targetWaitTimeout: TARGET_TIMEOUT_MS,
-          textColor: "var(--foreground)",
-          zIndex: 2147483647,
-        }}
-        run={run}
-        scrollToFirstStep
-        stepIndex={stepIndex}
-        steps={joyrideSteps}
-        styles={{
-          buttonBack: { color: "var(--muted-foreground)" },
-          buttonClose: { color: "var(--muted-foreground)" },
-          tooltip: {
-            border: "1px solid var(--border)",
-            borderRadius: 16,
-            boxShadow: "0 24px 80px rgba(0,0,0,.28)",
-            maxWidth: "calc(100vw - 24px)",
-          },
-          tooltipTitle: { fontSize: 16, fontWeight: 700 },
-        }}
-      />
+      {portalPronto ? (
+        <Joyride
+          continuous
+          locale={{
+            back: "Anterior",
+            close: "Fechar",
+            last: "Concluir",
+            next: "Próximo",
+            nextWithProgress: "Próximo ({current} de {total})",
+            skip: "Continuar depois",
+          }}
+          onEvent={handleJoyride}
+          options={{
+            arrowColor: "var(--card)",
+            backgroundColor: "var(--card)",
+            buttons: ["back", "skip", "primary"],
+            closeButtonAction: "skip",
+            overlayClickAction: false,
+            overlayColor: "rgba(2, 6, 23, 0.58)",
+            primaryColor: "var(--primary)",
+            showProgress: true,
+            spotlightRadius: 14,
+            targetWaitTimeout: TARGET_TIMEOUT_MS,
+            textColor: "var(--foreground)",
+            zIndex: 2147483647,
+          }}
+          portalElement={document.body}
+          run={run}
+          scrollToFirstStep
+          stepIndex={stepIndex}
+          steps={joyrideSteps}
+          styles={{
+            buttonBack: { color: "var(--muted-foreground)" },
+            buttonClose: { color: "var(--muted-foreground)" },
+            tooltip: {
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              boxShadow: "0 24px 80px rgba(0,0,0,.28)",
+              maxHeight: "calc(100dvh - 32px)",
+              maxWidth: "min(380px, calc(100vw - 32px))",
+              overflowY: "auto",
+              width: viewportCompacto ? "calc(100vw - 32px)" : 360,
+            },
+            tooltipContent: {
+              maxHeight: "calc(100dvh - 168px)",
+              overflowWrap: "anywhere",
+              overflowY: "auto",
+            },
+            tooltipFooter: { flexWrap: "wrap", gap: 8 },
+            tooltipTitle: { fontSize: 16, fontWeight: 700 },
+          }}
+        />
+      ) : null}
     </>
   );
+}
+
+function criarEtapaJoyride(
+  step: TutorialTourDefinition["steps"][number],
+  viewportCompacto: boolean,
+): Step {
+  const alvoMenu = step.targetId.startsWith("menu-");
+  const alvoAmplo = step.targetId.startsWith("module-");
+  const placement = viewportCompacto
+    ? alvoMenu
+      ? "bottom"
+      : alvoAmplo
+        ? "center"
+        : step.placement ?? "bottom"
+    : step.placement ?? (alvoMenu ? "right-start" : alvoAmplo ? "center" : "bottom");
+
+  return {
+    content: step.content,
+    floatingOptions: {
+      autoUpdate: {
+        ancestorResize: true,
+        ancestorScroll: true,
+        elementResize: true,
+        layoutShift: true,
+      },
+      flipOptions:
+        placement === "center"
+          ? false
+          : {
+              boundary: [],
+              crossAxis: true,
+              fallbackPlacements: alvoMenu
+                ? ["right", "bottom-start", "top-start"]
+                : ["top", "right", "left"],
+              padding: 16,
+              rootBoundary: "viewport",
+            },
+      shiftOptions: {
+        boundary: [],
+        crossAxis: true,
+        mainAxis: true,
+        padding: 16,
+        rootBoundary: "viewport",
+      },
+      strategy: "fixed",
+    },
+    isFixed: true,
+    offset: 14,
+    placement,
+    skipBeacon: true,
+    target: () => encontrarTargetVisivel(step.targetId),
+    title: step.title,
+  };
 }
 
 function esperarTarget(targetId: string) {

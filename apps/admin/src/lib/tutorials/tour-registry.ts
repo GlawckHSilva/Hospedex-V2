@@ -1,6 +1,7 @@
 import catalogo from "./catalog.json";
 
 import type { UserRole } from "@hospedex/types";
+import type { Placement } from "react-joyride";
 
 export type TutorialKind = "module" | "onboarding";
 export type TutorialTourKey =
@@ -22,7 +23,7 @@ export type TutorialTourKey =
 export type TutorialTourStep = {
   content: string;
   id: string;
-  placement?: "auto" | "bottom" | "left" | "right" | "top";
+  placement?: Placement | "auto" | "center";
   route: string;
   targetId: string;
   title: string;
