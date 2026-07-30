@@ -1,0 +1,285 @@
+[
+  {
+    "key": "onboarding:initial",
+    "kind": "onboarding",
+    "version": 1,
+    "title": "Primeiros passos no Hospedex",
+    "description": "Conheça o Gerenciamento e saiba onde aprender cada módulo.",
+    "durationMinutes": 2,
+    "icon": "sparkles",
+    "route": "/",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "welcome", "route": "/", "targetId": "module-dashboard", "title": "Bem-vindo ao Hospedex", "content": "O Gerenciamento reúne casas, reservas, hóspedes e a operação da hospedagem em um único painel." },
+      { "id": "menu", "route": "/", "targetId": "menu-principal", "placement": "right-start", "title": "Menu principal", "content": "O menu mostra somente os módulos liberados pelo plano e pelas suas permissões. No celular, ele fica no botão do canto superior." },
+      { "id": "contexts", "route": "/", "targetId": "module-dashboard", "title": "Gerenciamento e Marketplace", "content": "Aqui você administra a operação. No Marketplace, hóspedes encontram casas públicas e enviam solicitações de reserva." },
+      { "id": "start", "route": "/", "targetId": "menu-casas", "placement": "right-start", "title": "Comece pelas casas", "content": "Cadastre a hospedagem como rascunho, complete dados e fotos e publique quando estiver pronta. As solicitações aparecerão em Reservas." },
+      { "id": "help", "route": "/", "targetId": "ajuda-contextual", "title": "Aprenda no seu ritmo", "content": "A Central de Tutoriais guarda o progresso de cada módulo. Você pode continuar, rever ou consultar uma etapa específica quando quiser." }
+    ]
+  },
+  {
+    "key": "dashboard",
+    "kind": "module",
+    "version": 1,
+    "title": "Dashboard",
+    "description": "Indicadores, alertas e atalhos para acompanhar a operação.",
+    "durationMinutes": 4,
+    "icon": "layout-dashboard",
+    "route": "/",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "overview", "route": "/", "targetId": "module-dashboard", "title": "Resumo geral", "content": "O Dashboard apresenta um retrato do tenant atual. Os números respeitam permissões e usam somente dados reais disponíveis." },
+      { "id": "indicators", "route": "/", "targetId": "dashboard-reservas", "title": "Indicadores", "content": "Reservas, receita, check-ins, check-outs, ocupação e casas ativas ajudam a identificar o que exige atenção." },
+      { "id": "arrivals", "route": "/", "targetId": "module-dashboard", "title": "Próximas entradas e saídas", "content": "Use as listas operacionais para preparar check-ins e check-outs futuros sem alterar a reserva diretamente pelo tutorial." },
+      { "id": "recent", "route": "/", "targetId": "module-dashboard", "title": "Reservas recentes", "content": "As reservas mais novas aparecem com status e período. Abra os detalhes para consultar o histórico completo." },
+      { "id": "alerts", "route": "/", "targetId": "module-dashboard", "title": "Alertas e pendências", "content": "Avisos de pagamento, licença e tarefas operacionais mostram situações que precisam de decisão humana." },
+      { "id": "filters", "route": "/", "targetId": "module-dashboard", "title": "Filtros e atualização", "content": "Quando disponíveis, filtros por casa e período recalculam os indicadores. Estados vazios significam ausência de dados, não valores simulados." },
+      { "id": "interpretation", "route": "/", "targetId": "dashboard-financeiro", "title": "Interprete os dados", "content": "Receita considera os lançamentos contabilizados; ocupação depende do período e da capacidade cadastrada. Consulte Relatórios para análises detalhadas." }
+    ]
+  },
+  {
+    "key": "properties",
+    "kind": "module",
+    "version": 1,
+    "title": "Casas",
+    "description": "Cadastro, rascunho, fotos, valores, disponibilidade e publicação.",
+    "durationMinutes": 7,
+    "icon": "house",
+    "route": "/propriedades",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "listing", "route": "/propriedades", "targetId": "casas-lista", "title": "Listagem de casas", "content": "A listagem reúne casas ativas, inativas e rascunhos do tenant. Busca e filtros ajudam a localizar uma hospedagem." },
+      { "id": "create-draft", "route": "/propriedades", "targetId": "casas-nova", "title": "Criação e rascunho", "content": "Uma nova casa começa como rascunho. O salvamento automático preserva o preenchimento e ela só será pública depois da conclusão e publicação." },
+      { "id": "basics", "route": "/propriedades", "targetId": "module-propriedades", "title": "Dados básicos e capacidade", "content": "Nome, tipo, descrição, quartos, banheiros e capacidade definem como a hospedagem será apresentada e quantas pessoas poderá receber." },
+      { "id": "pricing", "route": "/propriedades", "targetId": "module-propriedades", "title": "Diária, taxas e hóspedes extras", "content": "Configure diária, limpeza, caução informativa e adicional por hóspede. O adicional é aplicado conforme a regra cadastrada para a reserva." },
+      { "id": "location-rules", "route": "/propriedades", "targetId": "module-propriedades", "title": "Localização e regras", "content": "Endereço, cidade, instruções e políticas orientam o hóspede. Dados internos não devem ser publicados como texto público." },
+      { "id": "amenities", "route": "/propriedades", "targetId": "module-propriedades", "title": "Comodidades", "content": "Selecione comodidades padrão ou adicione opções personalizadas. Elas ajudam o hóspede a comparar hospedagens." },
+      { "id": "photos", "route": "/propriedades", "targetId": "module-propriedades", "title": "Fotos e imagem principal", "content": "Envie várias imagens, defina títulos e escolha a principal. A ordem da galeria controla a sequência exibida ao visitante." },
+      { "id": "availability", "route": "/propriedades", "targetId": "module-propriedades", "title": "Disponibilidade", "content": "A casa é o item reservável. Reservas e bloqueios usam property_id e aparecem no Calendário, sem depender de unidades." },
+      { "id": "publish", "route": "/propriedades", "targetId": "module-propriedades", "title": "Pré-visualização e publicação", "content": "Antes de publicar, confira título, descrição, foto principal e campos obrigatórios. Publicar torna a casa elegível ao Marketplace conforme licença e módulos liberados." },
+      { "id": "manage", "route": "/propriedades", "targetId": "casas-lista", "title": "Editar, desativar e limites", "content": "Editar mantém os dados existentes; desativar remove a oferta pública sem apagar o histórico financeiro. O limite de casas vem da licença vigente." }
+    ]
+  },
+  {
+    "key": "reservations",
+    "kind": "module",
+    "version": 1,
+    "title": "Reservas e solicitações",
+    "description": "Da solicitação inicial ao pagamento, check-in e checkout.",
+    "durationMinutes": 8,
+    "icon": "bed-double",
+    "route": "/reservas",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "request-vs-booking", "route": "/reservas", "targetId": "reservas-status", "title": "Solicitação e reserva", "content": "Uma solicitação aguarda análise; uma reserva confirmada já bloqueia o período conforme as regras operacionais." },
+      { "id": "origin-guest", "route": "/reservas", "targetId": "module-reservas", "title": "Origem e hóspede", "content": "Identifique se a reserva veio do Marketplace ou foi criada manualmente. Nome, contato e foto ajudam no atendimento, respeitando privacidade." },
+      { "id": "period-guests", "route": "/reservas", "targetId": "module-reservas", "title": "Período e hóspedes", "content": "Confira check-in, check-out, diárias e quantidade de hóspedes. Conflitos e capacidade são validados antes da confirmação." },
+      { "id": "calculation", "route": "/reservas", "targetId": "module-reservas", "title": "Cálculo de valores", "content": "O total combina diárias, taxas, serviços e hóspedes extras conforme a configuração da casa. Revise o detalhamento antes de cobrar." },
+      { "id": "decision", "route": "/reservas", "targetId": "module-reservas", "title": "Aprovar ou recusar", "content": "Aprovação e recusa são decisões sensíveis. O tutorial explica seus efeitos, mas nunca executa a ação automaticamente." },
+      { "id": "billing", "route": "/reservas", "targetId": "module-reservas", "title": "Sinal e pagamentos", "content": "Registre valores recebidos e pendentes conforme a forma de cobrança. A confirmação financeira alimenta o histórico e o Financeiro." },
+      { "id": "stay", "route": "/reservas", "targetId": "module-reservas", "title": "Check-in e checkout", "content": "Registre entrada e saída somente quando ocorrerem. O checkout pode gerar tarefas operacionais, como limpeza." },
+      { "id": "cancel", "route": "/reservas", "targetId": "module-reservas", "title": "Cancelamento", "content": "Cancelar preserva histórico e ajusta disponibilidade e financeiro conforme a regra atual. Sempre revise a confirmação antes de prosseguir." },
+      { "id": "history", "route": "/reservas", "targetId": "module-reservas", "title": "Histórico e comprovantes", "content": "A linha do tempo registra mudanças relevantes. Voucher, comprovantes e mensagens aparecem somente quando disponíveis." },
+      { "id": "permissions", "route": "/reservas", "targetId": "module-reservas", "title": "Conflitos e permissões", "content": "Ações dependem de tenant, licença, status e permissão. Se uma ação não estiver liberada, consulte o proprietário ou Super Admin." }
+    ]
+  },
+  {
+    "key": "calendar",
+    "kind": "module",
+    "version": 1,
+    "title": "Calendário e disponibilidade",
+    "description": "Reservas, bloqueios, limpezas e manutenções por casa.",
+    "durationMinutes": 5,
+    "icon": "calendar-days",
+    "route": "/calendario",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "views", "route": "/calendario", "targetId": "module-calendario", "title": "Visões do calendário", "content": "Alterne entre mês, semana e agenda quando disponíveis. A casa selecionada define quais eventos são mostrados." },
+      { "id": "colors", "route": "/calendario", "targetId": "module-calendario", "title": "Cores e tipos", "content": "As cores diferenciam reservas, check-ins, check-outs, bloqueios, limpezas e manutenções. Consulte a legenda antes de agir." },
+      { "id": "bookings", "route": "/calendario", "targetId": "module-calendario", "title": "Reservas e solicitações", "content": "Reservas confirmadas ocupam o período. Solicitações aparecem conforme o status, sem substituir a decisão da tela de Reservas." },
+      { "id": "blocks", "route": "/calendario", "targetId": "module-calendario", "title": "Bloqueios e indisponibilidade", "content": "Crie bloqueios para manutenção, uso próprio ou interdição. O intervalo operacional inclui a data inicial e a final." },
+      { "id": "filter", "route": "/calendario", "targetId": "module-calendario", "title": "Filtro por casa", "content": "Cada evento pertence a uma propriedade. Troque a casa para evitar interpretar eventos de hospedagens diferentes." },
+      { "id": "conflicts", "route": "/calendario", "targetId": "module-calendario", "title": "Prevenção de conflitos", "content": "Antes de confirmar reserva ou bloqueio, o sistema verifica sobreposições. Datas ocupadas não devem ser forçadas pelo tutorial." },
+      { "id": "details", "route": "/calendario", "targetId": "module-calendario", "title": "Detalhes do dia", "content": "Selecione um evento para consultar detalhes e ações permitidas. Dias com muitos eventos são agrupados para manter a leitura." },
+      { "id": "refresh", "route": "/calendario", "targetId": "module-calendario", "title": "Atualização", "content": "Após alterações, o calendário recarrega os eventos do tenant. Use a atualização da própria interface sem recarregar o documento." }
+    ]
+  },
+  {
+    "key": "guests",
+    "kind": "module",
+    "version": 1,
+    "title": "Hóspedes e CRM",
+    "description": "Contatos, histórico de reservas e relacionamento.",
+    "durationMinutes": 4,
+    "icon": "users",
+    "route": "/hospedes",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "listing", "route": "/hospedes", "targetId": "module-hospedes", "title": "Listagem e busca", "content": "Busque por nome, telefone ou e-mail e filtre situações para localizar hóspedes do tenant atual." },
+      { "id": "profile", "route": "/hospedes", "targetId": "module-hospedes", "title": "Perfil do hóspede", "content": "O perfil reúne dados de contato permitidos e informações úteis ao atendimento." },
+      { "id": "history", "route": "/hospedes", "targetId": "module-hospedes", "title": "Histórico de reservas", "content": "Consulte hospedagens anteriores e futuras sem misturar dados de outros tenants." },
+      { "id": "notes", "route": "/hospedes", "targetId": "module-hospedes", "title": "Observações e privacidade", "content": "Registre apenas observações operacionais necessárias. Não exponha documentos ou informações sensíveis sem finalidade legítima." },
+      { "id": "identity", "route": "/hospedes", "targetId": "module-hospedes", "title": "Hóspede e usuário", "content": "O cadastro operacional do hóspede pode estar ligado a uma conta do Marketplace, mas os papéis e permissões continuam separados." },
+      { "id": "actions", "route": "/hospedes", "targetId": "module-hospedes", "title": "Ações disponíveis", "content": "Visualizar, editar ou excluir dependem de permissões e de vínculos com reservas futuras ou ativas." }
+    ]
+  },
+  {
+    "key": "finance",
+    "kind": "module",
+    "version": 1,
+    "title": "Financeiro e caixa",
+    "description": "Receitas, despesas, pendências e valores recebidos.",
+    "durationMinutes": 6,
+    "icon": "credit-card",
+    "route": "/financeiro",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "overview", "route": "/financeiro", "targetId": "module-financeiro", "title": "Visão financeira", "content": "Os indicadores resumem receitas, despesas, lucro, reservas pagas, pendências e ticket médio do período." },
+      { "id": "entries", "route": "/financeiro", "targetId": "module-financeiro", "title": "Receitas e despesas", "content": "Lançamentos identificam tipo, categoria, data, status e valor. Entradas e saídas canceladas não entram nos totais." },
+      { "id": "bookings", "route": "/financeiro", "targetId": "module-financeiro", "title": "Pagamentos de reservas", "content": "Pagamentos registrados na reserva geram histórico financeiro vinculado, sem misturar a cobrança da assinatura Hospedex." },
+      { "id": "pending", "route": "/financeiro", "targetId": "module-financeiro", "title": "Valores pendentes", "content": "Pendentes exigem conferência ou recebimento. Não marque como pago antes de confirmar o valor real." },
+      { "id": "fees", "route": "/financeiro", "targetId": "module-financeiro", "title": "Taxas e categorias", "content": "Categorias separam reserva, serviço, manutenção e outras origens. Taxas devem seguir o detalhamento da operação." },
+      { "id": "filters", "route": "/financeiro", "targetId": "module-financeiro", "title": "Filtros e conciliação", "content": "Filtre por mês, tipo, status, categoria ou busca. A conciliação disponível confirma o que foi efetivamente recebido ou pago." },
+      { "id": "cash", "route": "/financeiro", "targetId": "module-financeiro", "title": "Caixa", "content": "Use contas financeiras para organizar movimentações. Se abertura e fechamento de caixa não estiverem disponíveis, não trate os totais como fechamento fiscal." },
+      { "id": "reports", "route": "/financeiro", "targetId": "module-financeiro", "title": "Relatórios e valores previstos", "content": "Valores previstos podem diferir dos recebidos. Relatórios, PDF e impressão são gerenciais e não substituem documentos fiscais." }
+    ]
+  },
+  {
+    "key": "cleaning",
+    "kind": "module",
+    "version": 1,
+    "title": "Limpeza",
+    "description": "Tarefas operacionais relacionadas às hospedagens.",
+    "durationMinutes": 4,
+    "icon": "sparkles",
+    "route": "/limpeza",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "tasks", "route": "/limpeza", "targetId": "module-limpeza", "title": "Tarefas de limpeza", "content": "A lista mostra tarefas do tenant, casa relacionada, prazo e situação atual." },
+      { "id": "checkout", "route": "/limpeza", "targetId": "module-limpeza", "title": "Relação com checkout", "content": "Uma saída pode originar limpeza pendente conforme o fluxo operacional. Confirme a tarefa antes de concluir." },
+      { "id": "responsible", "route": "/limpeza", "targetId": "module-limpeza", "title": "Responsável e prazo", "content": "Atribua uma pessoa autorizada e informe data e horário para organizar a preparação da casa." },
+      { "id": "status", "route": "/limpeza", "targetId": "module-limpeza", "title": "Situações e cores", "content": "Pendente, em andamento e concluída usam cores próprias. Elas ajudam a priorizar, mas não executam a tarefa." },
+      { "id": "filters", "route": "/limpeza", "targetId": "module-limpeza", "title": "Filtros e observações", "content": "Filtre por casa, responsável ou situação e registre somente observações necessárias à equipe." },
+      { "id": "finish", "route": "/limpeza", "targetId": "module-limpeza", "title": "Conclusão e notificações", "content": "Concluir registra o resultado e pode atualizar pendências e notificações. Essa ação nunca é feita automaticamente pelo tutorial." }
+    ]
+  },
+  {
+    "key": "extra-services",
+    "kind": "module",
+    "version": 1,
+    "title": "Serviços extras",
+    "description": "Catálogo de adicionais e vínculo com reservas.",
+    "durationMinutes": 4,
+    "icon": "receipt-text",
+    "route": "/servicos-extras",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "catalog", "route": "/servicos-extras", "targetId": "module-servicos-extras", "title": "Catálogo", "content": "Cadastre os serviços adicionais realmente oferecidos, com nome e descrição claros." },
+      { "id": "price", "route": "/servicos-extras", "targetId": "module-servicos-extras", "title": "Preço e disponibilidade", "content": "Defina preço, forma de cálculo e disponibilidade para evitar cobranças ambíguas." },
+      { "id": "booking", "route": "/servicos-extras", "targetId": "module-servicos-extras", "title": "Associação à reserva", "content": "Quando permitido, associe o serviço à reserva correta e confirme quantidade e responsável." },
+      { "id": "billing", "route": "/servicos-extras", "targetId": "module-servicos-extras", "title": "Cobrança e situação", "content": "A cobrança deve aparecer no detalhamento e no financeiro conforme o status do serviço." },
+      { "id": "history", "route": "/servicos-extras", "targetId": "module-servicos-extras", "title": "Responsável e histórico", "content": "Acompanhe quem executará o serviço e preserve alterações relevantes no histórico." },
+      { "id": "manage", "route": "/servicos-extras", "targetId": "module-servicos-extras", "title": "Edição e desativação", "content": "Editar afeta novas utilizações conforme a regra atual. Desativar mantém registros anteriores sem oferecer o serviço novamente." }
+    ]
+  },
+  {
+    "key": "reports",
+    "kind": "module",
+    "version": 1,
+    "title": "Relatórios",
+    "description": "Indicadores, filtros e exportações gerenciais.",
+    "durationMinutes": 5,
+    "icon": "file-bar-chart",
+    "route": "/relatorios",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "types", "route": "/relatorios", "targetId": "module-relatorios", "title": "Tipos e período", "content": "Escolha o período e o tipo de análise disponível. Os dados sempre respeitam o tenant e os filtros selecionados." },
+      { "id": "filters", "route": "/relatorios", "targetId": "module-relatorios", "title": "Filtros", "content": "Combine propriedade, status e categoria para restringir o resultado sem alterar dados operacionais." },
+      { "id": "interpret", "route": "/relatorios", "targetId": "module-relatorios", "title": "Interpretação", "content": "Compare receita, despesas, lucro, reservas, ocupação e ticket médio conforme a disponibilidade dos dados." },
+      { "id": "included", "route": "/relatorios", "targetId": "module-relatorios", "title": "Dados incluídos", "content": "Cancelados e estornados seguem regras específicas. Confira legendas e estados vazios antes de concluir que há divergência." },
+      { "id": "generate", "route": "/relatorios", "targetId": "module-relatorios", "title": "Geração e impressão", "content": "A prévia mostra o conteúdo que será impresso ou salvo. A navegação do painel não faz parte do documento." },
+      { "id": "export", "route": "/relatorios", "targetId": "module-relatorios", "title": "PDF e CSV", "content": "PDF preserva a leitura visual; CSV facilita análise tabular. Ambos refletem os filtros atuais." },
+      { "id": "limits", "route": "/relatorios", "targetId": "module-relatorios", "title": "Limitações", "content": "Os relatórios são gerenciais e dependem dos registros inseridos. Eles não são documentos fiscais nem substituem conciliação contábil." }
+    ]
+  },
+  {
+    "key": "team",
+    "kind": "module",
+    "version": 1,
+    "title": "Equipe e permissões",
+    "description": "Funcionários, papéis, módulos e segurança de acesso.",
+    "durationMinutes": 5,
+    "icon": "user-cog",
+    "route": "/funcionarios",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "staff", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Funcionários", "content": "Convide pessoas que realmente atuarão na operação. Cada vínculo pertence ao tenant atual." },
+      { "id": "roles", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Papéis", "content": "O papel agrupa responsabilidades. Use nomes claros e aplique o menor acesso necessário." },
+      { "id": "permissions", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Permissões e módulos", "content": "Permissões controlam leitura e gerenciamento. O menu mostra apenas módulos permitidos e liberados pela licença." },
+      { "id": "scope", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Vínculo e escopo", "content": "O funcionário opera dentro do tenant e, quando configurado, somente nas propriedades autorizadas." },
+      { "id": "activation", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Ativação e desativação", "content": "Desativar remove o acesso futuro sem apagar o histórico. Convites e ativações exigem confirmação." },
+      { "id": "security", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Segurança e auditoria", "content": "Não compartilhe contas. Alterações administrativas relevantes devem permanecer rastreáveis." },
+      { "id": "limits", "route": "/funcionarios", "targetId": "module-funcionarios", "title": "Acesso e licença", "content": "Redefinição de acesso e quantidade de funcionários dependem do papel atual e dos limites da licença." }
+    ]
+  },
+  {
+    "key": "integrations",
+    "kind": "module",
+    "version": 1,
+    "title": "Integrações",
+    "description": "Conexões externas, configuração e segurança.",
+    "durationMinutes": 5,
+    "icon": "plug-zap",
+    "route": "/integracoes",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "overview", "route": "/integracoes", "targetId": "module-integracoes", "title": "Visão geral", "content": "A Central mostra integrações disponíveis, situação e última atualização quando aplicável." },
+      { "id": "availability", "route": "/integracoes", "targetId": "module-integracoes", "title": "Disponibilidade real", "content": "Somente integrações implementadas podem ser configuradas. Itens futuros aparecem como indisponíveis ou em preparação." },
+      { "id": "credentials", "route": "/integracoes", "targetId": "module-integracoes", "title": "Credenciais", "content": "Cada provedor informa as credenciais necessárias. Segredos ficam protegidos no backend e nunca são exibidos por completo." },
+      { "id": "connect", "route": "/integracoes", "targetId": "module-integracoes", "title": "Conexão e teste", "content": "Configure e teste antes de ativar. Uma resposta de teste válida não substitui a conferência operacional." },
+      { "id": "status", "route": "/integracoes", "targetId": "module-integracoes", "title": "Situação e erros", "content": "Ativa, pendente ou com erro indicam o estado da conexão. Mensagens devem orientar sem expor dados sensíveis." },
+      { "id": "reconnect", "route": "/integracoes", "targetId": "module-integracoes", "title": "Reconexão", "content": "Ao trocar credenciais, teste novamente. Não reutilize chaves de outro proprietário ou ambiente." },
+      { "id": "remove", "route": "/integracoes", "targetId": "module-integracoes", "title": "Remoção segura", "content": "Desativar ou remover uma integração pode interromper sincronizações. Revise o impacto antes de confirmar." }
+    ]
+  },
+  {
+    "key": "marketplace",
+    "kind": "module",
+    "version": 1,
+    "title": "Marketplace",
+    "description": "Como hóspedes encontram casas e acompanham solicitações.",
+    "durationMinutes": 5,
+    "icon": "store",
+    "route": "/ajuda",
+    "roles": ["owner"],
+    "steps": [
+      { "id": "contexts", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Marketplace e Gerenciamento", "content": "O Marketplace é público para hóspedes; o Gerenciamento é privado para a operação do proprietário e da equipe." },
+      { "id": "browse", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Hospedagens públicas", "content": "Visitantes navegam apenas por casas publicadas, com tenant, licença e módulos válidos." },
+      { "id": "property", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Página pública da casa", "content": "Fotos, regras, valores, anfitrião e disponibilidade pública ajudam o hóspede a decidir sem revelar dados internos." },
+      { "id": "guest", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Perfil e favoritos", "content": "O usuário do Marketplace mantém perfil e favoritos quando esses recursos estão disponíveis, separados do papel administrativo." },
+      { "id": "request", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Solicitação de reserva", "content": "O hóspede informa período e quantidade de pessoas. A solicitação passa pela validação pública segura e chega ao tenant correto." },
+      { "id": "tracking", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Minhas Reservas", "content": "O hóspede acompanha status, detalhes e cancelamento conforme as políticas do proprietário." },
+      { "id": "owner", "route": "/ajuda", "targetId": "ajuda-contextual", "title": "Proprietário como hóspede", "content": "A mesma pessoa pode navegar como hóspede, mas não pode reservar a própria casa. O retorno ao Gerenciamento preserva os contextos separados." }
+    ]
+  },
+  {
+    "key": "settings",
+    "kind": "module",
+    "version": 1,
+    "title": "Configurações",
+    "description": "Perfil, negócio, preferências, segurança e licença.",
+    "durationMinutes": 5,
+    "icon": "settings",
+    "route": "/configuracoes",
+    "roles": ["owner", "staff"],
+    "steps": [
+      { "id": "profile", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Perfil e foto", "content": "Atualize dados pessoais e foto usados na identificação. A logo do empreendimento é configurada separadamente." },
+      { "id": "business", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Dados do negócio", "content": "Nome, contatos, cidade, descrição e logo representam o tenant no Gerenciamento e em áreas públicas permitidas." },
+      { "id": "preferences", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Preferências", "content": "Ajuste formas de recebimento, regras e opções disponíveis sem inserir segredos em campos públicos." },
+      { "id": "notifications", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Notificações e tema", "content": "Escolha preferências visuais e de comunicação disponíveis. Tema claro e escuro não alteram dados." },
+      { "id": "security", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Segurança", "content": "Sessão, papéis e credenciais devem permanecer pessoais. Integrações sensíveis usam armazenamento protegido." },
+      { "id": "license", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Licença e plano", "content": "Plano, limites e validade definem os recursos liberados. Após a tolerância de vencimento, o painel fica somente leitura." },
+      { "id": "support", "route": "/configuracoes", "targetId": "module-configuracoes", "title": "Integrações, suporte e ajuda", "content": "Use a Central de Integrações para conexões e a Central de Tutoriais para rever qualquer módulo permitido." }
+    ]
+  }
+]
