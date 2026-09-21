@@ -2,9 +2,23 @@
 
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { CircleHelp, PlayCircle } from "lucide-react";
-import { ACTIONS, EVENTS, Joyride, STATUS, type EventData, type Step } from "react-joyride";
+import {
+  ACTIONS,
+  EVENTS,
+  Joyride,
+  STATUS,
+  type EventData,
+  type Step,
+} from "react-joyride";
 
 import { Button } from "@hospedex/ui";
 
@@ -28,17 +42,27 @@ type StartOptions = { stepIndex?: number };
 const STORAGE_KEY = "hospedex:onboarding:active-tour";
 const TARGET_TIMEOUT_MS = 4500;
 
-export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciamento | null }) {
+export function OnboardingRuntime({
+  resumo,
+}: {
+  resumo: TutorialResumoGerenciamento | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [activeTour, setActiveTour] = useState<TutorialTourDefinition | null>(null);
+  const [pendente, startTransition] = useTransition();
+  const [activeTour, setActiveTour] = useState<TutorialTourDefinition | null>(
+    null,
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [run, setRun] = useState(false);
   const [state, setState] = useState<TourState>("idle");
-  const [concluido, setConcluido] = useState<TutorialTourDefinition | null>(null);
+  const [concluido, setConcluido] = useState<TutorialTourDefinition | null>(
+    null,
+  );
   const [portalPronto, setPortalPronto] = useState(false);
   const [viewportCompacto, setViewportCompacto] = useState(false);
+  const [conviteDispensado, setConviteDispensado] =
+    useState<TutorialTourKey | null>(null);
   const completedSteps = useRef<string[]>([]);
   const storageKey = `${STORAGE_KEY}:${resumo?.storageScope ?? "sem-contexto"}`;
   const tutorialRota = obterTutorialPorRota(pathname);
@@ -47,9 +71,10 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     : null;
   const mostrarConvite = Boolean(
     cardRota &&
-      cardRota.invitationStatus === "pending" &&
-      cardRota.status === "not_started" &&
-      !activeTour,
+    cardRota.invitationStatus === "pending" &&
+    cardRota.status === "not_started" &&
+    !activeTour &&
+    conviteDispensado !== cardRota.key,
   );
 
   useEffect(() => setPortalPronto(true), []);
@@ -64,7 +89,9 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
 
   const joyrideSteps = useMemo<Step[]>(() => {
     if (!activeTour) return [];
-    return activeTour.steps.map((step) => criarEtapaJoyride(step, viewportCompacto));
+    return activeTour.steps.map((step) =>
+      criarEtapaJoyride(step, viewportCompacto),
+    );
   }, [activeTour, viewportCompacto]);
 
   const startTour = useCallback(
@@ -75,11 +102,15 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
       const card = resumo?.tours.find((item) => item.key === tourKey);
       const local = lerTourLocal(storageKey);
       const indiceSolicitado = options.stepIndex;
-      const indiceServidor = card?.status === "in_progress" ? card.currentStep : undefined;
+      const indiceServidor =
+        card?.status === "in_progress" ? card.currentStep : undefined;
       const indiceLocal = local?.tourKey === tourKey ? local.stepIndex : 0;
       const indice = Math.max(
         0,
-        Math.min(indiceSolicitado ?? indiceServidor ?? indiceLocal, tour.steps.length - 1),
+        Math.min(
+          indiceSolicitado ?? indiceServidor ?? indiceLocal,
+          tour.steps.length - 1,
+        ),
       );
 
       completedSteps.current = card?.completedSteps ?? [];
@@ -105,7 +136,10 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
         evento as CustomEvent<{ stepIndex?: number; tourKey?: TutorialTourKey }>
       ).detail;
       if (detail?.tourKey) {
-        startTour(detail.tourKey, detail.stepIndex === undefined ? {} : { stepIndex: detail.stepIndex });
+        startTour(
+          detail.tourKey,
+          detail.stepIndex === undefined ? {} : { stepIndex: detail.stepIndex },
+        );
       }
     }
 
@@ -140,7 +174,10 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
   const avancarOuConcluir = useCallback(() => {
     if (!activeTour) return;
     const atual = activeTour.steps[stepIndex];
-    if (atual) completedSteps.current = Array.from(new Set([...completedSteps.current, atual.id]));
+    if (atual)
+      completedSteps.current = Array.from(
+        new Set([...completedSteps.current, atual.id]),
+      );
     const nextIndex = stepIndex + 1;
     if (nextIndex >= activeTour.steps.length) {
       finalizar("completed");
@@ -167,10 +204,13 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     void esperarTarget(step.targetId).then((encontrou) => {
       if (cancelado) return;
       if (!encontrou) {
-        console.warn("Alvo do tutorial não está disponível; a etapa será ignorada.", {
-          targetId: step.targetId,
-          tour: activeTour.key,
-        });
+        console.warn(
+          "Alvo do tutorial não está disponível; a etapa será ignorada.",
+          {
+            targetId: step.targetId,
+            tour: activeTour.key,
+          },
+        );
         avancarOuConcluir();
         return;
       }
@@ -189,7 +229,15 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     return () => {
       cancelado = true;
     };
-  }, [activeTour, avancarOuConcluir, pathname, router, startTransition, state, stepIndex]);
+  }, [
+    activeTour,
+    avancarOuConcluir,
+    pathname,
+    router,
+    startTransition,
+    state,
+    stepIndex,
+  ]);
 
   function handleJoyride(data: EventData) {
     const { action, index, status, type } = data;
@@ -204,8 +252,12 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     if (type !== EVENTS.STEP_AFTER && type !== EVENTS.TARGET_NOT_FOUND) return;
 
     const atual = activeTour?.steps[index];
-    if (atual) completedSteps.current = Array.from(new Set([...completedSteps.current, atual.id]));
-    const nextIndex = action === ACTIONS.PREV ? Math.max(index - 1, 0) : index + 1;
+    if (atual)
+      completedSteps.current = Array.from(
+        new Set([...completedSteps.current, atual.id]),
+      );
+    const nextIndex =
+      action === ACTIONS.PREV ? Math.max(index - 1, 0) : index + 1;
     if (!activeTour || nextIndex >= activeTour.steps.length) {
       finalizar("completed");
       return;
@@ -218,6 +270,9 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
 
   function decidirConvite(decision: "later" | "never") {
     if (!cardRota) return;
+    // Fecha no mesmo clique. A gravação do progresso continua em segundo plano,
+    // sem segurar a resposta visual do botão enquanto a tela é redimensionada.
+    setConviteDispensado(cardRota.key);
     startTransition(async () => {
       await salvarDecisaoConviteTourAction({
         decision,
@@ -228,7 +283,9 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
     });
   }
 
-  const slot = portalPronto ? document.getElementById("tutorial-context-action") : null;
+  const slot = portalPronto
+    ? document.getElementById("tutorial-context-action")
+    : null;
 
   return (
     <>
@@ -252,7 +309,11 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
         : null}
 
       <AppModal
-        description={cardRota ? `${cardRota.stepCount} etapas · cerca de ${cardRota.durationMinutes} min` : ""}
+        description={
+          cardRota
+            ? `${cardRota.stepCount} etapas · cerca de ${cardRota.durationMinutes} min`
+            : ""
+        }
         eyebrow="Ajuda contextual"
         onOpenChange={(open) => {
           if (!open) decidirConvite("later");
@@ -263,14 +324,31 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
       >
         <p className="text-sm text-muted-foreground">{cardRota?.description}</p>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button onClick={() => cardRota && startTour(cardRota.key)} type="button">
+          <Button
+            className="min-h-11 touch-manipulation select-none sm:flex-1"
+            disabled={pendente}
+            onClick={() => cardRota && startTour(cardRota.key)}
+            type="button"
+          >
             <PlayCircle className="mr-2 h-4 w-4" />
             Iniciar agora
           </Button>
-          <Button onClick={() => decidirConvite("later")} type="button" variant="outline">
+          <Button
+            className="min-h-11 touch-manipulation select-none sm:flex-1"
+            disabled={pendente}
+            onClick={() => decidirConvite("later")}
+            type="button"
+            variant="outline"
+          >
             Ver depois
           </Button>
-          <Button onClick={() => decidirConvite("never")} type="button" variant="ghost">
+          <Button
+            className="min-h-11 touch-manipulation select-none sm:flex-1"
+            disabled={pendente}
+            onClick={() => decidirConvite("never")}
+            type="button"
+            variant="ghost"
+          >
             Não mostrar novamente
           </Button>
         </div>
@@ -284,7 +362,9 @@ export function OnboardingRuntime({ resumo }: { resumo: TutorialResumoGerenciame
         size="sm"
         title="Tudo pronto!"
       >
-        <Button onClick={() => setConcluido(null)} type="button">Continuar</Button>
+        <Button onClick={() => setConcluido(null)} type="button">
+          Continuar
+        </Button>
       </AppModal>
 
       {portalPronto ? (
@@ -355,8 +435,9 @@ function criarEtapaJoyride(
       ? "bottom"
       : alvoAmplo
         ? "center"
-        : step.placement ?? "bottom"
-    : step.placement ?? (alvoMenu ? "right-start" : alvoAmplo ? "center" : "bottom");
+        : (step.placement ?? "bottom")
+    : (step.placement ??
+      (alvoMenu ? "right-start" : alvoAmplo ? "center" : "bottom"));
 
   return {
     content: step.content,
@@ -403,8 +484,15 @@ function esperarTarget(targetId: string) {
     function verificar() {
       const elemento = encontrarTargetVisivel(targetId);
       if (elemento) {
-        const movimento = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-        elemento.scrollIntoView({ behavior: movimento, block: "center", inline: "nearest" });
+        const movimento = window.matchMedia("(prefers-reduced-motion: reduce)")
+          .matches
+          ? "auto"
+          : "smooth";
+        elemento.scrollIntoView({
+          behavior: movimento,
+          block: "center",
+          inline: "nearest",
+        });
         resolve(true);
         return;
       }
@@ -419,11 +507,15 @@ function esperarTarget(targetId: string) {
 }
 
 function encontrarTargetVisivel(targetId: string) {
-  const elementos = document.querySelectorAll<HTMLElement>(`[data-tour-id="${targetId}"]`);
+  const elementos = document.querySelectorAll<HTMLElement>(
+    `[data-tour-id="${targetId}"]`,
+  );
   return (
     Array.from(elementos).find((elemento) => {
       const rect = elemento.getBoundingClientRect();
-      return elemento.offsetParent !== null && rect.width > 0 && rect.height > 0;
+      return (
+        elemento.offsetParent !== null && rect.width > 0 && rect.height > 0
+      );
     }) ?? null
   );
 }
@@ -431,13 +523,21 @@ function encontrarTargetVisivel(targetId: string) {
 function prepararNavegacaoMobile(targetId: string) {
   if (window.matchMedia("(min-width: 1024px)").matches) return;
   if (targetId.startsWith("menu-")) {
-    document.querySelector<HTMLButtonElement>('[aria-label="Abrir menu"]')?.click();
+    document
+      .querySelector<HTMLButtonElement>('[aria-label="Abrir menu"]')
+      ?.click();
     return;
   }
-  document.querySelector<HTMLButtonElement>('[aria-label="Fechar menu"]')?.click();
+  document
+    .querySelector<HTMLButtonElement>('[aria-label="Fechar menu"]')
+    ?.click();
 }
 
-function salvarLocalmente(storageKey: string, tourKey: TutorialTourKey, stepIndex: number) {
+function salvarLocalmente(
+  storageKey: string,
+  tourKey: TutorialTourKey,
+  stepIndex: number,
+) {
   try {
     localStorage.setItem(storageKey, JSON.stringify({ stepIndex, tourKey }));
   } catch {
@@ -445,12 +545,18 @@ function salvarLocalmente(storageKey: string, tourKey: TutorialTourKey, stepInde
   }
 }
 
-function lerTourLocal(storageKey: string): { stepIndex: number; tourKey: TutorialTourKey } | null {
+function lerTourLocal(
+  storageKey: string,
+): { stepIndex: number; tourKey: TutorialTourKey } | null {
   try {
     const raw = localStorage.getItem(storageKey);
     if (!raw) return null;
-    const salvo = JSON.parse(raw) as Partial<{ stepIndex: number; tourKey: TutorialTourKey }>;
-    if (!Number.isInteger(salvo.stepIndex) || typeof salvo.tourKey !== "string") return null;
+    const salvo = JSON.parse(raw) as Partial<{
+      stepIndex: number;
+      tourKey: TutorialTourKey;
+    }>;
+    if (!Number.isInteger(salvo.stepIndex) || typeof salvo.tourKey !== "string")
+      return null;
     return salvo as { stepIndex: number; tourKey: TutorialTourKey };
   } catch {
     return null;
