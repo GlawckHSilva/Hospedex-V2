@@ -43,25 +43,27 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
   onEtapaClick,
 }: WizardStepperProps<TEtapa>) {
   const indiceSeguro = Math.min(Math.max(etapaAtual, 0), etapas.length - 1);
-  const percentual = Math.round(((indiceSeguro + 1) / Math.max(etapas.length, 1)) * 100);
+  const percentual = Math.round(
+    ((indiceSeguro + 1) / Math.max(etapas.length, 1)) * 100,
+  );
   const progresso = `${percentual}%`;
   const etapaAtiva = etapas[indiceSeguro] ?? etapas[0];
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="space-y-2 sm:hidden">
-        <div className="flex min-w-0 items-start justify-between gap-3">
+    <div className={cn("space-y-2 sm:space-y-3", className)}>
+      <div className="space-y-1.5 sm:hidden">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
               Etapa {indiceSeguro + 1} de {etapas.length}
             </p>
-            <p className="text-sm font-semibold">{etapaAtiva?.label}</p>
+            <p className="text-xs font-semibold">{etapaAtiva?.label}</p>
           </div>
-          <span className="text-xs font-medium text-muted-foreground">
-            {percentual}% concluído
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {percentual}%
           </span>
         </div>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
+        <div className="h-1 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-cyan-500 transition-[width] duration-300 ease-out"
             style={{ width: progresso }}
@@ -75,7 +77,7 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
             Etapa {indiceSeguro + 1} de {etapas.length}
           </p>
           <span className="text-sm font-medium text-muted-foreground">
-            {percentual}% concluído
+            {percentual}% do fluxo
           </span>
         </div>
         <div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -89,7 +91,9 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
           <ol
             aria-label="Etapas do formulario"
             className="grid min-w-[760px] gap-3"
-            style={{ gridTemplateColumns: `repeat(${etapas.length}, minmax(5.5rem, 1fr))` }}
+            style={{
+              gridTemplateColumns: `repeat(${etapas.length}, minmax(5.5rem, 1fr))`,
+            }}
           >
             {etapas.map((etapa, indice) => {
               const ativa = indice === indiceSeguro;
@@ -109,19 +113,31 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
                       "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
                       ativa &&
                         "border-cyan-400 bg-cyan-500 text-cyan-950 shadow-sm shadow-cyan-500/20",
-                      concluida && !comErro && "border-cyan-500 bg-cyan-500 text-cyan-950",
-                      comErro && "border-red-400 bg-red-500/15 text-red-600 dark:text-red-200",
-                      !ativa && !concluida && !comErro && "border-border bg-muted/45 text-muted-foreground",
+                      concluida &&
+                        !comErro &&
+                        "border-cyan-500 bg-cyan-500 text-cyan-950",
+                      comErro &&
+                        "border-red-400 bg-red-500/15 text-red-600 dark:text-red-200",
+                      !ativa &&
+                        !concluida &&
+                        !comErro &&
+                        "border-border bg-muted/45 text-muted-foreground",
                     )}
                   >
                     {indice + 1}
                   </span>
-                  <span className="min-w-0 whitespace-nowrap leading-tight">{etapa.label}</span>
+                  <span className="min-w-0 whitespace-nowrap leading-tight">
+                    {etapa.label}
+                  </span>
                 </>
               );
 
               return (
-                <li aria-current={ativa ? "step" : undefined} className="min-w-0" key={etapa.id}>
+                <li
+                  aria-current={ativa ? "step" : undefined}
+                  className="min-w-0"
+                  key={etapa.id}
+                >
                   {onEtapaClick ? (
                     <button
                       className={cn(
@@ -129,7 +145,10 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
                         ativa && "text-cyan-700 dark:text-cyan-200",
                         concluida && !ativa && "text-foreground",
                         comErro && "text-red-600 dark:text-red-200",
-                        !ativa && !concluida && !comErro && "text-muted-foreground hover:text-foreground",
+                        !ativa &&
+                          !concluida &&
+                          !comErro &&
+                          "text-muted-foreground hover:text-foreground",
                       )}
                       onClick={() => onEtapaClick(indice, etapa)}
                       title={etapa.label}

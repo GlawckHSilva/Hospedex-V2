@@ -145,6 +145,7 @@ export function AdminShell({
     <motion.main
       animate={{ opacity: 1, y: 0 }}
       className={cn("min-w-0", gerenciamento && "px-4 py-4 sm:px-5 lg:px-6 lg:py-5")}
+      data-tour-id={obterTourIdConteudo(pathname)}
       // O conteudo principal precisa nascer visivel; se a animacao falhar,
       // o usuario nao pode ficar com a pagina carregada e invisivel.
       initial={false}
@@ -277,6 +278,7 @@ function TopbarAdmin({
             <p className="text-xs text-muted-foreground">Contexto ativo</p>
           </div>
           <ThemeToggle />
+          {gerenciamento ? <div className="contents" id="tutorial-context-action" /> : null}
           {gerenciamento ? (
             <Link
               aria-label="Abrir ajuda e tutoriais"
@@ -684,6 +686,11 @@ function obterTourIdItemMenu(href: string) {
   if (href === "/propriedades") return "menu-casas";
   if (href === "/reservas") return "menu-reservas";
   return `menu-${href.replace("/", "").replaceAll("/", "-")}`;
+}
+
+function obterTourIdConteudo(pathname: string) {
+  const rota = pathname.split("/").filter(Boolean)[0] ?? "dashboard";
+  return `module-${rota}`;
 }
 
 function agruparItensSidebar(

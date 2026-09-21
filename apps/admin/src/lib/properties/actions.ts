@@ -271,26 +271,26 @@ export async function criarPropriedadeAction(
     // O ID vem do rascunho local e permanece igual em novas tentativas.
     // Se a resposta anterior se perdeu, atualizamos a mesma casa em vez de duplicar.
     const registroPrincipal = {
-        id: propriedadeId,
-        tenant_id: escopo.tenantId,
-        // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
-        owner_id: escopo.ownerId,
-        name: entrada.nome,
-        slug: gerarIdentificadorUrl(entrada.nome, propriedadeId),
-        property_type: entrada.tipo,
-        status: entrada.status,
-        headline: entrada.descricaoCurta ?? entrada.nome,
-        description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
-        short_description: entrada.descricaoCurta,
-        full_description: entrada.descricaoCompleta,
-        is_public: entrada.publica,
-        marketplace_featured: entrada.destaqueMarketplace,
-        public_details: montarDetalhesPublicosBanco(entrada),
-        address: entrada.endereco,
-        structure_details: entrada.estrutura,
-        pricing_details: entrada.valores,
-        timezone: "America/Sao_Paulo",
-      };
+      id: propriedadeId,
+      tenant_id: escopo.tenantId,
+      // O owner_id vem do tenant, não do usuário logado, para equipe criar sem virar dona do imóvel.
+      owner_id: escopo.ownerId,
+      name: entrada.nome,
+      slug: gerarIdentificadorUrl(entrada.nome, propriedadeId),
+      property_type: entrada.tipo,
+      status: entrada.status,
+      headline: entrada.descricaoCurta ?? entrada.nome,
+      description: entrada.descricaoCompleta ?? entrada.descricaoCurta,
+      short_description: entrada.descricaoCurta,
+      full_description: entrada.descricaoCompleta,
+      is_public: entrada.publica,
+      marketplace_featured: entrada.destaqueMarketplace,
+      public_details: montarDetalhesPublicosBanco(entrada),
+      address: entrada.endereco,
+      structure_details: entrada.estrutura,
+      pricing_details: entrada.valores,
+      timezone: "America/Sao_Paulo",
+    };
     etapaSalvamento = "salvar-dados-principais";
     const { error } = existente
       ? await supabase
@@ -363,7 +363,9 @@ export async function criarPropriedadeAction(
         etapaWizard: textoOpcional(formData, "etapaWizard") ?? "desconhecida",
         operacao: etapaSalvamento,
       },
-      propriedadeIdSalvamento ?? textoOpcional(formData, "operacaoId") ?? undefined,
+      propriedadeIdSalvamento ??
+        textoOpcional(formData, "operacaoId") ??
+        undefined,
     );
   }
 }
@@ -453,11 +455,7 @@ export async function atualizarPropriedadeAction(
       entrada,
     );
     etapaSalvamento = "limpar-rascunho";
-    await limparRascunhoServidor(
-      supabase,
-      escopo.tenantId,
-      propriedade.id,
-    );
+    await limparRascunhoServidor(supabase, escopo.tenantId, propriedade.id);
     revalidarModulo();
     return {
       mensagem: "Casa atualizada com sucesso.",
@@ -833,7 +831,8 @@ function montarRegistroRascunho(
   propriedadeId: string,
   existente: PropertyRow | null,
 ) {
-  const nome = textoOpcional(formData, "nome") || existente?.name || "Casa em cadastro";
+  const nome =
+    textoOpcional(formData, "nome") || existente?.name || "Casa em cadastro";
   const tipoInformado = textoOpcional(formData, "tipo");
   const tipo = TIPOS_PROPRIEDADE.includes(tipoInformado as PropertyType)
     ? (tipoInformado as PropertyType)
@@ -856,7 +855,8 @@ function montarRegistroRascunho(
     short_description:
       textoOpcional(formData, "descricaoCurta") || existente?.short_description,
     full_description:
-      textoOpcional(formData, "descricaoCompleta") || existente?.full_description,
+      textoOpcional(formData, "descricaoCompleta") ||
+      existente?.full_description,
     is_public: false,
     marketplace_featured: false,
     public_details: existente?.public_details || {},
@@ -868,7 +868,11 @@ function montarRegistroRascunho(
     },
     structure_details: {
       ...estruturaAtual,
-      banheiros: numeroRascunho(formData, "banheirosCasa", estruturaAtual.banheiros),
+      banheiros: numeroRascunho(
+        formData,
+        "banheirosCasa",
+        estruturaAtual.banheiros,
+      ),
       hospedesMaximos: numeroRascunho(
         formData,
         "hospedesMaximos",
@@ -878,7 +882,11 @@ function montarRegistroRascunho(
     },
     pricing_details: {
       ...valoresAtuais,
-      valorDiaria: numeroRascunho(formData, "valorDiaria", valoresAtuais.valorDiaria),
+      valorDiaria: numeroRascunho(
+        formData,
+        "valorDiaria",
+        valoresAtuais.valorDiaria,
+      ),
     },
     timezone: existente?.timezone || "America/Sao_Paulo",
   };
@@ -966,7 +974,9 @@ function objetoJson(valor: JsonValue | undefined): Record<string, JsonValue> {
     : {};
 }
 
-function ehObjetoDesconhecido(valor: unknown): valor is Record<string, unknown> {
+function ehObjetoDesconhecido(
+  valor: unknown,
+): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
@@ -1013,11 +1023,12 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     0.01,
   );
   const tituloPublico = textoOpcional(formData, "tituloPublico");
-  const descricaoPublica = textoOpcional(formData, "descricaoPublica");
-  const publica = checkboxAtivo(formData, "visibilidadePublica");
+  const descricaoPublica =
+    textoOpcional(formData, "descricaoCompleta") ?? descricaoCurta;
   const status = validarStatusPropriedade(
     textoObrigatorio(formData, "status", "status"),
   );
+  const publica = status === "published";
   const imagemCapaArquivo = obterArquivoImagem(formData, "imagemCapaArquivo");
   const galeriaArquivos = obterArquivosImagem(
     formData,
@@ -1056,7 +1067,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     formData,
     galeriaArquivos,
     imagemCapaArquivo,
-    publica: publica || status === "published",
+    publica,
     tituloPublico,
   });
 
@@ -1067,7 +1078,7 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
         formData,
         "imagemCompartilhamento",
       ),
-      nomeExibicao: textoOpcional(formData, "nomeExibicao") ?? nome,
+      nomeExibicao: tituloPublico ?? nome,
       tituloPublico,
     },
     endereco: {
@@ -1638,7 +1649,9 @@ function obterImagemPrincipalEsperada(entrada: EntradaPropriedade) {
   if (entrada.galeriaIndicePrincipal !== null) {
     return entrada.galeriaArquivoIds[entrada.galeriaIndicePrincipal] ?? null;
   }
-  return entrada.galeriaExistente.find((imagem) => imagem.principal)?.id ?? null;
+  return (
+    entrada.galeriaExistente.find((imagem) => imagem.principal)?.id ?? null
+  );
 }
 
 async function confirmarGaleriaPropriedadePersistida(
@@ -1657,7 +1670,9 @@ async function confirmarGaleriaPropriedadePersistida(
     .eq("property_id", propriedadeId)
     .eq("status", "active")
     .in("id", idsEsperados)
-    .returns<Array<Pick<MediaAssetRow, "id" | "is_cover" | "storage_path" | "url">>>();
+    .returns<
+      Array<Pick<MediaAssetRow, "id" | "is_cover" | "storage_path" | "url">>
+    >();
 
   if (error) {
     throw erroOperacaoCasa(
@@ -2391,9 +2406,7 @@ function traduzirErroSupabase(
   if (mensagem.includes("violates check constraint")) {
     return "Existe um valor inválido no cadastro da casa. Revise os dados e tente novamente.";
   }
-  if (
-    mensagem.includes("mime")
-  ) {
+  if (mensagem.includes("mime")) {
     return "Não foi possível salvar a imagem. Verifique o formato e tente novamente.";
   }
   if (
