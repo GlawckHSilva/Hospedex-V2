@@ -203,7 +203,14 @@ export function AppModal({
             role="dialog"
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
-            <div className="shrink-0 border-b border-border bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_34%)] px-5 py-4 sm:px-6">
+            <div
+              className={cn(
+                "shrink-0 border-b border-border bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_34%)]",
+                size === "full"
+                  ? "px-4 py-3 sm:px-6 sm:py-4"
+                  : "px-5 py-4 sm:px-6",
+              )}
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
                   {eyebrow ? (
@@ -212,7 +219,10 @@ export function AppModal({
                     </p>
                   ) : null}
                   <h2
-                    className="mt-1 text-xl font-semibold tracking-normal"
+                    className={cn(
+                      "mt-1 font-semibold tracking-normal",
+                      size === "full" ? "text-lg sm:text-xl" : "text-xl",
+                    )}
                     id={titleId}
                   >
                     {title}

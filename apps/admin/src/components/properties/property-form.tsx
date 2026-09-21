@@ -101,7 +101,7 @@ const ETAPAS: Array<{
   label: string;
 }> = [
   {
-    descricao: "Identificação, status e textos principais da casa.",
+    descricao: "Identificação e informações principais da hospedagem.",
     icon: <Home />,
     id: "basico",
     label: "Básico",
@@ -143,7 +143,7 @@ const ETAPAS: Array<{
     label: "Comodidades",
   },
   {
-    descricao: "Dados públicos usados no Marketplace.",
+    descricao: "Revise a apresentação e escolha como a casa será publicada.",
     icon: <Share2 />,
     id: "compartilhamento",
     label: "Publicação",
@@ -158,8 +158,8 @@ const TIPOS: Array<{ label: string; valor: PropertyType }> = [
 
 const STATUS: Array<{ label: string; valor: PropertyStatus }> = [
   { valor: "draft", label: "Rascunho" },
-  { valor: "published", label: "Ativa" },
-  { valor: "paused", label: "Inativa" },
+  { valor: "published", label: "Publicada" },
+  { valor: "paused", label: "Pausada" },
 ];
 
 const UFS = [
@@ -385,13 +385,6 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
     tipo: "texto",
     validarQuando: deveValidarPublicacao,
   },
-  {
-    etapa: "compartilhamento",
-    mensagem: "Informe a descrição pública para publicar a casa.",
-    name: "descricaoPublica",
-    tipo: "texto",
-    validarQuando: deveValidarPublicacao,
-  },
 ];
 
 function deveValidarPublicacao(dados: FormData) {
@@ -399,6 +392,53 @@ function deveValidarPublicacao(dados: FormData) {
     dados.get("visibilidadePublica") === "on" ||
     dados.get("status") === "published"
   );
+}
+
+type ResumoPreviaCasa = {
+  banheiros: number;
+  cidade: string;
+  descricao: string;
+  estado: string;
+  hospedes: number;
+  quartos: number;
+  titulo: string;
+  valorDiaria: number;
+};
+
+function criarResumoPreviaCasa(
+  formulario: HTMLFormElement | null,
+  propriedade?: PropriedadeComRelacionamentos,
+): ResumoPreviaCasa {
+  const dados = formulario ? new FormData(formulario) : null;
+  const texto = (nome: string) => String(dados?.get(nome) ?? "").trim();
+  const numero = (nome: string, fallback = 0) => {
+    const valor = Number(String(dados?.get(nome) ?? "").replace(",", "."));
+    return Number.isFinite(valor) ? valor : fallback;
+  };
+
+  return {
+    banheiros: numero("banheirosCasa", propriedade?.estrutura.banheiros ?? 0),
+    cidade: texto("cidade") || propriedade?.enderecoFormatado.cidade || "",
+    descricao:
+      texto("descricaoCompleta") ||
+      texto("descricaoCurta") ||
+      propriedade?.full_description ||
+      propriedade?.short_description ||
+      "",
+    estado: texto("estado") || propriedade?.enderecoFormatado.estado || "",
+    hospedes: numero(
+      "hospedesMaximos",
+      propriedade?.estrutura.hospedesMaximos ?? 0,
+    ),
+    quartos: numero("quartosCasa", propriedade?.estrutura.quartos ?? 0),
+    titulo:
+      texto("tituloPublico") ||
+      texto("nome") ||
+      propriedade?.detalhesPublicos.tituloPublico ||
+      propriedade?.name ||
+      "Título público da casa",
+    valorDiaria: numero("valorDiaria", propriedade?.valores.valorDiaria ?? 0),
+  };
 }
 
 type JurosParcelaCartao =
@@ -780,11 +820,14 @@ export function PropertyForm({
     criarPreviewsGaleriaExistente(propriedade?.imagens ?? []),
   );
   const [idsImagensRemovidas, setIdsImagensRemovidas] = useState<string[]>([]);
-  const [publicaSelecionada, setPublicaSelecionada] = useState(
-    propriedade?.is_public ?? false,
-  );
   const [statusSelecionado, setStatusSelecionado] = useState<PropertyStatus>(
     propriedade?.status ?? "draft",
+  );
+  const [publicaSelecionada, setPublicaSelecionada] = useState(
+    (propriedade?.status ?? "draft") === "published",
+  );
+  const [resumoPrevia, setResumoPrevia] = useState<ResumoPreviaCasa>(() =>
+    criarResumoPreviaCasa(null, propriedade),
   );
   const [quantidadeComodidadesValidas, setQuantidadeComodidadesValidas] =
     useState(propriedade?.comodidades.length ?? 0);
@@ -890,19 +933,14 @@ export function PropertyForm({
     const formulario = formRef.current;
     if (!formulario) return;
 
-    const visibilidadePublica = formulario.elements.namedItem(
-      "visibilidadePublica",
-    );
-    if (visibilidadePublica instanceof HTMLInputElement) {
-      setPublicaSelecionada(visibilidadePublica.checked);
-    }
-
     const status = formulario.querySelector<HTMLInputElement>(
       'input[name="status"]:checked',
     );
     if (status && ["draft", "published", "paused"].includes(status.value)) {
       setStatusSelecionado(status.value as PropertyStatus);
+      setPublicaSelecionada(status.value === "published");
     }
+    setResumoPrevia(criarResumoPreviaCasa(formulario, propriedade));
   }
 
   function recuperarRascunho(
@@ -1022,10 +1060,7 @@ export function PropertyForm({
           ? { sincronizadoEm: resultado.sincronizadoEm }
           : {}),
       };
-      window.localStorage.setItem(
-        chaveRascunho,
-        JSON.stringify(sincronizado),
-      );
+      window.localStorage.setItem(chaveRascunho, JSON.stringify(sincronizado));
       notificarRascunhoCasaAtualizado();
       setEstadoSincronizacao("servidor");
       setAvisoRascunho("Todas as alteracoes foram salvas.");
@@ -1042,9 +1077,7 @@ export function PropertyForm({
     }
   }
 
-  function sincronizarRascunho(
-    etapaOverride = etapaAtual,
-  ): Promise<boolean> {
+  function sincronizarRascunho(etapaOverride = etapaAtual): Promise<boolean> {
     if (promessaSincronizacaoRef.current) {
       return promessaSincronizacaoRef.current;
     }
@@ -1274,6 +1307,7 @@ export function PropertyForm({
   function aoAlterarFormulario(evento: FormEvent<HTMLFormElement>) {
     if (aplicandoRascunhoRef.current) return;
     limparErroDoCampo(evento);
+    setResumoPrevia(criarResumoPreviaCasa(evento.currentTarget, propriedade));
     salvarRascunhoLocal(null);
     agendarSincronizacaoRascunho();
   }
@@ -1288,16 +1322,21 @@ export function PropertyForm({
     });
   }
 
-  function atualizarVisibilidadePublica(ativo: boolean) {
-    setPublicaSelecionada(ativo);
-    if (!ativo) {
+  function atualizarStatusPublicacao(status: PropertyStatus) {
+    setStatusSelecionado(status);
+    const publicada = status === "published";
+    setPublicaSelecionada(publicada);
+    if (!publicada) {
       removerErrosDosCampos([
         "tituloPublico",
-        "descricaoPublica",
         "imagemCapaArquivo",
         "comodidadeIds",
       ]);
     }
+  }
+
+  function atualizarResumoPrevia() {
+    setResumoPrevia(criarResumoPreviaCasa(formRef.current, propriedade));
   }
 
   function validarAteEtapaDestino(indiceDestino: number) {
@@ -1324,6 +1363,7 @@ export function PropertyForm({
   function navegarParaEtapa(indiceDestino: number) {
     if (indiceDestino <= etapaAtual || validarAteEtapaDestino(indiceDestino)) {
       void sincronizarRascunho(indiceDestino);
+      atualizarResumoPrevia();
       setEtapaAtual(indiceDestino);
     }
   }
@@ -1331,6 +1371,7 @@ export function PropertyForm({
   function voltarEtapa() {
     const destino = Math.max(etapaAtual - 1, 0);
     void sincronizarRascunho(destino);
+    atualizarResumoPrevia();
     setEtapaAtual(destino);
   }
 
@@ -1363,6 +1404,7 @@ export function PropertyForm({
     setErrosCampos((errosAtuais) => removerErrosDaEtapa(errosAtuais, etapa.id));
     const destino = Math.min(etapaAtual + 1, ETAPAS.length - 1);
     void sincronizarRascunho(destino);
+    atualizarResumoPrevia();
     setEtapaAtual(destino);
   }
 
@@ -1496,8 +1538,7 @@ export function PropertyForm({
     return {
       possuiComodidade: quantidadeComodidadesValidas > 0,
       possuiImagemPrincipal: Boolean(
-        previewCapa ||
-        previewsGaleria.some((preview) => preview.principal),
+        previewCapa || previewsGaleria.some((preview) => preview.principal),
       ),
     };
   }
@@ -1566,9 +1607,9 @@ export function PropertyForm({
       credentials: "same-origin",
       method: "POST",
     });
-    const resultado = (await resposta.json().catch(() => null)) as
-      | ResultadoSalvarPropriedade
-      | null;
+    const resultado = (await resposta
+      .json()
+      .catch(() => null)) as ResultadoSalvarPropriedade | null;
 
     if (resultado) return resultado;
 
@@ -1584,7 +1625,6 @@ export function PropertyForm({
       className="flex h-full min-h-0 flex-col overflow-hidden"
       data-bloquear-fechamento={salvando ? "true" : "false"}
       onChange={aoAlterarFormulario}
-      onInput={aoAlterarFormulario}
       onSubmit={validarEnvio}
       ref={formRef}
     >
@@ -1593,7 +1633,7 @@ export function PropertyForm({
         <input name="propriedadeId" type="hidden" value={propriedade.id} />
       ) : null}
 
-      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-5 py-5 backdrop-blur-xl sm:px-8">
+      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-4 py-3 backdrop-blur-xl sm:px-8 sm:py-5">
         <WizardStepper
           etapaAtual={etapaAtual}
           etapas={ETAPAS}
@@ -1614,7 +1654,7 @@ export function PropertyForm({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-8">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-8 sm:py-6">
         {erroServidor ? (
           <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
             {erroServidor}
@@ -1627,8 +1667,8 @@ export function PropertyForm({
             </p>
             <p>{resultadoSalvamento.mensagem}</p>
             <p className="mt-1 text-xs text-destructive/80">
-              Seus dados continuam salvos em rascunho. Tente novamente sem fechar
-              o modal.
+              Seus dados continuam salvos em rascunho. Tente novamente sem
+              fechar o modal.
             </p>
             {resultadoSalvamento.codigoSuporte ? (
               <p className="mt-1 text-xs font-semibold">
@@ -1730,7 +1770,7 @@ export function PropertyForm({
         ) : null}
 
         <section className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-4 shadow-2xl shadow-cyan-950/10 sm:p-6">
-          <div className="mb-6 flex items-start gap-4 border-b border-cyan-300/10 pb-5">
+          <div className="mb-6 hidden items-start gap-4 border-b border-cyan-300/10 pb-5 sm:flex">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-500/15 text-cyan-700 shadow-lg shadow-cyan-950/20 dark:text-cyan-200 [&_svg]:h-6 [&_svg]:w-6">
               {etapa.icon}
             </span>
@@ -1744,6 +1784,9 @@ export function PropertyForm({
               </p>
             </div>
           </div>
+          <p className="mb-4 text-sm leading-6 text-muted-foreground sm:hidden">
+            {etapa.descricao}
+          </p>
 
           {/*
           Mantemos todas as etapas montadas para que o FormData envie todos os
@@ -1758,20 +1801,10 @@ export function PropertyForm({
               defaultDescricaoCurta={
                 propriedade?.short_description ?? propriedade?.headline ?? ""
               }
-              defaultDestaque={propriedade?.marketplace_featured ?? false}
               defaultNome={propriedade?.name}
-              defaultNomeExibicao={
-                propriedade?.detalhesPublicos.nomeExibicao ||
-                propriedade?.name ||
-                ""
-              }
-              defaultPublica={propriedade?.is_public ?? false}
-              defaultStatus={statusSelecionado}
               defaultTipo={propriedade?.property_type ?? "seasonal_home"}
               disabled={!podeGerenciar}
               erros={errosCampos}
-              onPublicaChange={atualizarVisibilidadePublica}
-              onStatusChange={setStatusSelecionado}
             />
           </div>
 
@@ -1845,19 +1878,21 @@ export function PropertyForm({
               disabled={!podeGerenciar}
               erros={errosCampos}
               imagemCapaUrl={imagemPrincipalSelecionada}
-              propriedade={propriedade}
+              defaultDestaque={propriedade?.marketplace_featured ?? false}
+              onStatusChange={atualizarStatusPublicacao}
               quantidadeComodidadesValidas={quantidadeComodidadesValidas}
-              publicaSelecionada={
-                publicaSelecionada || statusSelecionado === "published"
-              }
+              publicaSelecionada={publicaSelecionada}
+              resumoPrevia={resumoPrevia}
+              statusSelecionado={statusSelecionado}
             />
           </div>
         </section>
       </div>
 
-      <div className="flex shrink-0 flex-col gap-3 border-t border-cyan-300/10 bg-card/95 px-5 py-4 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-cyan-300/10 bg-card/95 px-4 py-3 backdrop-blur-xl sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-8 sm:py-4">
         <div className="flex flex-wrap items-center gap-3">
           <ActionButton
+            className="hidden sm:inline-flex"
             disabled={salvando}
             icon={<X className="h-4 w-4" />}
             onClick={fecharWizard}
@@ -1868,6 +1903,7 @@ export function PropertyForm({
             Cancelar
           </ActionButton>
           <ActionButton
+            className="w-full sm:w-auto"
             disabled={!podeGerenciar || salvando}
             icon={<Save className="h-4 w-4" />}
             onClick={() => void sincronizarRascunho()}
@@ -1879,8 +1915,9 @@ export function PropertyForm({
           </ActionButton>
         </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-2 sm:gap-3">
           <ActionButton
+            className="min-w-0 flex-1 sm:flex-none"
             disabled={etapaAtual === 0 || salvando}
             icon={<ArrowLeft className="h-4 w-4" />}
             onClick={voltarEtapa}
@@ -1893,6 +1930,7 @@ export function PropertyForm({
 
           {!estaNaUltimaEtapa ? (
             <ActionButton
+              className="min-w-0 flex-1 sm:flex-none"
               disabled={!podeGerenciar || salvando}
               icon={<ArrowRight className="h-4 w-4" />}
               onClick={avancarEtapa}
@@ -1956,29 +1994,17 @@ function BotaoSalvarCasa({
 function EtapaBasico({
   defaultDescricaoCompleta,
   defaultDescricaoCurta,
-  defaultDestaque,
   defaultNome,
-  defaultNomeExibicao,
-  defaultPublica,
-  defaultStatus,
   defaultTipo,
   disabled,
   erros,
-  onPublicaChange,
-  onStatusChange,
 }: {
   defaultDescricaoCompleta: string;
   defaultDescricaoCurta: string;
-  defaultDestaque: boolean;
   defaultNome?: string | undefined;
-  defaultNomeExibicao: string;
-  defaultPublica: boolean;
-  defaultStatus: PropertyStatus;
   defaultTipo: PropertyType;
   disabled: boolean;
   erros: ErrosFormularioCasa;
-  onPublicaChange: (ativo: boolean) => void;
-  onStatusChange: (status: PropertyStatus) => void;
 }) {
   return (
     <div className="grid gap-4">
@@ -1991,14 +2017,6 @@ function EtapaBasico({
           label="Nome interno da casa"
           name="nome"
           obrigatorio
-        />
-        <CampoTexto
-          defaultValue={defaultNomeExibicao}
-          disabled={disabled}
-          ajuda="Nome exibido na página pública e nos cards."
-          label="Título público da hospedagem"
-          name="nomeExibicao"
-          placeholder="Casa do Lago em Manoel Ribas"
         />
         <CampoSelect
           defaultValue={defaultTipo}
@@ -2029,29 +2047,6 @@ function EtapaBasico({
         name="descricaoCompleta"
         placeholder="Descreva a experiência completa da casa."
       />
-      <div className="grid gap-4 md:grid-cols-3">
-        <CampoStatusSegmentado
-          defaultValue={defaultStatus}
-          disabled={disabled}
-          label="Status"
-          name="status"
-          onChange={onStatusChange}
-          options={STATUS}
-        />
-        <CampoCheckbox
-          defaultChecked={defaultPublica}
-          disabled={disabled}
-          label="Visibilidade pública"
-          name="visibilidadePublica"
-          onChange={(evento) => onPublicaChange(evento.currentTarget.checked)}
-        />
-        <CampoCheckbox
-          defaultChecked={defaultDestaque}
-          disabled={disabled}
-          label="Destaque no marketplace"
-          name="destaqueMarketplace"
-        />
-      </div>
     </div>
   );
 }
@@ -2078,8 +2073,8 @@ function CampoStatusSegmentado({
   }, [defaultValue]);
 
   return (
-    <div className="grid gap-2 md:col-span-2">
-      <LabelCampo>{label}</LabelCampo>
+    <fieldset className="grid gap-2 md:col-span-2">
+      <legend className="text-sm font-medium leading-none">{label}</legend>
       <div className="grid overflow-hidden rounded-xl border bg-background/60 p-1 sm:grid-cols-3">
         {options.map((option) => (
           <label
@@ -2110,7 +2105,7 @@ function CampoStatusSegmentado({
           </label>
         ))}
       </div>
-    </div>
+    </fieldset>
   );
 }
 
@@ -2773,37 +2768,52 @@ function normalizarHoraInput(valor?: string | null) {
 }
 
 function EtapaCompartilhamento({
+  defaultDestaque,
   detalhes,
   disabled,
   erros,
   imagemCapaUrl,
-  propriedade,
+  onStatusChange,
   quantidadeComodidadesValidas,
   publicaSelecionada,
+  resumoPrevia,
+  statusSelecionado,
 }: {
+  defaultDestaque: boolean;
   detalhes?: PropriedadeComRelacionamentos["detalhesPublicos"] | undefined;
   disabled: boolean;
   erros: ErrosFormularioCasa;
   imagemCapaUrl: string | null;
-  propriedade?: PropriedadeComRelacionamentos | undefined;
+  onStatusChange: (status: PropertyStatus) => void;
   quantidadeComodidadesValidas: number;
   publicaSelecionada: boolean;
+  resumoPrevia: ResumoPreviaCasa;
+  statusSelecionado: PropertyStatus;
 }) {
-  const titulo =
-    detalhes?.tituloPublico || propriedade?.name || "Título público da casa";
-  const cidade = propriedade?.enderecoFormatado?.cidade;
-  const estado = propriedade?.enderecoFormatado?.estado;
-  const estrutura = propriedade?.estrutura;
-  const valorDiaria = propriedade?.valores?.valorDiaria ?? 0;
-
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_24rem]">
       <div className="grid gap-4">
         <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
-          Revise os dados públicos antes de salvar ou publicar a casa.
+          Revise a apresentação e escolha o status. Você ainda poderá editar
+          tudo depois.
         </p>
+        <input
+          name="visibilidadePublica"
+          type="hidden"
+          value={publicaSelecionada ? "on" : ""}
+        />
+        <input
+          name="descricaoPublica"
+          type="hidden"
+          value={resumoPrevia.descricao}
+        />
+        <input
+          name="imagemCompartilhamento"
+          type="hidden"
+          value={detalhes?.imagemCompartilhamento ?? ""}
+        />
         {publicaSelecionada && quantidadeComodidadesValidas === 0 ? (
-          <p className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-3 text-sm text-amber-100">
+          <p className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
             <strong className="block text-foreground">
               Comodidades pendentes
             </strong>
@@ -2814,35 +2824,52 @@ function EtapaCompartilhamento({
           defaultValue={detalhes?.tituloPublico}
           disabled={disabled}
           erro={erros.tituloPublico}
+          ajuda="É o nome que hóspedes verão nos cards e na página da hospedagem."
           label="Título público"
           name="tituloPublico"
           obrigatorio={publicaSelecionada}
+          placeholder="Casa do Lago em Manoel Ribas"
         />
-        <CampoArea
-          defaultValue={detalhes?.descricaoPublica}
-          disabled={disabled}
-          erro={erros.descricaoPublica}
-          ajuda="Resumo que será usado na página pública da hospedagem."
-          label="Descrição pública"
-          name="descricaoPublica"
-          obrigatorio={publicaSelecionada}
-        />
-        <CampoTexto
-          defaultValue={detalhes?.imagemCompartilhamento}
-          disabled={disabled}
-          label="Imagem de compartilhamento"
-          erro={erros.imagemCompartilhamento}
-          name="imagemCompartilhamento"
-          placeholder="https://..."
-          type="url"
-        />
+        <div className="rounded-xl border bg-background/45 p-4">
+          <p className="text-sm font-semibold">Descrição pública</p>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            Usaremos a descrição completa informada na etapa Básico, evitando
+            que o mesmo texto precise ser digitado duas vezes.
+          </p>
+        </div>
+        <div className="grid gap-4 rounded-xl border bg-background/45 p-4">
+          <CampoStatusSegmentado
+            defaultValue={statusSelecionado}
+            disabled={disabled}
+            label="Status da casa"
+            name="status"
+            onChange={onStatusChange}
+            options={STATUS}
+          />
+          <p className="text-xs leading-5 text-muted-foreground">
+            {statusSelecionado === "published"
+              ? "Publicada: a casa ficará disponível no Marketplace assim que os campos obrigatórios estiverem completos."
+              : statusSelecionado === "paused"
+                ? "Pausada: os dados ficam salvos, mas a casa não aparece para novas reservas."
+                : "Rascunho: salve agora e conclua a publicação quando estiver pronto."}
+          </p>
+          <CampoCheckbox
+            defaultChecked={defaultDestaque}
+            disabled={disabled}
+            label="Destacar esta casa no Marketplace"
+            name="destaqueMarketplace"
+          />
+        </div>
       </div>
 
-      <aside className="overflow-hidden rounded-2xl border border-cyan-300/15 bg-background/55">
+      <aside
+        aria-label="Prévia da página pública"
+        className="h-fit overflow-hidden rounded-2xl border border-cyan-300/15 bg-background/55 lg:sticky lg:top-0"
+      >
         <div className="relative h-48 bg-cyan-950/40">
           {imagemCapaUrl ? (
             <img
-              alt={titulo}
+              alt={resumoPrevia.titulo}
               className="h-full w-full object-cover"
               src={imagemCapaUrl}
             />
@@ -2859,15 +2886,21 @@ function EtapaCompartilhamento({
           </span>
         </div>
         <div className="grid gap-3 p-4">
-          <h4 className="text-lg font-semibold">{titulo}</h4>
+          <h4 className="text-lg font-semibold">{resumoPrevia.titulo}</h4>
           <p className="text-sm text-muted-foreground">
-            {[cidade, estado].filter(Boolean).join(" / ") ||
-              "Localização ainda não informada"}
+            {[resumoPrevia.cidade, resumoPrevia.estado]
+              .filter(Boolean)
+              .join(" / ") || "Localização ainda não informada"}
           </p>
+          {resumoPrevia.descricao ? (
+            <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+              {resumoPrevia.descricao}
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <span>{estrutura?.hospedesMaximos ?? 0} hóspedes</span>
-            <span>{estrutura?.quartos ?? 0} quartos</span>
-            <span>{estrutura?.banheiros ?? 0} banheiros</span>
+            <span>{resumoPrevia.hospedes} hóspedes</span>
+            <span>{resumoPrevia.quartos} quartos</span>
+            <span>{resumoPrevia.banheiros} banheiros</span>
           </div>
           <p className="border-t border-cyan-300/10 pt-3 text-sm text-muted-foreground">
             A partir de{" "}
@@ -2875,7 +2908,7 @@ function EtapaCompartilhamento({
               {new Intl.NumberFormat("pt-BR", {
                 currency: "BRL",
                 style: "currency",
-              }).format(valorDiaria)}
+              }).format(resumoPrevia.valorDiaria)}
             </strong>
             /noite
           </p>
