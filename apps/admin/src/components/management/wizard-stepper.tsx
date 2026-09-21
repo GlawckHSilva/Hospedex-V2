@@ -53,12 +53,12 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
     <div className={cn("space-y-2 sm:space-y-3", className)}>
       <div className="space-y-1.5 sm:hidden">
         <div className="flex min-w-0 items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
-              Etapa {indiceSeguro + 1} de {etapas.length}
-            </p>
-            <p className="text-xs font-semibold">{etapaAtiva?.label}</p>
-          </div>
+          <p className="min-w-0 truncate text-xs font-semibold">
+            <span className="mr-1.5 text-[10px] uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
+              {indiceSeguro + 1}/{etapas.length}
+            </span>
+            {etapaAtiva?.label}
+          </p>
           <span className="text-[11px] font-medium text-muted-foreground">
             {percentual}%
           </span>

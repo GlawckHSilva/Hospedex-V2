@@ -87,19 +87,19 @@ export function PropertyAmenitiesStep({
 
   return (
     <div className="grid gap-3 sm:gap-4">
-      <div className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
-        <p className="font-semibold text-foreground">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-cyan-300/25 bg-cyan-500/10 px-3 py-2 text-xs text-muted-foreground sm:block sm:rounded-xl sm:p-4 sm:text-sm">
+        <p className="shrink-0 font-semibold text-foreground">
           {quantidadeComodidadesValidas > 0
             ? `${quantidadeComodidadesValidas} comodidade${quantidadeComodidadesValidas === 1 ? "" : "s"} selecionada${quantidadeComodidadesValidas === 1 ? "" : "s"}`
             : "Nenhuma comodidade selecionada."}
         </p>
-        <p className="mt-1 leading-5 sm:leading-6">
+        <p className="hidden leading-5 sm:mt-1 sm:block sm:leading-6">
           As comodidades ajudam o hóspede a entender o que a hospedagem oferece.
           Adicione pelo menos uma para publicar a casa.
         </p>
       </div>
 
-      <div className="grid gap-2.5 rounded-xl border bg-background/45 p-3 sm:gap-3 sm:p-4">
+      <div className="grid gap-2.5 sm:rounded-xl sm:border sm:bg-background/45 sm:p-4 sm:gap-3">
         <div>
           <h4 className="font-semibold">Comodidades padrão</h4>
           <p className="text-xs text-muted-foreground sm:text-sm">
@@ -111,7 +111,7 @@ export function PropertyAmenitiesStep({
             .filter((comodidade) => comodidade.is_system)
             .map((comodidade) => (
               <label
-                className="flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border bg-background/45 px-2.5 py-2 text-xs transition hover:border-cyan-300/35 hover:bg-cyan-500/5 sm:min-h-11 sm:px-3 sm:text-sm"
+                className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border bg-background/45 px-2.5 py-2 text-xs transition hover:border-cyan-300/35 hover:bg-cyan-500/5 sm:min-h-11 sm:rounded-xl sm:px-3 sm:text-sm"
                 key={comodidade.id}
               >
                 <input
@@ -146,16 +146,16 @@ export function PropertyAmenitiesStep({
       </div>
 
       {personalizadasExistentes.length ? (
-        <div className="grid gap-2.5 rounded-xl border bg-background/45 p-3 sm:gap-3 sm:p-4">
+        <div className="grid gap-2.5 border-t border-cyan-300/15 pt-3 sm:rounded-xl sm:border sm:bg-background/45 sm:p-4 sm:gap-3">
           <div>
             <h4 className="font-semibold">Comodidades personalizadas</h4>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground sm:text-sm">
               Edite o nome ou remova o item desta casa.
             </p>
           </div>
           {personalizadasExistentes.map((comodidade) => (
             <div
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border bg-background/55 p-2.5 sm:p-3"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border bg-background/55 p-2 sm:rounded-xl sm:p-3"
               key={comodidade.id}
             >
               <input
@@ -208,7 +208,7 @@ export function PropertyAmenitiesStep({
         </div>
       ) : null}
 
-      <div className="rounded-xl border bg-background/45 p-3 sm:p-4">
+      <div className="border-t border-cyan-300/15 pt-3 sm:rounded-xl sm:border sm:bg-background/45 sm:p-4">
         <Label htmlFor="novaComodidade">Nome da nova comodidade</Label>
         <div className="mt-2 flex gap-2">
           <Input

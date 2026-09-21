@@ -9,27 +9,32 @@ import "./globals.css";
 
 const geistSans = Geist({
   subsets: ["latin"],
-  variable: "--font-geist-sans"
+  variable: "--font-geist-sans",
 });
 
 const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-geist-mono"
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
   title: "Hospedex",
-  description: "Painel administrativo premium do Hospedex."
+  description: "Painel administrativo premium do Hospedex.",
 };
 
 export const viewport: Viewport = {
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f8fbff" },
-    { media: "(prefers-color-scheme: dark)", color: "#111827" }
-  ]
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+  ],
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
     <html
       className={`${geistSans.variable} ${geistMono.variable}`}

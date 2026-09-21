@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ComponentProps, FormEvent, ReactNode, RefObject } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { Input, Label, cn } from "@hospedex/ui";
 
@@ -837,7 +837,7 @@ export function PropertyForm({
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     conteudoRef.current?.scrollTo({ behavior: "auto", top: 0 });
   }, [etapaAtual]);
   const arquivosGaleriaRef = useRef<File[]>([]);
@@ -1069,7 +1069,7 @@ export function PropertyForm({
       window.localStorage.setItem(chaveRascunho, JSON.stringify(sincronizado));
       notificarRascunhoCasaAtualizado();
       setEstadoSincronizacao("servidor");
-      setAvisoRascunho("Todas as alteracoes foram salvas.");
+      setAvisoRascunho(null);
       setResultadoSalvamento(null);
       setTipoFalha(null);
       return true;
@@ -1639,7 +1639,7 @@ export function PropertyForm({
         <input name="propriedadeId" type="hidden" value={propriedade.id} />
       ) : null}
 
-      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-3 py-2 backdrop-blur-xl sm:px-8 sm:py-5">
+      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-4 py-2 backdrop-blur-xl sm:px-8 sm:py-5">
         <WizardStepper
           etapaAtual={etapaAtual}
           etapas={ETAPAS}
@@ -1647,7 +1647,7 @@ export function PropertyForm({
           etapasConcluidas={etapasConcluidas}
           onEtapaClick={(indice) => navegarParaEtapa(indice)}
         />
-        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground sm:mt-3 sm:gap-2 sm:text-xs">
+        <div className="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground sm:mt-3 sm:gap-2 sm:text-xs">
           {estadoSincronizacao === "salvando" ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-600" />
           ) : estadoSincronizacao === "aguardando" ||
@@ -1656,12 +1656,19 @@ export function PropertyForm({
           ) : (
             <Cloud className="h-3.5 w-3.5 text-cyan-600" />
           )}
-          {obterTextoSincronizacao(estadoSincronizacao)}
+          <span className="sm:hidden">
+            {estadoSincronizacao === "servidor"
+              ? "Salvo"
+              : obterTextoSincronizacao(estadoSincronizacao)}
+          </span>
+          <span className="hidden sm:inline">
+            {obterTextoSincronizacao(estadoSincronizacao)}
+          </span>
         </div>
       </div>
 
       <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-8 sm:py-6"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-8 sm:py-6"
         ref={conteudoRef}
       >
         {erroServidor ? (
@@ -1778,7 +1785,7 @@ export function PropertyForm({
           </div>
         ) : null}
 
-        <section className="rounded-xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-3 shadow-2xl shadow-cyan-950/10 sm:rounded-2xl sm:p-6">
+        <section className="sm:rounded-2xl sm:border sm:border-cyan-300/15 sm:bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] sm:p-6 sm:shadow-2xl sm:shadow-cyan-950/10">
           <div className="mb-6 hidden items-start gap-4 border-b border-cyan-300/10 pb-5 sm:flex">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-500/15 text-cyan-700 shadow-lg shadow-cyan-950/20 dark:text-cyan-200 [&_svg]:h-6 [&_svg]:w-6">
               {etapa.icon}
@@ -1793,7 +1800,7 @@ export function PropertyForm({
               </p>
             </div>
           </div>
-          <p className="mb-3 text-xs leading-5 text-muted-foreground sm:hidden">
+          <p className="mb-2 text-xs leading-5 text-muted-foreground sm:hidden">
             {etapa.descricao}
           </p>
 
@@ -1858,7 +1865,6 @@ export function PropertyForm({
               galeriaRef={galeriaRef}
               idsImagensRemovidas={idsImagensRemovidas}
               imagemCapaId={imagemCapaId}
-              imagemCapaAtual={propriedade?.imagemCapa?.url ?? null}
               publicaSelecionada={publicaSelecionada}
               previewCapa={previewCapa}
               previewsGaleria={previewsGaleria}
@@ -1899,7 +1905,7 @@ export function PropertyForm({
         </section>
       </div>
 
-      <div className="grid shrink-0 grid-cols-[1.15fr_1.85fr] gap-1.5 border-t border-cyan-300/10 bg-card/95 px-3 py-2 backdrop-blur-xl sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-8 sm:py-4">
+      <div className="grid shrink-0 grid-cols-[1.05fr_1.95fr] gap-1.5 border-t border-cyan-300/10 bg-card/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-8 sm:py-4">
         <div className="flex min-w-0 items-center gap-3">
           <ActionButton
             className="hidden sm:inline-flex"
@@ -2177,8 +2183,6 @@ function EtapaLocalizacao({
           obrigatorio
           options={UFS}
         />
-      </div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <CampoTexto
           defaultValue={endereco?.cep}
           disabled={disabled}
@@ -2227,12 +2231,12 @@ function EtapaEstrutura({
 }) {
   return (
     <div className="grid gap-3 sm:gap-4">
-      <div className="grid gap-2.5 md:grid-cols-3 md:gap-4">
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-4">
         <CampoContador
           defaultValue={estrutura?.hospedesMaximos ?? 1}
           disabled={disabled}
           erro={erros.hospedesMaximos}
-          label="Capacidade máxima de hóspedes"
+          label="Hóspedes"
           min={1}
           name="hospedesMaximos"
           obrigatorio
@@ -2907,7 +2911,6 @@ function EtapaImagens({
   galeriaRef,
   idsImagensRemovidas,
   imagemCapaId,
-  imagemCapaAtual,
   previewCapa,
   previewsGaleria,
   publicaSelecionada,
@@ -2926,7 +2929,6 @@ function EtapaImagens({
   galeriaRef: RefObject<HTMLInputElement | null>;
   idsImagensRemovidas: string[];
   imagemCapaId: string | null;
-  imagemCapaAtual: string | null;
   previewCapa: string | null;
   previewsGaleria: PreviewGaleria[];
   publicaSelecionada: boolean;
@@ -2937,10 +2939,6 @@ function EtapaImagens({
   totalImagensAtuais: number;
 }) {
   const [indiceArrastado, setIndiceArrastado] = useState<number | null>(null);
-  const imagemPrincipal =
-    previewCapa ??
-    previewsGaleria.find((preview) => preview.principal)?.url ??
-    imagemCapaAtual;
   const possuiPrincipalExistente = previewsGaleria.some(
     (preview) => preview.origem === "existente" && preview.principal,
   );
@@ -2989,17 +2987,12 @@ function EtapaImagens({
             value={imagemId}
           />
         ))}
-        {imagemPrincipal ? (
-          <PreviewImagem
-            titulo={
-              previewCapa ? "Nova imagem principal" : "Imagem principal atual"
-            }
-            url={imagemPrincipal}
-          />
+        {previewCapa ? (
+          <PreviewImagem titulo="Nova imagem principal" url={previewCapa} />
         ) : null}
-        <div className="rounded-xl border bg-background/45 p-3">
-          <p className="mb-3 text-sm font-semibold">Galeria da hospedagem</p>
-          <p className="-mt-2 mb-3 text-xs text-muted-foreground">
+        <div className="sm:rounded-xl sm:border sm:bg-background/45 sm:p-3">
+          <p className="mb-1 text-sm font-semibold">Galeria da hospedagem</p>
+          <p className="mb-3 text-xs text-muted-foreground">
             Visualize as fotos salvas, adicione novas imagens e arraste os cards
             para definir a ordem pública.
           </p>
@@ -3257,14 +3250,14 @@ function CampoContador({
   }
 
   return (
-    <div className="grid gap-1.5 sm:gap-2">
-      <div className="flex items-center justify-between gap-3 md:block">
+    <div className="grid gap-1.5 rounded-lg border bg-background/35 p-2.5 sm:gap-2 md:rounded-none md:border-0 md:bg-transparent md:p-0">
+      <div className="grid gap-2 md:block">
         <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
           {label}
         </LabelCampo>
         <div
           className={cn(
-            "grid h-9 w-32 shrink-0 grid-cols-[2.25rem_1fr_2.25rem] overflow-hidden rounded-lg border bg-background/70 shadow-sm md:mt-2 md:h-11 md:w-full md:grid-cols-[2.75rem_1fr_2.75rem] md:rounded-xl",
+            "grid h-9 w-full shrink-0 grid-cols-[2.25rem_1fr_2.25rem] overflow-hidden rounded-lg border bg-background/70 shadow-sm md:mt-2 md:h-11 md:grid-cols-[2.75rem_1fr_2.75rem] md:rounded-xl",
             erro && "border-destructive/70 bg-destructive/5",
           )}
         >

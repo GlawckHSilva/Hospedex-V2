@@ -53,7 +53,7 @@ type EntityModalProps = {
 };
 
 const sizeClass: Record<ModalSize, string> = {
-  full: "h-[100svh] max-h-[100svh] max-w-none rounded-none sm:h-[calc(100svh-2rem)] sm:max-h-[calc(100svh-2rem)] sm:max-w-[min(96vw,92rem)] sm:rounded-2xl",
+  full: "my-0 h-[100dvh] max-h-[100dvh] w-screen max-w-none rounded-none border-0 ring-0 sm:my-auto sm:h-[calc(100svh-2rem)] sm:max-h-[calc(100svh-2rem)] sm:w-full sm:max-w-[min(96vw,92rem)] sm:rounded-2xl sm:border sm:ring-1",
   lg: "max-w-3xl",
   md: "max-w-2xl",
   sm: "max-w-md",
@@ -207,7 +207,7 @@ export function AppModal({
               className={cn(
                 "shrink-0 border-b border-border bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_34%)]",
                 size === "full"
-                  ? "px-3 py-2 sm:px-6 sm:py-4"
+                  ? "px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))] sm:px-6 sm:py-4"
                   : "px-5 py-4 sm:px-6",
               )}
             >
