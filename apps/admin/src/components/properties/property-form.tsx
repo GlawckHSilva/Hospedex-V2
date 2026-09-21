@@ -46,6 +46,7 @@ import { ActionButton } from "../management/action-button";
 import { AppModal } from "../management/entity-modal";
 import { WizardStepper } from "../management/wizard-stepper";
 import { PropertyAmenitiesStep } from "./property-amenities-step";
+import { PropertyLocationMap } from "./property-location-map";
 import { usarAutenticacao } from "../auth/auth-provider";
 import {
   salvarRascunhoPropriedadeAction,
@@ -193,9 +194,9 @@ const UFS = [
 ].map((uf) => ({ label: uf, valor: uf }));
 
 const campoClasse =
-  "flex h-10 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-full rounded-lg border bg-background px-2.5 py-1.5 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:h-10 sm:px-3 sm:py-2";
 const areaClasse =
-  "min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+  "min-h-20 w-full rounded-lg border bg-background px-2.5 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-24 sm:px-3";
 const MAX_PARCELAS_CARTAO = 12;
 
 type ErrosFormularioCasa = Partial<Record<string, string>>;
@@ -832,8 +833,13 @@ export function PropertyForm({
   const [quantidadeComodidadesValidas, setQuantidadeComodidadesValidas] =
     useState(propriedade?.comodidades.length ?? 0);
   const formRef = useRef<HTMLFormElement>(null);
+  const conteudoRef = useRef<HTMLDivElement>(null);
   const capaRef = useRef<HTMLInputElement>(null);
   const galeriaRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    conteudoRef.current?.scrollTo({ behavior: "auto", top: 0 });
+  }, [etapaAtual]);
   const arquivosGaleriaRef = useRef<File[]>([]);
   const timerRascunhoRef = useRef<number | null>(null);
   const promessaSincronizacaoRef = useRef<Promise<boolean> | null>(null);
@@ -1633,7 +1639,7 @@ export function PropertyForm({
         <input name="propriedadeId" type="hidden" value={propriedade.id} />
       ) : null}
 
-      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-4 py-3 backdrop-blur-xl sm:px-8 sm:py-5">
+      <div className="shrink-0 border-b border-cyan-300/10 bg-card/95 px-3 py-2 backdrop-blur-xl sm:px-8 sm:py-5">
         <WizardStepper
           etapaAtual={etapaAtual}
           etapas={ETAPAS}
@@ -1641,7 +1647,7 @@ export function PropertyForm({
           etapasConcluidas={etapasConcluidas}
           onEtapaClick={(indice) => navegarParaEtapa(indice)}
         />
-        <div className="mt-3 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <div className="mt-1.5 flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground sm:mt-3 sm:gap-2 sm:text-xs">
           {estadoSincronizacao === "salvando" ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-cyan-600" />
           ) : estadoSincronizacao === "aguardando" ||
@@ -1654,7 +1660,10 @@ export function PropertyForm({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-8 sm:py-6">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-8 sm:py-6"
+        ref={conteudoRef}
+      >
         {erroServidor ? (
           <p className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
             {erroServidor}
@@ -1729,12 +1738,12 @@ export function PropertyForm({
           </div>
         ) : null}
         {conflitoRascunho ? (
-          <div className="mb-4 rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-3 text-sm">
+          <div className="mb-3 rounded-xl border border-amber-400/35 bg-amber-500/10 px-3 py-2.5 text-sm sm:mb-4 sm:py-3">
             <p className="font-semibold">Escolha a versao que deseja manter.</p>
             <p className="mt-1 text-muted-foreground">
               Nenhuma versao sera sobrescrita sem sua confirmacao.
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2 sm:mt-3">
               <ActionButton
                 onClick={() => escolherVersaoRascunho(conflitoRascunho.local)}
                 size="sm"
@@ -1757,7 +1766,7 @@ export function PropertyForm({
           </div>
         ) : null}
         {avisoRascunho ? (
-          <div className="mb-4 flex flex-col gap-3 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-3 text-sm text-cyan-50 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-50 sm:mb-4 sm:py-3 sm:text-sm">
             <p>{avisoRascunho}</p>
             <button
               className="text-left text-xs font-semibold uppercase tracking-[0.14em] text-cyan-200 underline-offset-4 hover:underline sm:text-right"
@@ -1769,7 +1778,7 @@ export function PropertyForm({
           </div>
         ) : null}
 
-        <section className="rounded-2xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-4 shadow-2xl shadow-cyan-950/10 sm:p-6">
+        <section className="rounded-xl border border-cyan-300/15 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.12),transparent_34%)] p-3 shadow-2xl shadow-cyan-950/10 sm:rounded-2xl sm:p-6">
           <div className="mb-6 hidden items-start gap-4 border-b border-cyan-300/10 pb-5 sm:flex">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-500/15 text-cyan-700 shadow-lg shadow-cyan-950/20 dark:text-cyan-200 [&_svg]:h-6 [&_svg]:w-6">
               {etapa.icon}
@@ -1784,7 +1793,7 @@ export function PropertyForm({
               </p>
             </div>
           </div>
-          <p className="mb-4 text-sm leading-6 text-muted-foreground sm:hidden">
+          <p className="mb-3 text-xs leading-5 text-muted-foreground sm:hidden">
             {etapa.descricao}
           </p>
 
@@ -1810,6 +1819,7 @@ export function PropertyForm({
 
           <div hidden={etapa.id !== "localizacao"}>
             <EtapaLocalizacao
+              active={etapa.id === "localizacao"}
               endereco={endereco}
               disabled={!podeGerenciar}
               erros={errosCampos}
@@ -1889,8 +1899,8 @@ export function PropertyForm({
         </section>
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-cyan-300/10 bg-card/95 px-4 py-3 backdrop-blur-xl sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-8 sm:py-4">
-        <div className="flex flex-wrap items-center gap-3">
+      <div className="grid shrink-0 grid-cols-[1.15fr_1.85fr] gap-1.5 border-t border-cyan-300/10 bg-card/95 px-3 py-2 backdrop-blur-xl sm:flex sm:items-center sm:justify-between sm:gap-3 sm:px-8 sm:py-4">
+        <div className="flex min-w-0 items-center gap-3">
           <ActionButton
             className="hidden sm:inline-flex"
             disabled={salvando}
@@ -1903,7 +1913,7 @@ export function PropertyForm({
             Cancelar
           </ActionButton>
           <ActionButton
-            className="w-full sm:w-auto"
+            className="w-full min-w-0 px-2.5 sm:w-auto sm:px-3.5"
             disabled={!podeGerenciar || salvando}
             icon={<Save className="h-4 w-4" />}
             onClick={() => void sincronizarRascunho()}
@@ -1911,13 +1921,14 @@ export function PropertyForm({
             type="button"
             variant="view"
           >
-            Salvar rascunho
+            <span className="sm:hidden">Rascunho</span>
+            <span className="hidden sm:inline">Salvar rascunho</span>
           </ActionButton>
         </div>
 
-        <div className="flex items-center justify-end gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-3">
           <ActionButton
-            className="min-w-0 flex-1 sm:flex-none"
+            className="min-w-0 flex-1 px-2 sm:flex-none sm:px-3.5"
             disabled={etapaAtual === 0 || salvando}
             icon={<ArrowLeft className="h-4 w-4" />}
             onClick={voltarEtapa}
@@ -1930,7 +1941,7 @@ export function PropertyForm({
 
           {!estaNaUltimaEtapa ? (
             <ActionButton
-              className="min-w-0 flex-1 sm:flex-none"
+              className="min-w-0 flex-1 px-2 sm:flex-none sm:px-4"
               disabled={!podeGerenciar || salvando}
               icon={<ArrowRight className="h-4 w-4" />}
               onClick={avancarEtapa}
@@ -1967,6 +1978,7 @@ function BotaoSalvarCasa({
 }) {
   return (
     <ActionButton
+      className="min-w-0 flex-1 px-2 sm:flex-none sm:px-4"
       disabled={bloqueado || salvando}
       icon={
         salvando ? (
@@ -2007,8 +2019,8 @@ function EtapaBasico({
   erros: ErrosFormularioCasa;
 }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 sm:gap-4">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
         <CampoTexto
           defaultValue={defaultNome}
           disabled={disabled}
@@ -2075,11 +2087,11 @@ function CampoStatusSegmentado({
   return (
     <fieldset className="grid gap-2 md:col-span-2">
       <legend className="text-sm font-medium leading-none">{label}</legend>
-      <div className="grid overflow-hidden rounded-xl border bg-background/60 p-1 sm:grid-cols-3">
+      <div className="grid grid-cols-3 overflow-hidden rounded-xl border bg-background/60 p-1">
         {options.map((option) => (
           <label
             className={cn(
-              "flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition",
+              "flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-muted-foreground transition sm:gap-2 sm:px-3 sm:text-sm",
               valorAtual === option.valor &&
                 "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-500/60 dark:bg-cyan-500/20 dark:text-cyan-100 dark:ring-cyan-300/40",
               disabled && "cursor-not-allowed opacity-60",
@@ -2110,17 +2122,19 @@ function CampoStatusSegmentado({
 }
 
 function EtapaLocalizacao({
+  active,
   disabled,
   endereco,
   erros,
 }: {
+  active: boolean;
   disabled: boolean;
   endereco?: PropriedadeComRelacionamentos["enderecoFormatado"] | undefined;
   erros: ErrosFormularioCasa;
 }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-[1.4fr_0.5fr]">
+    <div className="grid gap-3 sm:gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)_5.5rem] gap-3 sm:gap-4 md:grid-cols-[1.4fr_0.5fr]">
         <CampoTexto
           defaultValue={endereco?.linha1}
           disabled={disabled}
@@ -2138,7 +2152,7 @@ function EtapaLocalizacao({
           placeholder="123"
         />
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <CampoTexto
           defaultValue={endereco?.bairro}
           disabled={disabled}
@@ -2164,7 +2178,7 @@ function EtapaLocalizacao({
           options={UFS}
         />
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <CampoTexto
           defaultValue={endereco?.cep}
           disabled={disabled}
@@ -2187,35 +2201,17 @@ function EtapaLocalizacao({
           placeholder="Próximo ao mercado X"
         />
       </div>
-      <CampoTexto
-        defaultValue={endereco?.googleMapsLink}
-        disabled={disabled}
-        erro={erros.googleMapsLink}
-        label="Link do Google Maps"
+      <input
+        defaultValue={endereco?.googleMapsLink ?? ""}
         name="googleMapsLink"
-        placeholder="Cole o link da localização da casa no Google Maps."
-        type="url"
+        type="hidden"
       />
-      <div className="grid gap-4 md:grid-cols-2">
-        <CampoNumero
-          defaultValue={endereco?.latitude ?? ""}
-          disabled={disabled}
-          label="Latitude"
-          max={90}
-          min={-90}
-          name="latitude"
-          step="0.000001"
-        />
-        <CampoNumero
-          defaultValue={endereco?.longitude ?? ""}
-          disabled={disabled}
-          label="Longitude"
-          max={180}
-          min={-180}
-          name="longitude"
-          step="0.000001"
-        />
-      </div>
+      <PropertyLocationMap
+        active={active}
+        disabled={disabled}
+        latitude={endereco?.latitude}
+        longitude={endereco?.longitude}
+      />
     </div>
   );
 }
@@ -2230,8 +2226,8 @@ function EtapaEstrutura({
   estrutura?: PropriedadeComRelacionamentos["estrutura"] | undefined;
 }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-3 sm:gap-4">
+      <div className="grid gap-2.5 md:grid-cols-3 md:gap-4">
         <CampoContador
           defaultValue={estrutura?.hospedesMaximos ?? 1}
           disabled={disabled}
@@ -2276,7 +2272,7 @@ function EtapaEstrutura({
           name="garagemVagas"
         />
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
         <CampoCheckbox
           defaultChecked={estrutura?.areaExterna ?? false}
           disabled={disabled}
@@ -2382,8 +2378,8 @@ function EtapaValores({
   }
 
   return (
-    <div className="grid gap-5">
-      <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2">
         <CampoMoeda
           defaultValue={valores?.valorDiaria ?? 0}
           disabled={disabled}
@@ -2416,6 +2412,8 @@ function EtapaValores({
           name="valorHospedeExtra"
           placeholder="R$ 150,00"
         />
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
         <CampoSelect
           defaultValue={valores?.tipoCobrancaHospedeExtra ?? "per_stay"}
           disabled={disabled}
@@ -2423,24 +2421,20 @@ function EtapaValores({
           name="tipoCobrancaHospedeExtra"
           options={[{ label: "Por reserva", valor: "per_stay" }]}
         />
+        <CampoCheckbox
+          defaultChecked={valores?.cobraHospedeExtra ?? false}
+          disabled={disabled}
+          label="Cobrar hóspede extra"
+          name="cobraHospedeExtra"
+        />
       </div>
-      <CampoCheckbox
-        defaultChecked={valores?.cobraHospedeExtra ?? false}
-        disabled={disabled}
-        label="Cobrar hóspede extra?"
-        name="cobraHospedeExtra"
-      />
-      <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
-        O valor extra será cobrado somente quando a reserva ultrapassar a
-        capacidade máxima da casa.
-      </p>
 
-      <section className="grid gap-4 rounded-xl border bg-background/45 p-4">
+      <section className="grid gap-3 rounded-xl border bg-background/45 p-3 sm:gap-4 sm:p-4">
         <div>
           <h4 className="font-semibold">Pagamento da hospedagem</h4>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Configure apenas os métodos aceitos pelo proprietário. Não salve
-            dados de cartão, tokens ou senhas.
+          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
+            Ative somente as formas aceitas nesta casa. Dados de recebimento
+            ficam nas Configurações.
           </p>
         </div>
 
@@ -2451,7 +2445,7 @@ function EtapaValores({
           </p>
         ) : null}
 
-        <div className="grid gap-3">
+        <div className="grid gap-2 sm:gap-3">
           <CartaoFormaPagamento
             ativo={pixAtivo}
             descricao="Usa os dados de Pix cadastrados nas Configurações do proprietário."
@@ -2460,9 +2454,7 @@ function EtapaValores({
             label="Pix"
             name="pagamentoPixAtivo"
             onChange={setPixAtivo}
-          >
-            <AvisoDadosPagamentoTenant metodo="Pix" />
-          </CartaoFormaPagamento>
+          />
 
           <CartaoFormaPagamento
             ativo={dinheiroAtivo}
@@ -2472,9 +2464,7 @@ function EtapaValores({
             label="Dinheiro"
             name="pagamentoDinheiroAtivo"
             onChange={setDinheiroAtivo}
-          >
-            <AvisoDadosPagamentoTenant metodo="dinheiro" />
-          </CartaoFormaPagamento>
+          />
 
           <CartaoFormaPagamento
             ativo={cartaoDebitoAtivo}
@@ -2484,9 +2474,7 @@ function EtapaValores({
             label="Cartão de débito"
             name="pagamentoCartaoDebitoAtivo"
             onChange={setCartaoDebitoAtivo}
-          >
-            <AvisoDadosPagamentoTenant metodo="cartão de débito" />
-          </CartaoFormaPagamento>
+          />
 
           <CartaoFormaPagamento
             ativo={aceitaCartaoCredito}
@@ -2497,7 +2485,7 @@ function EtapaValores({
             name="aceitaCartaoCredito"
             onChange={setAceitaCartaoCredito}
           >
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2 md:gap-4">
               <CampoNumero
                 disabled={disabled || !aceitaCartaoCredito}
                 erro={erros.maxParcelasCartao}
@@ -2511,7 +2499,6 @@ function EtapaValores({
                 }
                 value={maxParcelasCartao}
               />
-              <AvisoDadosPagamentoTenant metodo="cartão de crédito" />
             </div>
 
             {aceitaCartaoCredito ? (
@@ -2617,9 +2604,7 @@ function EtapaValores({
             label="Transferência bancária"
             name="pagamentoTransferenciaAtivo"
             onChange={setTransferenciaAtiva}
-          >
-            <AvisoDadosPagamentoTenant metodo="transferência bancária" />
-          </CartaoFormaPagamento>
+          />
         </div>
       </section>
     </div>
@@ -2637,7 +2622,7 @@ function CartaoFormaPagamento({
   onChange,
 }: {
   ativo: boolean;
-  children: ReactNode;
+  children?: ReactNode | undefined;
   descricao: string;
   disabled: boolean;
   icon: ReactNode;
@@ -2646,40 +2631,34 @@ function CartaoFormaPagamento({
   onChange: (ativo: boolean) => void;
 }) {
   return (
-    <section className="grid gap-3 rounded-xl border bg-background/55 p-3">
-      <label className="flex cursor-pointer items-start gap-3">
+    <section className="grid gap-2 rounded-xl border bg-background/55 p-2.5 sm:gap-3 sm:p-3">
+      <label className="flex min-h-10 cursor-pointer items-center gap-2.5">
         <input
           checked={ativo}
-          className="mt-1"
+          className="peer sr-only"
           disabled={disabled}
           name={name}
           onChange={(evento) => onChange(evento.currentTarget.checked)}
           type="checkbox"
         />
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-cyan-500/15 text-cyan-700 dark:text-cyan-200">
           {icon}
         </span>
-        <span className="min-w-0">
+        <span className="min-w-0 flex-1">
           <span className="block text-sm font-semibold">{label}</span>
-          <span className="mt-0.5 block text-xs text-muted-foreground">
+          <span className="mt-0.5 hidden text-xs text-muted-foreground sm:block">
             {descricao}
           </span>
         </span>
+        <span
+          aria-hidden="true"
+          className="relative h-5 w-9 shrink-0 rounded-full bg-muted ring-1 ring-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-cyan-500 peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-400"
+        />
       </label>
-      {ativo ? (
+      {ativo && children ? (
         <div className="grid gap-3 border-t pt-3">{children}</div>
       ) : null}
     </section>
-  );
-}
-
-function AvisoDadosPagamentoTenant({ metodo }: { metodo: string }) {
-  return (
-    <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm leading-6 text-muted-foreground">
-      Os dados de {metodo} são cadastrados uma vez em Configurações do
-      proprietário. Nesta casa, marque apenas se essa forma de pagamento será
-      aceita.
-    </p>
   );
 }
 
@@ -2693,8 +2672,8 @@ function EtapaRegras({
   regras?: PropriedadeComRelacionamentos["regras"] | undefined;
 }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2">
         <CampoTexto
           defaultValue={normalizarHoraInput(regras?.check_in_time)}
           disabled={disabled}
@@ -2712,7 +2691,7 @@ function EtapaRegras({
           type="time"
         />
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-2 xl:grid-cols-4">
         <CampoCheckbox
           defaultChecked={regras?.allow_pets ?? false}
           disabled={disabled}
@@ -2791,9 +2770,9 @@ function EtapaCompartilhamento({
   statusSelecionado: PropertyStatus;
 }) {
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_24rem]">
-      <div className="grid gap-4">
-        <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-sm text-muted-foreground">
+    <div className="grid gap-4 sm:gap-5 lg:grid-cols-[1fr_24rem]">
+      <div className="grid gap-3 sm:gap-4">
+        <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-2.5 text-xs leading-5 text-muted-foreground sm:p-3 sm:text-sm">
           Revise a apresentação e escolha o status. Você ainda poderá editar
           tudo depois.
         </p>
@@ -2830,14 +2809,14 @@ function EtapaCompartilhamento({
           obrigatorio={publicaSelecionada}
           placeholder="Casa do Lago em Manoel Ribas"
         />
-        <div className="rounded-xl border bg-background/45 p-4">
+        <div className="rounded-xl border bg-background/45 p-3 sm:p-4">
           <p className="text-sm font-semibold">Descrição pública</p>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
             Usaremos a descrição completa informada na etapa Básico, evitando
             que o mesmo texto precise ser digitado duas vezes.
           </p>
         </div>
-        <div className="grid gap-4 rounded-xl border bg-background/45 p-4">
+        <div className="grid gap-3 rounded-xl border bg-background/45 p-3 sm:gap-4 sm:p-4">
           <CampoStatusSegmentado
             defaultValue={statusSelecionado}
             disabled={disabled}
@@ -2866,7 +2845,7 @@ function EtapaCompartilhamento({
         aria-label="Prévia da página pública"
         className="h-fit overflow-hidden rounded-2xl border border-cyan-300/15 bg-background/55 lg:sticky lg:top-0"
       >
-        <div className="relative h-48 bg-cyan-950/40">
+        <div className="relative h-40 bg-cyan-950/40 sm:h-48">
           {imagemCapaUrl ? (
             <img
               alt={resumoPrevia.titulo}
@@ -3218,7 +3197,7 @@ function CampoTexto({
   const erroId = erro ? `${name}-erro` : undefined;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-1.5 sm:gap-2">
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
@@ -3229,6 +3208,7 @@ function CampoTexto({
         aria-describedby={erroId}
         aria-invalid={Boolean(erro)}
         className={cn(
+          "h-9 rounded-lg px-2.5 py-1.5 sm:h-10 sm:px-3 sm:py-2",
           className,
           erro &&
             "border-destructive/70 bg-destructive/5 focus-visible:ring-destructive/40",
@@ -3277,48 +3257,50 @@ function CampoContador({
   }
 
   return (
-    <div className="grid gap-2">
-      <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
-        {label}
-      </LabelCampo>
-      <div
-        className={cn(
-          "grid h-11 grid-cols-[2.75rem_1fr_2.75rem] overflow-hidden rounded-xl border bg-background/70 shadow-sm",
-          erro && "border-destructive/70 bg-destructive/5",
-        )}
-      >
-        <button
-          aria-label={`Diminuir ${label}`}
-          className="grid place-items-center border-r text-muted-foreground transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={disabled || valor <= minimo}
-          onClick={() => atualizarValor(valor - 1)}
-          type="button"
+    <div className="grid gap-1.5 sm:gap-2">
+      <div className="flex items-center justify-between gap-3 md:block">
+        <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
+          {label}
+        </LabelCampo>
+        <div
+          className={cn(
+            "grid h-9 w-32 shrink-0 grid-cols-[2.25rem_1fr_2.25rem] overflow-hidden rounded-lg border bg-background/70 shadow-sm md:mt-2 md:h-11 md:w-full md:grid-cols-[2.75rem_1fr_2.75rem] md:rounded-xl",
+            erro && "border-destructive/70 bg-destructive/5",
+          )}
         >
-          <Minus className="h-4 w-4" />
-        </button>
-        <Input
-          aria-describedby={erroId}
-          aria-invalid={Boolean(erro)}
-          className="h-full rounded-none border-0 bg-transparent text-center font-semibold shadow-none focus-visible:ring-0"
-          disabled={disabled}
-          id={name}
-          min={minimo}
-          name={name}
-          onChange={(evento) =>
-            atualizarValor(Number(evento.currentTarget.value || minimo))
-          }
-          type="number"
-          value={valor}
-        />
-        <button
-          aria-label={`Aumentar ${label}`}
-          className="grid place-items-center border-l text-muted-foreground transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={disabled || (maximo ? valor >= maximo : false)}
-          onClick={() => atualizarValor(valor + 1)}
-          type="button"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+          <button
+            aria-label={`Diminuir ${label}`}
+            className="grid place-items-center border-r text-muted-foreground transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={disabled || valor <= minimo}
+            onClick={() => atualizarValor(valor - 1)}
+            type="button"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <Input
+            aria-describedby={erroId}
+            aria-invalid={Boolean(erro)}
+            className="h-full rounded-none border-0 bg-transparent text-center font-semibold shadow-none focus-visible:ring-0"
+            disabled={disabled}
+            id={name}
+            min={minimo}
+            name={name}
+            onChange={(evento) =>
+              atualizarValor(Number(evento.currentTarget.value || minimo))
+            }
+            type="number"
+            value={valor}
+          />
+          <button
+            aria-label={`Aumentar ${label}`}
+            className="grid place-items-center border-l text-muted-foreground transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40"
+            disabled={disabled || (maximo ? valor >= maximo : false)}
+            onClick={() => atualizarValor(valor + 1)}
+            type="button"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       {erro ? (
         <p className="text-xs font-medium text-destructive" id={erroId}>
@@ -3360,7 +3342,7 @@ function CampoArea({
   const erroId = erro ? `${name}-erro` : undefined;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-1.5 sm:gap-2">
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
@@ -3411,7 +3393,7 @@ function CampoSelect({
   const erroId = erro ? `${name}-erro` : undefined;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-1.5 sm:gap-2">
       <LabelCampo htmlFor={name} obrigatorio={obrigatorio}>
         {label}
       </LabelCampo>
@@ -3462,8 +3444,9 @@ function CampoCheckbox({
   value?: string;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-3 rounded-xl border bg-background/45 px-3 py-3 text-sm transition hover:border-cyan-300/35 hover:bg-cyan-500/5">
+    <label className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-xl border bg-background/45 px-2.5 py-2 text-sm transition hover:border-cyan-300/35 hover:bg-cyan-500/5 sm:min-h-11 sm:px-3">
       <input
+        className="peer sr-only"
         defaultChecked={defaultChecked}
         disabled={disabled}
         name={name}
@@ -3471,7 +3454,11 @@ function CampoCheckbox({
         type="checkbox"
         value={value}
       />
-      {label}
+      <span className="min-w-0 flex-1">{label}</span>
+      <span
+        aria-hidden="true"
+        className="relative h-5 w-9 shrink-0 rounded-full bg-muted ring-1 ring-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-cyan-500 peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-400"
+      />
     </label>
   );
 }

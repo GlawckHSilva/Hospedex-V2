@@ -27,12 +27,16 @@ export function PropertyAmenitiesStep({
 }) {
   const [novaComodidade, setNovaComodidade] = useState("");
   const [personalizadas, setPersonalizadas] = useState<string[]>([]);
-  const [selecionadasSistema, setSelecionadasSistema] = useState(() =>
-    new Set(
-      comodidades
-        .filter((comodidade) => comodidade.is_system && selecionadas.has(comodidade.id))
-        .map((comodidade) => comodidade.id),
-    ),
+  const [selecionadasSistema, setSelecionadasSistema] = useState(
+    () =>
+      new Set(
+        comodidades
+          .filter(
+            (comodidade) =>
+              comodidade.is_system && selecionadas.has(comodidade.id),
+          )
+          .map((comodidade) => comodidade.id),
+      ),
   );
   const [personalizadasExistentes, setPersonalizadasExistentes] = useState(() =>
     comodidades
@@ -82,36 +86,37 @@ export function PropertyAmenitiesStep({
   }
 
   return (
-    <div className="grid gap-4">
-      <div className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-4 text-sm text-muted-foreground">
+    <div className="grid gap-3 sm:gap-4">
+      <div className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
         <p className="font-semibold text-foreground">
           {quantidadeComodidadesValidas > 0
             ? `${quantidadeComodidadesValidas} comodidade${quantidadeComodidadesValidas === 1 ? "" : "s"} selecionada${quantidadeComodidadesValidas === 1 ? "" : "s"}`
             : "Nenhuma comodidade selecionada."}
         </p>
-        <p className="mt-1 leading-6">
+        <p className="mt-1 leading-5 sm:leading-6">
           As comodidades ajudam o hóspede a entender o que a hospedagem oferece.
           Adicione pelo menos uma para publicar a casa.
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-xl border bg-background/45 p-4">
+      <div className="grid gap-2.5 rounded-xl border bg-background/45 p-3 sm:gap-3 sm:p-4">
         <div>
           <h4 className="font-semibold">Comodidades padrão</h4>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground sm:text-sm">
             Selecione os itens principais que aparecem para o hóspede.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
           {comodidades
             .filter((comodidade) => comodidade.is_system)
             .map((comodidade) => (
               <label
-                className="flex cursor-pointer items-center gap-3 rounded-xl border bg-background/45 px-3 py-3 text-sm transition hover:border-cyan-300/35 hover:bg-cyan-500/5"
+                className="flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border bg-background/45 px-2.5 py-2 text-xs transition hover:border-cyan-300/35 hover:bg-cyan-500/5 sm:min-h-11 sm:px-3 sm:text-sm"
                 key={comodidade.id}
               >
                 <input
                   checked={selecionadasSistema.has(comodidade.id)}
+                  className="peer sr-only"
                   disabled={disabled}
                   name="comodidadeIds"
                   onChange={(evento) => {
@@ -128,14 +133,20 @@ export function PropertyAmenitiesStep({
                   type="checkbox"
                   value={comodidade.id}
                 />
-                {comodidade.name}
+                <span className="min-w-0 flex-1 leading-tight">
+                  {comodidade.name}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="relative h-5 w-9 shrink-0 rounded-full bg-muted ring-1 ring-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-cyan-500 peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-400"
+                />
               </label>
             ))}
         </div>
       </div>
 
       {personalizadasExistentes.length ? (
-        <div className="grid gap-3 rounded-xl border bg-background/45 p-4">
+        <div className="grid gap-2.5 rounded-xl border bg-background/45 p-3 sm:gap-3 sm:p-4">
           <div>
             <h4 className="font-semibold">Comodidades personalizadas</h4>
             <p className="text-sm text-muted-foreground">
@@ -144,11 +155,12 @@ export function PropertyAmenitiesStep({
           </div>
           {personalizadasExistentes.map((comodidade) => (
             <div
-              className="grid gap-2 rounded-xl border bg-background/55 p-3 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+              className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-xl border bg-background/55 p-2.5 sm:p-3"
               key={comodidade.id}
             >
               <input
                 checked={comodidade.selecionada}
+                className="h-4 w-4 accent-cyan-500"
                 disabled={disabled}
                 name="comodidadeIds"
                 onChange={(evento) =>
@@ -165,6 +177,7 @@ export function PropertyAmenitiesStep({
                 value={comodidade.id}
               />
               <Input
+                className="h-9"
                 disabled={disabled}
                 maxLength={80}
                 name="comodidadePersonalizadaExistenteNomes"
@@ -195,10 +208,11 @@ export function PropertyAmenitiesStep({
         </div>
       ) : null}
 
-      <div className="rounded-xl border bg-background/45 p-4">
+      <div className="rounded-xl border bg-background/45 p-3 sm:p-4">
         <Label htmlFor="novaComodidade">Nome da nova comodidade</Label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-2 flex gap-2">
           <Input
+            className="h-9 min-w-0"
             disabled={disabled}
             id="novaComodidade"
             maxLength={80}
@@ -207,13 +221,16 @@ export function PropertyAmenitiesStep({
             value={novaComodidade}
           />
           <ActionButton
+            aria-label="Adicionar comodidade"
+            className="shrink-0 px-3"
             disabled={disabled}
             icon={<Plus className="h-4 w-4" />}
             onClick={adicionarComodidade}
             type="button"
             variant="add"
           >
-            Adicionar comodidade
+            <span className="hidden sm:inline">Adicionar comodidade</span>
+            <span className="sm:hidden">Adicionar</span>
           </ActionButton>
         </div>
 

@@ -50,20 +50,20 @@ export function WizardStepper<TEtapa extends WizardStepperEtapa>({
   const etapaAtiva = etapas[indiceSeguro] ?? etapas[0];
 
   return (
-    <div className={cn("space-y-3", className)}>
-      <div className="space-y-2 sm:hidden">
-        <div className="flex min-w-0 items-start justify-between gap-3">
+    <div className={cn("space-y-2 sm:space-y-3", className)}>
+      <div className="space-y-1.5 sm:hidden">
+        <div className="flex min-w-0 items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-200">
               Etapa {indiceSeguro + 1} de {etapas.length}
             </p>
-            <p className="text-sm font-semibold">{etapaAtiva?.label}</p>
+            <p className="text-xs font-semibold">{etapaAtiva?.label}</p>
           </div>
-          <span className="text-xs font-medium text-muted-foreground">
-            {percentual}% do fluxo
+          <span className="text-[11px] font-medium text-muted-foreground">
+            {percentual}%
           </span>
         </div>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
+        <div className="h-1 overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-cyan-500 transition-[width] duration-300 ease-out"
             style={{ width: progresso }}

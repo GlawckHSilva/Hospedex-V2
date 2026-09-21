@@ -207,28 +207,40 @@ export function AppModal({
               className={cn(
                 "shrink-0 border-b border-border bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_34%)]",
                 size === "full"
-                  ? "px-4 py-3 sm:px-6 sm:py-4"
+                  ? "px-3 py-2 sm:px-6 sm:py-4"
                   : "px-5 py-4 sm:px-6",
               )}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center justify-between gap-3 sm:items-start sm:gap-4">
                 <div>
                   {eyebrow ? (
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-300">
+                    <p
+                      className={cn(
+                        "text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-300",
+                        size === "full" && "hidden sm:block",
+                      )}
+                    >
                       {eyebrow}
                     </p>
                   ) : null}
                   <h2
                     className={cn(
                       "mt-1 font-semibold tracking-normal",
-                      size === "full" ? "text-lg sm:text-xl" : "text-xl",
+                      size === "full"
+                        ? "mt-0 text-base sm:mt-1 sm:text-xl"
+                        : "text-xl",
                     )}
                     id={titleId}
                   >
                     {title}
                   </h2>
                   {description ? (
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    <p
+                      className={cn(
+                        "mt-2 max-w-2xl text-sm leading-6 text-muted-foreground",
+                        size === "full" && "sr-only sm:not-sr-only",
+                      )}
+                    >
                       {description}
                     </p>
                   ) : null}
@@ -236,6 +248,7 @@ export function AppModal({
 
                 <Button
                   aria-label="Fechar modal"
+                  className={cn(size === "full" && "h-8 w-8 sm:h-9 sm:w-9")}
                   onClick={solicitarFechamento}
                   size="icon"
                   type="button"
