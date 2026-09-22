@@ -1,7 +1,7 @@
 "use client";
 
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
-import { LocateFixed, MapPin, Search } from "lucide-react";
+import { LocateFixed, MapPin, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@hospedex/ui";
@@ -232,6 +232,15 @@ export function PropertyLocationMap({
             (position
               ? "Localização marcada. Arraste o alfinete para refinar."
               : "Nenhum ponto marcado ainda.")}
+        </span>
+      </div>
+
+      <div className="flex items-start gap-2 rounded-lg border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+        <span>
+          O endereço exato fica protegido. No Marketplace, visitantes verão
+          apenas a região aproximada; os dados completos ficam restritos à
+          operação e à reserva confirmada.
         </span>
       </div>
 

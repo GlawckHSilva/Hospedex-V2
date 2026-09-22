@@ -7,7 +7,9 @@ import {
   CalendarDays,
   CircleDollarSign,
   Copy,
+  EyeOff,
   ExternalLink,
+  Globe2,
   MapPin,
   MoreHorizontal,
   PauseCircle,
@@ -33,6 +35,7 @@ import {
   FormSubmitButton,
 } from "../management/form-submit-button";
 import {
+  alternarPublicacaoMarketplaceAction,
   alternarStatusPropriedadeAction,
   excluirPropriedadeAction,
 } from "../../lib/properties/actions";
@@ -65,6 +68,7 @@ export function PropertyCard({
   propriedade,
 }: PropertyCardProps) {
   const estaPausada = propriedade.status === "paused";
+  const estaRascunho = propriedade.status === "draft";
   const cidadeEstado = formatarCidadeEstado(propriedade);
   const paginaPublicaHref = `${MARKETPLACE_URL}/propriedades/${propriedade.slug}`;
   const atualizacao = formatarAtualizacao(propriedade.updated_at);
@@ -153,16 +157,25 @@ export function PropertyCard({
         />
       </section>
 
-      <footer className="mt-auto grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-        <a
-          className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-cyan-400/35 bg-cyan-500/8 px-3.5 py-2 text-sm font-semibold text-cyan-700 shadow-sm transition hover:border-cyan-300/60 hover:bg-cyan-500/15 dark:text-cyan-200 [&_svg]:h-4 [&_svg]:w-4"
-          href={paginaPublicaHref}
-          rel="noreferrer"
-          target="_blank"
-        >
-          Ver pagina
-          <ExternalLink />
-        </a>
+      {estaRascunho ? (
+        <p className="rounded-xl border border-amber-400/25 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-muted-foreground">
+          Cadastro incompleto. Ao concluir as etapas, a casa ficará ativa e as
+          opções de Marketplace serão liberadas aqui.
+        </p>
+      ) : null}
+
+      <footer className="mt-auto grid grid-cols-2 gap-2">
+        {propriedade.is_public ? (
+          <a
+            className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-cyan-400/35 bg-cyan-500/8 px-3.5 py-2 text-sm font-semibold text-cyan-700 shadow-sm transition hover:border-cyan-300/60 hover:bg-cyan-500/15 dark:text-cyan-200 [&_svg]:h-4 [&_svg]:w-4"
+            href={paginaPublicaHref}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Ver página
+            <ExternalLink />
+          </a>
+        ) : null}
 
         <EntityModal
           description="Atualize as informacoes da casa usadas no painel e na pagina publica."
@@ -171,7 +184,7 @@ export function PropertyCard({
           size="full"
           title="Editar casa"
           triggerAction="edit"
-          triggerClassName="h-9 justify-center"
+          triggerClassName="h-9 w-full justify-center"
           triggerIcon={<Pencil className="h-4 w-4" />}
           triggerLabel="Editar"
         >
@@ -182,6 +195,22 @@ export function PropertyCard({
             propriedade={propriedade}
           />
         </EntityModal>
+
+        {!estaRascunho ? (
+          <>
+            <AcaoStatusCasa
+              estaPausada={estaPausada}
+              podeGerenciar={podeGerenciar}
+              propriedadeId={propriedade.id}
+              triggerClassName="w-full justify-center"
+            />
+            <AcaoMarketplaceCasa
+              estaPublica={propriedade.is_public}
+              podeGerenciar={podeGerenciar}
+              propriedadeId={propriedade.id}
+            />
+          </>
+        ) : null}
 
         <MenuMaisAcoesCasa
           comodidadesDisponiveis={comodidadesDisponiveis}
@@ -219,15 +248,30 @@ function DetalhesCasa({
       triggerLabel="Ver detalhes"
     >
       <div className="grid gap-3 text-sm md:grid-cols-2">
-        <InfoModal label="Tipo" valor={obterLabelTipo(propriedade.property_type)} />
+        <InfoModal
+          label="Tipo"
+          valor={obterLabelTipo(propriedade.property_type)}
+        />
         <InfoModal
           label="Status"
           valor={obterLabelStatusPropriedade(propriedade.status)}
         />
-        <InfoModal label="Publicacao" valor={obterLabelPublicacao(propriedade)} />
-        <InfoModal label="Cidade" valor={propriedade.enderecoFormatado.cidade} />
-        <InfoModal label="Estado" valor={propriedade.enderecoFormatado.estado} />
-        <InfoModal label="Endereco" valor={propriedade.enderecoFormatado.linha1} />
+        <InfoModal
+          label="Publicacao"
+          valor={obterLabelPublicacao(propriedade)}
+        />
+        <InfoModal
+          label="Cidade"
+          valor={propriedade.enderecoFormatado.cidade}
+        />
+        <InfoModal
+          label="Estado"
+          valor={propriedade.enderecoFormatado.estado}
+        />
+        <InfoModal
+          label="Endereco"
+          valor={propriedade.enderecoFormatado.linha1}
+        />
         <InfoModal
           label="Diaria"
           valor={formatarMoeda(propriedade.valores.valorDiaria)}
@@ -329,7 +373,10 @@ function MenuMaisAcoesCasa({
       size="sm"
       title="Mais acoes"
       triggerAction="settings"
-      triggerClassName="h-9 w-full px-0 sm:w-9"
+      triggerClassName={cn(
+        "h-9 w-full px-0",
+        propriedade.is_public && "col-span-2",
+      )}
       triggerIcon={<MoreHorizontal className="h-4 w-4" />}
       triggerLabel="Mais acoes"
       triggerSize="icon"
@@ -351,13 +398,6 @@ function MenuMaisAcoesCasa({
         >
           Copiar link
         </ActionButton>
-
-        <AcaoStatusCasa
-          estaPausada={estaPausada}
-          podeGerenciar={podeGerenciar}
-          propriedadeId={propriedadeId}
-          triggerClassName="w-full justify-center"
-        />
 
         <AcaoExcluirCasa
           podeGerenciar={podeGerenciar}
@@ -402,7 +442,9 @@ function InfoRodape({
 }) {
   return (
     <div className="flex min-w-0 items-start gap-2 text-xs">
-      <span className="mt-0.5 text-cyan-300 [&_svg]:h-4 [&_svg]:w-4">{icon}</span>
+      <span className="mt-0.5 text-cyan-300 [&_svg]:h-4 [&_svg]:w-4">
+        {icon}
+      </span>
       <span className="min-w-0">
         <span className="block uppercase tracking-normal text-muted-foreground">
           {label}
@@ -454,6 +496,56 @@ function AcaoStatusCasa({
         >
           {estaPausada ? <PlayCircle /> : <PauseCircle />}
           {estaPausada ? "Ativar" : "Pausar"}
+        </FormSubmitButton>
+      </form>
+    </ConfirmDialog>
+  );
+}
+
+function AcaoMarketplaceCasa({
+  estaPublica,
+  podeGerenciar,
+  propriedadeId,
+}: {
+  estaPublica: boolean;
+  podeGerenciar: boolean;
+  propriedadeId: string;
+}) {
+  return (
+    <ConfirmDialog
+      description={
+        estaPublica
+          ? "A casa deixará de aparecer para novos visitantes, sem perder seus dados."
+          : "A casa ficará visível para visitantes no Marketplace com localização aproximada."
+      }
+      disabled={!podeGerenciar}
+      title={estaPublica ? "Retirar do Marketplace" : "Publicar no Marketplace"}
+      triggerAction={estaPublica ? "status" : "add"}
+      triggerClassName="w-full justify-center"
+      triggerIcon={
+        estaPublica ? (
+          <EyeOff className="h-4 w-4" />
+        ) : (
+          <Globe2 className="h-4 w-4" />
+        )
+      }
+      triggerLabel={estaPublica ? "Retirar do Marketplace" : "Publicar"}
+      triggerVariant={estaPublica ? "outline" : "default"}
+    >
+      <form action={alternarPublicacaoMarketplaceAction} className="grid gap-3">
+        <input name="propriedadeId" type="hidden" value={propriedadeId} />
+        <p className="text-sm text-muted-foreground">
+          {estaPublica
+            ? "A página pública será ocultada, mas a casa continuará ativa no painel."
+            : "Antes de publicar, conferiremos imagem principal, descrição e comodidades."}
+        </p>
+        <FormSubmitButton
+          disabled={!podeGerenciar}
+          pendingLabel="Atualizando..."
+          variant={estaPublica ? "outline" : "default"}
+        >
+          {estaPublica ? <EyeOff /> : <Globe2 />}
+          {estaPublica ? "Retirar do Marketplace" : "Publicar no Marketplace"}
         </FormSubmitButton>
       </form>
     </ConfirmDialog>
@@ -556,15 +648,15 @@ function obterVariantStatusPropriedade(
   return "secondary";
 }
 
-function obterLabelPublicacao(propriedade: PropriedadeComRelacionamentos): string {
+function obterLabelPublicacao(
+  propriedade: PropriedadeComRelacionamentos,
+): string {
   if (propriedade.is_public) return "Publicada";
-  if (propriedade.status === "draft") return "Rascunho";
-  return "Nao publicada";
+  return "Fora do Marketplace";
 }
 
 function obterVariantPublicacao(propriedade: PropriedadeComRelacionamentos) {
   if (propriedade.is_public) return "info";
-  if (propriedade.status === "draft") return "secondary";
   return "outline";
 }
 

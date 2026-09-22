@@ -8,6 +8,12 @@ import { Input, Label } from "@hospedex/ui";
 
 import { ActionButton } from "../management/action-button";
 
+type ComodidadePersonalizadaNova = {
+  chave: string;
+  nome: string;
+  selecionada: boolean;
+};
+
 /**
  * Etapa reutilizavel de comodidades do cadastro de Casas.
  *
@@ -26,7 +32,9 @@ export function PropertyAmenitiesStep({
   selecionadas: Set<string>;
 }) {
   const [novaComodidade, setNovaComodidade] = useState("");
-  const [personalizadas, setPersonalizadas] = useState<string[]>([]);
+  const [personalizadas, setPersonalizadas] = useState<
+    ComodidadePersonalizadaNova[]
+  >([]);
   const [selecionadasSistema, setSelecionadasSistema] = useState(
     () =>
       new Set(
@@ -50,7 +58,9 @@ export function PropertyAmenitiesStep({
   const quantidadeComodidadesValidas = useMemo(
     () =>
       selecionadasSistema.size +
-      personalizadas.filter((nome) => nome.trim()).length +
+      personalizadas.filter(
+        (comodidade) => comodidade.selecionada && comodidade.nome.trim(),
+      ).length +
       personalizadasExistentes.filter(
         (comodidade) => comodidade.selecionada && comodidade.nome.trim(),
       ).length,
@@ -64,7 +74,7 @@ export function PropertyAmenitiesStep({
   function adicionarComodidade() {
     const nome = novaComodidade.trim();
     const jaExiste = [
-      ...personalizadas,
+      ...personalizadas.map((item) => item.nome),
       ...personalizadasExistentes.map((item) => item.nome),
     ].some(
       (item) =>
@@ -72,7 +82,10 @@ export function PropertyAmenitiesStep({
         nome.toLocaleLowerCase("pt-BR"),
     );
     if (!nome || jaExiste) return;
-    setPersonalizadas((atuais) => [...atuais, nome]);
+    setPersonalizadas((atuais) => [
+      ...atuais,
+      { chave: crypto.randomUUID(), nome, selecionada: true },
+    ]);
     setNovaComodidade("");
   }
 
@@ -155,22 +168,9 @@ export function PropertyAmenitiesStep({
           </div>
           {personalizadasExistentes.map((comodidade) => (
             <div
-              className="grid grid-cols-[auto_1fr_auto] items-center gap-2 rounded-lg border bg-background/55 p-2 sm:rounded-xl sm:p-3"
+              className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-lg border bg-background/55 p-2 sm:rounded-xl sm:p-3"
               key={comodidade.id}
             >
-              <input
-                checked={comodidade.selecionada}
-                className="h-4 w-4 accent-cyan-500"
-                disabled={disabled}
-                name="comodidadeIds"
-                onChange={(evento) =>
-                  atualizarComodidadeExistente(comodidade.id, {
-                    selecionada: evento.currentTarget.checked,
-                  })
-                }
-                type="checkbox"
-                value={comodidade.id}
-              />
               <input
                 name="comodidadePersonalizadaExistenteIds"
                 type="hidden"
@@ -188,6 +188,25 @@ export function PropertyAmenitiesStep({
                 }
                 value={comodidade.nome}
               />
+              <label className="cursor-pointer">
+                <input
+                  checked={comodidade.selecionada}
+                  className="peer sr-only"
+                  disabled={disabled}
+                  name="comodidadeIds"
+                  onChange={(evento) =>
+                    atualizarComodidadeExistente(comodidade.id, {
+                      selecionada: evento.currentTarget.checked,
+                    })
+                  }
+                  type="checkbox"
+                  value={comodidade.id}
+                />
+                <span
+                  aria-hidden="true"
+                  className="relative block h-5 w-9 shrink-0 rounded-full bg-muted ring-1 ring-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-cyan-500 peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-400"
+                />
+              </label>
               <ActionButton
                 aria-label={`Remover ${comodidade.nome}`}
                 disabled={disabled}
@@ -235,26 +254,60 @@ export function PropertyAmenitiesStep({
         </div>
 
         {personalizadas.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {personalizadas.map((nome) => (
-              <span
-                className="inline-flex items-center gap-2 rounded-xl border bg-background/60 px-2 py-1 text-sm"
-                key={nome}
+          <div className="mt-3 grid gap-2">
+            {personalizadas.map((comodidade) => (
+              <div
+                className="grid grid-cols-[1fr_auto_auto] items-center gap-2 rounded-lg border bg-background/55 p-2 sm:rounded-xl sm:p-3"
+                key={comodidade.chave}
               >
-                <input
-                  name="comodidadesPersonalizadas"
-                  readOnly
-                  type="hidden"
-                  value={nome}
+                <Input
+                  className="h-9"
+                  disabled={disabled}
+                  maxLength={80}
+                  onChange={(evento) =>
+                    setPersonalizadas((atuais) =>
+                      atuais.map((item) =>
+                        item.chave === comodidade.chave
+                          ? { ...item, nome: evento.currentTarget.value }
+                          : item,
+                      ),
+                    )
+                  }
+                  value={comodidade.nome}
                 />
-                {nome}
+                <label className="cursor-pointer">
+                  <input
+                    checked={comodidade.selecionada}
+                    className="peer sr-only"
+                    disabled={disabled}
+                    name="comodidadesPersonalizadas"
+                    onChange={(evento) =>
+                      setPersonalizadas((atuais) =>
+                        atuais.map((item) =>
+                          item.chave === comodidade.chave
+                            ? {
+                                ...item,
+                                selecionada: evento.currentTarget.checked,
+                              }
+                            : item,
+                        ),
+                      )
+                    }
+                    type="checkbox"
+                    value={comodidade.nome}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="relative block h-5 w-9 shrink-0 rounded-full bg-muted ring-1 ring-border transition-colors after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:bg-cyan-500 peer-checked:after:translate-x-4 peer-focus-visible:ring-2 peer-focus-visible:ring-cyan-400"
+                  />
+                </label>
                 <ActionButton
-                  aria-label={`Remover ${nome}`}
+                  aria-label={`Remover ${comodidade.nome}`}
                   disabled={disabled}
                   icon={<Trash2 className="h-4 w-4" />}
                   onClick={() =>
                     setPersonalizadas((atuais) =>
-                      atuais.filter((item) => item !== nome),
+                      atuais.filter((item) => item.chave !== comodidade.chave),
                     )
                   }
                   size="icon"
@@ -263,7 +316,7 @@ export function PropertyAmenitiesStep({
                 >
                   Remover
                 </ActionButton>
-              </span>
+              </div>
             ))}
           </div>
         ) : null}

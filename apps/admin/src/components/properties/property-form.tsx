@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-  AmenityRow,
-  MediaAssetRow,
-  PropertyStatus,
-  PropertyType,
-} from "@hospedex/types";
+import type { AmenityRow, MediaAssetRow, PropertyType } from "@hospedex/types";
 import {
   ArrowLeft,
   ArrowRight,
@@ -144,10 +139,10 @@ const ETAPAS: Array<{
     label: "Comodidades",
   },
   {
-    descricao: "Revise a apresentação e escolha como a casa será publicada.",
+    descricao: "Confira os dados antes de concluir o cadastro.",
     icon: <Share2 />,
     id: "compartilhamento",
-    label: "Publicação",
+    label: "Revisão",
   },
 ];
 
@@ -155,12 +150,6 @@ const TIPOS: Array<{ label: string; valor: PropertyType }> = [
   { valor: "seasonal_home", label: "Casa de temporada" },
   { valor: "inn", label: "Pousada" },
   { valor: "small_hotel", label: "Pequeno hotel" },
-];
-
-const STATUS: Array<{ label: string; valor: PropertyStatus }> = [
-  { valor: "draft", label: "Rascunho" },
-  { valor: "published", label: "Publicada" },
-  { valor: "paused", label: "Pausada" },
 ];
 
 const UFS = [
@@ -318,14 +307,6 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
   },
   {
     etapa: "valores",
-    mensagem: "Informe um valor por hospede extra valido.",
-    minimo: 0,
-    name: "valorHospedeExtra",
-    obrigatorio: false,
-    tipo: "numero",
-  },
-  {
-    etapa: "valores",
     mensagem: "Informe a quantidade máxima de parcelas.",
     maximo: MAX_PARCELAS_CARTAO,
     minimo: 1,
@@ -389,10 +370,7 @@ const CAMPOS_OBRIGATORIOS_CASA: CampoObrigatorioCasa[] = [
 ];
 
 function deveValidarPublicacao(dados: FormData) {
-  return (
-    dados.get("visibilidadePublica") === "on" ||
-    dados.get("status") === "published"
-  );
+  return dados.get("visibilidadePublica") === "on";
 }
 
 type ResumoPreviaCasa = {
@@ -821,12 +799,7 @@ export function PropertyForm({
     criarPreviewsGaleriaExistente(propriedade?.imagens ?? []),
   );
   const [idsImagensRemovidas, setIdsImagensRemovidas] = useState<string[]>([]);
-  const [statusSelecionado, setStatusSelecionado] = useState<PropertyStatus>(
-    propriedade?.status ?? "draft",
-  );
-  const [publicaSelecionada, setPublicaSelecionada] = useState(
-    (propriedade?.status ?? "draft") === "published",
-  );
+  const publicaSelecionada = propriedade?.is_public ?? false;
   const [resumoPrevia, setResumoPrevia] = useState<ResumoPreviaCasa>(() =>
     criarResumoPreviaCasa(null, propriedade),
   );
@@ -938,14 +911,6 @@ export function PropertyForm({
   function sincronizarEstadosControladosDoFormulario() {
     const formulario = formRef.current;
     if (!formulario) return;
-
-    const status = formulario.querySelector<HTMLInputElement>(
-      'input[name="status"]:checked',
-    );
-    if (status && ["draft", "published", "paused"].includes(status.value)) {
-      setStatusSelecionado(status.value as PropertyStatus);
-      setPublicaSelecionada(status.value === "published");
-    }
     setResumoPrevia(criarResumoPreviaCasa(formulario, propriedade));
   }
 
@@ -1328,19 +1293,6 @@ export function PropertyForm({
     });
   }
 
-  function atualizarStatusPublicacao(status: PropertyStatus) {
-    setStatusSelecionado(status);
-    const publicada = status === "published";
-    setPublicaSelecionada(publicada);
-    if (!publicada) {
-      removerErrosDosCampos([
-        "tituloPublico",
-        "imagemCapaArquivo",
-        "comodidadeIds",
-      ]);
-    }
-  }
-
   function atualizarResumoPrevia() {
     setResumoPrevia(criarResumoPreviaCasa(formRef.current, propriedade));
   }
@@ -1557,6 +1509,11 @@ export function PropertyForm({
 
     dados.set("operacaoId", operacaoId);
     dados.set("etapaWizard", String(etapaAtual + 1));
+    dados.set(
+      "status",
+      propriedade?.status === "paused" ? "paused" : "published",
+    );
+    dados.set("visibilidadePublica", publicaSelecionada ? "on" : "");
     dados.delete("imagemCapaArquivo");
     dados.delete("imagemCapaId");
     dados.delete("possuiImagemPrincipalAtual");
@@ -1845,6 +1802,7 @@ export function PropertyForm({
             <EtapaValores
               disabled={!podeGerenciar}
               erros={errosCampos}
+              modo={modo}
               valores={valores}
             />
           </div>
@@ -1891,15 +1849,12 @@ export function PropertyForm({
           <div hidden={etapa.id !== "compartilhamento"}>
             <EtapaCompartilhamento
               detalhes={propriedade?.detalhesPublicos}
-              disabled={!podeGerenciar}
-              erros={errosCampos}
               imagemCapaUrl={imagemPrincipalSelecionada}
               defaultDestaque={propriedade?.marketplace_featured ?? false}
-              onStatusChange={atualizarStatusPublicacao}
               quantidadeComodidadesValidas={quantidadeComodidadesValidas}
               publicaSelecionada={publicaSelecionada}
               resumoPrevia={resumoPrevia}
-              statusSelecionado={statusSelecionado}
+              statusAtual={propriedade?.status}
             />
           </div>
         </section>
@@ -2069,64 +2024,6 @@ function EtapaBasico({
   );
 }
 
-function CampoStatusSegmentado({
-  defaultValue,
-  disabled,
-  label,
-  name,
-  onChange,
-  options,
-}: {
-  defaultValue: PropertyStatus;
-  disabled: boolean;
-  label: string;
-  name: string;
-  onChange?: (valor: PropertyStatus) => void;
-  options: Array<{ label: string; valor: PropertyStatus }>;
-}) {
-  const [valorAtual, setValorAtual] = useState(defaultValue);
-
-  useEffect(() => {
-    setValorAtual(defaultValue);
-  }, [defaultValue]);
-
-  return (
-    <fieldset className="grid gap-2 md:col-span-2">
-      <legend className="text-sm font-medium leading-none">{label}</legend>
-      <div className="grid grid-cols-3 overflow-hidden rounded-xl border bg-background/60 p-1">
-        {options.map((option) => (
-          <label
-            className={cn(
-              "flex min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-muted-foreground transition sm:gap-2 sm:px-3 sm:text-sm",
-              valorAtual === option.valor &&
-                "bg-cyan-100 text-cyan-800 ring-1 ring-cyan-500/60 dark:bg-cyan-500/20 dark:text-cyan-100 dark:ring-cyan-300/40",
-              disabled && "cursor-not-allowed opacity-60",
-            )}
-            key={option.valor}
-          >
-            <input
-              checked={valorAtual === option.valor}
-              className="sr-only"
-              disabled={disabled}
-              name={name}
-              onChange={() => {
-                setValorAtual(option.valor);
-                onChange?.(option.valor);
-              }}
-              type="radio"
-              value={option.valor}
-            />
-            {option.label}
-            {valorAtual === option.valor ? (
-              <CheckCircle2 className="h-4 w-4" />
-            ) : null}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
 function EtapaLocalizacao({
   active,
   disabled,
@@ -2276,26 +2173,19 @@ function EtapaEstrutura({
           name="garagemVagas"
         />
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-        <CampoCheckbox
-          defaultChecked={estrutura?.areaExterna ?? false}
-          disabled={disabled}
-          label="Área externa"
-          name="areaExterna"
-        />
-        <CampoCheckbox
-          defaultChecked={estrutura?.piscina ?? false}
-          disabled={disabled}
-          label="Piscina"
-          name="piscina"
-        />
-        <CampoCheckbox
-          defaultChecked={estrutura?.churrasqueira ?? false}
-          disabled={disabled}
-          label="Churrasqueira"
-          name="churrasqueira"
-        />
-      </div>
+      {estrutura?.areaExterna ? (
+        <input name="areaExterna" type="hidden" value="on" />
+      ) : null}
+      {estrutura?.piscina ? (
+        <input name="piscina" type="hidden" value="on" />
+      ) : null}
+      {estrutura?.churrasqueira ? (
+        <input name="churrasqueira" type="hidden" value="on" />
+      ) : null}
+      <p className="rounded-lg border border-cyan-300/15 bg-cyan-500/5 px-3 py-2 text-xs leading-5 text-muted-foreground">
+        Piscina, churrasqueira e outros diferenciais ficam reunidos na etapa
+        Comodidades, sem repetir opções neste cadastro.
+      </p>
     </div>
   );
 }
@@ -2303,10 +2193,12 @@ function EtapaEstrutura({
 function EtapaValores({
   disabled,
   erros,
+  modo,
   valores,
 }: {
   disabled: boolean;
   erros: ErrosFormularioCasa;
+  modo: "criar" | "editar";
   valores?: PropriedadeComRelacionamentos["valores"] | undefined;
 }) {
   const pagamentos = valores?.formasPagamento;
@@ -2383,7 +2275,7 @@ function EtapaValores({
 
   return (
     <div className="grid gap-4 sm:gap-5">
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
         <CampoMoeda
           defaultValue={valores?.valorDiaria ?? 0}
           disabled={disabled}
@@ -2408,209 +2300,203 @@ function EtapaValores({
           name="caucao"
           placeholder="R$ 300,00"
         />
-        <CampoMoeda
-          defaultValue={valores?.valorHospedeExtra ?? 0}
-          disabled={disabled}
-          label="Valor por hóspede extra"
-          erro={erros.valorHospedeExtra}
-          name="valorHospedeExtra"
-          placeholder="R$ 150,00"
-        />
       </div>
-      <div className="grid gap-2 sm:grid-cols-2 sm:gap-3">
-        <CampoSelect
-          defaultValue={valores?.tipoCobrancaHospedeExtra ?? "per_stay"}
-          disabled={disabled}
-          label="Cobrança do hóspede extra"
-          name="tipoCobrancaHospedeExtra"
-          options={[{ label: "Por reserva", valor: "per_stay" }]}
-        />
-        <CampoCheckbox
-          defaultChecked={valores?.cobraHospedeExtra ?? false}
-          disabled={disabled}
-          label="Cobrar hóspede extra"
-          name="cobraHospedeExtra"
-        />
-      </div>
+      <input name="valorHospedeExtra" type="hidden" value="0" />
+      <input name="tipoCobrancaHospedeExtra" type="hidden" value="per_stay" />
+      <p className="rounded-lg border border-cyan-300/15 bg-cyan-500/5 px-3 py-2 text-xs leading-5 text-muted-foreground">
+        O adicional por hóspede ficou fora deste cadastro por enquanto. A
+        capacidade informada na etapa Estrutura será o limite da reserva.
+      </p>
 
-      <section className="grid gap-3 rounded-xl border bg-background/45 p-3 sm:gap-4 sm:p-4">
-        <div>
-          <h4 className="font-semibold">Pagamento da hospedagem</h4>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
-            Ative somente as formas aceitas nesta casa. Dados de recebimento
-            ficam nas Configurações.
+      <details className="group rounded-xl border bg-background/45 p-3 sm:p-4">
+        <summary className="cursor-pointer list-none pr-6 font-semibold marker:hidden">
+          Formas de pagamento
+          <span className="mt-1 block text-xs font-normal leading-5 text-muted-foreground sm:text-sm">
+            {modo === "criar"
+              ? "Opcional agora. Você pode concluir a casa e configurar o recebimento depois."
+              : "Configuração avançada: escolha o que esta casa aceita."}
+          </span>
+        </summary>
+        <div className="mt-4 grid gap-3 border-t border-cyan-300/15 pt-4 sm:gap-4">
+          <p className="text-xs leading-5 text-muted-foreground sm:text-sm">
+            Dados de Pix, cartão e transferência são cadastrados uma vez em
+            Configurações e reutilizados pelas casas.
           </p>
-        </div>
 
-        {!possuiPagamentoAtivo ? (
-          <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-900 dark:text-amber-100">
-            Nenhuma forma de pagamento foi configurada. O hóspede não verá
-            opções de pagamento no Marketplace.
-          </p>
-        ) : null}
+          {!possuiPagamentoAtivo ? (
+            <p className="rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-sm text-amber-900 dark:text-amber-100">
+              Nenhuma forma está ativa nesta casa. Isso pode ser ajustado mais
+              tarde, sem bloquear o cadastro.
+            </p>
+          ) : null}
 
-        <div className="grid gap-2 sm:gap-3">
-          <CartaoFormaPagamento
-            ativo={pixAtivo}
-            descricao="Usa os dados de Pix cadastrados nas Configurações do proprietário."
-            disabled={disabled}
-            icon={<Smartphone className="h-4 w-4" />}
-            label="Pix"
-            name="pagamentoPixAtivo"
-            onChange={setPixAtivo}
-          />
+          <div className="grid gap-2 sm:gap-3">
+            <CartaoFormaPagamento
+              ativo={pixAtivo}
+              descricao="Usa os dados de Pix cadastrados nas Configurações do proprietário."
+              disabled={disabled}
+              icon={<Smartphone className="h-4 w-4" />}
+              label="Pix"
+              name="pagamentoPixAtivo"
+              onChange={setPixAtivo}
+            />
 
-          <CartaoFormaPagamento
-            ativo={dinheiroAtivo}
-            descricao="Usa a instrução global cadastrada nas Configurações."
-            disabled={disabled}
-            icon={<Banknote className="h-4 w-4" />}
-            label="Dinheiro"
-            name="pagamentoDinheiroAtivo"
-            onChange={setDinheiroAtivo}
-          />
+            <CartaoFormaPagamento
+              ativo={dinheiroAtivo}
+              descricao="Usa a instrução global cadastrada nas Configurações."
+              disabled={disabled}
+              icon={<Banknote className="h-4 w-4" />}
+              label="Dinheiro"
+              name="pagamentoDinheiroAtivo"
+              onChange={setDinheiroAtivo}
+            />
 
-          <CartaoFormaPagamento
-            ativo={cartaoDebitoAtivo}
-            descricao="Usa a instrução global sem coletar dados de cartão."
-            disabled={disabled}
-            icon={<CreditCard className="h-4 w-4" />}
-            label="Cartão de débito"
-            name="pagamentoCartaoDebitoAtivo"
-            onChange={setCartaoDebitoAtivo}
-          />
+            <CartaoFormaPagamento
+              ativo={cartaoDebitoAtivo}
+              descricao="Usa a instrução global sem coletar dados de cartão."
+              disabled={disabled}
+              icon={<CreditCard className="h-4 w-4" />}
+              label="Cartão de débito"
+              name="pagamentoCartaoDebitoAtivo"
+              onChange={setCartaoDebitoAtivo}
+            />
 
-          <CartaoFormaPagamento
-            ativo={aceitaCartaoCredito}
-            descricao="A casa define parcelas e juros; os dados de recebimento ficam nas Configurações."
-            disabled={disabled}
-            icon={<CreditCard className="h-4 w-4" />}
-            label="Cartão de crédito"
-            name="aceitaCartaoCredito"
-            onChange={setAceitaCartaoCredito}
-          >
-            <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-              <CampoNumero
-                disabled={disabled || !aceitaCartaoCredito}
-                erro={erros.maxParcelasCartao}
-                label="Quantidade máxima de parcelas"
-                max={MAX_PARCELAS_CARTAO}
-                min={1}
-                name="maxParcelasCartao"
-                obrigatorio={aceitaCartaoCredito}
-                onChange={(evento) =>
-                  alterarMaxParcelasCartao(evento.currentTarget.value)
-                }
-                value={maxParcelasCartao}
-              />
-            </div>
+            <CartaoFormaPagamento
+              ativo={aceitaCartaoCredito}
+              descricao="A casa define parcelas e juros; os dados de recebimento ficam nas Configurações."
+              disabled={disabled}
+              icon={<CreditCard className="h-4 w-4" />}
+              label="Cartão de crédito"
+              name="aceitaCartaoCredito"
+              onChange={setAceitaCartaoCredito}
+            >
+              <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+                <CampoNumero
+                  disabled={disabled || !aceitaCartaoCredito}
+                  erro={erros.maxParcelasCartao}
+                  label="Quantidade máxima de parcelas"
+                  max={MAX_PARCELAS_CARTAO}
+                  min={1}
+                  name="maxParcelasCartao"
+                  obrigatorio={aceitaCartaoCredito}
+                  onChange={(evento) =>
+                    alterarMaxParcelasCartao(evento.currentTarget.value)
+                  }
+                  value={maxParcelasCartao}
+                />
+              </div>
 
-            {aceitaCartaoCredito ? (
-              <>
-                {/*
+              {aceitaCartaoCredito ? (
+                <>
+                  {/*
                   Mantemos os campos ocultos com o contrato atual da server action.
                   A UI fica limpa, mas cada parcela continua sendo salva individualmente.
                 */}
-                {parcelasCartao.map((parcela) => (
-                  <input
-                    key={parcela}
-                    name={`jurosParcela${parcela}`}
-                    type="hidden"
-                    value={jurosCartao[parcela] ?? "0"}
-                  />
-                ))}
+                  {parcelasCartao.map((parcela) => (
+                    <input
+                      key={parcela}
+                      name={`jurosParcela${parcela}`}
+                      type="hidden"
+                      value={jurosCartao[parcela] ?? "0"}
+                    />
+                  ))}
 
-                <div className="mt-4 overflow-hidden rounded-xl border bg-background/55">
-                  <div className="grid grid-cols-[0.7fr_1fr_auto] gap-3 border-b bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
-                    <span>Parcela</span>
-                    <span>Juros</span>
-                    <span className="text-right">Ação</span>
+                  <div className="mt-4 overflow-hidden rounded-xl border bg-background/55">
+                    <div className="grid grid-cols-[0.7fr_1fr_auto] gap-3 border-b bg-cyan-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-200">
+                      <span>Parcela</span>
+                      <span>Juros</span>
+                      <span className="text-right">Ação</span>
+                    </div>
+                    <div className="divide-y">
+                      {parcelasCartao.map((parcela) => (
+                        <div
+                          className="grid grid-cols-[0.7fr_1fr_auto] items-center gap-3 px-3 py-3 text-sm"
+                          key={parcela}
+                        >
+                          <span className="font-semibold">{parcela}x</span>
+                          <span className="text-muted-foreground">
+                            {formatarJuros(jurosCartao[parcela])}
+                          </span>
+                          <ActionButton
+                            disabled={disabled}
+                            onClick={() => abrirEdicaoJuros(parcela)}
+                            size="sm"
+                            type="button"
+                            variant="edit"
+                          >
+                            Editar
+                          </ActionButton>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="divide-y">
-                    {parcelasCartao.map((parcela) => (
-                      <div
-                        className="grid grid-cols-[0.7fr_1fr_auto] items-center gap-3 px-3 py-3 text-sm"
-                        key={parcela}
-                      >
-                        <span className="font-semibold">{parcela}x</span>
-                        <span className="text-muted-foreground">
-                          {formatarJuros(jurosCartao[parcela])}
-                        </span>
+
+                  <AppModal
+                    description="Informe o percentual aplicado a esta parcela."
+                    eyebrow="Cartão de crédito"
+                    onOpenChange={(open) => {
+                      if (!open) setParcelaEmEdicao(null);
+                    }}
+                    open={parcelaEmEdicao !== null}
+                    size="sm"
+                    title="Editar juros da parcela"
+                  >
+                    <div className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="parcelaCartaoSelecionada">
+                          Parcela
+                        </Label>
+                        <Input
+                          id="parcelaCartaoSelecionada"
+                          readOnly
+                          value={parcelaEmEdicao ? `${parcelaEmEdicao}x` : ""}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="jurosCartaoSelecionado">
+                          Juros (%)
+                        </Label>
+                        <Input
+                          disabled={disabled}
+                          id="jurosCartaoSelecionado"
+                          min={0}
+                          onChange={(evento) =>
+                            setJurosEmEdicao(evento.currentTarget.value)
+                          }
+                          step="0.01"
+                          type="number"
+                          value={jurosEmEdicao}
+                        />
+                      </div>
+                      <div className="flex justify-end border-t pt-4">
                         <ActionButton
                           disabled={disabled}
-                          onClick={() => abrirEdicaoJuros(parcela)}
-                          size="sm"
+                          onClick={salvarJurosParcela}
+                          size="md"
                           type="button"
-                          variant="edit"
+                          variant="add"
                         >
-                          Editar
+                          Salvar
                         </ActionButton>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
+                  </AppModal>
+                </>
+              ) : null}
+            </CartaoFormaPagamento>
 
-                <AppModal
-                  description="Informe o percentual aplicado a esta parcela."
-                  eyebrow="Cartão de crédito"
-                  onOpenChange={(open) => {
-                    if (!open) setParcelaEmEdicao(null);
-                  }}
-                  open={parcelaEmEdicao !== null}
-                  size="sm"
-                  title="Editar juros da parcela"
-                >
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="parcelaCartaoSelecionada">Parcela</Label>
-                      <Input
-                        id="parcelaCartaoSelecionada"
-                        readOnly
-                        value={parcelaEmEdicao ? `${parcelaEmEdicao}x` : ""}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="jurosCartaoSelecionado">Juros (%)</Label>
-                      <Input
-                        disabled={disabled}
-                        id="jurosCartaoSelecionado"
-                        min={0}
-                        onChange={(evento) =>
-                          setJurosEmEdicao(evento.currentTarget.value)
-                        }
-                        step="0.01"
-                        type="number"
-                        value={jurosEmEdicao}
-                      />
-                    </div>
-                    <div className="flex justify-end border-t pt-4">
-                      <ActionButton
-                        disabled={disabled}
-                        onClick={salvarJurosParcela}
-                        size="md"
-                        type="button"
-                        variant="add"
-                      >
-                        Salvar
-                      </ActionButton>
-                    </div>
-                  </div>
-                </AppModal>
-              </>
-            ) : null}
-          </CartaoFormaPagamento>
-
-          <CartaoFormaPagamento
-            ativo={transferenciaAtiva}
-            descricao="Usa os dados globais de transferência cadastrados nas Configurações."
-            disabled={disabled}
-            icon={<Landmark className="h-4 w-4" />}
-            label="Transferência bancária"
-            name="pagamentoTransferenciaAtivo"
-            onChange={setTransferenciaAtiva}
-          />
+            <CartaoFormaPagamento
+              ativo={transferenciaAtiva}
+              descricao="Usa os dados globais de transferência cadastrados nas Configurações."
+              disabled={disabled}
+              icon={<Landmark className="h-4 w-4" />}
+              label="Transferência bancária"
+              name="pagamentoTransferenciaAtivo"
+              onChange={setTransferenciaAtiva}
+            />
+          </div>
         </div>
-      </section>
+      </details>
     </div>
   );
 }
@@ -2753,37 +2639,45 @@ function normalizarHoraInput(valor?: string | null) {
 function EtapaCompartilhamento({
   defaultDestaque,
   detalhes,
-  disabled,
-  erros,
   imagemCapaUrl,
-  onStatusChange,
   quantidadeComodidadesValidas,
   publicaSelecionada,
   resumoPrevia,
-  statusSelecionado,
+  statusAtual,
 }: {
   defaultDestaque: boolean;
   detalhes?: PropriedadeComRelacionamentos["detalhesPublicos"] | undefined;
-  disabled: boolean;
-  erros: ErrosFormularioCasa;
   imagemCapaUrl: string | null;
-  onStatusChange: (status: PropertyStatus) => void;
   quantidadeComodidadesValidas: number;
   publicaSelecionada: boolean;
   resumoPrevia: ResumoPreviaCasa;
-  statusSelecionado: PropertyStatus;
+  statusAtual?: PropriedadeComRelacionamentos["status"] | undefined;
 }) {
+  const statusAoConcluir = statusAtual === "paused" ? "paused" : "published";
+
   return (
     <div className="grid gap-4 sm:gap-5 lg:grid-cols-[1fr_24rem]">
       <div className="grid gap-3 sm:gap-4">
-        <p className="rounded-xl border border-cyan-300/25 bg-cyan-500/10 p-2.5 text-xs leading-5 text-muted-foreground sm:p-3 sm:text-sm">
-          Revise a apresentação e escolha o status. Você ainda poderá editar
-          tudo depois.
-        </p>
+        <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 p-3">
+          <p className="text-sm font-semibold text-foreground">
+            Ao concluir, a casa ficará ativa no painel
+          </p>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
+            Pausar a operação ou publicar no Marketplace serão ações separadas
+            no card da casa. A prévia usa os dados já preenchidos, sem repetir
+            campos.
+          </p>
+        </div>
+        <input name="status" type="hidden" value={statusAoConcluir} />
         <input
           name="visibilidadePublica"
           type="hidden"
           value={publicaSelecionada ? "on" : ""}
+        />
+        <input
+          name="tituloPublico"
+          type="hidden"
+          value={detalhes?.tituloPublico || resumoPrevia.titulo}
         />
         <input
           name="descricaoPublica"
@@ -2795,6 +2689,9 @@ function EtapaCompartilhamento({
           type="hidden"
           value={detalhes?.imagemCompartilhamento ?? ""}
         />
+        {defaultDestaque ? (
+          <input name="destaqueMarketplace" type="hidden" value="on" />
+        ) : null}
         {publicaSelecionada && quantidadeComodidadesValidas === 0 ? (
           <p className="rounded-xl border border-amber-400/35 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100">
             <strong className="block text-foreground">
@@ -2803,45 +2700,23 @@ function EtapaCompartilhamento({
             Adicione pelo menos uma comodidade antes de publicar esta casa.
           </p>
         ) : null}
-        <CampoTexto
-          defaultValue={detalhes?.tituloPublico}
-          disabled={disabled}
-          erro={erros.tituloPublico}
-          ajuda="É o nome que hóspedes verão nos cards e na página da hospedagem."
-          label="Título público"
-          name="tituloPublico"
-          obrigatorio={publicaSelecionada}
-          placeholder="Casa do Lago em Manoel Ribas"
-        />
-        <div className="rounded-xl border bg-background/45 p-3 sm:p-4">
-          <p className="text-sm font-semibold">Descrição pública</p>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm sm:leading-6">
-            Usaremos a descrição completa informada na etapa Básico, evitando
-            que o mesmo texto precise ser digitado duas vezes.
+        <div className="grid gap-2 rounded-xl border bg-background/45 p-3 text-xs text-muted-foreground sm:p-4 sm:text-sm">
+          <p className="flex items-center justify-between gap-3">
+            <span>Localização pública</span>
+            <strong className="text-foreground">Região aproximada</strong>
           </p>
-        </div>
-        <div className="grid gap-3 rounded-xl border bg-background/45 p-3 sm:gap-4 sm:p-4">
-          <CampoStatusSegmentado
-            defaultValue={statusSelecionado}
-            disabled={disabled}
-            label="Status da casa"
-            name="status"
-            onChange={onStatusChange}
-            options={STATUS}
-          />
-          <p className="text-xs leading-5 text-muted-foreground">
-            {statusSelecionado === "published"
-              ? "Publicada: a casa ficará disponível no Marketplace assim que os campos obrigatórios estiverem completos."
-              : statusSelecionado === "paused"
-                ? "Pausada: os dados ficam salvos, mas a casa não aparece para novas reservas."
-                : "Rascunho: salve agora e conclua a publicação quando estiver pronto."}
+          <p className="flex items-center justify-between gap-3 border-t border-cyan-300/10 pt-2">
+            <span>Comodidades selecionadas</span>
+            <strong className="text-foreground">
+              {quantidadeComodidadesValidas}
+            </strong>
           </p>
-          <CampoCheckbox
-            defaultChecked={defaultDestaque}
-            disabled={disabled}
-            label="Destacar esta casa no Marketplace"
-            name="destaqueMarketplace"
-          />
+          <p className="flex items-center justify-between gap-3 border-t border-cyan-300/10 pt-2">
+            <span>Status operacional</span>
+            <strong className="text-foreground">
+              {statusAoConcluir === "paused" ? "Pausada" : "Ativa"}
+            </strong>
+          </p>
         </div>
       </div>
 

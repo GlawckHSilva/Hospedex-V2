@@ -109,17 +109,29 @@ export default async function PropriedadePage({
                   <ResumoItem
                     icon={Home}
                     label="Quartos"
-                    value={formatarQuantidade(propriedade.structure.bedrooms, "quarto", "quartos")}
+                    value={formatarQuantidade(
+                      propriedade.structure.bedrooms,
+                      "quarto",
+                      "quartos",
+                    )}
                   />
                   <ResumoItem
                     icon={BedDouble}
                     label="Camas"
-                    value={formatarQuantidade(propriedade.structure.beds, "cama", "camas")}
+                    value={formatarQuantidade(
+                      propriedade.structure.beds,
+                      "cama",
+                      "camas",
+                    )}
                   />
                   <ResumoItem
                     icon={Bath}
                     label="Banheiros"
-                    value={formatarQuantidade(propriedade.structure.bathrooms, "banheiro", "banheiros")}
+                    value={formatarQuantidade(
+                      propriedade.structure.bathrooms,
+                      "banheiro",
+                      "banheiros",
+                    )}
                   />
                 </div>
               </GlassPanel>
@@ -297,11 +309,10 @@ function PropertyLocationSection({
 }: {
   propriedade: PropriedadePublica;
 }) {
-  const endereco = formatarEnderecoResumido(propriedade.address);
-  const urlMapa = obterUrlMapaEmbed(propriedade.address, endereco);
-  const temLocalizacaoDetalhada = Boolean(
-    endereco || propriedade.address.googleMapsLink,
-  );
+  const endereco = formatarLocalizacaoAproximada(propriedade.address);
+  const urlMapa = obterUrlMapaAproximado(endereco, "embed");
+  const urlMapaExterno = obterUrlMapaAproximado(endereco, "view");
+  const temLocalizacaoDetalhada = Boolean(endereco);
 
   if (!temLocalizacaoDetalhada) return null;
 
@@ -310,22 +321,22 @@ function PropertyLocationSection({
       <div>
         <p className="flex items-center gap-2 text-sm font-semibold">
           <MapPin className="h-4 w-4 text-primary" />
-          {propriedade.locationLabel}
+          {endereco || propriedade.locationLabel}
         </p>
-        {endereco ? (
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            {endereco}
-          </p>
-        ) : null}
+        <p className="mt-2 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+          Por segurança, mostramos apenas a região aproximada. O endereço
+          completo é disponibilizado somente após a confirmação da reserva.
+        </p>
       </div>
-      {propriedade.address.googleMapsLink ? (
+      {urlMapaExterno ? (
         <a
           className="inline-flex h-11 items-center justify-center gap-2 rounded-md border bg-background/70 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
-          href={propriedade.address.googleMapsLink}
+          href={urlMapaExterno}
           rel="noreferrer"
           target="_blank"
         >
-          Abrir no Google Maps
+          Ver região no mapa
           <ExternalLink className="h-4 w-4 text-primary" />
         </a>
       ) : null}
@@ -559,30 +570,18 @@ function formatarPreco(valor: number | null) {
   }).format(valor);
 }
 
-function formatarEnderecoResumido(endereco: EnderecoPublico) {
-  const linha = [
-    endereco.linha1,
-    endereco.numero,
-    endereco.bairro,
-    endereco.cidade,
-    endereco.estado,
-  ]
+function formatarLocalizacaoAproximada(endereco: EnderecoPublico) {
+  return [endereco.bairro, endereco.cidade, endereco.estado]
     .filter(Boolean)
     .join(", ");
-
-  return linha;
 }
 
-function obterUrlMapaEmbed(
-  endereco: EnderecoPublico,
-  enderecoFormatado: string,
-) {
-  if (!endereco.googleMapsLink) return null;
-  if (endereco.googleMapsLink.includes("/maps/embed")) {
-    return endereco.googleMapsLink;
-  }
-
-  return `https://www.google.com/maps?q=${encodeURIComponent(enderecoFormatado)}&output=embed`;
+function obterUrlMapaAproximado(localizacao: string, modo: "embed" | "view") {
+  if (!localizacao) return null;
+  const query = encodeURIComponent(localizacao);
+  return modo === "embed"
+    ? `https://www.google.com/maps?q=${query}&z=12&output=embed`
+    : `https://www.google.com/maps/search/?api=1&query=${query}`;
 }
 
 function obterIniciais(nome: string) {

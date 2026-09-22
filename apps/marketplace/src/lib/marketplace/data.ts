@@ -10,7 +10,7 @@ import type {
   PropertyType,
   RegionalGuideCategory,
   RegionalGuideLocationRow,
-  ReservationPaymentMethod,
+  ReservationPaymentMethod
 } from "@hospedex/types";
 
 type PropriedadeRowPublica = Pick<
@@ -51,10 +51,7 @@ type MidiaRowPublica = Pick<
 >;
 
 type ComodidadeRowPublica = Pick<AmenityRow, "id" | "code" | "name" | "category">;
-type VinculoComodidadeRowPublica = Pick<
-  PropertyAmenityRow,
-  "property_id" | "amenity_id"
->;
+type VinculoComodidadeRowPublica = Pick<PropertyAmenityRow, "property_id" | "amenity_id">;
 
 type RegrasCasaRowPublica = Pick<
   PropertySettingRow,
@@ -323,11 +320,7 @@ const CAMPOS_GUIA_REGIAO =
   "id,tenant_id,category,name,description,address,phone,whatsapp,website_url,opening_hours,cover_image_url,display_order,status,deleted_at";
 const CAMPOS_AVALIACAO_PUBLICA =
   "id,tenant_id,property_id,guest_name,rating,comment,reviewed_at,status,owner_response,owner_responded_at";
-const TIPOS_PROPRIEDADE = new Set<PropertyType>([
-  "seasonal_home",
-  "inn",
-  "small_hotel"
-]);
+const TIPOS_PROPRIEDADE = new Set<PropertyType>(["seasonal_home", "inn", "small_hotel"]);
 const STATUS_DISPONIBILIDADE_BLOQUEANTE = [
   "blocked",
   "interdicted",
@@ -371,8 +364,7 @@ let clienteMarketplace: SupabaseClient | null = null;
 
 export function supabaseMarketplaceConfigurado() {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   );
 }
 
@@ -427,11 +419,7 @@ export async function carregarPropriedadesPublicas(
       supabase,
       propriedadesResultado.data ?? []
     );
-    const propriedadesFiltradas = await aplicarFiltrosDaCasa(
-      supabase,
-      propriedades,
-      filtros
-    );
+    const propriedadesFiltradas = await aplicarFiltrosDaCasa(supabase, propriedades, filtros);
 
     return {
       propriedades: propriedadesFiltradas.slice(0, limite),
@@ -667,28 +655,25 @@ async function montarPropriedadesPublicas(
   const ids = propriedades.map((propriedade) => propriedade.id);
   const tenantIds = [...new Set(propriedades.map((propriedade) => propriedade.tenant_id))];
   const [midiasResultado, vinculosResultado] = await Promise.all([
-      supabase
-        .from("media_assets")
-        .select(CAMPOS_MIDIA)
-        .eq("media_type", "image")
-        .eq("status", "active")
-        .in("property_id", ids)
-        .order("sort_order", { ascending: true })
-        .returns<MidiaRowPublica[]>(),
-      supabase
-        .from("property_amenities")
-        .select(CAMPOS_VINCULO_COMODIDADE)
-        .in("property_id", ids)
-        .returns<VinculoComodidadeRowPublica[]>()
-    ]);
+    supabase
+      .from("media_assets")
+      .select(CAMPOS_MIDIA)
+      .eq("media_type", "image")
+      .eq("status", "active")
+      .in("property_id", ids)
+      .order("sort_order", { ascending: true })
+      .returns<MidiaRowPublica[]>(),
+    supabase
+      .from("property_amenities")
+      .select(CAMPOS_VINCULO_COMODIDADE)
+      .in("property_id", ids)
+      .returns<VinculoComodidadeRowPublica[]>()
+  ]);
 
   registrarErroLeitura("mídias públicas", midiasResultado.error);
   registrarErroLeitura("comodidades vinculadas", vinculosResultado.error);
 
-  const comodidades = await carregarComodidadesPublicas(
-    supabase,
-    vinculosResultado.data ?? []
-  );
+  const comodidades = await carregarComodidadesPublicas(supabase, vinculosResultado.data ?? []);
   const detalhes = opcoes.detalhes
     ? await carregarDetalhesPublicosPropriedade(supabase, ids, tenantIds)
     : criarDetalhesPublicosVazios();
@@ -746,42 +731,41 @@ async function carregarDetalhesPublicosPropriedade(
     avaliacoesResultado,
     disponibilidadeResultado,
     perfisSolicitacaoResultado
-  ] =
-    await Promise.all([
-      supabase
-        .from("property_settings")
-        .select(CAMPOS_REGRAS_CASA)
-        .in("property_id", propriedadeIds)
-        .returns<RegrasCasaRowPublica[]>(),
-      supabase
-        .from("regional_guide_locations")
-        .select(CAMPOS_GUIA_REGIAO)
-        .in("tenant_id", tenantIds)
-        .eq("status", "active")
-        .is("deleted_at", null)
-        .order("display_order", { ascending: true })
-        .order("name", { ascending: true })
-        .returns<GuiaRegiaoRowPublica[]>(),
-      supabase
-        .from("property_reviews")
-        .select(CAMPOS_AVALIACAO_PUBLICA)
-        .in("property_id", propriedadeIds)
-        .eq("status", "approved")
-        .order("reviewed_at", { ascending: false })
-        .limit(80)
-        .returns<AvaliacaoRowPublica[]>(),
-      carregarDisponibilidadePublica(
-        supabase,
-        propriedadeIds,
-        inicioDisponibilidade,
-        fimDisponibilidade
-      ),
-      supabase
-        .rpc("get_public_property_request_profiles", {
-          p_property_ids: propriedadeIds
-        })
-        .returns<PerfilSolicitacaoRowPublica[]>()
-    ]);
+  ] = await Promise.all([
+    supabase
+      .from("property_settings")
+      .select(CAMPOS_REGRAS_CASA)
+      .in("property_id", propriedadeIds)
+      .returns<RegrasCasaRowPublica[]>(),
+    supabase
+      .from("regional_guide_locations")
+      .select(CAMPOS_GUIA_REGIAO)
+      .in("tenant_id", tenantIds)
+      .eq("status", "active")
+      .is("deleted_at", null)
+      .order("display_order", { ascending: true })
+      .order("name", { ascending: true })
+      .returns<GuiaRegiaoRowPublica[]>(),
+    supabase
+      .from("property_reviews")
+      .select(CAMPOS_AVALIACAO_PUBLICA)
+      .in("property_id", propriedadeIds)
+      .eq("status", "approved")
+      .order("reviewed_at", { ascending: false })
+      .limit(80)
+      .returns<AvaliacaoRowPublica[]>(),
+    carregarDisponibilidadePublica(
+      supabase,
+      propriedadeIds,
+      inicioDisponibilidade,
+      fimDisponibilidade
+    ),
+    supabase
+      .rpc("get_public_property_request_profiles", {
+        p_property_ids: propriedadeIds
+      })
+      .returns<PerfilSolicitacaoRowPublica[]>()
+  ]);
 
   registrarErroLeitura("regras publicas da propriedade", regrasResultado.error);
   registrarErroLeitura("guia publico da regiao", guiaResultado.error);
@@ -840,9 +824,7 @@ function montarPropriedadePublica(
   const detalhesPublicos = valorEhObjeto(propriedade.public_details)
     ? propriedade.public_details
     : {};
-  const midias = relacionamentos.midias.filter(
-    (midia) => midia.property_id === propriedade.id
-  );
+  const midias = relacionamentos.midias.filter((midia) => midia.property_id === propriedade.id);
   const imagens = midias
     .map((midia) => montarImagemPublica(relacionamentos.supabase, midia))
     .filter((imagem): imagem is ImagemPublica => Boolean(imagem));
@@ -885,24 +867,16 @@ function montarPropriedadePublica(
       maxGuests: regrasCasa.maxGuests
     },
     pricing: valores,
-    availability: montarDisponibilidadePublica(
-      propriedade.id,
-      relacionamentos.disponibilidade
-    ),
+    availability: montarDisponibilidadePublica(propriedade.id, relacionamentos.disponibilidade),
     availabilityError: relacionamentos.disponibilidadeErro,
     bedrooms: estrutura.bedrooms,
     beds: estrutura.beds,
     bathrooms: estrutura.bathrooms,
-    rules: [
-      ...regrasCasa.summary
-    ],
+    rules: [...regrasCasa.summary],
     checkIn: regrasCasa.checkIn,
     checkOut: regrasCasa.checkOut,
     houseRules: regrasCasa,
-    regionalGuide: montarGuiaRegiaoPublico(
-      propriedade.tenant_id,
-      relacionamentos.guiaRegiao
-    ),
+    regionalGuide: montarGuiaRegiaoPublico(propriedade.tenant_id, relacionamentos.guiaRegiao),
     requestProfile: montarPerfilSolicitacaoPublica(
       propriedade.id,
       propriedade.name,
@@ -1005,9 +979,7 @@ function montarGuiaRegiaoPublico(
   return locais
     .filter(
       (local) =>
-        local.tenant_id === tenantId &&
-        local.status === "active" &&
-        local.deleted_at === null
+        local.tenant_id === tenantId && local.status === "active" && local.deleted_at === null
     )
     .map((local) => ({
       id: local.id,
@@ -1030,8 +1002,7 @@ function montarAvaliacoesPublicas(
 ): ResumoAvaliacoesPublicas {
   const publicadas = avaliacoes
     .filter(
-      (avaliacao) =>
-        avaliacao.property_id === propriedadeId && avaliacao.status === "approved"
+      (avaliacao) => avaliacao.property_id === propriedadeId && avaliacao.status === "approved"
     )
     .map((avaliacao) => ({
       ...avaliacao,
@@ -1124,9 +1095,8 @@ function obterUrlMidia(supabase: SupabaseClient, midia: MidiaRowPublica) {
   if (midia.url) return midia.url;
   if (!midia.storage_bucket || !midia.storage_path) return null;
 
-  return supabase.storage
-    .from(midia.storage_bucket)
-    .getPublicUrl(midia.storage_path).data.publicUrl;
+  return supabase.storage.from(midia.storage_bucket).getPublicUrl(midia.storage_path).data
+    .publicUrl;
 }
 
 function montarComodidadesPublicas(
@@ -1155,13 +1125,16 @@ function montarComodidadesPublicas(
 function normalizarEndereco(valor: JsonValue): EnderecoPublico {
   const endereco = valorEhObjeto(valor) ? valor : {};
 
+  // A vitrine pública nunca recebe rua, número, CEP, complemento ou link exato.
+  // Esses dados permanecem disponíveis apenas no gerenciamento e na área da
+  // reserva confirmada, carregada por uma consulta autenticada separada.
   return {
     bairro: obterTextoJson(endereco, "bairro"),
-    cep: obterTextoJson(endereco, "cep"),
-    complemento: obterTextoJson(endereco, "complemento"),
-    googleMapsLink: obterTextoJson(endereco, "googleMapsLink"),
-    linha1: obterTextoJson(endereco, "linha1"),
-    numero: obterTextoJson(endereco, "numero"),
+    cep: "",
+    complemento: "",
+    googleMapsLink: "",
+    linha1: "",
+    numero: "",
     cidade: obterTextoJson(endereco, "cidade") || obterTextoJson(endereco, "city"),
     estado: obterTextoJson(endereco, "estado") || obterTextoJson(endereco, "state")
   };
@@ -1185,9 +1158,7 @@ function normalizarValoresCasa(valor: JsonValue): ValoresCasaPublica {
   return {
     aceitaCartaoCredito: obterBooleanoJson(valores, "aceitaCartaoCredito"),
     caucao: obterNumeroJson(valores, "caucao"),
-    cobraHospedeExtra:
-      obterBooleanoJson(valores, "cobraHospedeExtra") ||
-      obterBooleanoJson(valores, "allows_extra_guests"),
+    cobraHospedeExtra: false,
     cleaningFee: obterNumeroJson(valores, "taxaLimpeza"),
     dailyRate: obterNumeroJson(valores, "valorDiaria"),
     hospedesInclusos: obterNumeroJson(
@@ -1198,11 +1169,7 @@ function normalizarValoresCasa(valor: JsonValue): ValoresCasaPublica {
     jurosParcelasCartao: normalizarJurosParcelasCartao(valores.jurosParcelasCartao ?? null),
     maxParcelasCartao: obterNumeroJson(valores, "maxParcelasCartao", 1),
     tipoCobrancaHospedeExtra: normalizarTipoCobrancaHospedeExtra(valores),
-    valorHospedeExtra: obterNumeroJson(
-      valores,
-      "valorHospedeExtra",
-      obterNumeroJson(valores, "extra_guest_fee")
-    )
+    valorHospedeExtra: 0
   };
 }
 
@@ -1257,11 +1224,7 @@ function obterTextoJson(valor: Record<string, JsonValue>, chave: string): string
   return typeof dado === "string" ? dado : "";
 }
 
-function obterNumeroJson(
-  valor: Record<string, JsonValue>,
-  chave: string,
-  padrao = 0
-) {
+function obterNumeroJson(valor: Record<string, JsonValue>, chave: string, padrao = 0) {
   const dado = valor[chave];
   return typeof dado === "number" && Number.isFinite(dado) ? dado : padrao;
 }
@@ -1290,19 +1253,19 @@ function formatarDataIso(data: Date) {
 function possuiFiltroDaCasa(filtros: FiltrosPropriedadesPublicas) {
   return Boolean(
     filtros.hospedes ||
-      filtros.precoMinimo ||
-      filtros.precoMaximo ||
-      periodoValido(filtros.dataInicio, filtros.dataFim)
+    filtros.precoMinimo ||
+    filtros.precoMaximo ||
+    periodoValido(filtros.dataInicio, filtros.dataFim)
   );
 }
 
 function periodoValido(dataInicio?: string, dataFim?: string) {
   return Boolean(
     dataInicio &&
-      dataFim &&
-      /^\d{4}-\d{2}-\d{2}$/.test(dataInicio) &&
-      /^\d{4}-\d{2}-\d{2}$/.test(dataFim) &&
-      dataFim > dataInicio
+    dataFim &&
+    /^\d{4}-\d{2}-\d{2}$/.test(dataInicio) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(dataFim) &&
+    dataFim > dataInicio
   );
 }
 
@@ -1356,9 +1319,7 @@ function limitarQuantidade(valor: number) {
 }
 
 function valorEhUuid(valor: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    valor
-  );
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(valor);
 }
 
 function registrarErroLeitura(contexto: string, erro: { message: string } | null) {

@@ -50,6 +50,7 @@ const MENSAGENS_SUCESSO_PROPRIEDADES: Record<string, string> = {
   "propriedade-atualizada": "Casa atualizada com sucesso.",
   "propriedade-excluida": "Propriedade excluida com sucesso.",
   "status-propriedade": "Status da casa atualizado.",
+  "publicacao-marketplace": "Visibilidade no Marketplace atualizada.",
   "galeria-atualizada": "Galeria atualizada com sucesso.",
   "imagem-principal": "Imagem principal atualizada.",
   "imagem-excluida": "Imagem excluida com sucesso.",
@@ -139,7 +140,8 @@ function VisaoPropriedades({
     listarRascunhosCasasLocais(userId),
   );
   const propriedadesFiltradas = useMemo(
-    () => filtrarPropriedades(propriedades, { busca, ordem, publicacao, status }),
+    () =>
+      filtrarPropriedades(propriedades, { busca, ordem, publicacao, status }),
     [busca, ordem, propriedades, publicacao, status],
   );
   const idsServidor = useMemo(
@@ -302,11 +304,16 @@ function BotaoNovaCasa({
   podeGerenciar,
   triggerLabel = "Nova casa",
   userId,
-}: Pick<PropertyModuleProps, "comodidadesDisponiveis" | "podeGerenciar" | "userId"> & {
+}: Pick<
+  PropertyModuleProps,
+  "comodidadesDisponiveis" | "podeGerenciar" | "userId"
+> & {
   triggerLabel?: string;
 }) {
   return (
-    <span data-tour-id={triggerLabel === "Nova casa" ? "casas-nova" : undefined}>
+    <span
+      data-tour-id={triggerLabel === "Nova casa" ? "casas-nova" : undefined}
+    >
       <EntityModal
         description="Cadastre as informacoes principais para publicar sua hospedagem."
         disabled={!podeGerenciar}
@@ -431,7 +438,8 @@ function filtrarPropriedades(
       ).includes(buscaNormalizada);
     })
     .sort((a, b) => {
-      if (filtros.ordem === "nome") return a.name.localeCompare(b.name, "pt-BR");
+      if (filtros.ordem === "nome")
+        return a.name.localeCompare(b.name, "pt-BR");
       if (filtros.ordem === "cidade") {
         return a.enderecoFormatado.cidade.localeCompare(
           b.enderecoFormatado.cidade,
@@ -439,12 +447,16 @@ function filtrarPropriedades(
         );
       }
       if (filtros.ordem === "atualizacao") {
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        return (
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
       }
 
       const criadaA = new Date(a.created_at).getTime();
       const criadaB = new Date(b.created_at).getTime();
-      return filtros.ordem === "antigas" ? criadaA - criadaB : criadaB - criadaA;
+      return filtros.ordem === "antigas"
+        ? criadaA - criadaB
+        : criadaB - criadaA;
     });
 }
 
@@ -456,7 +468,9 @@ function normalizarBusca(valor: string) {
     .trim();
 }
 
-function obterLabelTipo(tipo: PropriedadeComRelacionamentos["property_type"]): string {
+function obterLabelTipo(
+  tipo: PropriedadeComRelacionamentos["property_type"],
+): string {
   if (tipo === "inn") return "Pousada";
   if (tipo === "small_hotel") return "Pequeno hotel";
   return "Casa de temporada";

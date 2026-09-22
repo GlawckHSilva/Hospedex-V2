@@ -516,6 +516,111 @@ export async function alternarStatusPropriedadeAction(formData: FormData) {
   redirect(`${CAMINHO_PROPRIEDADES}?sucesso=status-propriedade`);
 }
 
+export async function alternarPublicacaoMarketplaceAction(formData: FormData) {
+  const escopo = await carregarEscopoGerenciamento();
+
+  try {
+    const propriedadeId = textoObrigatorio(
+      formData,
+      "propriedadeId",
+      "propriedade",
+    );
+    const supabase = await criarClienteSupabaseServer();
+    const propriedade = await carregarPropriedadeDoTenant(
+      supabase,
+      escopo,
+      propriedadeId,
+    );
+    const publicar = !propriedade.is_public;
+
+    if (publicar) {
+      await exigirLicencaPermiteAcoesTenant(escopo.tenantId);
+      if (propriedade.status !== "published") {
+        throw new ErroRegraNegocio(
+          propriedade.status === "draft"
+            ? "Conclua o cadastro da casa antes de publicar no Marketplace."
+            : "Ative a casa antes de publicar no Marketplace.",
+        );
+      }
+      await validarCasaProntaParaMarketplace(
+        supabase,
+        escopo.tenantId,
+        propriedade,
+      );
+    }
+
+    const { error } = await supabase
+      .from("properties")
+      .update({ is_public: publicar })
+      .eq("id", propriedade.id)
+      .eq("tenant_id", escopo.tenantId)
+      .eq("owner_id", escopo.ownerId);
+
+    if (error) throw new Error(error.message);
+    revalidarModulo();
+  } catch (erro) {
+    redirecionarComErro(
+      CAMINHO_PROPRIEDADES,
+      erro,
+      "Erro ao alterar a publicação no Marketplace.",
+    );
+  }
+
+  redirect(`${CAMINHO_PROPRIEDADES}?sucesso=publicacao-marketplace`);
+}
+
+async function validarCasaProntaParaMarketplace(
+  supabase: ClienteSupabaseServer,
+  tenantId: string,
+  propriedade: PropertyRow,
+) {
+  const detalhes = objetoJson(propriedade.public_details);
+  const titulo =
+    textoJson(detalhes, "publicTitle") ||
+    textoJson(detalhes, "displayName") ||
+    propriedade.name;
+  const descricao =
+    textoJson(detalhes, "publicDescription") ||
+    propriedade.full_description ||
+    propriedade.description ||
+    propriedade.short_description;
+
+  if (!titulo || !descricao) {
+    throw new ErroRegraNegocio(
+      "Complete o nome e a descrição da casa antes de publicar no Marketplace.",
+    );
+  }
+
+  const [capa, comodidades] = await Promise.all([
+    supabase
+      .from("media_assets")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("property_id", propriedade.id)
+      .eq("status", "active")
+      .eq("is_cover", true),
+    supabase
+      .from("property_amenities")
+      .select("property_id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId)
+      .eq("property_id", propriedade.id),
+  ]);
+
+  if (capa.error || comodidades.error) {
+    throw new Error(capa.error?.message ?? comodidades.error?.message);
+  }
+  if (!capa.count) {
+    throw new ErroRegraNegocio(
+      "Adicione uma imagem principal antes de publicar no Marketplace.",
+    );
+  }
+  if (!comodidades.count) {
+    throw new ErroRegraNegocio(
+      "Selecione pelo menos uma comodidade antes de publicar no Marketplace.",
+    );
+  }
+}
+
 export async function excluirPropriedadeAction(formData: FormData) {
   const escopo = await carregarEscopoGerenciamento();
 
@@ -974,6 +1079,11 @@ function objetoJson(valor: JsonValue | undefined): Record<string, JsonValue> {
     : {};
 }
 
+function textoJson(valor: Record<string, JsonValue>, chave: string) {
+  const texto = valor[chave];
+  return typeof texto === "string" ? texto.trim() : "";
+}
+
 function ehObjetoDesconhecido(
   valor: unknown,
 ): valor is Record<string, unknown> {
@@ -1022,13 +1132,13 @@ function obterEntradaPropriedade(formData: FormData): EntradaPropriedade {
     "valor da diaria",
     0.01,
   );
-  const tituloPublico = textoOpcional(formData, "tituloPublico");
+  const tituloPublico = textoOpcional(formData, "tituloPublico") ?? nome;
   const descricaoPublica =
     textoOpcional(formData, "descricaoCompleta") ?? descricaoCurta;
   const status = validarStatusPropriedade(
     textoObrigatorio(formData, "status", "status"),
   );
-  const publica = status === "published";
+  const publica = checkboxAtivo(formData, "visibilidadePublica");
   const imagemCapaArquivo = obterArquivoImagem(formData, "imagemCapaArquivo");
   const galeriaArquivos = obterArquivosImagem(
     formData,
