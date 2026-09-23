@@ -26,6 +26,7 @@ import {
   PackageCheck,
   PlugZap,
   ReceiptText,
+  Search,
   Settings,
   Sparkles,
   Star,
@@ -109,13 +110,15 @@ export function AdminShell({
   const pathname = usePathname();
   const [menuAberto, setMenuAberto] = useState(false);
   const itensMenu = obterMenuAdmin(contexto);
+  const chaveFavoritos = `hospedex:menu-favoritos:${contexto.userId}:${contexto.tenant?.id ?? "plataforma"}`;
+  const { alternarFavorito, favoritos } = useFavoritosMenu(chaveFavoritos);
   const perfil = obterPerfilMenuAdmin(contexto.role);
   const tituloPerfil = obterTituloPerfilAdmin(perfil);
   const nomeUsuario = contexto.profile.full_name ?? contexto.profile.email;
   const iniciaisUsuario = obterIniciaisUsuario(nomeUsuario, contexto.profile.email);
   const gerenciamento = perfil !== "super_admin";
   const avatarVisualUrl = gerenciamento
-    ? logoConfiguracoesUrl ?? contexto.profile.avatar_url
+    ? (logoConfiguracoesUrl ?? contexto.profile.avatar_url)
     : contexto.profile.avatar_url;
   const configuracoesHref = gerenciamento ? "/configuracoes" : "/super-admin/configuracoes";
   const topbar = (
@@ -135,8 +138,10 @@ export function AdminShell({
   const sidebar = (
     <SidebarAdmin
       acaoSairSidebar={acaoSairSidebar}
+      favoritos={favoritos}
       gerenciamento={gerenciamento}
       itens={itensMenu}
+      onAlternarFavorito={alternarFavorito}
       pathname={pathname}
       tituloPerfil={tituloPerfil}
     />
@@ -161,7 +166,7 @@ export function AdminShell({
       className={cn(
         "admin-shell-bg premium-grid-bg min-h-screen text-foreground",
         // O ajuste visual de scrollbar pertence ao Gerenciamento, sem alterar a experiencia do Super Admin.
-        "admin-management-shell",
+        "admin-management-shell"
       )}
       data-admin-perfil={perfil}
     >
@@ -191,8 +196,10 @@ export function AdminShell({
         {menuAberto ? (
           <MenuMobileAdmin
             acaoSairMobile={acaoSairMobile}
+            favoritos={favoritos}
             gerenciamento={gerenciamento}
             itens={itensMenu}
+            onAlternarFavorito={alternarFavorito}
             onFechar={() => setMenuAberto(false)}
             pathname={pathname}
             tituloPerfil={tituloPerfil}
@@ -213,7 +220,7 @@ function AvisoLicenca({ estadoLicenca }: { estadoLicenca: EstadoLicencaTenant | 
         "mb-4 rounded-xl border px-4 py-3 text-sm",
         bloqueado
           ? "border-rose-400/30 bg-rose-500/10 text-rose-100"
-          : "border-amber-400/30 bg-amber-500/10 text-amber-100",
+          : "border-amber-400/30 bg-amber-500/10 text-amber-100"
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -265,7 +272,12 @@ function TopbarAdmin({
           </Button>
 
           <div className={cn(gerenciamento && "lg:hidden")}>
-            <HospedexBrand adaptarAoTema href={gerenciamento ? "/" : "/super-admin"} size="sm" surface />
+            <HospedexBrand
+              adaptarAoTema
+              href={gerenciamento ? "/" : "/super-admin"}
+              size="sm"
+              surface
+            />
           </div>
         </div>
 
@@ -333,7 +345,11 @@ function PerfilUsuarioMenu({
         onClick={() => setAberto((valorAtual) => !valorAtual)}
         type="button"
       >
-        <AvatarUsuario avatarUrl={avatarUrl} iniciaisUsuario={iniciaisUsuario} nomeUsuario={nomeUsuario} />
+        <AvatarUsuario
+          avatarUrl={avatarUrl}
+          iniciaisUsuario={iniciaisUsuario}
+          nomeUsuario={nomeUsuario}
+        />
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 text-muted-foreground transition group-hover:text-cyan-700 dark:group-hover:text-cyan-200",
@@ -421,8 +437,10 @@ function AvatarUsuario({
 
 type SidebarAdminProps = {
   acaoSairSidebar: ReactNode;
+  favoritos: string[];
   gerenciamento: boolean;
   itens: ItemMenuAdminResolvido[];
+  onAlternarFavorito: (href: string) => void;
   pathname: string;
   tituloPerfil: string;
 };
@@ -435,7 +453,7 @@ type GrupoMenuSidebar = {
 const GRUPOS_MENU_GERENCIAMENTO: GrupoMenuSidebar[] = [
   {
     chaves: ["/", "/propriedades", "/reservas", "/calendario", "/hospedes"],
-    titulo: "Principal",
+    titulo: "Principal"
   },
   {
     chaves: [
@@ -444,49 +462,81 @@ const GRUPOS_MENU_GERENCIAMENTO: GrupoMenuSidebar[] = [
       "/servicos-extras",
       "/limpeza",
       "/inventario",
-      "/relatorios",
+      "/relatorios"
     ],
-    titulo: "Operacional",
+    titulo: "Operacional"
   },
   {
-    chaves: [
-      "/guia-regiao",
-      "/avaliacoes",
-      "/funcionarios",
-      "/integracoes",
-      "/configuracoes",
-    ],
-    titulo: "Configurações",
+    chaves: ["/guia-regiao", "/avaliacoes", "/funcionarios", "/integracoes", "/configuracoes"],
+    titulo: "Configurações"
   },
   {
     chaves: ["/email", "/templates-email"],
-    titulo: "Comunicações",
-  },
+    titulo: "Comunicações"
+  }
 ];
 
 function SidebarAdmin({
   acaoSairSidebar,
+  favoritos,
   gerenciamento,
   itens,
+  onAlternarFavorito,
   pathname,
   tituloPerfil
 }: SidebarAdminProps) {
-  const grupos = agruparItensSidebar(itens, gerenciamento);
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const [consulta, setConsulta] = useState("");
+  const [somenteFavoritos, setSomenteFavoritos] = useState(false);
+  const itensVisiveis = filtrarItensSidebar(itens, consulta, favoritos, somenteFavoritos);
+  const grupos = agruparItensSidebar(itensVisiveis, gerenciamento);
 
   if (!gerenciamento) {
     return (
       <aside className="hidden min-h-0 lg:block">
         <div className="glass-sidebar sticky top-[5.25rem] flex h-[calc(100dvh-6.5rem)] min-h-0 flex-col overflow-hidden p-3">
-          <div className="shrink-0 px-2 pb-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
-              {tituloPerfil}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">Menu administrativo</p>
+          <div className="shrink-0 px-2 pb-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-200">
+                  {tituloPerfil}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Menu administrativo</p>
+              </div>
+              <AcoesTopoMenu
+                buscaAberta={buscaAberta}
+                onAlternarBusca={() => setBuscaAberta((aberta) => !aberta)}
+                onAlternarFavoritos={() => setSomenteFavoritos((ativo) => !ativo)}
+                somenteFavoritos={somenteFavoritos}
+              />
+            </div>
+            <BuscaModulos
+              aberta={buscaAberta}
+              consulta={consulta}
+              onChange={setConsulta}
+              onFechar={() => {
+                setBuscaAberta(false);
+                setConsulta("");
+              }}
+            />
           </div>
-        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1" data-tour-id="menu-principal">
-            {itens.map((item) => (
-              <ItemMenu key={item.href} item={item} pathname={pathname} />
-            ))}
+          <nav
+            className="admin-sidebar-scrollbar min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1"
+            data-tour-id="menu-principal"
+          >
+            {itensVisiveis.length ? (
+              itensVisiveis.map((item) => (
+                <ItemMenu
+                  favoritos={favoritos}
+                  item={item}
+                  key={item.href}
+                  onAlternarFavorito={onAlternarFavorito}
+                  pathname={pathname}
+                />
+              ))
+            ) : (
+              <MenuSemResultados consulta={consulta} somenteFavoritos={somenteFavoritos} />
+            )}
             <div className="pt-1">{acaoSairSidebar}</div>
           </nav>
         </div>
@@ -497,12 +547,32 @@ function SidebarAdmin({
   return (
     <aside className="hidden min-h-0 lg:block">
       <div className="sticky top-0 flex h-screen min-h-0 flex-col overflow-hidden border-r border-border/80 bg-card/72 px-4 py-5 shadow-[18px_0_50px_rgba(0,0,0,0.10)] backdrop-blur-xl dark:shadow-[18px_0_50px_rgba(0,0,0,0.16)]">
-        <div className="flex shrink-0 items-center gap-2 pb-5">
+        <div className="flex shrink-0 items-center gap-2 pb-4">
           <HospedexBrand adaptarAoTema href={gerenciamento ? "/" : "/super-admin"} size="sm" />
-          <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
+          <Badge
+            className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200"
+            variant="outline"
+          >
             V2
           </Badge>
+          <div className="ml-auto">
+            <AcoesTopoMenu
+              buscaAberta={buscaAberta}
+              onAlternarBusca={() => setBuscaAberta((aberta) => !aberta)}
+              onAlternarFavoritos={() => setSomenteFavoritos((ativo) => !ativo)}
+              somenteFavoritos={somenteFavoritos}
+            />
+          </div>
         </div>
+        <BuscaModulos
+          aberta={buscaAberta}
+          consulta={consulta}
+          onChange={setConsulta}
+          onFechar={() => {
+            setBuscaAberta(false);
+            setConsulta("");
+          }}
+        />
         <div className="hidden">
           {gerenciamento ? (
             <>
@@ -520,8 +590,20 @@ function SidebarAdmin({
             </>
           )}
         </div>
-        <nav className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1" data-tour-id="menu-principal">
-          <MenuAgrupado grupos={grupos} pathname={pathname} />
+        <nav
+          className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
+          data-tour-id="menu-principal"
+        >
+          {itensVisiveis.length ? (
+            <MenuAgrupado
+              favoritos={favoritos}
+              grupos={grupos}
+              onAlternarFavorito={onAlternarFavorito}
+              pathname={pathname}
+            />
+          ) : (
+            <MenuSemResultados consulta={consulta} somenteFavoritos={somenteFavoritos} />
+          )}
           <div className="mt-5 border-t border-border/80 pt-3">{acaoSairSidebar}</div>
         </nav>
       </div>
@@ -531,8 +613,10 @@ function SidebarAdmin({
 
 type MenuMobileAdminProps = {
   acaoSairMobile: ReactNode;
+  favoritos: string[];
   gerenciamento: boolean;
   itens: ItemMenuAdminResolvido[];
+  onAlternarFavorito: (href: string) => void;
   onFechar: () => void;
   pathname: string;
   tituloPerfil: string;
@@ -540,13 +624,19 @@ type MenuMobileAdminProps = {
 
 function MenuMobileAdmin({
   acaoSairMobile,
+  favoritos,
   gerenciamento,
   itens,
+  onAlternarFavorito,
   onFechar,
   pathname,
   tituloPerfil
 }: MenuMobileAdminProps) {
-  const grupos = agruparItensSidebar(itens, gerenciamento);
+  const [buscaAberta, setBuscaAberta] = useState(false);
+  const [consulta, setConsulta] = useState("");
+  const [somenteFavoritos, setSomenteFavoritos] = useState(false);
+  const itensVisiveis = filtrarItensSidebar(itens, consulta, favoritos, somenteFavoritos);
+  const grupos = agruparItensSidebar(itensVisiveis, gerenciamento);
 
   return (
     <motion.div
@@ -562,10 +652,13 @@ function MenuMobileAdmin({
         initial={{ x: "-100%" }}
         transition={{ duration: 0.25, ease: "easeOut" }}
       >
-        <div className="flex shrink-0 items-center justify-between pb-5">
+        <div className="flex shrink-0 items-center justify-between gap-2 pb-4">
           <div className="flex items-center gap-2">
             <HospedexBrand adaptarAoTema href={gerenciamento ? "/" : "/super-admin"} size="sm" />
-            <Badge className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200" variant="outline">
+            <Badge
+              className="border-cyan-400/30 bg-cyan-500/10 text-[11px] text-cyan-700 dark:text-cyan-200"
+              variant="outline"
+            >
               V2
             </Badge>
           </div>
@@ -584,16 +677,51 @@ function MenuMobileAdmin({
               </>
             )}
           </div>
-          <Button aria-label="Fechar menu" onClick={onFechar} size="icon" type="button" variant="ghost">
-            <X />
-          </Button>
+          <div className="flex items-center gap-1">
+            <AcoesTopoMenu
+              buscaAberta={buscaAberta}
+              onAlternarBusca={() => setBuscaAberta((aberta) => !aberta)}
+              onAlternarFavoritos={() => setSomenteFavoritos((ativo) => !ativo)}
+              somenteFavoritos={somenteFavoritos}
+            />
+            <Button
+              aria-label="Fechar menu"
+              className="h-9 w-9"
+              onClick={onFechar}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <X />
+            </Button>
+          </div>
         </div>
+
+        <BuscaModulos
+          aberta={buscaAberta}
+          consulta={consulta}
+          onChange={setConsulta}
+          onFechar={() => {
+            setBuscaAberta(false);
+            setConsulta("");
+          }}
+        />
 
         <nav
           className="admin-sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
           data-tour-id="menu-principal"
         >
-          <MenuAgrupado grupos={grupos} onNavigate={onFechar} pathname={pathname} />
+          {itensVisiveis.length ? (
+            <MenuAgrupado
+              favoritos={favoritos}
+              grupos={grupos}
+              onAlternarFavorito={onAlternarFavorito}
+              onNavigate={onFechar}
+              pathname={pathname}
+            />
+          ) : (
+            <MenuSemResultados consulta={consulta} somenteFavoritos={somenteFavoritos} />
+          )}
           <div className="mt-5 border-t border-border/80 pt-3">{acaoSairMobile}</div>
         </nav>
       </motion.aside>
@@ -602,21 +730,31 @@ function MenuMobileAdmin({
 }
 
 type ItemMenuProps = {
+  favoritos: string[];
   item: ItemMenuAdminResolvido;
+  onAlternarFavorito: (href: string) => void;
   onNavigate?: () => void;
   pathname: string;
 };
 
 type MenuAgrupadoProps = {
+  favoritos: string[];
   grupos: Array<{
     itens: ItemMenuAdminResolvido[];
     titulo: string;
   }>;
+  onAlternarFavorito: (href: string) => void;
   onNavigate?: () => void;
   pathname: string;
 };
 
-function MenuAgrupado({ grupos, onNavigate, pathname }: MenuAgrupadoProps) {
+function MenuAgrupado({
+  favoritos,
+  grupos,
+  onAlternarFavorito,
+  onNavigate,
+  pathname
+}: MenuAgrupadoProps) {
   return (
     <div className="space-y-6 pb-2">
       {grupos.map((grupo) =>
@@ -628,38 +766,41 @@ function MenuAgrupado({ grupos, onNavigate, pathname }: MenuAgrupadoProps) {
             <div className="space-y-1">
               {grupo.itens.map((item) => (
                 <ItemMenu
+                  favoritos={favoritos}
                   item={item}
                   key={item.href}
+                  onAlternarFavorito={onAlternarFavorito}
                   pathname={pathname}
                   {...(onNavigate ? { onNavigate } : {})}
                 />
               ))}
             </div>
           </section>
-        ) : null,
+        ) : null
       )}
     </div>
   );
 }
 
-function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
+function ItemMenu({ favoritos, item, onAlternarFavorito, onNavigate, pathname }: ItemMenuProps) {
   const ativo = itemMenuEstaAtivo(pathname, item.href);
+  const favorito = favoritos.includes(item.href);
   const Icone = ICONES_MENU[item.icone];
   const conteudo = (
     <>
       <span
         className={cn(
           "absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-cyan-300 transition-opacity",
-          ativo ? "opacity-100" : "opacity-0",
+          ativo ? "opacity-100" : "opacity-0"
         )}
       />
       <Icone
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
-          ativo ? "text-cyan-700 dark:text-cyan-200" : "text-muted-foreground",
+          ativo ? "text-cyan-700 dark:text-cyan-200" : "text-muted-foreground"
         )}
       />
-      <span className="min-w-0 flex-1 truncate">{item.titulo}</span>
+      <span className="min-w-0 flex-1 truncate pr-7">{item.titulo}</span>
     </>
   );
   const classes = cn(
@@ -670,14 +811,147 @@ function ItemMenu({ item, onNavigate, pathname }: ItemMenuProps) {
   );
 
   return (
-    <Link
-      className={classes}
-      data-tour-id={obterTourIdItemMenu(item.href)}
-      href={item.href}
-      {...(onNavigate ? { onClick: onNavigate } : {})}
-    >
-      {conteudo}
-    </Link>
+    <div className="group/menu-item relative">
+      <Link
+        className={classes}
+        data-tour-id={obterTourIdItemMenu(item.href)}
+        href={item.href}
+        {...(onNavigate ? { onClick: onNavigate } : {})}
+      >
+        {conteudo}
+      </Link>
+      <button
+        aria-label={
+          favorito
+            ? `Remover ${item.titulo} dos favoritos`
+            : `Adicionar ${item.titulo} aos favoritos`
+        }
+        aria-pressed={favorito}
+        className={cn(
+          "absolute right-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60",
+          favorito
+            ? "text-amber-400 opacity-100 hover:bg-amber-400/10"
+            : "text-muted-foreground opacity-15 hover:bg-cyan-500/10 hover:text-cyan-700 hover:opacity-100 focus-visible:opacity-100 group-hover/menu-item:opacity-65 dark:hover:text-cyan-200"
+        )}
+        onClick={() => onAlternarFavorito(item.href)}
+        title={favorito ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+        type="button"
+      >
+        <Star className={cn("h-4 w-4", favorito && "fill-current")} />
+      </button>
+    </div>
+  );
+}
+
+function AcoesTopoMenu({
+  buscaAberta,
+  onAlternarBusca,
+  onAlternarFavoritos,
+  somenteFavoritos
+}: {
+  buscaAberta: boolean;
+  onAlternarBusca: () => void;
+  onAlternarFavoritos: () => void;
+  somenteFavoritos: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        aria-expanded={buscaAberta}
+        aria-label={buscaAberta ? "Fechar busca de módulos" : "Pesquisar módulos"}
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 dark:hover:text-cyan-200",
+          buscaAberta && "border-cyan-400/30 bg-cyan-500/12 text-cyan-700 dark:text-cyan-200"
+        )}
+        onClick={onAlternarBusca}
+        title="Pesquisar módulos"
+        type="button"
+      >
+        <Search className="h-4 w-4" />
+      </button>
+      <button
+        aria-label={somenteFavoritos ? "Mostrar todos os módulos" : "Mostrar módulos favoritos"}
+        aria-pressed={somenteFavoritos}
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition hover:border-amber-400/25 hover:bg-amber-400/10 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60",
+          somenteFavoritos && "border-amber-400/30 bg-amber-400/10 text-amber-400"
+        )}
+        onClick={onAlternarFavoritos}
+        title={somenteFavoritos ? "Mostrar todos" : "Mostrar favoritos"}
+        type="button"
+      >
+        <Star className={cn("h-4 w-4", somenteFavoritos && "fill-current")} />
+      </button>
+    </div>
+  );
+}
+
+function BuscaModulos({
+  aberta,
+  consulta,
+  onChange,
+  onFechar
+}: {
+  aberta: boolean;
+  consulta: string;
+  onChange: (valor: string) => void;
+  onFechar: () => void;
+}) {
+  return (
+    <AnimatePresence initial={false}>
+      {aberta ? (
+        <motion.div
+          animate={{ height: "auto", opacity: 1, y: 0 }}
+          className="relative overflow-hidden pb-3 pt-1"
+          exit={{ height: 0, opacity: 0, y: -4 }}
+          initial={{ height: 0, opacity: 0, y: -4 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+        >
+          <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+          <input
+            aria-label="Pesquisar módulos"
+            autoComplete="off"
+            autoFocus
+            className="h-10 w-full rounded-lg border border-border bg-background/70 pl-9 pr-9 text-sm outline-none transition placeholder:text-muted-foreground/70 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-400/15"
+            onChange={(evento) => onChange(evento.target.value)}
+            placeholder="Buscar módulo..."
+            spellCheck={false}
+            type="text"
+            value={consulta}
+          />
+          <button
+            aria-label="Limpar e fechar busca"
+            className="absolute right-1.5 top-2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-cyan-500/10 hover:text-foreground"
+            onClick={onFechar}
+            type="button"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function MenuSemResultados({
+  consulta,
+  somenteFavoritos
+}: {
+  consulta: string;
+  somenteFavoritos: boolean;
+}) {
+  return (
+    <div className="mx-1 rounded-xl border border-dashed border-border bg-background/30 px-3 py-4 text-center">
+      <Search className="mx-auto h-5 w-5 text-muted-foreground/70" />
+      <p className="mt-2 text-sm font-medium">
+        {somenteFavoritos ? "Nenhum favorito encontrado" : "Nenhum módulo encontrado"}
+      </p>
+      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+        {somenteFavoritos && !consulta.trim()
+          ? "Marque a estrela ao lado de um módulo para encontrá-lo aqui."
+          : "Tente buscar por outro nome ou descrição."}
+      </p>
+    </div>
   );
 }
 
@@ -695,7 +969,7 @@ function obterTourIdConteudo(pathname: string) {
 
 function agruparItensSidebar(
   itens: ItemMenuAdminResolvido[],
-  gerenciamento: boolean,
+  gerenciamento: boolean
 ): Array<{ itens: ItemMenuAdminResolvido[]; titulo: string }> {
   if (!gerenciamento) {
     return [{ itens, titulo: "Plataforma" }];
@@ -711,14 +985,72 @@ function agruparItensSidebar(
 
     return {
       itens: itensDoGrupo,
-      titulo: grupo.titulo,
+      titulo: grupo.titulo
     };
   });
   const itensSemGrupo = itens.filter((item) => !itensAgrupados.has(item.href));
 
-  return itensSemGrupo.length
-    ? [...grupos, { itens: itensSemGrupo, titulo: "Outros" }]
-    : grupos;
+  return itensSemGrupo.length ? [...grupos, { itens: itensSemGrupo, titulo: "Outros" }] : grupos;
+}
+
+function filtrarItensSidebar(
+  itens: ItemMenuAdminResolvido[],
+  consulta: string,
+  favoritos: string[],
+  somenteFavoritos: boolean
+) {
+  const termo = normalizarTextoBusca(consulta);
+
+  return itens.filter((item) => {
+    if (somenteFavoritos && !favoritos.includes(item.href)) return false;
+    if (!termo) return true;
+
+    return normalizarTextoBusca(`${item.titulo} ${item.descricao}`).includes(termo);
+  });
+}
+
+function normalizarTextoBusca(valor: string) {
+  return valor
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+}
+
+function useFavoritosMenu(chaveStorage: string) {
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const valorSalvo = window.localStorage.getItem(chaveStorage);
+      const itensSalvos: unknown = valorSalvo ? JSON.parse(valorSalvo) : [];
+      setFavoritos(
+        Array.isArray(itensSalvos)
+          ? itensSalvos.filter((item): item is string => typeof item === "string")
+          : []
+      );
+    } catch {
+      setFavoritos([]);
+    }
+  }, [chaveStorage]);
+
+  function alternarFavorito(href: string) {
+    setFavoritos((favoritosAtuais) => {
+      const proximosFavoritos = favoritosAtuais.includes(href)
+        ? favoritosAtuais.filter((favorito) => favorito !== href)
+        : [...favoritosAtuais, href];
+
+      try {
+        window.localStorage.setItem(chaveStorage, JSON.stringify(proximosFavoritos));
+      } catch {
+        // A navegação continua funcional mesmo quando o navegador bloqueia armazenamento local.
+      }
+
+      return proximosFavoritos;
+    });
+  }
+
+  return { alternarFavorito, favoritos };
 }
 
 function itemMenuEstaAtivo(pathname: string, href: string): boolean {
