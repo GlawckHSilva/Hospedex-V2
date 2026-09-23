@@ -860,8 +860,8 @@ function AcoesTopoMenu({
         aria-expanded={buscaAberta}
         aria-label={buscaAberta ? "Fechar busca de módulos" : "Pesquisar módulos"}
         className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition hover:border-cyan-400/25 hover:bg-cyan-500/10 hover:text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 dark:hover:text-cyan-200",
-          buscaAberta && "border-cyan-400/30 bg-cyan-500/12 text-cyan-700 dark:text-cyan-200"
+          "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-cyan-500/10 hover:text-cyan-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 dark:hover:text-cyan-200",
+          buscaAberta && "bg-cyan-500/12 text-cyan-700 dark:text-cyan-200"
         )}
         onClick={onAlternarBusca}
         title="Pesquisar módulos"
@@ -873,8 +873,8 @@ function AcoesTopoMenu({
         aria-label={somenteFavoritos ? "Mostrar todos os módulos" : "Mostrar módulos favoritos"}
         aria-pressed={somenteFavoritos}
         className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-lg border border-transparent text-muted-foreground transition hover:border-amber-400/25 hover:bg-amber-400/10 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60",
-          somenteFavoritos && "border-amber-400/30 bg-amber-400/10 text-amber-400"
+          "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-amber-400/10 hover:text-amber-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60",
+          somenteFavoritos && "bg-amber-400/10 text-amber-400"
         )}
         onClick={onAlternarFavoritos}
         title={somenteFavoritos ? "Mostrar todos" : "Mostrar favoritos"}
